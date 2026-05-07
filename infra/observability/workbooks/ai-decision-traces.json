@@ -1,0 +1,22 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# ai-decision-traces\nUDCSP workbook scaffold with country/env parameters."
+      }
+    },
+    {
+      "type": 3,
+      "content": {
+        "query": "requests | summarize count() by bin(timestamp, 5m), cloud_RoleName",
+        "size": 0
+      }
+    }
+  ],
+  "parameters": {
+    "country": "DK|SE|NO",
+    "env": "prod"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "country": "dk",
+  "localTerminology": {
+    "residency": "Bop\u00e6l"
+  },
+  "queueNames": [
+    "residency-DK",
+    "tax-DK"
+  ],
+  "dependsOn": "UDCSPCore"
+}

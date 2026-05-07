@@ -1,0 +1,25 @@
+{
+  "name": "citizen-status-notify",
+  "environment": "parameterized",
+  "connectionReferences": {
+    "shared_commondataserviceforapps": "@parameters('dataverseConnection')"
+  },
+  "definition": {
+    "triggers": {
+      "dataverse": {
+        "type": "OpenApiConnectionWebhook",
+        "description": "When case status changes"
+      }
+    },
+    "actions": {
+      "step_1": {
+        "type": "OpenApiConnection",
+        "description": "Call notifications API"
+      },
+      "step_2": {
+        "type": "OpenApiConnection",
+        "description": "Write consent-aware audit note"
+      }
+    }
+  }
+}

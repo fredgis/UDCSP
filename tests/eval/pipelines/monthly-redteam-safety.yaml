@@ -1,0 +1,10 @@
+name: monthly-redteam-safety
+on: { workflow_dispatch: {}, schedule: [{ cron: "45 3 1 * *" }] }
+jobs:
+  foundry-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/eval/scripts/Run-Eval-Pipeline.ps1 -Pipeline monthly-redteam-safety -Agent all-agents -SuitePath foundry/evaluations/eval-suites/redteam-safety.yaml -ResultsRoot tests/eval/results
+        env: { FOUNDRY_PROJECT_ENDPOINT: '${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}', AZURE_TENANT_ID: '${{ secrets.AZURE_TENANT_ID }}' }

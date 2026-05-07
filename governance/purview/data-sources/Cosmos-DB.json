@@ -1,0 +1,15 @@
+{
+  "entity": {
+    "typeName": "azure_cosmosdb_account",
+    "attributes": {
+      "qualifiedName": "cosmos://udcsp-${country}-${env}-case-state",
+      "name": "Cosmos-DB",
+      "description": "Case state and draft application store"
+    },
+    "classifications": [
+      {
+        "typeName": "Confidential-Citizen"
+      }
+    ]
+  }
+}

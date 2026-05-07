@@ -1,0 +1,18 @@
+id: classifier-model
+name: "Request Classifier"
+riskLevel: limited
+purpose: "Classifies citizen requests and routes them to the right workflow in 12 languages."
+dataSources:
+  - APIM request metadata
+  - citizen submitted text
+  - Foundry traces
+trainingDataset: "foundry/datasets/classifier-training multilingual intents"
+evalDataset: "foundry/evals/classifier-golden-set"
+fairnessMetrics:
+  - intent F1 by language >= 0.90
+  - max language F1 gap <= 5pp
+humanOversight: "Low-confidence routes are sent to a triage queue; misroutes can be corrected by caseworkers."
+postMarketMonitoring: "Monthly confusion-matrix review and sample audit."
+owner: "A6/A13"
+lastReview: 2026-05-07
+nextReview: 2026-08-07

@@ -1,0 +1,31 @@
+{
+  "name": "incremental-ingest-d365",
+  "type": "FabricDataPipeline",
+  "parameters": {
+    "country": "dk",
+    "watermarkColumn": "modifiedon"
+  },
+  "activities": [
+    {
+      "name": "RefreshDataverseMirror",
+      "type": "DataverseMirrorRefresh",
+      "dependsOn": []
+    },
+    {
+      "name": "RunBronzeNotebook",
+      "type": "Notebook",
+      "path": "notebooks/01_ingest_d365_to_bronze.py",
+      "dependsOn": [
+        "RefreshDataverseMirror"
+      ]
+    },
+    {
+      "name": "RunSilverNotebook",
+      "type": "Notebook",
+      "path": "notebooks/02_bronze_to_silver_clean.py",
+      "dependsOn": [
+        "RunBronzeNotebook"
+      ]
+    }
+  ]
+}

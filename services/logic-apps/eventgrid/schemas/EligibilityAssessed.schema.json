@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EligibilityAssessed",
+  "type": "object",
+  "required": [
+    "id",
+    "eventType",
+    "subject",
+    "eventTime",
+    "data"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "eventType": {
+      "const": "EligibilityAssessed"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "eventTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "traceparent": {
+          "type": "string"
+        },
+        "country": {
+          "enum": [
+            "dk",
+            "se",
+            "no"
+          ]
+        },
+        "purviewLineage": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

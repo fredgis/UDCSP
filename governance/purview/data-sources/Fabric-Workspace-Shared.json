@@ -1,0 +1,20 @@
+{
+  "entity": {
+    "typeName": "powerbi_workspace",
+    "attributes": {
+      "qualifiedName": "fabric://udcsp-shared-analytics",
+      "name": "udcsp-shared-analytics",
+      "description": "Federated analytics workspace with curated gold products only"
+    },
+    "relationshipAttributes": {
+      "domain": {
+        "displayText": "UDCSP Citizen Services"
+      }
+    },
+    "classifications": [
+      {
+        "typeName": "Restricted-Cross-Border"
+      }
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "mode": "DataverseLinkToFabric",
+  "environmentUrl": "@parameters('dataverseEnvironmentUrl')",
+  "fabricWorkspaceId": "@parameters('fabricWorkspaceId')",
+  "oneLakePath": "@parameters('fabricBronzePath')",
+  "tables": [
+    "udcsp_application",
+    "udcsp_eligibility_assessment",
+    "udcsp_country_zone",
+    "udcsp_consent_record"
+  ],
+  "lineage": {
+    "purviewCollection": "@parameters('purviewCollection')",
+    "emitEvents": true
+  }
+}

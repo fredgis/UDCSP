@@ -1,0 +1,5 @@
+slos:
+  read-api-p99-ms: { max: 800, eval_rows: [3, 12, 15] }
+  ai-classifier-p99-ms: { max: 2000, eval_rows: [5, 6] }
+  error-rate: { max: 0.005, eval_rows: [3, 12] }
+  voice-call-setup-ms: { max: 2000, eval_rows: [6, 8, 12] }

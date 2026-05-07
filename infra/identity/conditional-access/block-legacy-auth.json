@@ -1,0 +1,16 @@
+{
+  "displayName": "block-legacy-auth",
+  "state": "enabled",
+  "conditions": {
+    "clientAppTypes": [
+      "exchangeActiveSync",
+      "other"
+    ]
+  },
+  "grantControls": {
+    "builtInControls": [
+      "block"
+    ]
+  },
+  "todo": "TODO: case-study scaffold \u2014 replace with real values when deploying"
+}

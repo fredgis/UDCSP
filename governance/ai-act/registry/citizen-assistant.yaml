@@ -1,0 +1,18 @@
+id: citizen-assistant
+name: "GenAI Citizen Assistant"
+riskLevel: limited
+purpose: "Answers service questions across web, mobile and voice with grounded sources."
+dataSources:
+  - approved knowledge base
+  - Fabric public/internal knowledge shortcuts
+  - conversation context with consent
+trainingDataset: "No fine-tuning; prompt and retrieval configuration only"
+evalDataset: "foundry/evals/assistant-safety-grounding-set"
+fairnessMetrics:
+  - groundedness >= 0.90
+  - safe completion parity by language >= 0.95
+humanOversight: "Escalation to D365 caseworker is available at any time; Content Safety gates outputs."
+postMarketMonitoring: "Weekly safety sampling and quarterly language parity review."
+owner: "A6/A13"
+lastReview: 2026-05-07
+nextReview: 2026-08-07

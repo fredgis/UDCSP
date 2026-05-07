@@ -1,0 +1,15 @@
+{
+  "name": "se-share-with-dk-benefits",
+  "policyType": "claims-based-data-sharing",
+  "legalBasis": "public-task-with-country-specific-review",
+  "minimisation": "share claims only; no raw national IDs",
+  "retentionDays": 90,
+  "from": "SE",
+  "to": "DK",
+  "purpose": "Benefit entitlement evidence",
+  "allowedClaims": [
+    "eligibilityBand",
+    "municipalityCode"
+  ],
+  "requiresConsent": true
+}

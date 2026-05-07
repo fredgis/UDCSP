@@ -1,0 +1,3 @@
+<fragment>
+  <choose><when condition="@(context.Request.Headers.GetValueOrDefault(&quot;x-country&quot;, &quot;dk&quot;) == &quot;se&quot;)"><set-backend-service base-url="{{se-backend-base-url}}" /></when><when condition="@(context.Request.Headers.GetValueOrDefault(&quot;x-country&quot;, &quot;dk&quot;) == &quot;no&quot;)"><set-backend-service base-url="{{no-backend-base-url}}" /></when><otherwise><set-backend-service base-url="{{dk-backend-base-url}}" /></otherwise></choose>
+</fragment>

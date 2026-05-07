@@ -1,0 +1,17 @@
+{
+  "displayName": "require-compliant-device",
+  "state": "enabledForReportingButNotEnforced",
+  "conditions": {
+    "users": {
+      "includeGroups": [
+        "caseworkers"
+      ]
+    }
+  },
+  "grantControls": {
+    "builtInControls": [
+      "compliantDevice"
+    ]
+  },
+  "todo": "TODO: case-study scaffold \u2014 replace with real values when deploying"
+}

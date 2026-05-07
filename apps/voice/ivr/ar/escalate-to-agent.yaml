@@ -1,0 +1,20 @@
+kind: Microsoft.CopilotStudio.VoiceDialog
+version: 1
+locale: ar
+id: escalate-to-agent
+prompts:
+  normal: "I will connect you to a caseworker. Press zero at any time for urgent help."
+  slowSpeech: "I will connect you to a caseworker. Press zero at any time for urgent help."
+bargeIn: true
+dtmfFallback:
+  '*': repeat
+  '0': escalate_to_agent
+  '1': residency
+  '2': tax_certificate
+  '3': child_benefit
+noInput:
+  retries: 2
+  then: escalate_to_agent
+noMatch:
+  retries: 2
+  then: escalate_to_agent

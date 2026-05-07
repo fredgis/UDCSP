@@ -1,0 +1,7 @@
+{
+  "name": "AzureOpenAI",
+  "type": "managedApi",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/azureopenai-connection",
+  "owner": "A7"
+}

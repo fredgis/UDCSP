@@ -1,0 +1,7 @@
+{
+  "document_id": "SYNTH-DOC-001",
+  "classification": "payslip",
+  "sha256": "9b71be8648dfa2cfbc50af3a584cd199936eec05f1c48ea0af2e0dee77c0a449",
+  "contains_real_pii": false,
+  "watermark": "SYNTHETIC — UDCSP"
+}

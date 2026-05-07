@@ -1,0 +1,4 @@
+version: v1.0.0
+failOn: all
+severityThreshold: high
+exclude: { global: [tests/**/results/**] }

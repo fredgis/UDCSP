@@ -1,0 +1,11 @@
+sourceLanguage: en
+targetLanguages: [da, sv, nb, nn, se, de, fr, pl, ar, uk, fi]
+format: ICU MessageFormat JSON
+steps:
+  - extract-new-keys
+  - machine-translate-draft
+  - apply-glossary: pipeline/glossary.csv
+  - back-translation-qa
+  - human-review-required
+  - validate-key-completeness
+notes: No live API call is made by this scaffold. Configure Azure AI Translator in CI secrets.

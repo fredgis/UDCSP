@@ -1,0 +1,170 @@
+{
+  "da": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "sv": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "nb": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "nn": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "se": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "en": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "de": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "fr": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "pl": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "ar": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "uk": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  },
+  "fi": {
+    "caseSubmitted": {
+      "subject": "UDCSP case received",
+      "body": "Your application was received. Case {caseId}."
+    },
+    "caseUpdated": {
+      "subject": "UDCSP case updated",
+      "body": "Case {caseId} status is now {status}."
+    },
+    "consentChanged": {
+      "subject": "Consent preferences updated",
+      "body": "Your consent preferences were updated on {date}."
+    }
+  }
+}

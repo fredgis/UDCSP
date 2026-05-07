@@ -1,0 +1,32 @@
+name: udcsp-caseworker-helper
+description: Internal D365 copilot for case summaries, draft replies and next-best-action suggestions.
+model: gpt-5.5
+systemPromptFile: system-prompt.md
+tools:
+  - d365-case-reader
+  - knowledge-search
+  - draft-response-writer
+temperature: 0.2
+maxTokens: 3200
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+evaluationSuite: ../../evaluations/eval-suites/caseworker-helper.yaml
+owner: A6 · Foundry & AI
+riskLevel: limited
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 2.0 s inside D365 panel"
+registryEntryRef: governance-ai-act://udcsp/caseworker-helper/v1

@@ -1,0 +1,19 @@
+{
+  "classificationDef": {
+    "category": "CLASSIFICATION",
+    "name": "HealthEntitlementCode",
+    "description": "Health entitlement and EHIC-style eligibility codes",
+    "typeVersion": "1.0",
+    "attributeDefs": [
+      {
+        "name": "owner",
+        "typeName": "string",
+        "isOptional": true
+      }
+    ],
+    "options": {
+      "pattern": "\\b(HE|EHIC|NORD-HE)-[A-Z0-9]{6,12}\\b",
+      "minimumMatchThreshold": "0.8"
+    }
+  }
+}

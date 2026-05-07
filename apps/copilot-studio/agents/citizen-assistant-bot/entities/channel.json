@@ -1,0 +1,10 @@
+{
+  "name": "channel",
+  "kind": "closedList",
+  "values": [
+    "web",
+    "mobile",
+    "voice",
+    "chat"
+  ]
+}

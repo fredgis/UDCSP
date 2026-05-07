@@ -1,0 +1,6 @@
+{"id": "gq-en-01", "language": "en", "query": "I want to move from Denmark to Sweden #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-en-02", "language": "en", "query": "I want to move from Denmark to Sweden #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-en-03", "language": "en", "query": "I want to move from Denmark to Sweden #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-en-04", "language": "en", "query": "I want to move from Denmark to Sweden #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-en-05", "language": "en", "query": "I want to move from Denmark to Sweden #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-en-06", "language": "en", "query": "I want to move from Denmark to Sweden #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

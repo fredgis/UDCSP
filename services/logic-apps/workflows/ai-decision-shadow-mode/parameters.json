@@ -1,0 +1,11 @@
+{
+  "country": {
+    "value": "dk"
+  },
+  "aiActRegistryId": {
+    "value": "AI-ACT-UDCSP-ELIGIBILITY-001"
+  },
+  "purviewLineageTopicEndpoint": {
+    "value": "@appsetting('PurviewLineageTopicEndpoint')"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": [
+        "authenticated"
+      ]
+    },
+    {
+      "route": "/*",
+      "serve": "/index.html",
+      "statusCode": 200
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/*",
+      "/i18n/*"
+    ]
+  },
+  "responseOverrides": {
+    "401": {
+      "redirect": "/login",
+      "statusCode": 302
+    }
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://*.azure-api.net https://*.b2clogin.com https://*.botframework.com https://*.directline.botframework.com; frame-src https://*.botframework.com https://*.copilotstudio.microsoft.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  },
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://udcspdk.b2clogin.com/udcspdk.onmicrosoft.com/B2C_1A_SignUpOrSignIn/v2.0/.well-known/openid-configuration",
+          "clientIdSettingName": "B2C_CLIENT_ID",
+          "clientSecretSettingName": "B2C_CLIENT_SECRET"
+        }
+      }
+    }
+  }
+}

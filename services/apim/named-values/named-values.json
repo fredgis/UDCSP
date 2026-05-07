@@ -1,0 +1,28 @@
+{
+  "namedValues": [
+    {
+      "name": "logicapp-application-intake-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/logicapp-application-intake-url"
+    },
+    {
+      "name": "logicapp-gdpr-data-export-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/logicapp-gdpr-data-export-url"
+    },
+    {
+      "name": "foundry-classifier-agent-endpoint",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/foundry-classifier-agent-endpoint"
+    },
+    {
+      "name": "foundry-eligibility-agent-endpoint",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/foundry-eligibility-agent-endpoint"
+    },
+    {
+      "name": "foundry-citizen-assistant-agent-endpoint",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/foundry-citizen-assistant-agent-endpoint"
+    },
+    {
+      "name": "d365-dataverse-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/d365-dataverse-url"
+    }
+  ]
+}

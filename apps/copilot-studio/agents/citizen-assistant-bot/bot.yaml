@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "2025-04-01-preview",
+  "name": "udcsp-citizen-assistant-bot",
+  "displayName": "UDCSP Citizen Assistant",
+  "defaultLanguage": "en",
+  "languages": [
+    "da",
+    "sv",
+    "nb",
+    "nn",
+    "se",
+    "en",
+    "de",
+    "fr",
+    "pl",
+    "ar",
+    "uk",
+    "fi"
+  ],
+  "description": "Multilingual public-sector assistant with Foundry-backed classification and grounded responses.",
+  "topicsPath": "topics",
+  "entitiesPath": "entities",
+  "connections": [
+    "foundry-classifier",
+    "foundry-citizen-assistant",
+    "d365-case-create"
+  ],
+  "contentSafety": "Foundry/Azure AI Content Safety standard"
+}

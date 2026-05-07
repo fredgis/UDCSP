@@ -1,0 +1,7 @@
+{
+  "name": "Outlook",
+  "type": "managedApi",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/outlook-connection",
+  "owner": "A7"
+}

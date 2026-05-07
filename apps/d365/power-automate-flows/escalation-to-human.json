@@ -1,0 +1,25 @@
+{
+  "name": "escalation-to-human",
+  "environment": "parameterized",
+  "connectionReferences": {
+    "shared_commondataserviceforapps": "@parameters('dataverseConnection')"
+  },
+  "definition": {
+    "triggers": {
+      "dataverse": {
+        "type": "OpenApiConnectionWebhook",
+        "description": "When confidence below threshold or safety hit"
+      }
+    },
+    "actions": {
+      "step_1": {
+        "type": "OpenApiConnection",
+        "description": "Create D365 case"
+      },
+      "step_2": {
+        "type": "OpenApiConnection",
+        "description": "Route to accessibility-help or country skill queue"
+      }
+    }
+  }
+}

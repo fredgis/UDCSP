@@ -1,0 +1,16 @@
+{
+  "name": "dk-share-with-se-residency",
+  "policyType": "claims-based-data-sharing",
+  "legalBasis": "public-task-with-country-specific-review",
+  "minimisation": "share claims only; no raw national IDs",
+  "retentionDays": 90,
+  "from": "DK",
+  "to": "SE",
+  "purpose": "Residency transfer confirmation",
+  "allowedClaims": [
+    "residencyConfirmed",
+    "validFrom",
+    "validTo"
+  ],
+  "requiresConsent": true
+}

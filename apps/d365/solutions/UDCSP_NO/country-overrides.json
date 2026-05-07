@@ -1,0 +1,11 @@
+{
+  "country": "no",
+  "localTerminology": {
+    "residency": "Folkeregister"
+  },
+  "queueNames": [
+    "residency-NO",
+    "social-NO"
+  ],
+  "dependsOn": "UDCSPCore"
+}

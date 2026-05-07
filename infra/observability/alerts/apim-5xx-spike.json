@@ -1,0 +1,25 @@
+{
+  "kind": "LogAlert",
+  "properties": {
+    "displayName": "apim-5xx-spike",
+    "severity": 2,
+    "enabled": true,
+    "evaluationFrequency": "PT5M",
+    "windowSize": "PT15M",
+    "criteria": {
+      "allOf": [
+        {
+          "query": "AzureDiagnostics | where ResourceProvider == \"MICROSOFT.APIMANAGEMENT\" and toint(ResponseCode) >= 500 | summarize Count=count() by bin(TimeGenerated, 5m) | where Count > 25",
+          "timeAggregation": "Count",
+          "operator": "GreaterThan",
+          "threshold": 0
+        }
+      ]
+    },
+    "actions": {
+      "actionGroups": [
+        "${actionGroupId}"
+      ]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "classificationDef": {
+    "category": "CLASSIFICATION",
+    "name": "EligibilityScore",
+    "description": "Columns or fields containing automated entitlement scores",
+    "typeVersion": "1.0",
+    "attributeDefs": [
+      {
+        "name": "owner",
+        "typeName": "string",
+        "isOptional": true
+      }
+    ],
+    "options": {
+      "pattern": "\\beligibility(_score)?\\b",
+      "minimumMatchThreshold": "0.8"
+    }
+  }
+}

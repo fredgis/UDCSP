@@ -1,0 +1,6 @@
+{"id": "gq-nb-01", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-nb-02", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-nb-03", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-nb-04", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-nb-05", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-nb-06", "language": "nb", "query": "Hvordan søker jeg barnetrygd? #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

@@ -1,0 +1,22 @@
+{
+  "build": {
+    "dk": {
+      "channel": "denmark",
+      "env": {
+        "UDCSP_COUNTRY": "dk"
+      }
+    },
+    "se": {
+      "channel": "sweden",
+      "env": {
+        "UDCSP_COUNTRY": "se"
+      }
+    },
+    "no": {
+      "channel": "norway",
+      "env": {
+        "UDCSP_COUNTRY": "no"
+      }
+    }
+  }
+}

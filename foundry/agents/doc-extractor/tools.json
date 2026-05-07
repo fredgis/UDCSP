@@ -1,0 +1,27 @@
+{
+  "agent": "doc-extractor",
+  "tools": [
+    {
+      "name": "azure-ai-document-intelligence",
+      "type": "placeholder",
+      "description": "azure-ai-document-intelligence integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "schema-normalizer",
+      "type": "placeholder",
+      "description": "schema-normalizer integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "confidence-calibrator",
+      "type": "placeholder",
+      "description": "confidence-calibrator integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

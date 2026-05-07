@@ -1,0 +1,6 @@
+{"id": "gq-de-01", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-de-02", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-de-03", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-de-04", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-de-05", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-de-06", "language": "de", "query": "Ich brauche eine Steuerbescheinigung #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

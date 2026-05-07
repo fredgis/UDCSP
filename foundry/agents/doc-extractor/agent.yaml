@@ -1,0 +1,32 @@
+name: udcsp-doc-extractor
+description: Extracts structured fields from identity documents, payslips and address proof via Document Intelligence plus LLM validation.
+model: gpt-5.4-mini
+systemPromptFile: system-prompt.md
+tools:
+  - azure-ai-document-intelligence
+  - schema-normalizer
+  - confidence-calibrator
+temperature: 0.0
+maxTokens: 2200
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+evaluationSuite: ../../evaluations/eval-suites/doc-extractor.yaml
+owner: A6 · Foundry & AI
+riskLevel: limited
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 3.0 s per document page"
+registryEntryRef: governance-ai-act://udcsp/doc-extractor/v1

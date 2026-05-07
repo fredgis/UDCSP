@@ -1,0 +1,13 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "mass-application-submission",
+    "enabled": true,
+    "severity": "High",
+    "query": "AppRequests | where Name == \"SubmitApplication\" | summarize Count=count() by ClientIP, bin(TimeGenerated, 10m) | where Count > 50",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0
+  }
+}

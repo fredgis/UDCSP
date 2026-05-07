@@ -1,0 +1,25 @@
+{
+  "kind": "LogAlert",
+  "properties": {
+    "displayName": "d365-sla-breach-risk",
+    "severity": 2,
+    "enabled": true,
+    "evaluationFrequency": "PT5M",
+    "windowSize": "PT15M",
+    "criteria": {
+      "allOf": [
+        {
+          "query": "D365Cases_CL | where SlaRemainingHours < 8 and Status != \"Closed\"",
+          "timeAggregation": "Count",
+          "operator": "GreaterThan",
+          "threshold": 0
+        }
+      ]
+    },
+    "actions": {
+      "actionGroups": [
+        "${actionGroupId}"
+      ]
+    }
+  }
+}

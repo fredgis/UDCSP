@@ -1,0 +1,8 @@
+slices:
+  language: [da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi]
+  country: [DK, SE, NO]
+  age-band: [18-29, 30-44, 45-64, 65+]
+  urban-rural: [urban, suburban, rural, remote]
+  accessibility-need: [none, screen-reader, voice-only, cognitive-support, mobility-support, sign-language]
+minimumExamplesPerSlice: 5
+reporting: parity_gap_and_worst_slice

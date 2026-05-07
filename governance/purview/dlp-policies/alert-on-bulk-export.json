@@ -1,0 +1,25 @@
+{
+  "name": "alert-on-bulk-export",
+  "mode": "audit",
+  "conditions": [
+    {
+      "labelIn": [
+        "Confidential-Citizen",
+        "Restricted-Cross-Border"
+      ]
+    },
+    {
+      "rowsExportedGreaterThan": 1000
+    }
+  ],
+  "actions": [
+    {
+      "type": "alert",
+      "severity": "high",
+      "notify": [
+        "A13",
+        "security-operations"
+      ]
+    }
+  ]
+}

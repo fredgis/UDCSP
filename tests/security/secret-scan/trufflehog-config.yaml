@@ -1,0 +1,4 @@
+exclude_paths:
+  - tests/**/results/**
+only_verified: true
+fail: true

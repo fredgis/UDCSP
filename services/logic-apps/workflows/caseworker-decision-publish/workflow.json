@@ -1,0 +1,121 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "citizenStatusEndpoint": {
+        "type": "String"
+      },
+      "fabricBronzeSinkEndpoint": {
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_request_received": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "caseworker-decision-publish",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')"
+          }
+        },
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Update_citizen_status": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('citizenStatusEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Publish_outcome_event": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('purviewLineageTopicEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aeg-event-type": "Notification"
+          },
+          "body": [
+            {
+              "eventType": "CaseDecided",
+              "subject": "@{parameters('country')}/@{workflow().run.name}",
+              "data": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "piiTouched": true,
+                "purviewLineage": true
+              },
+              "dataVersion": "1.0"
+            }
+          ]
+        },
+        "runAfter": {
+          "Update_citizen_status": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Archive_to_Fabric_bronze": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('fabricBronzeSinkEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Publish_outcome_event": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

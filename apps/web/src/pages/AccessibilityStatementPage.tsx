@@ -1,0 +1,1 @@
+export function AccessibilityStatementPage() { return <article><h1>Accessibility statement</h1><p>This portal is designed for WCAG 2.1 AA. Report barriers through the citizen assistant, telephone channel, or your national agency support desk.</p></article>; }

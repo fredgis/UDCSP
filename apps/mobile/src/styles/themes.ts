@@ -1,0 +1,1 @@
+export const themes = { light: { bg: '#fff', fg: '#111827', primary: '#005ea8' }, dark: { bg: '#111827', fg: '#fff', primary: '#7dd3fc' }, highContrast: { bg: '#000', fg: '#fff', primary: '#ffff00' } } as const;

@@ -1,0 +1,13 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "high-risk-eligibility-approval",
+    "enabled": true,
+    "severity": "High",
+    "query": "UDCSPDecision_CL | where Risk == \"High\" and Decision == \"Approved\" and HumanReview != \"true\"",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0
+  }
+}

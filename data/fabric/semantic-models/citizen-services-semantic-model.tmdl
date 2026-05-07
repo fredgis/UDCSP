@@ -1,0 +1,11 @@
+model CitizenServices
+  culture: en-US
+  compatibilityLevel: 1603
+
+table CitizenServiceKPIs
+  source: DirectLake gold_*_citizen_service_kpis
+  measure ApplicationsProcessed = SUM(CitizenServiceKPIs[ApplicationsProcessed])
+  measure AvgProcessingDays = AVERAGE(CitizenServiceKPIs[AvgProcessingDays])
+  measure CitizenSatisfactionPct = AVERAGE(CitizenServiceKPIs[CitizenSatisfactionPct])
+  measure AIDecisionAccuracy = AVERAGE(CitizenServiceKPIs[AIDecisionAccuracy])
+  measure PerLanguageCSAT = AVERAGEX(VALUES(CitizenServiceKPIs[language]), [CitizenSatisfactionPct])

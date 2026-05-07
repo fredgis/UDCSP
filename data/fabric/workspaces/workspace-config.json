@@ -1,0 +1,44 @@
+{
+  "domain": {
+    "name": "UDCSP Citizen Services",
+    "description": "Federated Fabric domain for sovereign citizen-service data products"
+  },
+  "workspaces": [
+    {
+      "name": "udcsp-dk-data",
+      "country": "DK",
+      "type": "sovereign",
+      "capacityNameParameter": "udcsp-dk-${env}-fabric-capacity",
+      "domain": "UDCSP Citizen Services",
+      "oneLakePath": "/UDCSP/dk/",
+      "defaultSensitivityLabel": "Confidential-Citizen"
+    },
+    {
+      "name": "udcsp-se-data",
+      "country": "SE",
+      "type": "sovereign",
+      "capacityNameParameter": "udcsp-se-${env}-fabric-capacity",
+      "domain": "UDCSP Citizen Services",
+      "oneLakePath": "/UDCSP/se/",
+      "defaultSensitivityLabel": "Confidential-Citizen"
+    },
+    {
+      "name": "udcsp-no-data",
+      "country": "NO",
+      "type": "sovereign",
+      "capacityNameParameter": "udcsp-no-${env}-fabric-capacity",
+      "domain": "UDCSP Citizen Services",
+      "oneLakePath": "/UDCSP/no/",
+      "defaultSensitivityLabel": "Confidential-Citizen"
+    },
+    {
+      "name": "udcsp-shared-analytics",
+      "country": "EU",
+      "type": "federated",
+      "capacityNameParameter": "udcsp-shared-${env}-fabric-capacity",
+      "domain": "UDCSP Citizen Services",
+      "oneLakePath": "/UDCSP/shared/",
+      "defaultSensitivityLabel": "Restricted-Cross-Border"
+    }
+  ]
+}

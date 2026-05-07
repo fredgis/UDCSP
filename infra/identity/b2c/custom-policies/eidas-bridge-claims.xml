@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClaimsSchema xmlns="http://schemas.microsoft.com/online/cpim/schemas/2013/06">
+  <ClaimType Id="eidasLoA"><DisplayName>eIDAS level of assurance</DisplayName><DataType>string</DataType></ClaimType>
+  <ClaimType Id="nationalIdHash"><DisplayName>Hashed national identifier</DisplayName><DataType>string</DataType></ClaimType>
+  <ClaimType Id="purpose"><DisplayName>Purpose-bound service claim</DisplayName><DataType>string</DataType></ClaimType>
+  <ClaimType Id="country"><DisplayName>Issuing country</DisplayName><DataType>string</DataType></ClaimType>
+  <!-- TODO: case-study scaffold — replace with real values when deploying -->
+</ClaimsSchema>

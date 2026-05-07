@@ -1,0 +1,25 @@
+{
+  "kind": "LogAlert",
+  "properties": {
+    "displayName": "foundry-eval-degradation",
+    "severity": 2,
+    "enabled": true,
+    "evaluationFrequency": "PT5M",
+    "windowSize": "PT15M",
+    "criteria": {
+      "allOf": [
+        {
+          "query": "FoundryEval_CL | summarize AvgScore=avg(Score) by bin(TimeGenerated, 1h) | where AvgScore < 0.85",
+          "timeAggregation": "Count",
+          "operator": "GreaterThan",
+          "threshold": 0
+        }
+      ]
+    },
+    "actions": {
+      "actionGroups": [
+        "${actionGroupId}"
+      ]
+    }
+  }
+}

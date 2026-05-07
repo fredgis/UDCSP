@@ -1,0 +1,9 @@
+version: 1
+fallbacks:
+  '*': repeat_current_prompt
+  '0': transfer_human_agent
+  '9': enable_slow_speech
+  '1': residency_application_status
+  '2': tax_certificate_status
+  '3': child_benefit_status
+  '4': notification_preferences

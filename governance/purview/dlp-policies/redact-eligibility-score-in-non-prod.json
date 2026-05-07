@@ -1,0 +1,18 @@
+{
+  "name": "redact-eligibility-score-in-non-prod",
+  "mode": "enforce",
+  "conditions": [
+    {
+      "classification": "EligibilityScore"
+    },
+    {
+      "environmentNot": "prod"
+    }
+  ],
+  "actions": [
+    {
+      "type": "redact",
+      "method": "hash-preserve-null"
+    }
+  ]
+}

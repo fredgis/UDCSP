@@ -1,0 +1,72 @@
+{"id": "CLS-001", "language": "da", "text": "Jeg vil søge om ophold i Sverige (residency-application)", "intent": "residency-application", "country": "DK", "priority": "high"}
+{"id": "CLS-002", "language": "sv", "text": "Jag behöver ett skatteintyg (tax-certificate-request)", "intent": "tax-certificate-request", "country": "SE", "priority": "normal"}
+{"id": "CLS-003", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (child-benefit)", "intent": "child-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-004", "language": "nn", "text": "Kva er status på søknaden min? (social-benefit)", "intent": "social-benefit", "country": "DK", "priority": "normal"}
+{"id": "CLS-005", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (business-registration)", "intent": "business-registration", "country": "SE", "priority": "normal"}
+{"id": "CLS-006", "language": "en", "text": "I want to move from Denmark to Sweden (status-of-application)", "intent": "status-of-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-007", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (accessibility-help)", "intent": "accessibility-help", "country": "DK", "priority": "normal"}
+{"id": "CLS-008", "language": "fr", "text": "Je veux demander une allocation enfant (complaint)", "intent": "complaint", "country": "SE", "priority": "normal"}
+{"id": "CLS-009", "language": "pl", "text": "Chcę sprawdzić status sprawy (residency-application)", "intent": "residency-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-010", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (tax-certificate-request)", "intent": "tax-certificate-request", "country": "DK", "priority": "normal"}
+{"id": "CLS-011", "language": "uk", "text": "Мені потрібна довідка про податки (child-benefit)", "intent": "child-benefit", "country": "SE", "priority": "normal"}
+{"id": "CLS-012", "language": "fi", "text": "Haluan valittaa päätöksestä (social-benefit)", "intent": "social-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-013", "language": "da", "text": "Jeg vil søge om ophold i Sverige (business-registration)", "intent": "business-registration", "country": "DK", "priority": "normal"}
+{"id": "CLS-014", "language": "sv", "text": "Jag behöver ett skatteintyg (status-of-application)", "intent": "status-of-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-015", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (accessibility-help)", "intent": "accessibility-help", "country": "NO", "priority": "normal"}
+{"id": "CLS-016", "language": "nn", "text": "Kva er status på søknaden min? (complaint)", "intent": "complaint", "country": "DK", "priority": "normal"}
+{"id": "CLS-017", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (residency-application)", "intent": "residency-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-018", "language": "en", "text": "I want to move from Denmark to Sweden (tax-certificate-request)", "intent": "tax-certificate-request", "country": "NO", "priority": "high"}
+{"id": "CLS-019", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (child-benefit)", "intent": "child-benefit", "country": "DK", "priority": "normal"}
+{"id": "CLS-020", "language": "fr", "text": "Je veux demander une allocation enfant (social-benefit)", "intent": "social-benefit", "country": "SE", "priority": "normal"}
+{"id": "CLS-021", "language": "pl", "text": "Chcę sprawdzić status sprawy (business-registration)", "intent": "business-registration", "country": "NO", "priority": "normal"}
+{"id": "CLS-022", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (status-of-application)", "intent": "status-of-application", "country": "DK", "priority": "normal"}
+{"id": "CLS-023", "language": "uk", "text": "Мені потрібна довідка про податки (accessibility-help)", "intent": "accessibility-help", "country": "SE", "priority": "normal"}
+{"id": "CLS-024", "language": "fi", "text": "Haluan valittaa päätöksestä (complaint)", "intent": "complaint", "country": "NO", "priority": "normal"}
+{"id": "CLS-025", "language": "da", "text": "Jeg vil søge om ophold i Sverige (residency-application)", "intent": "residency-application", "country": "DK", "priority": "normal"}
+{"id": "CLS-026", "language": "sv", "text": "Jag behöver ett skatteintyg (tax-certificate-request)", "intent": "tax-certificate-request", "country": "SE", "priority": "normal"}
+{"id": "CLS-027", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (child-benefit)", "intent": "child-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-028", "language": "nn", "text": "Kva er status på søknaden min? (social-benefit)", "intent": "social-benefit", "country": "DK", "priority": "normal"}
+{"id": "CLS-029", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (business-registration)", "intent": "business-registration", "country": "SE", "priority": "normal"}
+{"id": "CLS-030", "language": "en", "text": "I want to move from Denmark to Sweden (status-of-application)", "intent": "status-of-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-031", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (accessibility-help)", "intent": "accessibility-help", "country": "DK", "priority": "normal"}
+{"id": "CLS-032", "language": "fr", "text": "Je veux demander une allocation enfant (complaint)", "intent": "complaint", "country": "SE", "priority": "normal"}
+{"id": "CLS-033", "language": "pl", "text": "Chcę sprawdzić status sprawy (residency-application)", "intent": "residency-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-034", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (tax-certificate-request)", "intent": "tax-certificate-request", "country": "DK", "priority": "normal"}
+{"id": "CLS-035", "language": "uk", "text": "Мені потрібна довідка про податки (child-benefit)", "intent": "child-benefit", "country": "SE", "priority": "high"}
+{"id": "CLS-036", "language": "fi", "text": "Haluan valittaa päätöksestä (social-benefit)", "intent": "social-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-037", "language": "da", "text": "Jeg vil søge om ophold i Sverige (business-registration)", "intent": "business-registration", "country": "DK", "priority": "normal"}
+{"id": "CLS-038", "language": "sv", "text": "Jag behöver ett skatteintyg (status-of-application)", "intent": "status-of-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-039", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (accessibility-help)", "intent": "accessibility-help", "country": "NO", "priority": "normal"}
+{"id": "CLS-040", "language": "nn", "text": "Kva er status på søknaden min? (complaint)", "intent": "complaint", "country": "DK", "priority": "normal"}
+{"id": "CLS-041", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (residency-application)", "intent": "residency-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-042", "language": "en", "text": "I want to move from Denmark to Sweden (tax-certificate-request)", "intent": "tax-certificate-request", "country": "NO", "priority": "normal"}
+{"id": "CLS-043", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (child-benefit)", "intent": "child-benefit", "country": "DK", "priority": "normal"}
+{"id": "CLS-044", "language": "fr", "text": "Je veux demander une allocation enfant (social-benefit)", "intent": "social-benefit", "country": "SE", "priority": "normal"}
+{"id": "CLS-045", "language": "pl", "text": "Chcę sprawdzić status sprawy (business-registration)", "intent": "business-registration", "country": "NO", "priority": "normal"}
+{"id": "CLS-046", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (status-of-application)", "intent": "status-of-application", "country": "DK", "priority": "normal"}
+{"id": "CLS-047", "language": "uk", "text": "Мені потрібна довідка про податки (accessibility-help)", "intent": "accessibility-help", "country": "SE", "priority": "normal"}
+{"id": "CLS-048", "language": "fi", "text": "Haluan valittaa päätöksestä (complaint)", "intent": "complaint", "country": "NO", "priority": "normal"}
+{"id": "CLS-049", "language": "da", "text": "Jeg vil søge om ophold i Sverige (residency-application)", "intent": "residency-application", "country": "DK", "priority": "normal"}
+{"id": "CLS-050", "language": "sv", "text": "Jag behöver ett skatteintyg (tax-certificate-request)", "intent": "tax-certificate-request", "country": "SE", "priority": "normal"}
+{"id": "CLS-051", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (child-benefit)", "intent": "child-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-052", "language": "nn", "text": "Kva er status på søknaden min? (social-benefit)", "intent": "social-benefit", "country": "DK", "priority": "high"}
+{"id": "CLS-053", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (business-registration)", "intent": "business-registration", "country": "SE", "priority": "normal"}
+{"id": "CLS-054", "language": "en", "text": "I want to move from Denmark to Sweden (status-of-application)", "intent": "status-of-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-055", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (accessibility-help)", "intent": "accessibility-help", "country": "DK", "priority": "normal"}
+{"id": "CLS-056", "language": "fr", "text": "Je veux demander une allocation enfant (complaint)", "intent": "complaint", "country": "SE", "priority": "normal"}
+{"id": "CLS-057", "language": "pl", "text": "Chcę sprawdzić status sprawy (residency-application)", "intent": "residency-application", "country": "NO", "priority": "normal"}
+{"id": "CLS-058", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (tax-certificate-request)", "intent": "tax-certificate-request", "country": "DK", "priority": "normal"}
+{"id": "CLS-059", "language": "uk", "text": "Мені потрібна довідка про податки (child-benefit)", "intent": "child-benefit", "country": "SE", "priority": "normal"}
+{"id": "CLS-060", "language": "fi", "text": "Haluan valittaa päätöksestä (social-benefit)", "intent": "social-benefit", "country": "NO", "priority": "normal"}
+{"id": "CLS-061", "language": "da", "text": "Jeg vil søge om ophold i Sverige (business-registration)", "intent": "business-registration", "country": "DK", "priority": "normal"}
+{"id": "CLS-062", "language": "sv", "text": "Jag behöver ett skatteintyg (status-of-application)", "intent": "status-of-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-063", "language": "nb", "text": "Hvordan søker jeg barnetrygd? (accessibility-help)", "intent": "accessibility-help", "country": "NO", "priority": "normal"}
+{"id": "CLS-064", "language": "nn", "text": "Kva er status på søknaden min? (complaint)", "intent": "complaint", "country": "DK", "priority": "normal"}
+{"id": "CLS-065", "language": "se", "text": "Dárbbašan veahki jietnaráhkadusain (residency-application)", "intent": "residency-application", "country": "SE", "priority": "normal"}
+{"id": "CLS-066", "language": "en", "text": "I want to move from Denmark to Sweden (tax-certificate-request)", "intent": "tax-certificate-request", "country": "NO", "priority": "normal"}
+{"id": "CLS-067", "language": "de", "text": "Ich brauche eine Steuerbescheinigung (child-benefit)", "intent": "child-benefit", "country": "DK", "priority": "normal"}
+{"id": "CLS-068", "language": "fr", "text": "Je veux demander une allocation enfant (social-benefit)", "intent": "social-benefit", "country": "SE", "priority": "normal"}
+{"id": "CLS-069", "language": "pl", "text": "Chcę sprawdzić status sprawy (business-registration)", "intent": "business-registration", "country": "NO", "priority": "high"}
+{"id": "CLS-070", "language": "ar", "text": "أحتاج مساعدة في طلب الإقامة (status-of-application)", "intent": "status-of-application", "country": "DK", "priority": "normal"}
+{"id": "CLS-071", "language": "uk", "text": "Мені потрібна довідка про податки (accessibility-help)", "intent": "accessibility-help", "country": "SE", "priority": "normal"}
+{"id": "CLS-072", "language": "fi", "text": "Haluan valittaa päätöksestä (complaint)", "intent": "complaint", "country": "NO", "priority": "normal"}

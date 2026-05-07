@@ -1,0 +1,13 @@
+name: A14 Weekly Load
+on: { workflow_dispatch: {}, schedule: [{ cron: '0 4 * * 0' }] }
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - shell: pwsh
+        run: tests/load/scripts/Run-Load.ps1 -Scenario all
+        env: { UDCSP_APIM_BASE_URL: '${{ vars.UDCSP_APIM_BASE_URL }}', UDCSP_TEST_TOKEN: '${{ secrets.UDCSP_TEST_TOKEN }}' }
+      - uses: actions/upload-artifact@v4
+        with: { name: load-results, path: tests/load/results }

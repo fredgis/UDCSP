@@ -1,0 +1,26 @@
+{
+  "da": {
+    "locale": "da-DK",
+    "voice": "da-DK-ChristelNeural"
+  },
+  "sv": {
+    "locale": "sv-SE",
+    "voice": "sv-SE-SofieNeural"
+  },
+  "nb": {
+    "locale": "nb-NO",
+    "voice": "nb-NO-PernilleNeural"
+  },
+  "en": {
+    "locale": "en-GB",
+    "voice": "en-GB-SoniaNeural"
+  },
+  "de": {
+    "locale": "de-DE",
+    "voice": "de-DE-KatjaNeural"
+  },
+  "ar": {
+    "locale": "ar-SA",
+    "voice": "ar-SA-ZariyahNeural"
+  }
+}

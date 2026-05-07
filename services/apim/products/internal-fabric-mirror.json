@@ -1,0 +1,15 @@
+{
+  "name": "internal-fabric-mirror",
+  "displayName": "Internal Fabric Mirror",
+  "subscriptionRequired": true,
+  "approvalRequired": false,
+  "quota": {
+    "calls": 10000,
+    "renewalPeriod": "P1D"
+  },
+  "apis": [
+    "data-export",
+    "case-management",
+    "notifications"
+  ]
+}

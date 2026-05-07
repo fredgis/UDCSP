@@ -1,0 +1,10 @@
+{
+  "displayName": "UDCSP A14 Weekly Load",
+  "engineInstances": 10,
+  "environmentVariables": {
+    "UDCSP_APIM_BASE_URL": "${UDCSP_APIM_BASE_URL}"
+  },
+  "secrets": {
+    "UDCSP_TEST_TOKEN": "${UDCSP_TEST_TOKEN}"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "silver-applications",
+  "country": "DK",
+  "workspace": "udcsp-dk-data",
+  "layer": "silver",
+  "domain": "UDCSP Citizen Services",
+  "oneLakePath": "/UDCSP/dk/silver/silver-applications",
+  "sensitivityLabel": "Confidential-Citizen",
+  "description": "Validated and PII-tagged conformed citizen-service data",
+  "tables": [
+    "citizens",
+    "applications",
+    "applications_decisions",
+    "ai_decisions",
+    "conversations",
+    "sla_events"
+  ]
+}

@@ -1,0 +1,20 @@
+kind: Microsoft.CopilotStudio.VoiceDialog
+version: 1
+locale: nb
+id: intent-routing
+prompts:
+  normal: "Tell me what you need help with. You can also use the keypad."
+  slowSpeech: "Tell me what you need help with. You can also use the keypad."
+bargeIn: true
+dtmfFallback:
+  '*': repeat
+  '0': escalate_to_agent
+  '1': residency
+  '2': tax_certificate
+  '3': child_benefit
+noInput:
+  retries: 2
+  then: escalate_to_agent
+noMatch:
+  retries: 2
+  then: escalate_to_agent

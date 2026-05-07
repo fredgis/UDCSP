@@ -1,0 +1,1 @@
+<BusinessProcessFlow name="udcsp_application_intake_bpf" primaryEntity="udcsp_application"><Stages><Stage name="Receive" /><Stage name="Classify" /><Stage name="Pre-assess" /><Stage name="Caseworker review" /><Stage name="Decide" /></Stages></BusinessProcessFlow>

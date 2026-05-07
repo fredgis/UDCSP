@@ -1,0 +1,24 @@
+{
+  "name": "deny-public-ip-initiative",
+  "type": "Microsoft.Authorization/policySetDefinitions",
+  "properties": {
+    "displayName": "UDCSP deny public IP",
+    "description": "Case-study policy initiative scaffold for UDCSP landing zones.",
+    "metadata": {
+      "category": "UDCSP"
+    },
+    "parameters": {},
+    "policyDefinitions": [
+      {
+        "policyDefinitionReferenceId": "network-interfaces-should-not-have-public-ips",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      },
+      {
+        "policyDefinitionReferenceId": "public-network-access-should-be-disabled-for-paas",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+name: weekly-doc-extractor
+on: { workflow_dispatch: {}, schedule: [{ cron: "30 2 * * 1" }] }
+jobs:
+  foundry-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/eval/scripts/Run-Eval-Pipeline.ps1 -Pipeline weekly-doc-extractor -Agent doc-extractor -SuitePath foundry/evaluations/eval-suites/doc-extractor.yaml -ResultsRoot tests/eval/results
+        env: { FOUNDRY_PROJECT_ENDPOINT: '${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}', AZURE_TENANT_ID: '${{ secrets.AZURE_TENANT_ID }}' }

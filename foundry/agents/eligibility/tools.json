@@ -1,0 +1,27 @@
+{
+  "agent": "eligibility",
+  "tools": [
+    {
+      "name": "deterministic-rules-engine",
+      "type": "placeholder",
+      "description": "deterministic-rules-engine integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "case-history-lookup",
+      "type": "placeholder",
+      "description": "case-history-lookup integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "lineage-writer",
+      "type": "placeholder",
+      "description": "lineage-writer integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

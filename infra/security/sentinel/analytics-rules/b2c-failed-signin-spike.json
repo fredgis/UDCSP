@@ -1,0 +1,13 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "b2c-failed-signin-spike",
+    "enabled": true,
+    "severity": "High",
+    "query": "SigninLogs | where ResultType != 0 | summarize Failures=count() by bin(TimeGenerated, 15m) | where Failures > 100",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0
+  }
+}

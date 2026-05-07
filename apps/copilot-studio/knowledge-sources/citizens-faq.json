@@ -1,0 +1,20 @@
+{
+  "name": "udcsp-citizens-faq",
+  "type": "webOrDataverse",
+  "source": "${UDCSP_FAQ_SOURCE}",
+  "languages": [
+    "da",
+    "sv",
+    "nb",
+    "nn",
+    "se",
+    "en",
+    "de",
+    "fr",
+    "pl",
+    "ar",
+    "uk",
+    "fi"
+  ],
+  "status": "placeholder"
+}

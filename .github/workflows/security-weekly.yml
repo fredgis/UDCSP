@@ -1,0 +1,10 @@
+name: A14 Weekly Security
+on: { workflow_dispatch: {}, schedule: [{ cron: '15 5 * * 1' }] }
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/security/scripts/Run-Security.ps1 -Target staging
+        env: { UDCSP_APIM_BASE_URL: '${{ vars.UDCSP_APIM_BASE_URL }}', UDCSP_B2C_TOKEN_ENDPOINT: '${{ secrets.UDCSP_B2C_TOKEN_ENDPOINT }}' }

@@ -1,0 +1,3 @@
+import { Link } from 'react-router-dom';
+import { ChatWidget } from '../components/ChatWidget';
+export function HomePage({ locale = 'en' }: { locale?: string }) { return <><section className="hero"><h1>Unified Digital Citizen Services</h1><p>Apply once, track your case, and get help in your preferred language.</p></section><ul className="cards"><li><Link to="/apply/residency">Apply for residency transfer</Link></li><li><Link to="/apply/tax-certificate">Request tax certificate</Link></li><li><Link to="/apply/child-benefit">Apply for child benefit</Link></li><li><Link to="/cases">View my cases</Link></li></ul><ChatWidget locale={locale} /></>; }

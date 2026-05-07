@@ -1,0 +1,27 @@
+{
+  "agent": "caseworker-helper",
+  "tools": [
+    {
+      "name": "d365-case-reader",
+      "type": "placeholder",
+      "description": "d365-case-reader integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "knowledge-search",
+      "type": "placeholder",
+      "description": "knowledge-search integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "draft-response-writer",
+      "type": "placeholder",
+      "description": "draft-response-writer integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

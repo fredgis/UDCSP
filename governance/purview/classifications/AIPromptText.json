@@ -1,0 +1,19 @@
+{
+  "classificationDef": {
+    "category": "CLASSIFICATION",
+    "name": "AIPromptText",
+    "description": "Stored AI prompts or citizen utterances used by GenAI systems",
+    "typeVersion": "1.0",
+    "attributeDefs": [
+      {
+        "name": "owner",
+        "typeName": "string",
+        "isOptional": true
+      }
+    ],
+    "options": {
+      "pattern": "\\b(prompt|systemPrompt|userPrompt)\\b",
+      "minimumMatchThreshold": "0.8"
+    }
+  }
+}

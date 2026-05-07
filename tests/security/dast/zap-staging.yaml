@@ -1,0 +1,12 @@
+env:
+  contexts:
+    - name: udcsp-staging-apim
+      urls: ['${UDCSP_APIM_BASE_URL}']
+      authentication: { method: client, parameters: { tokenEndpoint: '${UDCSP_B2C_TOKEN_ENDPOINT}' } }
+jobs:
+  - type: openapi
+    parameters: { apiFile: services/apim/apis/citizen/openapi.yaml, targetUrl: '${UDCSP_APIM_BASE_URL}' }
+  - type: activeScan
+    parameters: { context: udcsp-staging-apim }
+  - type: report
+    parameters: { template: traditional-json, reportDir: tests/security/results, reportFile: zap-report.json }

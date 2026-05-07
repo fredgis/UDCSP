@@ -1,0 +1,28 @@
+{
+  "name": "block-cross-border-cpr-without-consent",
+  "mode": "enforce",
+  "conditions": [
+    {
+      "classification": "NordicNationalID"
+    },
+    {
+      "field": "consent_cross_border",
+      "equals": false
+    }
+  ],
+  "actions": [
+    {
+      "type": "block",
+      "channels": [
+        "export",
+        "share",
+        "api"
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "approval": "national-dpa-legal-basis"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "agent": "classifier",
+  "baselineDate": "2026-05-07",
+  "sourceSuite": "foundry/evaluations/eval-suites/classifier.yaml",
+  "scores": {
+    "trace-completeness": 0.99
+  },
+  "frozen": true
+}

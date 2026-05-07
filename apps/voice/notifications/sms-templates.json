@@ -1,0 +1,62 @@
+{
+  "da": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "sv": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "nb": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "nn": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "se": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "en": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "de": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "fr": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "pl": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "ar": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "uk": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  },
+  "fi": {
+    "caseSubmitted": "UDCSP: Your application was received. Case {caseId}.",
+    "caseUpdated": "UDCSP: Case {caseId} status is now {status}.",
+    "appointmentReminder": "UDCSP: Reminder for appointment {date}."
+  }
+}

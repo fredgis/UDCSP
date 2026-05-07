@@ -1,0 +1,1 @@
+<Sla name="UDCSP 4 Day Case SLA"><Kpi name="FirstResponse" failureAfter="P1D" /><Kpi name="ResolveBy" failureAfter="P4D" appliesTo="residency,tax,social-benefit,cross-border" /></Sla>

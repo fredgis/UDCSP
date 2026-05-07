@@ -1,0 +1,3 @@
+<fragment>
+  <cors allow-credentials="false"><allowed-origins><origin>{{portal-origin}}</origin></allowed-origins><allowed-methods><method>*</method></allowed-methods><allowed-headers><header>*</header></allowed-headers></cors>
+</fragment>

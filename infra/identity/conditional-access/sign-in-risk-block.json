@@ -1,0 +1,15 @@
+{
+  "displayName": "sign-in-risk-block",
+  "state": "enabledForReportingButNotEnforced",
+  "conditions": {
+    "signInRiskLevels": [
+      "high"
+    ]
+  },
+  "grantControls": {
+    "builtInControls": [
+      "block"
+    ]
+  },
+  "todo": "TODO: case-study scaffold \u2014 replace with real values when deploying"
+}

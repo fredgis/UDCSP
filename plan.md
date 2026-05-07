@@ -1,6 +1,8 @@
 # UDCSP — Multi-Agent Development Plan
 
-> Source-of-truth plan consumed by the **AI coding agents** that will implement the platform defined in [`architecture.md`](./architecture.md). This document describes **who builds what, in which order, and what runs in parallel**. No source code is included; each work package will be implemented by the assigned agent in a follow-up session.
+> Source-of-truth plan consumed by the **AI coding agents** that will implement the platform defined in [`architecture.md`](./architecture.md). This document describes **who builds what, in which order, and what runs in parallel**.
+
+> **Build status (as of last commit): all 17 work packages delivered.** See [`agents.md`](./agents.md) for the execution log (durations, models, file counts, parallelism factor). Component scaffolds live under `infra/`, `apps/`, `services/`, `foundry/`, `data/`, `governance/`, `tests/`. The orchestrator-owned installer lives under `scripts/install/`. Every component ships its own `Test-*` script — see [`installation.md`](./installation.md) §5.
 
 ---
 
@@ -300,6 +302,30 @@ graph LR
 ## 6. Work Packages — Detailed
 
 Each work package below is sized to be implemented by **one agent in one or a few sessions**. Inputs and outputs are explicit so that agents can self-validate handoffs.
+
+### Build status snapshot
+
+| WP | Vertical owner sub-agent | Status | Files | Smoke command |
+|---|---|---|---:|---|
+| A0  | orchestrator               | ✅ delivered (definition phase) |   – | n/a |
+| A1  | `agent-platform`           | ✅ scaffolded |  35 | `pwsh infra/landing-zone/scripts/validate.ps1` |
+| A2  | `agent-platform`           | ✅ scaffolded |  18 | `pwsh infra/identity/scripts/Test-IdentityFederation.ps1` |
+| A3  | `agent-platform`           | ✅ scaffolded |  10 | `pwsh infra/security/scripts/Test-SecurityBaseline.ps1` |
+| A4  | `agent-data-gov`           | ✅ scaffolded |  29 | `pwsh data/fabric/scripts/Test-Fabric.ps1 -Country dk -Offline` |
+| A5  | `agent-platform`           | ✅ scaffolded |  16 | `pwsh infra/observability/scripts/Test-Observability.ps1` |
+| A6  | `agent-foundry`            | ✅ scaffolded |  ~50 | `pwsh foundry/evaluations/scripts/Run-Evaluation.ps1` |
+| A7  | `agent-services`           | ✅ scaffolded |  76 | `pwsh services/apim/scripts/Test-Apim.ps1` + `pwsh services/logic-apps/scripts/Test-LogicApps.ps1` |
+| A8  | `agent-services`           | ✅ scaffolded |  26 | `pwsh apps/d365/scripts/Test-D365.ps1` |
+| A9  | `agent-frontend`           | ✅ scaffolded |  ~75 | `npm run test --prefix apps/web` |
+| A10 | `agent-frontend`           | ✅ scaffolded |  ~33 | `pwsh apps/voice/scripts/Test-Voice.ps1` |
+| A11 | `agent-foundry`            | ✅ scaffolded |  ~13 | `pwsh apps/copilot-studio/scripts/Import-CopilotStudio.ps1` |
+| A12 | `agent-foundry` + `agent-qa` | ✅ scaffolded |  ~25 | `pwsh apps/web/i18n/scripts/Validate-Translations.ps1` + `pwsh tests/accessibility/scripts/Run-Accessibility.ps1` |
+| A13 | `agent-data-gov`           | ✅ scaffolded |  35 | `pwsh governance/purview/scripts/Test-Purview.ps1 -Offline` + `pwsh governance/ai-act/scripts/Validate-AIRegistry.ps1` |
+| A14 | `agent-qa`                 | ✅ scaffolded |  89 | `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly` |
+| A15 | `agent-foundry`            | ✅ scaffolded |  ~55 | `pwsh data/synthetic/scripts/Validate-Synthetic.ps1` |
+| A16 | orchestrator               | ✅ delivered |  19 | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` |
+
+The full per-vertical breakdown of files and durations is in [`agents.md`](./agents.md) §3.
 
 ### A0 · Platform Architect
 - **Inputs:** [`README.md`](./README.md), [`architecture.md`](./architecture.md), [`case-study-11.md`](./case-study-11.md).

@@ -1,0 +1,45 @@
+# --- UDCSP installer artefacts ---
+scripts/install/config/udcsp.config.psd1
+scripts/install/reports/
+
+# --- Node ---
+node_modules/
+dist/
+.next/
+.turbo/
+.expo/
+coverage/
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Bicep / Azure ---
+.bicep/
+*.bicep.bak
+azuredeploy.parameters.local.json
+
+# --- Editor / OS ---
+.vscode/*.local.*
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Test outputs ---
+tests/**/results/
+tests/**/playwright-report/
+tests/**/test-results/
+tests/eval/results/
+tests/load/k6/results/
+
+# --- Secrets ---
+*.pem
+*.pfx
+*.env
+.env.local
+
+# --- Foundry / D365 local cache ---
+foundry/.cache/
+apps/d365/.pac/

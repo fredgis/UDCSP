@@ -1,0 +1,7 @@
+.skip-link { position:absolute; left:-999px; top:0; background:#111827; color:#fff; padding:.75rem; z-index:10; }
+.skip-link:focus { left:1rem; }
+.high-contrast { --color-bg:#000; --color-fg:#fff; --color-primary:#ffff00; --color-primary-contrast:#000; --color-focus:#00ffff; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+.spinner-dot { display:inline-block; inline-size:1rem; block-size:1rem; margin-inline-end:.5rem; border-radius:50%; background:currentColor; animation:pulse 1s infinite alternate; }
+@keyframes pulse { from { opacity:.25; } to { opacity:1; } }

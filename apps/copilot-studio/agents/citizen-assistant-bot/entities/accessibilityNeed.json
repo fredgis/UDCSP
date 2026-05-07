@@ -1,0 +1,11 @@
+{
+  "name": "accessibilityNeed",
+  "kind": "closedList",
+  "values": [
+    "screen-reader",
+    "voice-only",
+    "cognitive-support",
+    "mobility-support",
+    "none"
+  ]
+}

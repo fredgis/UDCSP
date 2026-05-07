@@ -1,0 +1,7 @@
+{
+  "name": "EventGrid",
+  "type": "serviceProvider",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/eventgrid-connection",
+  "owner": "A7"
+}

@@ -1,0 +1,6 @@
+{"id": "gq-uk-01", "language": "uk", "query": "Мені потрібна довідка про податки #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-uk-02", "language": "uk", "query": "Мені потрібна довідка про податки #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-uk-03", "language": "uk", "query": "Мені потрібна довідка про податки #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-uk-04", "language": "uk", "query": "Мені потрібна довідка про податки #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-uk-05", "language": "uk", "query": "Мені потрібна довідка про податки #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-uk-06", "language": "uk", "query": "Мені потрібна довідка про податки #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

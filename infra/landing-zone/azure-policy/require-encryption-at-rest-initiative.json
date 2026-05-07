@@ -1,0 +1,24 @@
+{
+  "name": "require-encryption-at-rest-initiative",
+  "type": "Microsoft.Authorization/policySetDefinitions",
+  "properties": {
+    "displayName": "UDCSP encryption at rest",
+    "description": "Case-study policy initiative scaffold for UDCSP landing zones.",
+    "metadata": {
+      "category": "UDCSP"
+    },
+    "parameters": {},
+    "policyDefinitions": [
+      {
+        "policyDefinitionReferenceId": "storage-accounts-should-use-encryption",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      },
+      {
+        "policyDefinitionReferenceId": "key-vault-purge-protection-should-be-enabled",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "agent": "citizen-assistant",
+  "tools": [
+    {
+      "name": "knowledge-search",
+      "type": "placeholder",
+      "description": "knowledge-search integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "foundry-classifier",
+      "type": "placeholder",
+      "description": "foundry-classifier integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "content-safety",
+      "type": "placeholder",
+      "description": "content-safety integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "handoff-to-copilot-studio",
+      "type": "placeholder",
+      "description": "handoff-to-copilot-studio integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

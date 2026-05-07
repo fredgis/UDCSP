@@ -1,0 +1,17 @@
+{
+  "name": "citizen-portal",
+  "displayName": "Citizen Portal",
+  "subscriptionRequired": true,
+  "approvalRequired": false,
+  "quota": {
+    "calls": 10000,
+    "renewalPeriod": "P1D"
+  },
+  "apis": [
+    "citizen-applications",
+    "documents",
+    "notifications",
+    "data-export",
+    "agent-citizen-assistant"
+  ]
+}

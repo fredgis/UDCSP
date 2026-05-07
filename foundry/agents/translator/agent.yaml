@@ -1,0 +1,32 @@
+name: udcsp-translator
+description: Translates citizen and caseworker text across 12 supported languages using Azure AI Translator and UDCSP glossary.
+model: gpt-5.4
+systemPromptFile: system-prompt.md
+tools:
+  - azure-ai-translator
+  - terminology-glossary
+  - back-translation-qa
+temperature: 0.2
+maxTokens: 3000
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+evaluationSuite: ../../evaluations/eval-suites/translator.yaml
+owner: A6 · Foundry & AI
+riskLevel: limited
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 1.2 s for 2k chars; availability 99.9%"
+registryEntryRef: governance-ai-act://udcsp/translator/v1
