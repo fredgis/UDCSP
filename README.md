@@ -27,11 +27,11 @@ Three Nordic governments collectively serve **2.1 million citizens** through **4
 
 UDCSP is **one** federated platform that:
 
-- 🌐 **Unifies the front door** for citizens across web, mobile, and telephone in **12 languages**.
+- 🌐 **Unifies the front door** — the 47 national portals are rationalised into a single citizen experience across web, mobile and telephone in **12 languages**, **multilingual and inclusive by design** (voice, screen-reader, plain language) — while each country keeps its sovereign back-office systems intact.
 - 🔐 **Federates identity** across the three countries while preserving national data sovereignty.
-- 🧠 **Puts AI at the center** — a Microsoft Foundry-hosted set of agents and models classifies requests, translates content, pre-determines benefit eligibility, and answers citizen questions in natural language.
+- 🧠 **Puts AI at the center, under human control** — a Microsoft Foundry-hosted set of agents and models classifies requests, translates content, pre-determines benefit eligibility and answers citizen questions in natural language. **Every model recommendation is traceable, explainable and systematically validated or adjusted by a human caseworker** before any final decision (AI-first, but supervised).
 - ⚙️ **Automates back-office routing** through Azure Logic Apps and a Dynamics 365 case-management spine.
-- 📊 **Closes the loop** with a unified data and governance layer powered by Microsoft Fabric, Power BI, and Microsoft Purview — keeping the platform compliant with **GDPR, the EU AI Act, and sector-specific EU directives** by design.
+- 📊 **Closes the loop** with a unified data and governance layer powered by Microsoft Fabric, Power BI and **Microsoft Purview** — a single governance fabric (catalog, AI Act registry, end-to-end traceability) that makes cross-border data sharing strictly compliant with **GDPR, the EU AI Act and sector-specific EU directives — by design, not as an afterthought**.
 
 > [!IMPORTANT]
 > **Target outcomes:** applications processed in **4 days instead of 28**, **+38 % citizen satisfaction**, **WCAG 2.1 AA** accessibility, and **2.1 M citizens** served via a single federated front door — without compromising national data sovereignty.
