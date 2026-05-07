@@ -40,141 +40,132 @@ UDCSP is **one** federated platform that:
 
 ## 📈 Before vs After at a Glance
 
-<table align="center">
-<tr>
-<th width="42%" align="center">
+```mermaid
+graph LR
+    Before["⏳ <b>Today</b><br/>━━━━━━━━━━━<br/>📂 47 portals<br/>📅 28-day decisions<br/>🚫 No federation<br/>🗣️ Partial languages<br/>♿ A11y gaps<br/>🧩 Conflicting DPA rules"]
+    UDCSP(["🇩🇰 🇸🇪 🇳🇴<br/><b>UDCSP</b>"])
+    After["🚀 <b>Tomorrow</b><br/>━━━━━━━━━━━<br/>🏛️ 1 platform · 3 zones<br/>📅 4-day decisions<br/>🔐 2.1 M federated<br/>🗣️ 12 languages<br/>♿ WCAG 2.1 AA<br/>🤖 AI at every step"]
 
-### ⏳ Today
+    Before ==> UDCSP ==> After
 
-</th>
-<th width="16%" align="center">
-
-### ✨
-
-</th>
-<th width="42%" align="center">
-
-### 🚀 Tomorrow
-
-</th>
-</tr>
-<tr valign="top">
-<td>
-
-📂 &nbsp; **47 portals** — fragmented
-
-📅 &nbsp; **28-day** decisions
-
-🚫 &nbsp; No identity federation
-
-🗣️ &nbsp; Partial language coverage
-
-♿ &nbsp; Accessibility gaps
-
-🧩 &nbsp; Conflicting DPA rules
-
-</td>
-<td align="center">
-
-🇩🇰 &nbsp; 🇸🇪 &nbsp; 🇳🇴
-
-**UDCSP**
-
-🤖 ➜ 🏛️
-
-</td>
-<td>
-
-🏛️ &nbsp; **1 platform** · 3 zones
-
-📅 &nbsp; **4-day** decisions
-
-🔐 &nbsp; **2.1 M citizens** federated
-
-🗣️ &nbsp; **12 languages** native parity
-
-♿ &nbsp; **WCAG 2.1 AA** throughout
-
-🤖 &nbsp; **AI** at every step
-
-</td>
-</tr>
-</table>
+    style Before fill:#d73a49,stroke:#b31d28,color:#fff
+    style UDCSP fill:#8957e5,stroke:#6e40c9,color:#fff
+    style After fill:#2ea44f,stroke:#238636,color:#fff
+```
 
 ---
 
 ## 🏛️ Simplified Architecture
 
-<div align="center">
+```mermaid
+graph TB
+    subgraph Citizens[" 👥 Citizens · 2.1 M · 12 languages "]
+        DK["🇩🇰 Denmark"]
+        SE["🇸🇪 Sweden"]
+        NO["🇳🇴 Norway"]
+    end
 
-### 👥 &nbsp; 2.1 M Citizens · 12 Languages
+    subgraph Channels[" 🌐 Omnichannel front door "]
+        Web["Web Portal"]
+        Mobile["Mobile App"]
+        Voice["Voice / IVR"]
+    end
 
-🇩🇰 &nbsp; Denmark &nbsp;·&nbsp; 🇸🇪 &nbsp; Sweden &nbsp;·&nbsp; 🇳🇴 &nbsp; Norway
+    subgraph Identity[" 🔐 Cross-border identity "]
+        Entra["Microsoft Entra ID"]
+        B2C["Azure AD B2C"]
+        eIDAS["eIDAS bridge"]
+    end
 
-⬇️
+    APIM["🚪 Azure API Management"]
 
-### 🌐 &nbsp; Omnichannel Front Door
+    subgraph Foundry[" 🧠 Microsoft AI Foundry "]
+        OpenAI["Azure OpenAI<br/>(via Foundry only)"]
+        Classifier["Classifier"]
+        Translator["Translator"]
+        Eligibility["Eligibility"]
+        Assistant["Citizen Assistant"]
+        DocExtractor["Doc Extractor"]
+    end
 
-💻 &nbsp; Web Portal &nbsp;·&nbsp; 📱 &nbsp; Mobile App &nbsp;·&nbsp; ☎️ &nbsp; Voice / IVR
+    subgraph Process[" ⚙️ Workflow + cases "]
+        LogicApps["Azure Logic Apps<br/>28d ➜ 4d"]
+        D365["Dynamics 365<br/>Customer Service"]
+    end
 
-⬇️
+    subgraph DataPlatform[" 📊 Data & insights "]
+        Fabric[("Microsoft Fabric")]
+        PowerBI["Power BI"]
+    end
 
-### 🔐 &nbsp; Cross-Border Identity
+    subgraph Governance[" 🛡️ Trust & governance "]
+        Purview["Microsoft Purview"]
+        GDPR["GDPR"]
+        AIAct["EU AI Act"]
+        WCAG["WCAG 2.1 AA"]
+    end
 
-![Entra ID](https://img.shields.io/badge/Microsoft-Entra%20ID-5E35B1?style=for-the-badge&labelColor=311B92)
-![Azure AD B2C](https://img.shields.io/badge/Azure-AD%20B2C-5E35B1?style=for-the-badge&labelColor=311B92)
-![eIDAS](https://img.shields.io/badge/eIDAS-bridge-5E35B1?style=for-the-badge&labelColor=311B92)
+    DK & SE & NO --> Web & Mobile & Voice
+    Web & Mobile & Voice --> Entra
+    Web & Mobile & Voice --> B2C
+    eIDAS --> Entra
+    Entra --> APIM
+    B2C --> APIM
+    APIM --> OpenAI
+    APIM --> LogicApps
+    Foundry --> LogicApps
+    LogicApps --> D365
+    D365 --> Fabric
+    Fabric --> PowerBI
+    Foundry -.->|traces + evals| Fabric
+    Purview -.->|governs| APIM
+    Purview -.->|governs| Foundry
+    Purview -.->|governs| Fabric
+    Purview -.->|governs| D365
 
-⬇️
+    style Citizens fill:transparent,stroke:#2ea44f,stroke-width:2px,color:#2ea44f
+    style Channels fill:transparent,stroke:#2ea44f,stroke-dasharray:4,color:#555
+    style Identity fill:transparent,stroke:#8957e5,stroke-width:2px,color:#8957e5
+    style Foundry fill:transparent,stroke:#8957e5,stroke-width:2px,color:#8957e5
+    style Process fill:transparent,stroke:#e36209,stroke-width:2px,color:#e36209
+    style DataPlatform fill:transparent,stroke:#1565c0,stroke-width:2px,color:#1565c0
+    style Governance fill:transparent,stroke:#d73a49,stroke-width:2px,color:#d73a49
 
-### 🚪 &nbsp; API Gateway
+    style DK fill:#2ea44f,stroke:#238636,color:#fff
+    style SE fill:#2ea44f,stroke:#238636,color:#fff
+    style NO fill:#2ea44f,stroke:#238636,color:#fff
+    style Web fill:#2ea44f,stroke:#238636,color:#fff
+    style Mobile fill:#2ea44f,stroke:#238636,color:#fff
+    style Voice fill:#2ea44f,stroke:#238636,color:#fff
 
-![APIM](https://img.shields.io/badge/Azure-API%20Management-00897B?style=for-the-badge&labelColor=004D40)
+    style Entra fill:#8957e5,stroke:#6e40c9,color:#fff
+    style B2C fill:#8957e5,stroke:#6e40c9,color:#fff
+    style eIDAS fill:#8957e5,stroke:#6e40c9,color:#fff
 
-⬇️
+    style APIM fill:#e36209,stroke:#c24e00,color:#fff
 
-### 🧠 &nbsp; AI Brain — Microsoft Foundry
+    style OpenAI fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Classifier fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Translator fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Eligibility fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Assistant fill:#8957e5,stroke:#6e40c9,color:#fff
+    style DocExtractor fill:#8957e5,stroke:#6e40c9,color:#fff
 
-![Azure OpenAI](https://img.shields.io/badge/✨-Azure%20OpenAI-E65100?style=for-the-badge&labelColor=BF360C)
-![Classifier](https://img.shields.io/badge/🎯-Classifier-E65100?style=for-the-badge&labelColor=BF360C)
-![Translator](https://img.shields.io/badge/🌍-Translator-E65100?style=for-the-badge&labelColor=BF360C)
+    style LogicApps fill:#e36209,stroke:#c24e00,color:#fff
+    style D365 fill:#e36209,stroke:#c24e00,color:#fff
 
-![Eligibility](https://img.shields.io/badge/⚖️-Eligibility-E65100?style=for-the-badge&labelColor=BF360C)
-![Citizen Assistant](https://img.shields.io/badge/🤖-Citizen%20Assistant-E65100?style=for-the-badge&labelColor=BF360C)
-![Doc Extractor](https://img.shields.io/badge/📄-Doc%20Extractor-E65100?style=for-the-badge&labelColor=BF360C)
+    style Fabric fill:#1565c0,stroke:#0d47a1,color:#fff
+    style PowerBI fill:#1565c0,stroke:#0d47a1,color:#fff
 
-⬇️
+    style Purview fill:#d73a49,stroke:#b31d28,color:#fff
+    style GDPR fill:#d73a49,stroke:#b31d28,color:#fff
+    style AIAct fill:#d73a49,stroke:#b31d28,color:#fff
+    style WCAG fill:#d73a49,stroke:#b31d28,color:#fff
+```
 
-### ⚙️ &nbsp; Workflow Orchestration
+Blue = data, green = citizens / channels, orange = backend & process, purple = AI / identity, red = governance.
 
-![Logic Apps](https://img.shields.io/badge/Azure-Logic%20Apps-F9A825?style=for-the-badge&labelColor=F57F17)
-![Speed-up](https://img.shields.io/badge/28%20days-➜%204%20days-F9A825?style=for-the-badge&labelColor=F57F17)
-
-⬇️
-
-### 📋 &nbsp; Case Management
-
-![D365](https://img.shields.io/badge/Dynamics%20365-Customer%20Service-AD1457?style=for-the-badge&labelColor=880E4F)
-
-⬇️
-
-### 📊 &nbsp; Data & Insights
-
-![Fabric](https://img.shields.io/badge/Microsoft-Fabric-2E7D32?style=for-the-badge&labelColor=1B5E20)
-![Power BI](https://img.shields.io/badge/Power%20BI-📈-2E7D32?style=for-the-badge&labelColor=1B5E20)
-
----
-
-#### 🛡️ &nbsp; Wrapped end-to-end by Trust & Governance
-
-![Purview](https://img.shields.io/badge/Microsoft-Purview-C62828?style=for-the-badge&labelColor=B71C1C)
-![GDPR](https://img.shields.io/badge/GDPR-✓-C62828?style=for-the-badge&labelColor=B71C1C)
-![EU AI Act](https://img.shields.io/badge/EU%20AI%20Act-✓-C62828?style=for-the-badge&labelColor=B71C1C)
-![WCAG](https://img.shields.io/badge/WCAG%202.1%20AA-✓-C62828?style=for-the-badge&labelColor=B71C1C)
-
-</div>
-
-> 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom — channels → identity → gateway → **Foundry AI brain** → workflow → case spine → data — while **Trust & Governance wraps every layer**.
+> 📖 **Reading the diagram:** citizens enter through web, mobile or voice; their identity is federated through Entra ID and B2C (with eIDAS for cross-border login); requests are gated by API Management and routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365 and analytics flow into Fabric + Power BI. **Microsoft Purview governs every layer.**
 >
 > 👉 *Looking for the deep technical diagrams?* See [`architecture.md`](./architecture.md) — it keeps the full Mermaid views (data flows, AI request lifecycle, deployment topology, installer flow, …).
 
