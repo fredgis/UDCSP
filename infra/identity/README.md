@@ -3,7 +3,7 @@
 ## Purpose
 Scaffold **Microsoft Entra External ID** (CIAM) per-country tenants, user flows, custom authentication extensions, eIDAS bridge, **Microsoft Entra ID** (workforce) Conditional Access baselines, PIM eligibility templates, and federation test helpers for DK/SE/NO.
 
-> **Identity deviation note** — The case study lists **Azure AD B2C** as a mandatory service. As of **1 May 2025** Microsoft no longer offers Azure AD B2C to new customers, and recommends **Microsoft Entra External ID** as the successor product. We adopt that successor here. See [docs/architecture.md § Identity deviation](../../docs/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate) for the full rationale and capability mapping.
+> **Identity deviation note** — The case study lists **Azure AD B2C** as a mandatory service. As of **1 May 2025** Microsoft no longer offers Azure AD B2C to new customers, and recommends **Microsoft Entra External ID** as the successor product. We adopt that successor here. See [docs/tech/architecture.md § Identity deviation](../../docs/tech/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate) for the full rationale and capability mapping.
 
 ## Layout
 - `external-id/dk-external-id.bicep`, `se-external-id.bicep`, `no-external-id.bicep` — per-country External (CIAM) tenants via `Microsoft.AzureActiveDirectory/ciamDirectories`.

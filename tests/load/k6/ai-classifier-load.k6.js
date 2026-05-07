@@ -1,4 +1,4 @@
-// Scenario ID: D1-D4 from docs/uses.md — 50 RPS APIM classifier.
+// Scenario ID: D1-D4 from docs/biz/uses.md — 50 RPS APIM classifier.
 // Eval matrix rows: 5,6,13,15.
 // TODO: case-study scaffold. k6 exports JSON consumed by Generate-Load-Report.ps1.
 import http from 'k6/http'; import { check, sleep } from 'k6'; import { Trend, Rate } from 'k6/metrics';

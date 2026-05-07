@@ -2,7 +2,7 @@
 
 > **Audience:** evaluators and platform owners walking through the platform end-to-end after install.
 >
-> **Goal:** prove that every requirement in [`case-study-11.md`](./case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
+> **Goal:** prove that every requirement in [`case-study-11.md`](../biz/case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
 
 Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from `uses.md`** it satisfies.
 
@@ -184,7 +184,7 @@ The HTML report it produces is the **single artefact** to attach to the case-stu
 
 ## 11. Eval-matrix coverage map
 
-This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../README.md#evaluation-criteria-matrix-coverage):
+This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#evaluation-criteria-matrix-coverage):
 
 | Row | Criterion | Covered by recipe step |
 |---|---|---|

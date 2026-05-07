@@ -1,4 +1,4 @@
-// Scenario ID: D9 from docs/uses.md — Henrik CIO cockpit.
+// Scenario ID: D9 from docs/biz/uses.md — Henrik CIO cockpit.
 // Eval matrix rows: 1,2,3,4,8,10,12,13,14,15,16.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

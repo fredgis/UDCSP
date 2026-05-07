@@ -87,7 +87,7 @@ Green = citizens / channels, purple = identity & AI, orange = backend & process,
 
 > 📖 **Reading the diagram:** citizens enter through web, mobile or voice; identity is federated and gated by API Management; requests are routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365 and analytics flow into Fabric + Power BI. **Microsoft Purview wraps every layer.**
 >
-> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/architecture.md#21-high-level-view-whole-platform) for the same picture with every Foundry agent, identity service and country flag broken out, then §2.2+ for the deep-dive layer breakdown, data flows, AI request lifecycle, deployment topology, and installer flow.
+> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform) for the same picture with every Foundry agent, identity service and country flag broken out, then §2.2+ for the deep-dive layer breakdown, data flows, AI request lifecycle, deployment topology, and installer flow.
 
 ---
 
@@ -139,9 +139,9 @@ All nine services from the case study are first-class citizens of the platform �
 | 🟨 | 8 | **Azure Logic Apps** | Workflow orchestration of the 4-day end-to-end process across agencies. |
 | 🟩 | 9 | **Power BI** | Operational, executive, citizen-facing, and auditor dashboards on top of Fabric. |
 
-> ¹ **Substitution note** — the case study lists *Azure AD B2C* as the citizen-identity service. **Azure AD B2C is no longer available to new customers as of 1 May 2025**; Microsoft's official successor is **Microsoft Entra External ID**, which UDCSP adopts. Full rationale and feature-by-feature mapping in [`docs/architecture.md` § 14.0 — Identity deviation](./docs/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
+> ¹ **Substitution note** — the case study lists *Azure AD B2C* as the citizen-identity service. **Azure AD B2C is no longer available to new customers as of 1 May 2025**; Microsoft's official successor is **Microsoft Entra External ID**, which UDCSP adopts. Full rationale and feature-by-feature mapping in [`docs/tech/architecture.md` § 14.0 — Identity deviation](./docs/tech/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
 
-> 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./docs/architecture.md).
+> 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./docs/tech/architecture.md).
 
 ---
 
@@ -157,7 +157,7 @@ UDCSP is delivered by a swarm of **17 specialised AI coding agents**, organised 
 > [!TIP]
 > **From zero to running platform in one command.** Once Wave 4 closes, an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
 
-The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./docs/plan.md).
+The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./docs/tech/plan.md).
 
 ---
 
@@ -177,7 +177,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO) + 9 lakehouses + notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
-| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/installation.md). |
+| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |
 | ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
 | 📑 `agents.md` · `installation.md` · `recipe.md` | Build execution log · install procedure · acceptance walk-through. |
 
@@ -217,30 +217,41 @@ The table below maps every requirement and outcome stated in the case study to t
 | Audience | Start with |
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
-| 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
-| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
-| 🏗️ **Architects** | [`architecture.md`](./docs/architecture.md) — deep-dive across 15 sections. |
-| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
-| 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./docs/architecture.md). |
-| 📚 **Original case study** | [`case-study-11.md`](./docs/case-study-11.md). |
+| 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
+| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
+| 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
+| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
+| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
+| 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./docs/tech/architecture.md). |
+| 📚 **Original case study** | [`case-study-11.md`](./docs/biz/case-study-11.md). |
 
 ---
 
 ## 🗂️ All Documentation
 
-Every markdown lives under [`docs/`](./docs/). One file per concern, each readable on its own.
+Every markdown lives under [`docs/`](./docs/), split into two clear families. One file per concern, each readable on its own.
+
+### 💼 Business documents — [`docs/biz/`](./docs/biz/)
+
+For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
 
 | 📄 File | 🎯 Purpose | 👤 Best for |
 |---|---|---|
-| [`docs/case-study-11.md`](./docs/case-study-11.md) | The verbatim case study brief — the source of truth for what UDCSP must deliver. | Everyone (read first to understand the constraints). |
-| [`docs/architecture.md`](./docs/architecture.md) | Full platform deep-dive — 15 sections covering principles, logical architecture, sovereignty topology, identity federation, AI architecture, integration, case management, data, governance, security, observability, multilingual strategy, end-to-end flows, service inventory, deployment. | Architects, tech leads. |
-| [`docs/ai.md`](./docs/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
-| [`docs/uses.md`](./docs/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
-| [`docs/recipe.md`](./docs/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
-| [`docs/installation.md`](./docs/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
-| [`docs/plan.md`](./docs/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
-| [`docs/agents.md`](./docs/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
+| [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
+| [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
+| [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
+
+### 🛠️ Technical documents — [`docs/tech/`](./docs/tech/)
+
+For architects, builders, operators, and reviewers of the implementation itself.
+
+| 📄 File | 🎯 Purpose | 👤 Best for |
+|---|---|---|
+| [`docs/tech/architecture.md`](./docs/tech/architecture.md) | Full platform deep-dive — 15 sections covering principles, logical architecture, sovereignty topology, identity federation, AI architecture, integration, case management, data, governance, security, observability, multilingual strategy, end-to-end flows, service inventory, deployment. | Architects, tech leads. |
+| [`docs/tech/plan.md`](./docs/tech/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
+| [`docs/tech/agents.md`](./docs/tech/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
+| [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
+| [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
 
 > All eight files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
