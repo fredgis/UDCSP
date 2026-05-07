@@ -17,8 +17,9 @@
 9. [Governance, Compliance & EU AI Act](#9-governance-compliance--eu-ai-act)
 10. [Security & Network Architecture](#10-security--network-architecture)
 11. [Observability & Operations](#11-observability--operations)
-12. [End-to-End Flow Examples](#12-end-to-end-flow-examples)
-13. [Service Inventory](#13-service-inventory)
+12. [Multilingual & Inclusivity Strategy](#12-multilingual--inclusivity-strategy)
+13. [End-to-End Flow Examples](#13-end-to-end-flow-examples)
+14. [Service Inventory](#14-service-inventory)
 
 ---
 
@@ -632,9 +633,74 @@ graph TB
 
 ---
 
-## 12. End-to-End Flow Examples
+## 12. Multilingual & Inclusivity Strategy
 
-### 12.1 Cross-border residency transfer (DK citizen moving to SE)
+UDCSP treats **language and accessibility as first-class platform invariants**. Every layer is designed to behave correctly in the **12 supported languages** and to be usable by citizens with disabilities.
+
+### 12.1 Language Coverage Matrix
+
+| Layer | Component | How multilingualism is implemented |
+|---|---|---|
+| Channels — Web | Static Web Apps + design system | **ICU MessageFormat** for plurals/genders; per-locale resource bundles; language switcher; locale-aware date/number formatting; right-to-left support where applicable. |
+| Channels — Mobile | Mobile shell | Same i18n pipeline; OS-level locale propagation. |
+| Channels — Voice | ACS + Azure AI Speech | STT/TTS configured per language; per-locale lexicons for civic terminology; barge-in supported in all languages. |
+| Conversational AI | Microsoft Copilot Studio | Topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules. |
+| AI Brain — Classifier | Foundry agent | Multilingual model; eval set covers all 12 languages with golden examples per agency type. |
+| AI Brain — Translator | Foundry agent | Hybrid Azure OpenAI + Azure AI Translator; **glossary** per agency to preserve administrative terminology; quality gate before outbound communication. |
+| AI Brain — Citizen Assistant | Foundry agent | RAG knowledge base indexed per language; cross-lingual retrieval as fallback; safety filters per locale. |
+| AI Brain — Eligibility | Foundry agent | Decision lineage and reasoning translated for caseworker + citizen views; never auto-translates legal text without human review. |
+| AI Brain — Document Extractor | AI Document Intelligence + LLM | Multilingual OCR; field labels normalised to a canonical schema; per-country document templates supported. |
+| Case Management | D365 Customer Service | Multilingual KB; per-language SLA queues; caseworker UI in their working language; outbound mail templates per locale, edited before send. |
+| Notifications | Azure Communication Services | Templates per locale (email, SMS, voice); fallback to citizen-preferred language. |
+| Data & Insights | Microsoft Fabric + Power BI | Locale dimension on every fact table; semantic models slice CSAT, accuracy, SLA, and content-safety metrics **by language** to detect inequity. |
+| Governance | Purview | Sensitivity labels and policies localised; DPIAs available per language; AI Act registry includes per-language evaluation evidence. |
+
+### 12.2 The 12 Languages
+
+Coverage targets the **official**, **most-common minority** and **cross-border working** languages of Denmark, Sweden, and Norway as required by the **EU Single Digital Gateway**:
+
+1. Danish, 2. Swedish, 3. Norwegian Bokmål, 4. Norwegian Nynorsk, 5. Sámi (Northern), 6. English, 7. German, 8. French, 9. Polish, 10. Arabic, 11. Ukrainian, 12. Finnish.
+
+> The exact list will be ratified per country DPA / language council in Wave 0; the platform is designed to add or substitute languages without code changes.
+
+### 12.3 Accessibility Strategy (WCAG 2.1 AA)
+
+| Practice | How |
+|---|---|
+| **Design system first** | Audited, accessible components shared across all citizen portals; no ad-hoc UI. |
+| **Automated CI gate** | `axe-core` and Lighthouse accessibility audits run on every PR; build fails below the agreed threshold. |
+| **Manual audit** | Annual third-party WCAG 2.1 AA audit per portal; findings tracked as platform debt. |
+| **Voice channel parity** | Citizens who cannot use a screen can complete every primary journey via the voice channel (ACS + Speech). |
+| **Caseworker assistance** | Caseworkers can complete forms on behalf of citizens and capture verifiable consent. |
+| **Plain language** | Foundry **Citizen Assistant** is prompted to reply in plain, jargon-free language at a defined reading level per locale. |
+| **Accessibility statements** | Each portal publishes a per-locale accessibility statement and a feedback channel routed to D365. |
+
+### 12.4 Multilingual Test & Evaluation Loop
+
+```mermaid
+graph LR
+    SYNTH["Synthetic personas & content<br/>(A15 — 12 languages)"]
+    EVALS["Foundry evaluations per language<br/>accuracy · BLEU · safety · bias"]
+    PROD["Production traffic<br/>(traced & sampled)"]
+    DRIFT["Drift & equity monitor<br/>per-language KPIs in Power BI"]
+    BACK["Caseworker feedback loop<br/>flag mistranslations / bad answers"]
+    SYNTH --> EVALS
+    PROD --> DRIFT
+    BACK --> EVALS
+    DRIFT --> EVALS
+    EVALS -. blocks promotion .-> PROD
+
+    classDef a fill:#FFF3E0,stroke:#E65100,color:#BF360C
+    classDef b fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    class SYNTH,EVALS a
+    class PROD,DRIFT,BACK b
+```
+
+---
+
+## 13. End-to-End Flow Examples
+
+### 13.1 Cross-border residency transfer (DK citizen moving to SE)
 
 ```mermaid
 sequenceDiagram
@@ -671,7 +737,7 @@ sequenceDiagram
     D365-->>Citizen: Final decision (4 days target)
 ```
 
-### 12.2 Citizen Assistant (voice) answering a tax question
+### 13.2 Citizen Assistant (voice) answering a tax question
 
 ```mermaid
 sequenceDiagram
@@ -703,9 +769,9 @@ sequenceDiagram
 
 ---
 
-## 13. Service Inventory
+## 14. Service Inventory
 
-### 13.1 Mandatory (case study)
+### 14.1 Mandatory (case study)
 
 | Service | Where it lives in the architecture |
 |---|---|
@@ -719,7 +785,7 @@ sequenceDiagram
 | Azure Logic Apps | §6 Integration & Workflow Architecture |
 | Power BI | §8 Data & Analytics Architecture |
 
-### 13.2 Additional Azure services included in the platform
+### 14.2 Additional Azure services included in the platform
 
 | Service | Role |
 |---|---|
