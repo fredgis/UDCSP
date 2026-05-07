@@ -43,6 +43,122 @@
 
 ## 2. Logical Architecture
 
+### 2.1 High-level view (whole-platform)
+
+This is the same diagram surfaced in [`README.md`](./README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
+
+```mermaid
+graph TB
+    subgraph Citizens[" 👥 Citizens · 2.1 M · 12 languages "]
+        DK["🇩🇰 Denmark"]
+        SE["🇸🇪 Sweden"]
+        NO["🇳🇴 Norway"]
+    end
+
+    subgraph Channels[" 🌐 Omnichannel front door "]
+        Web["Web Portal"]
+        Mobile["Mobile App"]
+        Voice["Voice / IVR"]
+    end
+
+    subgraph Identity[" 🔐 Cross-border identity "]
+        Entra["Microsoft Entra ID"]
+        B2C["Azure AD B2C"]
+        eIDAS["eIDAS bridge"]
+    end
+
+    APIM["🚪 Azure API Management"]
+
+    subgraph Foundry[" 🧠 Microsoft AI Foundry "]
+        OpenAI["Azure OpenAI<br/>(via Foundry only)"]
+        Classifier["Classifier"]
+        Translator["Translator"]
+        Eligibility["Eligibility"]
+        Assistant["Citizen Assistant"]
+        DocExtractor["Doc Extractor"]
+    end
+
+    subgraph Process[" ⚙️ Workflow + cases "]
+        LogicApps["Azure Logic Apps<br/>28d ➜ 4d"]
+        D365["Dynamics 365<br/>Customer Service"]
+    end
+
+    subgraph DataPlatform[" 📊 Data & insights "]
+        Fabric[("Microsoft Fabric")]
+        PowerBI["Power BI"]
+    end
+
+    subgraph Governance[" 🛡️ Trust & governance "]
+        Purview["Microsoft Purview"]
+        GDPR["GDPR"]
+        AIAct["EU AI Act"]
+        WCAG["WCAG 2.1 AA"]
+    end
+
+    DK & SE & NO --> Web & Mobile & Voice
+    Web & Mobile & Voice --> Entra
+    Web & Mobile & Voice --> B2C
+    eIDAS --> Entra
+    Entra --> APIM
+    B2C --> APIM
+    APIM --> OpenAI
+    APIM --> LogicApps
+    Foundry --> LogicApps
+    LogicApps --> D365
+    D365 --> Fabric
+    Fabric --> PowerBI
+    Foundry -.->|traces + evals| Fabric
+    Purview -.->|governs| APIM
+    Purview -.->|governs| Foundry
+    Purview -.->|governs| Fabric
+    Purview -.->|governs| D365
+
+    style Citizens fill:transparent,stroke:#2ea44f,stroke-width:2px,color:#2ea44f
+    style Channels fill:transparent,stroke:#2ea44f,stroke-dasharray:4,color:#555
+    style Identity fill:transparent,stroke:#8957e5,stroke-width:2px,color:#8957e5
+    style Foundry fill:transparent,stroke:#8957e5,stroke-width:2px,color:#8957e5
+    style Process fill:transparent,stroke:#e36209,stroke-width:2px,color:#e36209
+    style DataPlatform fill:transparent,stroke:#1565c0,stroke-width:2px,color:#1565c0
+    style Governance fill:transparent,stroke:#d73a49,stroke-width:2px,color:#d73a49
+
+    style DK fill:#2ea44f,stroke:#238636,color:#fff
+    style SE fill:#2ea44f,stroke:#238636,color:#fff
+    style NO fill:#2ea44f,stroke:#238636,color:#fff
+    style Web fill:#2ea44f,stroke:#238636,color:#fff
+    style Mobile fill:#2ea44f,stroke:#238636,color:#fff
+    style Voice fill:#2ea44f,stroke:#238636,color:#fff
+
+    style Entra fill:#8957e5,stroke:#6e40c9,color:#fff
+    style B2C fill:#8957e5,stroke:#6e40c9,color:#fff
+    style eIDAS fill:#8957e5,stroke:#6e40c9,color:#fff
+
+    style APIM fill:#e36209,stroke:#c24e00,color:#fff
+
+    style OpenAI fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Classifier fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Translator fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Eligibility fill:#8957e5,stroke:#6e40c9,color:#fff
+    style Assistant fill:#8957e5,stroke:#6e40c9,color:#fff
+    style DocExtractor fill:#8957e5,stroke:#6e40c9,color:#fff
+
+    style LogicApps fill:#e36209,stroke:#c24e00,color:#fff
+    style D365 fill:#e36209,stroke:#c24e00,color:#fff
+
+    style Fabric fill:#1565c0,stroke:#0d47a1,color:#fff
+    style PowerBI fill:#1565c0,stroke:#0d47a1,color:#fff
+
+    style Purview fill:#d73a49,stroke:#b31d28,color:#fff
+    style GDPR fill:#d73a49,stroke:#b31d28,color:#fff
+    style AIAct fill:#d73a49,stroke:#b31d28,color:#fff
+    style WCAG fill:#d73a49,stroke:#b31d28,color:#fff
+```
+
+Blue = data, green = citizens / channels, orange = backend & process, purple = AI / identity, red = governance.
+
+### 2.2 Layered detail
+
+The full 8-layer breakdown used by build teams: it splits the platform into Citizens & Channels, Edge & Identity, API & Integration, AI Brain, Business Services, Data & Insights, Governance & Trust, and Security & Platform.
+
 ```mermaid
 graph TB
     subgraph L0["Layer 0 — Citizens & Channels"]
