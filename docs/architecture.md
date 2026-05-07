@@ -415,6 +415,8 @@ graph TB
 
 ## 5. AI Architecture — Microsoft Foundry at the Core
 
+> 📘 **For the dedicated AI deep-dive** (why Foundry **and** Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](./ai.md). This section is the architecture-level summary.
+
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
 
 ```mermaid

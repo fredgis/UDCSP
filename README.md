@@ -216,6 +216,7 @@ The table below maps every requirement and outcome stated in the case study to t
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
+| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
 | 🏗️ **Architects** | [`architecture.md`](./docs/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
 | 🛠️ **Operators / DevOps** | [`installation.md`](./docs/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
