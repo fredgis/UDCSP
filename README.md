@@ -42,14 +42,12 @@ UDCSP is **one** federated platform that:
 
 ```mermaid
 graph LR
-    BEFORE["⏳ Today<br/>━━━━━━━━━━━━━<br/>📂 47 disconnected portals<br/>📅 28 days · average decision<br/>🚫 No cross-border identity<br/>🗣️ Patchy language coverage<br/>♿ Accessibility gaps<br/>🧩 Conflicting DPA rules"]
-    AFTER["🚀 Tomorrow with UDCSP<br/>━━━━━━━━━━━━━<br/>🏛️ 1 federated platform<br/>📅 4 days · automated triage<br/>🔐 2.1 M citizens federated<br/>🗣️ 12 languages · native parity<br/>♿ WCAG 2.1 AA throughout<br/>🛡️ Per-country sovereign zones<br/>🤖 AI-assisted at every step"]
-    BEFORE ==>|UDCSP transformation| AFTER
+    BEFORE["⏳ <b>Today</b><br/>━━━━━━<br/>📂 47 portals<br/>📅 28-day decisions<br/>🚫 No federation<br/>🗣️ Partial languages<br/>♿ A11y gaps"]:::before
+    AFTER["🚀 <b>UDCSP Tomorrow</b><br/>━━━━━━━━━━<br/>🏛️ 1 platform · 3 zones<br/>📅 4-day decisions<br/>🔐 2.1 M federated<br/>🗣️ 12 languages<br/>♿ WCAG 2.1 AA"]:::after
+    BEFORE ==>|UDCSP| AFTER
 
     classDef before fill:#FFEBEE,stroke:#C62828,stroke-width:3px,color:#B71C1C
     classDef after fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20
-    class BEFORE before
-    class AFTER after
 ```
 
 ---
@@ -58,83 +56,33 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph CITIZENS["👥  Citizens · 2.1 M · 12 languages"]
-        direction LR
-        DK["🇩🇰 Denmark"]
-        SE["🇸🇪 Sweden"]
-        NO["🇳🇴 Norway"]
-    end
+    C(["👥 <b>Citizens</b><br/>🇩🇰 🇸🇪 🇳🇴  ·  2.1 M  ·  12 languages"]):::citizens
+    CH["🌐 Web &nbsp;·&nbsp; 📱 Mobile &nbsp;·&nbsp; ☎️ Voice"]:::channels
+    ID["🔐 <b>Cross-Border Identity</b><br/><i>Microsoft Entra ID · Azure AD B2C · eIDAS</i>"]:::identity
+    GW["🚪 <b>Azure API Management</b>"]:::gateway
+    AI["🧠 <b>Microsoft Foundry — AI Brain</b><br/>✨ Azure OpenAI &nbsp;·&nbsp; 🎯 Classifier &nbsp;·&nbsp; 🌍 Translator<br/>⚖️ Eligibility &nbsp;·&nbsp; 🤖 Assistant &nbsp;·&nbsp; 📄 Doc Extractor"]:::ai
+    WF["⚙️ <b>Azure Logic Apps</b> — Workflow Orchestration<br/><i>28 days ➜ 4 days</i>"]:::workflow
+    CM["📋 <b>Dynamics 365</b> Customer Service"]:::cases
+    DT["📊 <b>Microsoft Fabric</b> &nbsp;·&nbsp; 📈 Power BI"]:::data
+    GV["🛡️ <b>Microsoft Purview</b> · GDPR · EU AI Act · WCAG 2.1 AA"]:::gov
 
-    subgraph CHANNELS["🌐  Omnichannel Front Door"]
-        direction LR
-        WEB["💻 Web Portal"]
-        MOB["📱 Mobile App"]
-        VOICE["☎️ Voice / IVR"]
-    end
+    C --> CH --> ID --> GW
+    GW --> AI
+    GW --> WF
+    AI --> WF
+    WF --> CM --> DT
+    AI -. traces & evals .-> DT
+    GV -. governs every layer .-> GW
 
-    IDENTITY["🔐  Cross-Border Identity Federation<br/><i>Microsoft Entra ID · Azure AD B2C · eIDAS</i>"]
-
-    GATEWAY["🚪  Unified API Gateway<br/><i>Azure API Management</i>"]
-
-    subgraph BRAIN["🧠  AI Brain — Microsoft Foundry"]
-        direction TB
-        AOAI["✨ Azure OpenAI"]
-        FCLASS["🎯 Classifier"]
-        FTRANS["🌍 Translator"]
-        FELIG["⚖️ Eligibility Pre-Assessor"]
-        FASSIST["🤖 Citizen Assistant"]
-        FDOC["📄 Document Extractor"]
-    end
-
-    WORKFLOW["⚙️  Workflow Orchestration<br/><i>Azure Logic Apps  ·  28d ➜ 4d</i>"]
-
-    CASES["📋  Case Management<br/><i>Dynamics 365 Customer Service</i>"]
-
-    subgraph DATA["📊  Unified Data & Insights"]
-        direction LR
-        FABRIC["🗄️ Microsoft Fabric"]
-        PBI["📈 Power BI"]
-    end
-
-    GOVERNANCE["🛡️  Trust, Privacy & AI Governance<br/><i>Microsoft Purview · GDPR · EU AI Act · WCAG 2.1 AA</i>"]
-
-    DK --> CHANNELS
-    SE --> CHANNELS
-    NO --> CHANNELS
-    CHANNELS --> IDENTITY
-    IDENTITY --> GATEWAY
-    GATEWAY --> BRAIN
-    GATEWAY --> WORKFLOW
-    BRAIN --> WORKFLOW
-    WORKFLOW --> CASES
-    CASES --> FABRIC
-    FABRIC --> PBI
-    BRAIN -. traces & evals .-> FABRIC
-
-    GOVERNANCE -. policies .-> IDENTITY
-    GOVERNANCE -. AI Act registry .-> BRAIN
-    GOVERNANCE -. classifications .-> CASES
-    GOVERNANCE -. lineage .-> FABRIC
-
-    classDef citizens fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef citizens fill:#E3F2FD,stroke:#1565C0,stroke-width:3px,color:#0D47A1
     classDef channels fill:#E1F5FE,stroke:#0277BD,stroke-width:2px,color:#01579B
-    classDef identity fill:#EDE7F6,stroke:#5E35B1,stroke-width:3px,color:#311B92
-    classDef gateway fill:#E0F2F1,stroke:#00796B,stroke-width:3px,color:#004D40
+    classDef identity fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92
+    classDef gateway fill:#E0F2F1,stroke:#00796B,stroke-width:2px,color:#004D40
     classDef ai fill:#FFF3E0,stroke:#E65100,stroke-width:3px,color:#BF360C
     classDef workflow fill:#FFF9C4,stroke:#F9A825,stroke-width:2px,color:#F57F17
     classDef cases fill:#FCE4EC,stroke:#AD1457,stroke-width:2px,color:#880E4F
     classDef data fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20
-    classDef governance fill:#FFEBEE,stroke:#C62828,stroke-width:3px,color:#B71C1C
-
-    class DK,SE,NO citizens
-    class WEB,MOB,VOICE channels
-    class IDENTITY identity
-    class GATEWAY gateway
-    class AOAI,FCLASS,FTRANS,FELIG,FASSIST,FDOC ai
-    class WORKFLOW workflow
-    class CASES cases
-    class FABRIC,PBI data
-    class GOVERNANCE governance
+    classDef gov fill:#FFEBEE,stroke:#C62828,stroke-width:3px,color:#B71C1C
 ```
 
 > 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom through identity, the API gateway, and the Foundry-hosted AI brain before reaching the back-office case spine and the data platform. **Governance is a horizontal concern** that audits and constrains every layer.
@@ -193,20 +141,37 @@ All nine services from the case study are first-class citizens of the platform �
 
 ---
 
+## 🤖 Built by an Agent Swarm
+
+UDCSP is delivered by a swarm of **17 specialised AI coding agents**, organised in **5 waves** with explicit parallelisation. Two agents are highlighted up front because they make this case study **demonstrable end-to-end**:
+
+| | Agent | What it produces | Why it matters for the case study |
+|:-:|---|---|---|
+| 🎲 | **A15 · Synthetic Data & Personas** | GDPR-safe personas, applications, documents, multilingual conversations and golden eval datasets for **DK · SE · NO** in **all 12 languages**, with regenerable pipelines. | Provides the realistic, multi-country dataset needed to demo cross-border journeys, train and evaluate the Foundry agents, prove accessibility, and run audits — without ever using real PII. |
+| 🛠️ | **A16 · Installer & Developer Experience** | A single **PowerShell one-shot installer** (`scripts/install/Install-UDCSP.ps1`) that stands up the entire platform end-to-end (landing zone → identity → security → data → Foundry → integration → D365 → frontends → voice → governance), plus a tear-down counterpart and developer-onboarding scripts. | Lets an evaluator (or a new developer) go **from a clean Azure tenant to a running federated platform in one command**. Repeatable, idempotent, CI-validated. |
+
+> [!TIP]
+> **From zero to running platform in one command.** Once Wave 4 closes, an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
+
+The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./plan.md).
+
+---
+
 ## 📁 Repository Layout
 
 | Path | Purpose |
 |---|---|
 | 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
-| 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy. |
+| 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
 | 🏛️ `infra/` *(future)* | Bicep / Terraform landing zone & per-domain modules. |
 | 💻 `apps/` *(future)* | Citizen portals, mobile shell, voice bot, Copilot Studio agents. |
 | 🔌 `services/` *(future)* | API microservices and Logic Apps definitions. |
 | 🧠 `foundry/` *(future)* | Foundry agents, prompts, evaluations, datasets. |
-| 📊 `data/` *(future)* | Fabric items, semantic models, Power BI reports, **synthetic personas & cases for DK/SE/NO**. |
+| 📊 `data/` *(future)* | Fabric items, semantic models, Power BI reports, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` *(future)* | Purview policies, AI Act registry entries, DPIAs. |
+| 🛠️ `scripts/install/` *(future)* | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16), tear-down counterpart, dev-onboarding scripts. |
 
 ---
 
@@ -235,6 +200,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🟧 | 15 | **Auditability** of every AI decision | Foundry tracing + Application Insights + Fabric audit lakehouse + Power BI audit dashboard | Trace replay test; auditor walkthrough |
 | 🟪 | 16 | **Caseworker productivity** | D365 Customer Service + Copilot for Service + multilingual knowledge base | D365 KPIs (AHT, FCR); caseworker satisfaction survey |
 | 🟦 | 17 | **Synthetic but realistic data** for the three countries (demos, training, evals, audits) | Dedicated synthetic-data agent (A15) producing 12-language personas, applications, documents, conversations and golden eval datasets — GDPR-safe, regenerable | Dataset coverage report; eval baselines green; auditor-ready persona book |
+| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry, D365, Power Platform and Copilot Studio assets across the 3 sovereign zones | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
 
 ---
 
@@ -243,8 +209,9 @@ The table below maps every requirement and outcome stated in the case study to t
 | Audience | Start with |
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
-| 🏗️ **Architects** | [`architecture.md`](./architecture.md) — deep-dive across 14 sections. |
-| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./plan.md) — 16 agent profiles, 5 waves, parallelisation graphs. |
+| 🏗️ **Architects** | [`architecture.md`](./architecture.md) — deep-dive across 15 sections. |
+| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
+| 🛠️ **Operators / DevOps** | [`plan.md`](./plan.md) §A16 + the future `scripts/install/Install-UDCSP.ps1` one-shot installer. |
 | 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./architecture.md). |
 | 📚 **Original case study** | [`case-study-11.md`](./case-study-11.md). |
 
