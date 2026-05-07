@@ -54,6 +54,7 @@ Each profile defines **role, skills, owned areas, primary outputs, and PR review
 | **A13** | **Data Governance (Purview)** | Unified Catalog, sensitivity labels, classifications, lineage, DLP, data-sharing policies per country, AI asset registry. | `governance/purview/*`, policy packs. |
 | **A14** | **QA & Evaluation** | E2E test suites, performance/load tests, Foundry eval pipelines, accessibility audits, security scans, conformance tests. | `tests/*`, evaluation datasets, audit reports. |
 | **A15** | **Synthetic Data & Personas** | GDPR-safe synthetic personas, addresses, documents, applications, cases, conversations and golden eval datasets — across **DK / SE / NO** in **all 12 languages** — plus the regeneration pipelines so the data can be rebuilt at any scale. | `data/synthetic/*` (personas, applications, documents, conversations, cases, eval-datasets, streams, persona-book), regeneration notebooks & Functions. |
+| **A16** | **Installer & Developer Experience** | One-shot **PowerShell** installer for the entire platform; pre-flight checks; idempotent Bicep orchestration; agent / solution / Foundry imports; optional synthetic-data seeding (via A15); tear-down counterpart; developer onboarding scripts. | `scripts/install/Install-UDCSP.ps1`, `scripts/install/modules/*.psm1`, `scripts/install/reports/`, `scripts/cleanup/Remove-UDCSP.ps1`, `scripts/dev/Bootstrap-DevEnv.ps1`. |
 
 ---
 
@@ -67,7 +68,7 @@ Work is organised in **five waves**. Within a wave, agents work in parallel; bet
 | **W1** | Platform horizontals + synthetic data | A2, A3, A4, A5, A15 | Fully parallel. |
 | **W2** | Domain verticals | A6, A7, A8, A9, A10 | Fully parallel. |
 | **W3** | Intelligence & inclusivity | A11, A12, A13 | Fully parallel. |
-| **W4** | End-to-end qualification | A14 | Sequential, but parallel test suites. |
+| **W4** | End-to-end qualification + one-shot installer | A14, A16 | Parallel; A16 absorbs IaC and assets produced by W1–W3 and gates on a smoke install. |
 
 > Waves are not time-boxed in this plan; they describe **dependency boundaries**, not a calendar.
 
@@ -106,6 +107,7 @@ graph TB
 
     subgraph W4["Wave 4 — Qualification"]
         A14["A14 · QA & Evaluation"]
+        A16["A16 · Installer & DevEx<br/>(one-shot PowerShell)"]
     end
 
     A0 --> A1
@@ -151,6 +153,21 @@ graph TB
     A13 --> A14
     A15 --> A14
 
+    A1 --> A16
+    A2 --> A16
+    A3 --> A16
+    A4 --> A16
+    A5 --> A16
+    A6 --> A16
+    A7 --> A16
+    A8 --> A16
+    A9 --> A16
+    A10 --> A16
+    A11 --> A16
+    A12 --> A16
+    A13 --> A16
+    A15 --> A16
+
     classDef w0 fill:#ECEFF1,stroke:#455A64,stroke-width:2px,color:#263238
     classDef w1 fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92
     classDef w2 fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C
@@ -161,7 +178,7 @@ graph TB
     class A2,A3,A4,A5,A15 w1
     class A6,A7,A8,A9,A10 w2
     class A11,A12,A13 w3
-    class A14 w4
+    class A14,A16 w4
 ```
 
 > Edges represent **must-finish-before** relationships (artefact / contract / resource availability), not communication channels.
@@ -176,28 +193,6 @@ graph TB
 2. **A1** stands up subscriptions, management groups, network topology, GitHub Actions skeleton, ACR, Key Vault baseline, and the IaC scaffolding (`infra/`).
 
 **Exit gate (W0 → W1):** subscriptions provisioned, network reachable, CI/CD green on a hello-world IaC module, ADRs reviewed and signed off.
-
-### Wave 1 — Platform Horizontals (parallel)
-
-```mermaid
-graph LR
-    GATE0["W0 exit gate"]:::gate
-    A2["A2"]:::p
-    A3["A3"]:::p
-    A4["A4"]:::p
-    A5["A5"]:::p
-    GATE1["W1 exit gate"]:::gate
-    GATE0 --> A2
-    GATE0 --> A3
-    GATE0 --> A4
-    GATE0 --> A5
-    A2 --> GATE1
-    A3 --> GATE1
-    A4 --> GATE1
-    A5 --> GATE1
-    classDef p fill:#EDE7F6,stroke:#5E35B1,color:#311B92
-    classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
-```
 
 ### Wave 1 — Platform Horizontals + Synthetic Data (parallel)
 
@@ -276,11 +271,29 @@ graph LR
 
 **Exit gate (W3 → W4):** end-to-end Citizen Assistant works in 12 languages, axe scans pass, Purview catalogs every data product and registers every AI agent.
 
-### Wave 4 — Qualification
+### Wave 4 — Qualification + One-Shot Installer (parallel)
 
-A14 runs all qualification suites in parallel: functional E2E, performance, AI evaluations, accessibility audits, security scans, GDPR / EU AI Act conformance checks.
+```mermaid
+graph LR
+    GATE3["W3 exit gate"]:::gate
+    A14["A14 · QA & Evaluation"]:::q
+    A16["A16 · Installer & DevEx<br/>Install-UDCSP.ps1"]:::inst
+    DONE["✅ Final exit gate<br/>(README matrix all green<br/>+ clean-tenant install green)"]:::gate
+    GATE3 --> A14
+    GATE3 --> A16
+    A14 --> DONE
+    A16 --> DONE
+    A16 -. consumes .-> A14
+    classDef q fill:#FFEBEE,stroke:#C62828,color:#B71C1C
+    classDef inst fill:#FFF3E0,stroke:#E65100,color:#BF360C
+    classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
+```
 
-**Final exit gate:** Evaluation Criteria Matrix in `README.md` is fully green.
+**A14** runs all qualification suites in parallel: functional E2E, performance, AI evaluations, accessibility audits, security scans, GDPR / EU AI Act conformance checks.
+
+**A16** assembles the **one-shot PowerShell installer** that consumes every IaC module, agent definition, solution and dataset produced in W1–W3 and stands up the full platform from a clean tenant. A smoke install on a sacrificial subscription is part of A14's regression suite.
+
+**Final exit gate:** Evaluation Criteria Matrix in `README.md` is fully green **and** `Install-UDCSP.ps1` deploys to a clean tenant in CI.
 
 ---
 
@@ -393,6 +406,22 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 - **Outputs:** `data/synthetic/personas/`, `data/synthetic/applications/`, `data/synthetic/documents/`, `data/synthetic/conversations/`, `data/synthetic/cases/`, `data/synthetic/eval-datasets/`, `data/synthetic/streams/`, `data/synthetic/persona-book.md`, plus **regeneration pipelines** (notebooks + Functions + Bicep) so any dataset can be rebuilt at scale.
 - **Exit criteria:** Each downstream agent has a seed dataset matching its schema; Foundry evaluations have green baselines on synthetic data; **no real PII anywhere**; auditor walkthrough on the persona book passes.
 
+### A16 · Installer & Developer Experience
+- **Inputs:** All IaC modules from A1–A5 and A7; agent / solution / config artefacts from A6, A8, A9, A10, A11, A12, A13; synthetic-data seeding hooks from A15; contracts and naming conventions from A0.
+- **Tasks:**
+  - **T1 — Installer skeleton** — PowerShell 7+ module structure under `scripts/install/`, parameter set (`-Environment dev|test|preprod|prod`, `-Zone dk|se|no|all`, `-WhatIf`, `-SkipFoundry`, `-SeedSyntheticData`, `-Verbose`).
+  - **T2 — Pre-flight checks** — Az CLI / Az PowerShell / Bicep / Power Platform CLI / Foundry CLI presence; subscription / tenant / RBAC validation; quota and region availability for DK / SE / NO; consent prompts.
+  - **T3 — Bicep deployment orchestration** — sequenced `New-AzDeployment` / `New-AzResourceGroupDeployment` calls invoking the modules from A1–A5 and A7 in dependency order with idempotent retries and per-step diagnostics.
+  - **T4 — Identity bootstrap** — invoke A2's B2C / Entra setup; register OIDC clients for A9 / A10 / A11; create service principals and managed identities for CI/CD and runtime.
+  - **T5 — Data & AI provisioning** — Fabric workspaces, capacities and lakehouses (A4); Microsoft Foundry hubs / projects / agent imports / evaluations (A6); Purview accounts and scans (A13).
+  - **T6 — Application deployment** — Static Web Apps + mobile build artefacts + ACS resources + Copilot Studio solution import + D365 managed solutions import (A8 / A9 / A10 / A11) + accessibility & i18n bundles (A12).
+  - **T7 — Synthetic data seeding** — optional `-SeedSyntheticData` flag invokes A15's regeneration pipelines to populate DEV with the DK / SE / NO persona library, applications, conversations and golden eval datasets.
+  - **T8 — Validation & smoke tests** — post-deploy health checks per zone; trigger A14's smoke suite; emit a deployment report (HTML + JSON) into `scripts/install/reports/`.
+  - **T9 — Tear-down counterpart** — `scripts/cleanup/Remove-UDCSP.ps1` reverses every step safely, including soft-delete-aware Key Vault / Purview / Foundry cleanup.
+  - **T10 — Developer onboarding** — `scripts/dev/Bootstrap-DevEnv.ps1` for laptop setup (CLIs, VS Code extensions, Git hooks, `.env` template) so new contributors are productive in one command.
+- **Outputs:** `scripts/install/Install-UDCSP.ps1`, `scripts/install/modules/*.psm1` (one module per layer: identity, security, data, foundry, integration, d365, frontend, voice, governance, observability), `scripts/install/reports/`, `scripts/cleanup/Remove-UDCSP.ps1`, `scripts/dev/Bootstrap-DevEnv.ps1`.
+- **Exit criteria:** A clean Azure tenant deploys to a fully running DEV environment in **one command** (`./Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`); tear-down restores the tenant with no orphaned soft-deleted resources; the installer is wired into CI as a smoke job triggered by changes under `infra/`, `apps/`, `services/`, `foundry/`.
+
 ---
 
 ## 7. Cross-Cutting Conventions
@@ -447,6 +476,7 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 | R10 | Partner agency integration delays. | Façade-and-mock pattern from W2; replay tests; contract-versioning policy. | A7 |
 | R11 | Synthetic data not realistic enough → AI evals over-optimistic. | Statistical fidelity tests against national open-data distributions; periodic refresh of synthetic generators; production-trace sampling fed back into eval sets. | A15, A14 |
 | R12 | Multilingual quality drift across 12 languages. | Per-language eval suites with native-reviewed golden sets; per-language KPIs in Power BI; CI gate blocks promotion if any language regresses. | A12, A6, A14 |
+| R13 | One-shot installer drifts behind Bicep / agent changes; "from zero" deploy stops working. | A16 wired into CI: every PR touching `infra/`, `apps/`, `services/`, `foundry/` triggers a smoke install on a sacrificial subscription. Installer modules version-pin agent / solution artefact hashes. Tear-down covered by the same CI job. | A16, A14 |
 
 ---
 

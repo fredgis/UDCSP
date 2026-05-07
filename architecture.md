@@ -20,6 +20,7 @@
 12. [Multilingual & Inclusivity Strategy](#12-multilingual--inclusivity-strategy)
 13. [End-to-End Flow Examples](#13-end-to-end-flow-examples)
 14. [Service Inventory](#14-service-inventory)
+15. [Deployment & Developer Experience](#15-deployment--developer-experience)
 
 ---
 
@@ -816,4 +817,59 @@ sequenceDiagram
 
 ---
 
-*See [`plan.md`](./plan.md) for how this architecture will be built by the multi-agent development team.*
+## 15. Deployment & Developer Experience
+
+UDCSP is deployable end-to-end from a clean Azure tenant by a **single PowerShell entry point**: `scripts/install/Install-UDCSP.ps1`. The script — owned by the dedicated installer agent **A16** — is **idempotent**, **environment-aware** (`dev`, `test`, `preprod`, `prod`), **zone-aware** (DK / SE / NO / all), and supports an optional `-SeedSyntheticData` switch that triggers A15's regeneration pipelines so a DEV environment comes up already populated with realistic multilingual personas, applications and conversations.
+
+```mermaid
+graph TB
+    DEV["👩‍💻 Developer / Evaluator<br/>clean Azure tenant"]:::dev
+    INSTALL["🛠️ <b>Install-UDCSP.ps1</b><br/><i>PowerShell 7+ · idempotent · CI-validated</i>"]:::install
+    PRE["🔍 Pre-flight Checks<br/>CLIs · subs · quotas · regions"]:::step
+    INFRA["🏛️ Bicep Modules<br/>landing zone · identity · security · data · obs · APIM"]:::step
+    AI["🧠 Foundry & AI<br/>hubs · projects · agents · evals · AI Act registry"]:::step
+    APPS["💻 Apps & Channels<br/>SWA · mobile · ACS · Copilot Studio · D365 solutions"]:::step
+    GOV["🛡️ Governance<br/>Purview accounts · scans · policy packs"]:::step
+    SEED["🎲 Synthetic Data Seed (A15)<br/>DK · SE · NO · 12 languages"]:::seed
+    SMOKE["✅ Smoke Tests (A14)<br/>+ Deployment Report"]:::smoke
+    CLEAN["🧹 Remove-UDCSP.ps1<br/>tear-down counterpart"]:::clean
+
+    DEV --> INSTALL
+    INSTALL --> PRE
+    PRE --> INFRA
+    INFRA --> AI
+    INFRA --> APPS
+    AI --> APPS
+    INFRA --> GOV
+    APPS --> SEED
+    SEED --> SMOKE
+    APPS --> SMOKE
+    GOV --> SMOKE
+    INSTALL -. inverse .-> CLEAN
+
+    classDef dev fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef install fill:#FFF3E0,stroke:#E65100,stroke-width:3px,color:#BF360C
+    classDef step fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92
+    classDef seed fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20
+    classDef smoke fill:#FCE4EC,stroke:#AD1457,stroke-width:2px,color:#880E4F
+    classDef clean fill:#ECEFF1,stroke:#455A64,stroke-width:2px,color:#263238
+```
+
+### 15.1 Installer principles
+
+| Principle | What it means in `Install-UDCSP.ps1` |
+|---|---|
+| **Idempotent** | Re-running the script on an already-installed environment converges to the desired state without creating duplicates. |
+| **Layered** | One PowerShell module per architectural layer (`Identity.psm1`, `Security.psm1`, `Data.psm1`, `Foundry.psm1`, `Integration.psm1`, `D365.psm1`, `Frontend.psm1`, `Voice.psm1`, `Governance.psm1`, `Observability.psm1`). |
+| **Zone-aware** | Bicep modules deployed once per zone (DK / SE / NO) with parameter files; `-Zone` flag scopes installation to one or all. |
+| **Reportable** | Each run produces an HTML + JSON report under `scripts/install/reports/<timestamp>/` with per-step duration, status, and resource IDs. |
+| **Tear-down** | `scripts/cleanup/Remove-UDCSP.ps1` reverses everything safely (Key Vault soft-delete purge, Foundry project cleanup, Purview deregistration). |
+| **CI-validated** | Wired into a GitHub Actions smoke job triggered by changes to `infra/`, `apps/`, `services/`, `foundry/`. Drift breaks the build. |
+
+### 15.2 Developer onboarding
+
+`scripts/dev/Bootstrap-DevEnv.ps1` provisions a developer laptop in one command: required CLIs (Az, Azure Developer CLI, Bicep, Power Platform CLI, Foundry CLI, GitHub CLI), VS Code extensions, Git hooks, an `.env.template`, and a verification step that runs `Install-UDCSP.ps1 -WhatIf -Environment dev` to confirm the toolchain works.
+
+---
+
+*See [`plan.md`](./plan.md) for how this architecture will be built by the multi-agent development team — including the **A15 Synthetic Data & Personas** and **A16 Installer & Developer Experience** agents.*
