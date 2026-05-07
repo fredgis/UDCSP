@@ -25,15 +25,13 @@ Create a federated digital citizen services platform that enables cross-border s
 
 ## Azure Services
 
-- Azure Active Directory B2C
-- Azure OpenAI
-- Dynamics 365 Customer Service
-- Microsoft Purview
-- Azure Logic Apps
-- Microsoft Entra ID
-- Microsoft Fabric
-- Azure API Management
-- Power BI
+| | |
+|---|---|
+| Azure Active Directory B2C | Microsoft Entra ID |
+| Azure OpenAI | Microsoft Fabric |
+| Dynamics 365 Customer Service | Azure API Management |
+| Microsoft Purview | Power BI |
+| Azure Logic Apps | |
 
 ## Expected Outcomes
 
