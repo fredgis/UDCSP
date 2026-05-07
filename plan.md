@@ -53,6 +53,7 @@ Each profile defines **role, skills, owned areas, primary outputs, and PR review
 | **A12** | **Accessibility & Localization** | WCAG 2.1 AA tooling (axe in CI, manual audits), 12-language translation pipeline, ICU message format, accessibility statements. | `apps/web/i18n/*`, accessibility audit reports, CI gates. |
 | **A13** | **Data Governance (Purview)** | Unified Catalog, sensitivity labels, classifications, lineage, DLP, data-sharing policies per country, AI asset registry. | `governance/purview/*`, policy packs. |
 | **A14** | **QA & Evaluation** | E2E test suites, performance/load tests, Foundry eval pipelines, accessibility audits, security scans, conformance tests. | `tests/*`, evaluation datasets, audit reports. |
+| **A15** | **Synthetic Data & Personas** | GDPR-safe synthetic personas, addresses, documents, applications, cases, conversations and golden eval datasets — across **DK / SE / NO** in **all 12 languages** — plus the regeneration pipelines so the data can be rebuilt at any scale. | `data/synthetic/*` (personas, applications, documents, conversations, cases, eval-datasets, streams, persona-book), regeneration notebooks & Functions. |
 
 ---
 
@@ -63,7 +64,7 @@ Work is organised in **five waves**. Within a wave, agents work in parallel; bet
 | Wave | Theme | Agents involved | Parallelism |
 |---|---|---|---|
 | **W0** | Foundation & contracts | A0, A1 | Sequential within wave (A0 → A1). |
-| **W1** | Platform horizontals | A2, A3, A4, A5 | Fully parallel. |
+| **W1** | Platform horizontals + synthetic data | A2, A3, A4, A5, A15 | Fully parallel. |
 | **W2** | Domain verticals | A6, A7, A8, A9, A10 | Fully parallel. |
 | **W3** | Intelligence & inclusivity | A11, A12, A13 | Fully parallel. |
 | **W4** | End-to-end qualification | A14 | Sequential, but parallel test suites. |
@@ -81,11 +82,12 @@ graph TB
         A1["A1 · Landing Zone & DevOps"]
     end
 
-    subgraph W1["Wave 1 — Platform Horizontals"]
+    subgraph W1["Wave 1 — Platform Horizontals + Synthetic Data"]
         A2["A2 · Identity & Federation"]
         A3["A3 · Security & Compliance"]
         A4["A4 · Data Platform (Fabric)"]
         A5["A5 · Observability"]
+        A15["A15 · Synthetic Data & Personas<br/>(DK · SE · NO · 12 languages)"]
     end
 
     subgraph W2["Wave 2 — Domain Verticals"]
@@ -111,6 +113,7 @@ graph TB
     A1 --> A3
     A1 --> A4
     A1 --> A5
+    A1 --> A15
 
     A2 --> A6
     A2 --> A7
@@ -124,6 +127,10 @@ graph TB
     A5 --> A7
     A4 --> A6
     A4 --> A8
+    A4 --> A15
+    A15 --> A6
+    A15 --> A8
+    A15 --> A11
 
     A6 --> A11
     A9 --> A11
@@ -142,6 +149,7 @@ graph TB
     A11 --> A14
     A12 --> A14
     A13 --> A14
+    A15 --> A14
 
     classDef w0 fill:#ECEFF1,stroke:#455A64,stroke-width:2px,color:#263238
     classDef w1 fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92
@@ -150,7 +158,7 @@ graph TB
     classDef w4 fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#B71C1C
 
     class A0,A1 w0
-    class A2,A3,A4,A5 w1
+    class A2,A3,A4,A5,A15 w1
     class A6,A7,A8,A9,A10 w2
     class A11,A12,A13 w3
     class A14 w4
@@ -191,7 +199,34 @@ graph LR
     classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
 ```
 
-**Exit gate (W1 → W2):** workforce tenant operational, B2C tenants per country, security baseline applied, Fabric workspaces created, observability sink reachable.
+### Wave 1 — Platform Horizontals + Synthetic Data (parallel)
+
+```mermaid
+graph LR
+    GATE0["W0 exit gate"]:::gate
+    A2["A2 · Identity"]:::p
+    A3["A3 · Security"]:::p
+    A4["A4 · Data Platform"]:::p
+    A5["A5 · Observability"]:::p
+    A15["A15 · Synthetic Data<br/>DK · SE · NO · 12 lang"]:::s
+    GATE1["W1 exit gate"]:::gate
+    GATE0 --> A2
+    GATE0 --> A3
+    GATE0 --> A4
+    GATE0 --> A5
+    GATE0 --> A15
+    A4 -. schemas .-> A15
+    A2 --> GATE1
+    A3 --> GATE1
+    A4 --> GATE1
+    A5 --> GATE1
+    A15 --> GATE1
+    classDef p fill:#EDE7F6,stroke:#5E35B1,color:#311B92
+    classDef s fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
+```
+
+**Exit gate (W1 → W2):** workforce tenant operational, B2C tenants per country, security baseline applied, Fabric workspaces created, observability sink reachable, **synthetic persona library + first golden eval datasets available** for downstream agents.
 
 ### Wave 2 — Domain Verticals (parallel)
 
@@ -338,10 +373,25 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 - **Exit criteria:** A sensitive PII column is detected, classified, traced through the pipeline, and protected by DLP.
 
 ### A14 · QA & Evaluation
-- **Inputs:** all of the above.
+- **Inputs:** all of the above, including A15's synthetic datasets.
 - **Tasks:** Functional E2E suite (Playwright for web, Appium for mobile, ACS test harness for voice); load tests (k6 / Azure Load Testing) targeting SLOs; Foundry evaluation pipelines (continuous regression on agents); axe and manual accessibility audits; Defender / OWASP / LLM-Top-10 security scans; GDPR / EU AI Act conformance checklists.
 - **Outputs:** `tests/*`, evaluation datasets, audit reports, traceability matrix to the README evaluation table.
 - **Exit criteria:** Every row of the README evaluation table is green and traceable to a passing artefact.
+
+### A15 · Synthetic Data & Personas
+- **Inputs:** A0 (schemas, contracts, naming), A4 (data model & ingestion endpoints), A8 (D365 case schema, contracts), A6 (Foundry eval format), A12 (locale matrix).
+- **Tasks:**
+  - **T1 — National statistical models** — for each of **DK · SE · NO**, derive realistic distributions for age, gender, language, civic status, address (geocoded), residency type, social-benefit status, tax bracket and document types — referenced from open national statistics. **No real PII is used or copied.**
+  - **T2 — Persona library** — generate ≥ 30 000 synthetic personas (10 000+ per country) with synthetic civic IDs in the national format (clearly watermarked `SYNTHETIC`), realistic addresses, language preference and accessibility needs.
+  - **T3 — Synthetic documents** — passport, national ID card, payslip, lease, residency certificate, tax statement templates per country, generated and visibly watermarked `SYNTHETIC — UDCSP`.
+  - **T4 — Application & case dataset** — sample residency, tax, social-benefit and cross-border applications, with their multi-step state machine; matched D365 case records via A8's contracts.
+  - **T5 — Multilingual content variants** — every persona, application, KB article, notification and transcript also produced in the **12 official languages**, with locale-correct formatting (dates, currencies, names, RTL where applicable).
+  - **T6 — Conversation corpora** — citizen ↔ assistant and citizen ↔ caseworker dialogues across web, mobile and voice; including escalations, ambiguity and mistranslation cases.
+  - **T7 — Foundry golden eval datasets** — per agent (Classifier, Translator, Eligibility, Citizen Assistant, Document Extractor) with adversarial / safety / bias / language-coverage subsets.
+  - **T8 — Streaming event data** — synthetic event flow into Fabric Real-Time Intelligence to demo and load-test live KPIs.
+  - **T9 — Persona book** — human-readable catalog of personas and journeys for demos, audits and evaluator walkthroughs.
+- **Outputs:** `data/synthetic/personas/`, `data/synthetic/applications/`, `data/synthetic/documents/`, `data/synthetic/conversations/`, `data/synthetic/cases/`, `data/synthetic/eval-datasets/`, `data/synthetic/streams/`, `data/synthetic/persona-book.md`, plus **regeneration pipelines** (notebooks + Functions + Bicep) so any dataset can be rebuilt at scale.
+- **Exit criteria:** Each downstream agent has a seed dataset matching its schema; Foundry evaluations have green baselines on synthetic data; **no real PII anywhere**; auditor walkthrough on the persona book passes.
 
 ---
 
@@ -395,6 +445,8 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 | R8 | Observability gaps preventing root-cause analysis. | A5's correlation-id contract is mandatory before W2; CI check enforces propagation. | A5 |
 | R9 | Cost overrun on Foundry / OpenAI usage. | Per-agent quotas; APIM rate limits per channel; FinOps dashboard in Power BI. | A6, A1 |
 | R10 | Partner agency integration delays. | Façade-and-mock pattern from W2; replay tests; contract-versioning policy. | A7 |
+| R11 | Synthetic data not realistic enough → AI evals over-optimistic. | Statistical fidelity tests against national open-data distributions; periodic refresh of synthetic generators; production-trace sampling fed back into eval sets. | A15, A14 |
+| R12 | Multilingual quality drift across 12 languages. | Per-language eval suites with native-reviewed golden sets; per-language KPIs in Power BI; CI gate blocks promotion if any language regresses. | A12, A6, A14 |
 
 ---
 
