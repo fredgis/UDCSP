@@ -13,7 +13,7 @@
       "package": "eu.udcsp.citizen"
     },
     "extra": {
-      "b2cPolicy": "B2C_1A_SignUpOrSignIn"
+      "userFlow": "SignUpSignIn"
     }
   }
 }

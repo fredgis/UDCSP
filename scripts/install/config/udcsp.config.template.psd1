@@ -22,7 +22,7 @@
         Shared = 'westeurope'
     }
 
-    B2CTenants = @{
+    ExternalIdTenants = @{
         DK = 'udcspdk.onmicrosoft.com'
         SE = 'udcspse.onmicrosoft.com'
         NO = 'udcspno.onmicrosoft.com'

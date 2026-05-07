@@ -42,7 +42,7 @@ Each profile defines **role, skills, owned areas, primary outputs, and PR review
 |---|---|---|---|
 | **A0** | **Platform Architect** | ADRs, target reference architecture, contracts, naming conventions, phase gates. | `docs/adr/*`, contract templates, governance for cross-cutting changes. |
 | **A1** | **Landing Zone & DevOps** | Azure subscriptions, management groups, network hub-and-spoke (3 zones), Azure Policy, GitHub Actions, IaC scaffolding, secrets/Key Vault baseline, ACR. | `infra/landing-zone/*`, `.github/workflows/*`, repo bootstrap. |
-| **A2** | **Identity & Federation** | Entra External ID hub, B2C tenants per country, eIDAS bridge, custom policies, workforce tenant, PIM, Conditional Access. | `infra/identity/*`, B2C custom policies, federation runbooks. |
+| **A2** | **Identity & Federation** | Microsoft Entra ID hub, Microsoft Entra External ID tenants per country, eIDAS bridge, custom user flows, workforce tenant, PIM, Conditional Access. | `infra/identity/*`, External ID user flows, federation runbooks. |
 | **A3** | **Security & Compliance** | Defender for Cloud, Sentinel, Key Vault topology, network security groups, Azure Policy compliance baseline, GDPR DPIA scaffolding. | `infra/security/*`, Sentinel content, policy assignments, DPIA template. |
 | **A4** | **Data Platform (Fabric)** | Fabric capacities, workspaces per country, OneLake structure, bronze/silver/gold lakehouses, Real-Time Intelligence, semantic models, Fabric Domain. | `data/fabric/*`, semantic model definitions, ingestion notebooks. |
 | **A5** | **Observability** | Log Analytics, App Insights, Azure Monitor workbooks, alert rules, correlation-id strategy, dashboards. | `infra/observability/*`, workbook JSON, alert definitions. |
@@ -223,7 +223,7 @@ graph LR
     classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
 ```
 
-**Exit gate (W1 → W2):** workforce tenant operational, B2C tenants per country, security baseline applied, Fabric workspaces created, observability sink reachable, **synthetic persona library + first golden eval datasets available** for downstream agents.
+**Exit gate (W1 → W2):** workforce tenant operational, External ID tenants per country, security baseline applied, Fabric workspaces created, observability sink reachable, **synthetic persona library + first golden eval datasets available** for downstream agents.
 
 ### Wave 2 — Domain Verticals (parallel)
 
@@ -341,9 +341,9 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
 
 ### A2 · Identity & Federation
 - **Inputs:** A1 (network, Key Vault, IaC).
-- **Tasks:** Workforce Entra tenant baseline (Conditional Access, PIM); External ID hub; B2C tenant per country; user flows / custom policies; eIDAS bridge configuration; OIDC client registrations for web, mobile, voice; SCIM connectors to D365.
-- **Outputs:** `infra/identity/*`, B2C policies, federation diagrams in `architecture.md` already match.
-- **Exit criteria:** A test citizen can log in to the SE B2C tenant via a mocked national eID and obtain a token accepted by APIM.
+- **Tasks:** Workforce Entra tenant baseline (Conditional Access, PIM); Microsoft Entra ID hub; Microsoft Entra External ID tenant per country; user flows / custom authentication extensions; eIDAS bridge configuration; OIDC client registrations for web, mobile, voice; SCIM connectors to D365.
+- **Outputs:** `infra/identity/*`, External ID policies, federation diagrams in `architecture.md` already match.
+- **Exit criteria:** A test citizen can log in to the SE External ID tenant via a mocked national eID and obtain a token accepted by APIM.
 
 ### A3 · Security & Compliance
 - **Inputs:** A1.
@@ -383,7 +383,7 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
 
 ### A9 · Web & Mobile Frontend
 - **Inputs:** A2 (OIDC), A7 (APIM), A0 (design tokens).
-- **Tasks:** Accessible design system (component library); citizen web portal scaffolds (per country brand) on Static Web Apps; mobile shell (cross-platform); OIDC integration via B2C; offline-friendly form handling; chat widget embedding hooks for A11; instrumentation for A5.
+- **Tasks:** Accessible design system (component library); citizen web portal scaffolds (per country brand) on Static Web Apps; mobile shell (cross-platform); OIDC integration via Microsoft Entra External ID; offline-friendly form handling; chat widget embedding hooks for A11; instrumentation for A5.
 - **Outputs:** `apps/web/*`, `apps/mobile/*`, `apps/_design-system/*`.
 - **Exit criteria:** A citizen can authenticate, fill a sample form, submit via APIM, and view status. axe-core baseline scan passes.
 
@@ -438,7 +438,7 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
   - **T1 — Installer skeleton** — PowerShell 7+ module structure under `scripts/install/`, parameter set (`-Environment dev|test|preprod|prod`, `-Zone dk|se|no|all`, `-WhatIf`, `-SkipFoundry`, `-SeedSyntheticData`, `-Verbose`).
   - **T2 — Pre-flight checks** — Az CLI / Az PowerShell / Bicep / Power Platform CLI / Foundry CLI presence; subscription / tenant / RBAC validation; quota and region availability for DK / SE / NO; consent prompts.
   - **T3 — Bicep deployment orchestration** — sequenced `New-AzDeployment` / `New-AzResourceGroupDeployment` calls invoking the modules from A1–A5 and A7 in dependency order with idempotent retries and per-step diagnostics.
-  - **T4 — Identity bootstrap** — invoke A2's B2C / Entra setup; register OIDC clients for A9 / A10 / A11; create service principals and managed identities for CI/CD and runtime.
+  - **T4 — Identity bootstrap** — invoke A2's External ID / Entra setup; register OIDC clients for A9 / A10 / A11; create service principals and managed identities for CI/CD and runtime.
   - **T5 — Data & AI provisioning** — Fabric workspaces, capacities and lakehouses (A4); Microsoft Foundry hubs / projects / agent imports / evaluations (A6); Purview accounts and scans (A13).
   - **T6 — Application deployment** — Static Web Apps + mobile build artefacts + ACS resources + Copilot Studio solution import + D365 managed solutions import (A8 / A9 / A10 / A11) + accessibility & i18n bundles (A12).
   - **T7 — Synthetic data seeding** — optional `-SeedSyntheticData` flag invokes A15's regeneration pipelines to populate DEV with the DK / SE / NO persona library, applications, conversations and golden eval datasets.
@@ -496,7 +496,7 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
 | R4 | 47 legacy portals not all decommissioned. | Decommission tracker, contract-first façades, sunset waves planned post-W4. | A0, A7 |
 | R5 | AI Act conformity for high-risk agent. | Documentation pipeline in Foundry; conformity assessment artefacts produced from evals + tracing. | A6, A13 |
 | R6 | Accessibility regressions late in delivery. | axe gate from W2; manual audit before W3 exit; design-system-first approach. | A12, A9 |
-| R7 | Tenant sprawl in Entra/B2C. | Strict naming + IaC-only tenant configuration; A2 owns the tenant model. | A2 |
+| R7 | Tenant sprawl in Entra ID / Entra External ID. | Strict naming + IaC-only tenant configuration; A2 owns the tenant model. | A2 |
 | R8 | Observability gaps preventing root-cause analysis. | A5's correlation-id contract is mandatory before W2; CI check enforces propagation. | A5 |
 | R9 | Cost overrun on Foundry / OpenAI usage. | Per-agent quotas; APIM rate limits per channel; FinOps dashboard in Power BI. | A6, A1 |
 | R10 | Partner agency integration delays. | Façade-and-mock pattern from W2; replay tests; contract-versioning policy. | A7 |

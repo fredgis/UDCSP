@@ -1,0 +1,19 @@
+{
+  "_comment": "Microsoft Entra External ID — profile-editing experience. In External ID, profile self-service is exposed by the My Account portal + Microsoft Graph PATCH /me. Substitutes the legacy Azure AD B2C custom policy 'B2C_1A_ProfileEdit'. This file declares which user attributes are editable and which are read-only.",
+  "editableAttributes": [
+    "displayName",
+    "givenName",
+    "surname",
+    "preferredLang",
+    "extension_country"
+  ],
+  "readOnlyAttributes": [
+    "userPrincipalName",
+    "extension_nationalIdHash",
+    "extension_eidasLoA"
+  ],
+  "_todo_case_study_scaffold": [
+    "If you expose a custom profile-edit page in the citizen web portal, this file is consumed by the API gateway to enforce server-side write filtering.",
+    "Read-only attributes are populated by the eIDAS bridge custom-extension on first sign-in and must never be patchable from the citizen UI."
+  ]
+}

@@ -7,4 +7,4 @@ jobs:
       - uses: actions/checkout@v4
       - shell: pwsh
         run: tests/security/scripts/Run-Security.ps1 -Target staging
-        env: { UDCSP_APIM_BASE_URL: '${{ vars.UDCSP_APIM_BASE_URL }}', UDCSP_B2C_TOKEN_ENDPOINT: '${{ secrets.UDCSP_B2C_TOKEN_ENDPOINT }}' }
+        env: { UDCSP_APIM_BASE_URL: '${{ vars.UDCSP_APIM_BASE_URL }}', UDCSP_EXTERNAL_ID_TOKEN_ENDPOINT: '${{ secrets.UDCSP_EXTERNAL_ID_TOKEN_ENDPOINT }}' }

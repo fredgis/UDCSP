@@ -1,0 +1,22 @@
+{
+  "_comment": "Microsoft Entra External ID — token-augmentation custom authentication extension that calls the eIDAS bridge to inject 'country', 'eidasLoA' and 'nationalIdHash' claims into the issued ID token. Substitutes the legacy B2C 'eidas-bridge-claims.xml' technical profile.",
+  "@odata.type": "#microsoft.graph.onTokenIssuanceStartCustomExtension",
+  "displayName": "udcsp-eidas-bridge-claims",
+  "endpointConfiguration": {
+    "@odata.type": "#microsoft.graph.httpRequestEndpoint",
+    "targetUrl": "{{eidas-bridge-function-url}}/api/onTokenIssuance"
+  },
+  "authenticationConfiguration": {
+    "@odata.type": "#microsoft.graph.azureAdTokenAuthentication",
+    "resourceId": "api://{{eidas-bridge-app-id}}"
+  },
+  "claimsForTokenConfiguration": [
+    { "claimIdInApiResponse": "country" },
+    { "claimIdInApiResponse": "eidasLoA" },
+    { "claimIdInApiResponse": "nationalIdHash" }
+  ],
+  "_todo_case_study_scaffold": [
+    "Deploy the eIDAS bridge as an Azure Function or Container App, then substitute eidas-bridge-function-url and eidas-bridge-app-id.",
+    "Grant the External tenant's first-party 'CustomAuthenticationExtensionClient' permission to call the bridge."
+  ]
+}

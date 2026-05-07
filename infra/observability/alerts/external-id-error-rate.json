@@ -1,7 +1,7 @@
 {
   "kind": "LogAlert",
   "properties": {
-    "displayName": "b2c-error-rate",
+    "displayName": "external-id-error-rate",
     "severity": 2,
     "enabled": true,
     "evaluationFrequency": "PT5M",

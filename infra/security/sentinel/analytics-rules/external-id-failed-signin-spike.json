@@ -1,7 +1,7 @@
 {
   "kind": "Scheduled",
   "properties": {
-    "displayName": "b2c-failed-signin-spike",
+    "displayName": "external-id-failed-signin-spike",
     "enabled": true,
     "severity": "High",
     "query": "SigninLogs | where ResultType != 0 | summarize Failures=count() by bin(TimeGenerated, 15m) | where Failures > 100",

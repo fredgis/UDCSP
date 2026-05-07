@@ -1,3 +1,0 @@
-<fragment>
-  <validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer"><openid-config url="{{b2c-openid-config-url}}" /><audiences><audience>{{b2c-api-audience}}</audience></audiences></validate-jwt>
-</fragment>
