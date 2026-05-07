@@ -40,19 +40,141 @@ UDCSP is **one** federated platform that:
 
 ## 📈 Before vs After at a Glance
 
-<p align="center">
-  <img src="./assets/before-after.svg" alt="Before vs After UDCSP — from 47 fragmented portals and 28-day decisions today, to 1 federated platform with 4-day decisions, 12 languages and full accessibility tomorrow." width="900"/>
-</p>
+<table align="center">
+<tr>
+<th width="42%" align="center">
+
+### ⏳ Today
+
+</th>
+<th width="16%" align="center">
+
+### ✨
+
+</th>
+<th width="42%" align="center">
+
+### 🚀 Tomorrow
+
+</th>
+</tr>
+<tr valign="top">
+<td>
+
+📂 &nbsp; **47 portals** — fragmented
+
+📅 &nbsp; **28-day** decisions
+
+🚫 &nbsp; No identity federation
+
+🗣️ &nbsp; Partial language coverage
+
+♿ &nbsp; Accessibility gaps
+
+🧩 &nbsp; Conflicting DPA rules
+
+</td>
+<td align="center">
+
+🇩🇰 &nbsp; 🇸🇪 &nbsp; 🇳🇴
+
+**UDCSP**
+
+🤖 ➜ 🏛️
+
+</td>
+<td>
+
+🏛️ &nbsp; **1 platform** · 3 zones
+
+📅 &nbsp; **4-day** decisions
+
+🔐 &nbsp; **2.1 M citizens** federated
+
+🗣️ &nbsp; **12 languages** native parity
+
+♿ &nbsp; **WCAG 2.1 AA** throughout
+
+🤖 &nbsp; **AI** at every step
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## 🏛️ Simplified Architecture
 
-<p align="center">
-  <img src="./assets/architecture-overview.svg" alt="UDCSP simplified architecture — citizens of Denmark, Sweden and Norway access the platform through web, mobile and voice channels; their identity is federated through Entra ID and Azure AD B2C; an API Management gateway routes requests to the Microsoft Foundry AI brain (classifier, translator, eligibility, assistant, document extractor) and to Logic Apps workflows; cases are managed in Dynamics 365 Customer Service; data and insights flow through Microsoft Fabric and Power BI; Microsoft Purview governs every layer." width="900"/>
-</p>
+<div align="center">
 
-> 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom through identity, the API gateway, and the Foundry-hosted AI brain before reaching the back-office case spine and the data platform. **Governance is a horizontal concern** (right-hand column) that audits and constrains every layer.
+### 👥 &nbsp; 2.1 M Citizens · 12 Languages
+
+🇩🇰 &nbsp; Denmark &nbsp;·&nbsp; 🇸🇪 &nbsp; Sweden &nbsp;·&nbsp; 🇳🇴 &nbsp; Norway
+
+⬇️
+
+### 🌐 &nbsp; Omnichannel Front Door
+
+💻 &nbsp; Web Portal &nbsp;·&nbsp; 📱 &nbsp; Mobile App &nbsp;·&nbsp; ☎️ &nbsp; Voice / IVR
+
+⬇️
+
+### 🔐 &nbsp; Cross-Border Identity
+
+![Entra ID](https://img.shields.io/badge/Microsoft-Entra%20ID-5E35B1?style=for-the-badge&labelColor=311B92)
+![Azure AD B2C](https://img.shields.io/badge/Azure-AD%20B2C-5E35B1?style=for-the-badge&labelColor=311B92)
+![eIDAS](https://img.shields.io/badge/eIDAS-bridge-5E35B1?style=for-the-badge&labelColor=311B92)
+
+⬇️
+
+### 🚪 &nbsp; API Gateway
+
+![APIM](https://img.shields.io/badge/Azure-API%20Management-00897B?style=for-the-badge&labelColor=004D40)
+
+⬇️
+
+### 🧠 &nbsp; AI Brain — Microsoft Foundry
+
+![Azure OpenAI](https://img.shields.io/badge/✨-Azure%20OpenAI-E65100?style=for-the-badge&labelColor=BF360C)
+![Classifier](https://img.shields.io/badge/🎯-Classifier-E65100?style=for-the-badge&labelColor=BF360C)
+![Translator](https://img.shields.io/badge/🌍-Translator-E65100?style=for-the-badge&labelColor=BF360C)
+
+![Eligibility](https://img.shields.io/badge/⚖️-Eligibility-E65100?style=for-the-badge&labelColor=BF360C)
+![Citizen Assistant](https://img.shields.io/badge/🤖-Citizen%20Assistant-E65100?style=for-the-badge&labelColor=BF360C)
+![Doc Extractor](https://img.shields.io/badge/📄-Doc%20Extractor-E65100?style=for-the-badge&labelColor=BF360C)
+
+⬇️
+
+### ⚙️ &nbsp; Workflow Orchestration
+
+![Logic Apps](https://img.shields.io/badge/Azure-Logic%20Apps-F9A825?style=for-the-badge&labelColor=F57F17)
+![Speed-up](https://img.shields.io/badge/28%20days-➜%204%20days-F9A825?style=for-the-badge&labelColor=F57F17)
+
+⬇️
+
+### 📋 &nbsp; Case Management
+
+![D365](https://img.shields.io/badge/Dynamics%20365-Customer%20Service-AD1457?style=for-the-badge&labelColor=880E4F)
+
+⬇️
+
+### 📊 &nbsp; Data & Insights
+
+![Fabric](https://img.shields.io/badge/Microsoft-Fabric-2E7D32?style=for-the-badge&labelColor=1B5E20)
+![Power BI](https://img.shields.io/badge/Power%20BI-📈-2E7D32?style=for-the-badge&labelColor=1B5E20)
+
+---
+
+#### 🛡️ &nbsp; Wrapped end-to-end by Trust & Governance
+
+![Purview](https://img.shields.io/badge/Microsoft-Purview-C62828?style=for-the-badge&labelColor=B71C1C)
+![GDPR](https://img.shields.io/badge/GDPR-✓-C62828?style=for-the-badge&labelColor=B71C1C)
+![EU AI Act](https://img.shields.io/badge/EU%20AI%20Act-✓-C62828?style=for-the-badge&labelColor=B71C1C)
+![WCAG](https://img.shields.io/badge/WCAG%202.1%20AA-✓-C62828?style=for-the-badge&labelColor=B71C1C)
+
+</div>
+
+> 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom — channels → identity → gateway → **Foundry AI brain** → workflow → case spine → data — while **Trust & Governance wraps every layer**.
 >
 > 👉 *Looking for the deep technical diagrams?* See [`architecture.md`](./architecture.md) — it keeps the full Mermaid views (data flows, AI request lifecycle, deployment topology, installer flow, …).
 
@@ -135,7 +257,6 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
-| 🎨 `assets/` | SVG infographics rendered in this README (`before-after.svg`, `architecture-overview.svg`). |
 | 🏛️ `infra/` *(future)* | Bicep / Terraform landing zone & per-domain modules. |
 | 💻 `apps/` *(future)* | Citizen portals, mobile shell, voice bot, Copilot Studio agents. |
 | 🔌 `services/` *(future)* | API microservices and Logic Apps definitions. |
