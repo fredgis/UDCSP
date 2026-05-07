@@ -85,7 +85,7 @@ Green = citizens / channels, purple = identity & AI, orange = backend & process,
 
 > 📖 **Reading the diagram:** citizens enter through web, mobile or voice; identity is federated and gated by API Management; requests are routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365 and analytics flow into Fabric + Power BI. **Microsoft Purview wraps every layer.**
 >
-> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./architecture.md#21-high-level-view-whole-platform) for the same picture with every Foundry agent, identity service and country flag broken out, then §2.2+ for the deep-dive layer breakdown, data flows, AI request lifecycle, deployment topology, and installer flow.
+> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/architecture.md#21-high-level-view-whole-platform) for the same picture with every Foundry agent, identity service and country flag broken out, then §2.2+ for the deep-dive layer breakdown, data flows, AI request lifecycle, deployment topology, and installer flow.
 
 ---
 
@@ -137,7 +137,7 @@ All nine services from the case study are first-class citizens of the platform �
 | 🟨 | 8 | **Azure Logic Apps** | Workflow orchestration of the 4-day end-to-end process across agencies. |
 | 🟩 | 9 | **Power BI** | Operational, executive, citizen-facing, and auditor dashboards on top of Fabric. |
 
-> 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./architecture.md).
+> 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./docs/architecture.md).
 
 ---
 
@@ -153,7 +153,7 @@ UDCSP is delivered by a swarm of **17 specialised AI coding agents**, organised 
 > [!TIP]
 > **From zero to running platform in one command.** Once Wave 4 closes, an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
 
-The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./plan.md).
+The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./docs/plan.md).
 
 ---
 
@@ -173,7 +173,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO) + 9 lakehouses + notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
-| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./installation.md). |
+| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/installation.md). |
 | ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
 | 📑 `agents.md` · `installation.md` · `recipe.md` | Build execution log · install procedure · acceptance walk-through. |
 
@@ -213,12 +213,12 @@ The table below maps every requirement and outcome stated in the case study to t
 | Audience | Start with |
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
-| 🎬 **Evaluators / demo audiences** | [`uses.md`](./uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
-| 🏗️ **Architects** | [`architecture.md`](./architecture.md) — deep-dive across 15 sections. |
-| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`installation.md`](./installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
-| 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./architecture.md). |
-| 📚 **Original case study** | [`case-study-11.md`](./case-study-11.md). |
+| 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
+| 🏗️ **Architects** | [`architecture.md`](./docs/architecture.md) — deep-dive across 15 sections. |
+| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
+| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
+| 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./docs/architecture.md). |
+| 📚 **Original case study** | [`case-study-11.md`](./docs/case-study-11.md). |
 
 ---
 

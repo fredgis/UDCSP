@@ -1,4 +1,4 @@
-// Scenario ID: D3 plus D1-D4 accessibility smoke from uses.md.
+// Scenario ID: D3 plus D1-D4 accessibility smoke from docs/uses.md.
 // Eval matrix rows: 8,12,13,17.
 // TODO: case-study scaffold. Run with Playwright a11y project.
 import { test, expect } from '@playwright/test'; import AxeBuilder from '@axe-core/playwright';

@@ -62,7 +62,7 @@
 
 ## Coverage Matrix — Demos × Evaluation Criteria
 
-The columns are the **18 evaluation matrix rows** from the [README](./README.md). A ✅ means the demo **actively exercises** that capability (not just touches it).
+The columns are the **18 evaluation matrix rows** from the [README](../README.md). A ✅ means the demo **actively exercises** that capability (not just touches it).
 
 | Demo | 1 · 47→1 | 2 · ID fed | 3 · 28d→4d | 4 · CSAT | 5 · AI 12 lang | 6 · Assist | 7 · Eligibility | 8 · WCAG | 9 · GDPR/AI Act | 10 · Sovereignty | 11 · DPA diff | 12 · Channels | 13 · Multilang | 14 · 9 services | 15 · Audit | 16 · Caseworker | 17 · Synth data | 18 · Installer |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -640,6 +640,6 @@ Regardless of which demo is being run, these are the transversal proof points an
 
 <div align="center">
 
-*See [`README.md`](./README.md) for the platform story, [`architecture.md`](./architecture.md) for the deep dive, [`plan.md`](./plan.md) for the multi-agent build plan, and [`case-study-11.md`](./case-study-11.md) for the original case study.*
+*See [`README.md`](../README.md) for the platform story, [`architecture.md`](./architecture.md) for the deep dive, [`plan.md`](./plan.md) for the multi-agent build plan, and [`case-study-11.md`](./case-study-11.md) for the original case study.*
 
 </div>

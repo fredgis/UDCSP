@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Orchestrates every component module in scripts/install/modules/, respecting
-    the wave dependencies declared in plan.md. Idempotent. Each phase is
+    the wave dependencies declared in docs/plan.md. Idempotent. Each phase is
     independently runnable via -Phase. Pure dry-run via -WhatIf. Component
     self-test via -TestOnly.
 
@@ -84,7 +84,7 @@ $Script:Report         = [ordered]@{
 }
 
 # ---------------------------------------------------------------------------
-# DAG (matches plan.md §4)
+# DAG (matches docs/plan.md §4)
 # ---------------------------------------------------------------------------
 $Script:Dag = [ordered]@{
     LandingZone    = @{ Wave = 0; DependsOn = @();                                    Module = 'Install-LandingZone.psm1' }

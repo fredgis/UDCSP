@@ -1,4 +1,4 @@
-// Scenario ID: D2 from uses.md — peak 1000 calls.
+// Scenario ID: D2 from docs/uses.md — peak 1000 calls.
 // Eval matrix rows: 6,8,12,13,15.
 // TODO: case-study scaffold. k6 exports JSON consumed by Generate-Load-Report.ps1.
 import http from 'k6/http'; import { check, sleep } from 'k6'; import { Trend, Rate } from 'k6/metrics';

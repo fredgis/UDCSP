@@ -1,4 +1,4 @@
-// Scenario ID: D2 from uses.md — Lars Norwegian voice status query.
+// Scenario ID: D2 from docs/uses.md — Lars Norwegian voice status query.
 // Eval matrix rows: 2,4,5,6,8,10,12,13,14,15,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';
