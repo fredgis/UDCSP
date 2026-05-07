@@ -1,0 +1,7 @@
+{
+  "name": "ACS",
+  "type": "managedApi",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/acs-connection",
+  "owner": "A7"
+}

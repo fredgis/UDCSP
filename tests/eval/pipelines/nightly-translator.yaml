@@ -1,0 +1,10 @@
+name: nightly-translator
+on: { workflow_dispatch: {}, schedule: [{ cron: "15 1 * * *" }] }
+jobs:
+  foundry-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/eval/scripts/Run-Eval-Pipeline.ps1 -Pipeline nightly-translator -Agent translator -SuitePath foundry/evaluations/eval-suites/translator.yaml -ResultsRoot tests/eval/results
+        env: { FOUNDRY_PROJECT_ENDPOINT: '${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}', AZURE_TENANT_ID: '${{ secrets.AZURE_TENANT_ID }}' }

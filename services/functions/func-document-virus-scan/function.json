@@ -1,0 +1,16 @@
+{
+  "bindings": [
+    {
+      "name": "event",
+      "type": "eventGridTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "lineage",
+      "type": "eventGrid",
+      "direction": "out",
+      "topicEndpointUri": "PurviewLineageTopicEndpoint",
+      "topicKeySetting": "PurviewLineageTopicKey"
+    }
+  ]
+}

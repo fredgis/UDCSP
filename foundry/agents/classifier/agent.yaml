@@ -1,0 +1,32 @@
+name: udcsp-classifier
+description: Detects request intent, topic, language, country and urgency for routing.
+model: gpt-5.4-mini
+systemPromptFile: system-prompt.md
+tools:
+  - language-detection
+  - intent-taxonomy
+  - apim-routing-hints
+temperature: 0.1
+maxTokens: 1400
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+evaluationSuite: ../../evaluations/eval-suites/classifier.yaml
+owner: A6 · Foundry & AI
+riskLevel: limited
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 450 ms; availability 99.9%"
+registryEntryRef: governance-ai-act://udcsp/classifier/v1

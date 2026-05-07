@@ -1,0 +1,27 @@
+{
+  "name": "required-tags-initiative",
+  "type": "Microsoft.Authorization/policySetDefinitions",
+  "properties": {
+    "displayName": "UDCSP required tags",
+    "description": "Case-study policy initiative scaffold for UDCSP landing zones.",
+    "metadata": {
+      "category": "UDCSP"
+    },
+    "parameters": {
+      "requiredTags": [
+        "costCenter",
+        "country",
+        "dataResidency",
+        "dataClassification",
+        "owner"
+      ]
+    },
+    "policyDefinitions": [
+      {
+        "policyDefinitionReferenceId": "require-tag-and-its-value",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      }
+    ]
+  }
+}

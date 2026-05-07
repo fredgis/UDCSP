@@ -1,0 +1,20 @@
+kind: Microsoft.CopilotStudio.VoiceDialog
+version: 1
+locale: da
+id: welcome
+prompts:
+  normal: "Welcome to Unified Digital Citizen Services. Say residency, tax, child benefit, or press 1, 2, or 3."
+  slowSpeech: "Welcome to Unified Digital Citizen Services. Say residency, tax, child benefit, or press 1, 2, or 3."
+bargeIn: true
+dtmfFallback:
+  '*': repeat
+  '0': escalate_to_agent
+  '1': residency
+  '2': tax_certificate
+  '3': child_benefit
+noInput:
+  retries: 2
+  then: escalate_to_agent
+noMatch:
+  retries: 2
+  then: escalate_to_agent

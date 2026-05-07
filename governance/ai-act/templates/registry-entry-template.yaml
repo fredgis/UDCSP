@@ -1,0 +1,18 @@
+required:
+  - id
+  - name
+  - riskLevel
+  - purpose
+  - dataSources
+  - trainingDataset
+  - evalDataset
+  - fairnessMetrics
+  - humanOversight
+  - postMarketMonitoring
+  - owner
+  - lastReview
+  - nextReview
+riskLevels:
+  - minimal
+  - limited
+  - high

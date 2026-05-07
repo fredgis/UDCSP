@@ -1,0 +1,20 @@
+import { FluentProvider, webLightTheme } from '@fluentui/react-components';
+import { MsalProvider } from '@azure/msal-react';
+import { IntlProvider } from 'react-intl';
+import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
+import { msalInstance } from './auth/msalConfig';
+import { AccessibilityMenu } from './components/AccessibilityMenu';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { SkipNav } from './components/SkipNav';
+import { SupportedLanguage } from './utils/language';
+import { AccessibilityStatementPage } from './pages/AccessibilityStatementPage';
+import { ApplyChildBenefitPage } from './pages/ApplyChildBenefitPage';
+import { ApplyResidencyPage } from './pages/ApplyResidencyPage';
+import { ApplyTaxCertPage } from './pages/ApplyTaxCertPage';
+import { CaseDetailPage } from './pages/CaseDetailPage';
+import { ConsentManagementPage } from './pages/ConsentManagementPage';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { LogoutCallbackPage } from './pages/LogoutCallbackPage';
+import { MyCasesPage } from './pages/MyCasesPage';
+export function App({ locale, messages, onLocaleChange }: { locale: SupportedLanguage; messages: Record<string, string>; onLocaleChange: (l: SupportedLanguage) => void }) { return <MsalProvider instance={msalInstance}><IntlProvider locale={locale} messages={messages} defaultLocale="en"><FluentProvider theme={webLightTheme}><BrowserRouter><SkipNav /><header><Link to="/" className="brand">UDCSP</Link><nav aria-label="Main"><Link to="/cases">My cases</Link><Link to="/consent">Consent</Link><Link to="/accessibility">Accessibility</Link><Link to="/login">Login</Link></nav><LanguageSwitcher value={locale} onChange={onLocaleChange} /></header><main id="main-content" tabIndex={-1}><Routes><Route path="/" element={<HomePage locale={locale} />} /><Route path="/apply/residency" element={<ApplyResidencyPage />} /><Route path="/apply/tax-certificate" element={<ApplyTaxCertPage />} /><Route path="/apply/child-benefit" element={<ApplyChildBenefitPage />} /><Route path="/cases" element={<MyCasesPage />} /><Route path="/cases/:id" element={<CaseDetailPage />} /><Route path="/accessibility" element={<><AccessibilityStatementPage /><AccessibilityMenu /></>} /><Route path="/consent" element={<ConsentManagementPage />} /><Route path="/login" element={<LoginPage />} /><Route path="/logout-callback" element={<LogoutCallbackPage />} /></Routes></main></BrowserRouter></FluentProvider></IntlProvider></MsalProvider>; }

@@ -1,0 +1,6 @@
+{"id": "gq-ar-01", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-ar-02", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-ar-03", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-ar-04", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-ar-05", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-ar-06", "language": "ar", "query": "أحتاج مساعدة في طلب الإقامة #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

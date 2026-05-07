@@ -1,0 +1,27 @@
+{
+  "agent": "classifier",
+  "tools": [
+    {
+      "name": "language-detection",
+      "type": "placeholder",
+      "description": "language-detection integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "intent-taxonomy",
+      "type": "placeholder",
+      "description": "intent-taxonomy integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "apim-routing-hints",
+      "type": "placeholder",
+      "description": "apim-routing-hints integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

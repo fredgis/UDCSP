@@ -1,0 +1,25 @@
+{
+  "name": "sla-risk-alert",
+  "environment": "parameterized",
+  "connectionReferences": {
+    "shared_commondataserviceforapps": "@parameters('dataverseConnection')"
+  },
+  "definition": {
+    "triggers": {
+      "dataverse": {
+        "type": "OpenApiConnectionWebhook",
+        "description": "When SLA KPI warning"
+      }
+    },
+    "actions": {
+      "step_1": {
+        "type": "OpenApiConnection",
+        "description": "Post Teams alert"
+      },
+      "step_2": {
+        "type": "OpenApiConnection",
+        "description": "Notify queue manager"
+      }
+    }
+  }
+}

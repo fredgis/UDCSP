@@ -1,0 +1,26 @@
+{
+  "name": "allowed-regions-initiative",
+  "type": "Microsoft.Authorization/policySetDefinitions",
+  "properties": {
+    "displayName": "UDCSP allowed EU regions",
+    "description": "Case-study policy initiative scaffold for UDCSP landing zones.",
+    "metadata": {
+      "category": "UDCSP"
+    },
+    "parameters": {
+      "listOfAllowedLocations": [
+        "northeurope",
+        "swedencentral",
+        "norwayeast",
+        "westeurope"
+      ]
+    },
+    "policyDefinitions": [
+      {
+        "policyDefinitionReferenceId": "allowed-locations",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "parameters": {}
+      }
+    ]
+  }
+}

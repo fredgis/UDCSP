@@ -1,0 +1,16 @@
+{
+  "name": "gold-kpis",
+  "country": "DK",
+  "workspace": "udcsp-dk-data",
+  "layer": "gold",
+  "domain": "UDCSP Citizen Services",
+  "oneLakePath": "/UDCSP/dk/gold/gold-kpis",
+  "sensitivityLabel": "Restricted-Cross-Border",
+  "description": "Curated KPI marts for DirectLake semantic models",
+  "tables": [
+    "applications_decisions",
+    "ai_decisions",
+    "conversations",
+    "sla_events"
+  ]
+}

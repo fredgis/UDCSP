@@ -1,0 +1,19 @@
+id: eligibility-model
+name: "Eligibility Pre-Assessor"
+riskLevel: high
+purpose: "Pre-assesses benefit entitlement before mandatory caseworker review."
+dataSources:
+  - D365 Dataverse cases
+  - Fabric silver applications
+  - validated policy reference data
+trainingDataset: "foundry/datasets/eligibility-training (A6) with anonymised closed cases"
+evalDataset: "foundry/evals/eligibility-golden-set by country and language"
+fairnessMetrics:
+  - equal opportunity difference by country <= 0.05
+  - language accuracy variance <= 3pp
+  - override rate reviewed monthly
+humanOversight: "Caseworker must review and can override every recommendation before a citizen-facing decision."
+postMarketMonitoring: "Quarterly bias, drift and override review; severe incidents escalated within 72 hours."
+owner: "A6/A13"
+lastReview: 2026-05-07
+nextReview: 2026-08-07

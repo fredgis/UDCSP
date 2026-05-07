@@ -1,0 +1,40 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: complaint
+  intent:
+    displayName: Complaint
+    triggerQueries:
+      - language: da
+        text: "complaint (da)"
+      - language: sv
+        text: "complaint (sv)"
+      - language: nb
+        text: "complaint (nb)"
+      - language: nn
+        text: "complaint (nn)"
+      - language: se
+        text: "complaint (se)"
+      - language: en
+        text: "complaint (en)"
+      - language: de
+        text: "complaint (de)"
+      - language: fr
+        text: "complaint (fr)"
+      - language: pl
+        text: "complaint (pl)"
+      - language: ar
+        text: "complaint (ar)"
+      - language: uk
+        text: "complaint (uk)"
+      - language: fi
+        text: "complaint (fi)"
+actions:
+  - kind: InvokeConnector
+    connector: foundry-classifier
+    input: =turn.activity.text
+  - kind: InvokeConnector
+    connector: foundry-citizen-assistant
+    input: =turn.activity.text
+  - kind: SendActivity
+    text: =Topic.Answer

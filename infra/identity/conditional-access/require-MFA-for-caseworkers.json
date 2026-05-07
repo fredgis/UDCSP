@@ -1,0 +1,17 @@
+{
+  "displayName": "require-MFA-for-caseworkers",
+  "state": "enabledForReportingButNotEnforced",
+  "conditions": {
+    "users": {
+      "includeGroups": [
+        "caseworkers"
+      ]
+    }
+  },
+  "grantControls": {
+    "builtInControls": [
+      "mfa"
+    ]
+  },
+  "todo": "TODO: case-study scaffold \u2014 replace with real values when deploying"
+}

@@ -1,0 +1,164 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "classifierAgentEndpoint": {
+        "type": "String"
+      },
+      "eligibilityAgentEndpoint": {
+        "type": "String"
+      },
+      "documentExtractorEndpoint": {
+        "type": "String"
+      },
+      "d365CasesEndpoint": {
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_message_received": {
+        "type": "ServiceProvider",
+        "inputs": {
+          "serviceProviderConfiguration": {
+            "connectionName": "serviceBus",
+            "operationId": "receiveQueueMessages",
+            "serviceProviderId": "/serviceProviders/serviceBus"
+          },
+          "parameters": {
+            "queueName": "applications-intake"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "application-intake",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')"
+          }
+        },
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Call_classifier_agent": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('classifierAgentEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Call_eligibility_agent": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('eligibilityAgentEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Call_classifier_agent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Call_document_extractor_if_attachments": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('documentExtractorEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Call_eligibility_agent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Create_D365_case": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('d365CasesEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Call_document_extractor_if_attachments": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Publish_application_submitted_lineage": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('purviewLineageTopicEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aeg-event-type": "Notification"
+          },
+          "body": [
+            {
+              "eventType": "CitizenApplicationSubmitted",
+              "subject": "@{parameters('country')}/@{workflow().run.name}",
+              "data": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "piiTouched": true,
+                "purviewLineage": true
+              },
+              "dataVersion": "1.0"
+            }
+          ]
+        },
+        "runAfter": {
+          "Create_D365_case": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

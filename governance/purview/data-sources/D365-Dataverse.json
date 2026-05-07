@@ -1,0 +1,17 @@
+{
+  "entity": {
+    "typeName": "dataverse_environment",
+    "attributes": {
+      "qualifiedName": "dataverse://udcsp-${country}-${env}",
+      "name": "D365-Dataverse",
+      "description": "Dynamics 365 Customer Service Dataverse mirrored to Fabric bronze"
+    },
+    "contacts": {
+      "Owner": [
+        {
+          "id": "A8"
+        }
+      ]
+    }
+  }
+}

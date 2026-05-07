@@ -1,0 +1,6 @@
+{"id": "gq-sv-01", "language": "sv", "query": "Jag behöver ett skatteintyg #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-sv-02", "language": "sv", "query": "Jag behöver ett skatteintyg #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-sv-03", "language": "sv", "query": "Jag behöver ett skatteintyg #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-sv-04", "language": "sv", "query": "Jag behöver ett skatteintyg #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-sv-05", "language": "sv", "query": "Jag behöver ett skatteintyg #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-sv-06", "language": "sv", "query": "Jag behöver ett skatteintyg #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

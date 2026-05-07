@@ -1,0 +1,11 @@
+name: A14 Foundry Monthly Bias and Safety
+on: { workflow_dispatch: {}, schedule: [{ cron: "45 3 1 * *" }] }
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    strategy: { matrix: { pipeline: [monthly-bias-audit, monthly-redteam-safety] } }
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/eval/scripts/Run-Eval-Pipeline.ps1 -Pipeline ${{ matrix.pipeline }}
+        env: { FOUNDRY_PROJECT_ENDPOINT: '${{ secrets.FOUNDRY_PROJECT_ENDPOINT }}' }

@@ -1,0 +1,1 @@
+export function ConsentManagementPage() { return <form><h1>Consent management</h1><fieldset><legend>Data sharing consent</legend><label><input type="checkbox" name="crossBorder" /> Allow verified cross-border agency checks for this application</label></fieldset><button type="submit">Save preferences</button></form>; }

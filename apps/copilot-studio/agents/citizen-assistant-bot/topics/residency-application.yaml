@@ -1,0 +1,40 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: residency-application
+  intent:
+    displayName: Residency Application
+    triggerQueries:
+      - language: da
+        text: "residency application (da)"
+      - language: sv
+        text: "residency application (sv)"
+      - language: nb
+        text: "residency application (nb)"
+      - language: nn
+        text: "residency application (nn)"
+      - language: se
+        text: "residency application (se)"
+      - language: en
+        text: "residency application (en)"
+      - language: de
+        text: "residency application (de)"
+      - language: fr
+        text: "residency application (fr)"
+      - language: pl
+        text: "residency application (pl)"
+      - language: ar
+        text: "residency application (ar)"
+      - language: uk
+        text: "residency application (uk)"
+      - language: fi
+        text: "residency application (fi)"
+actions:
+  - kind: InvokeConnector
+    connector: foundry-classifier
+    input: =turn.activity.text
+  - kind: InvokeConnector
+    connector: foundry-citizen-assistant
+    input: =turn.activity.text
+  - kind: SendActivity
+    text: =Topic.Answer

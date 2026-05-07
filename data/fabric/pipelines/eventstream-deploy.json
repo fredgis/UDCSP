@@ -1,0 +1,24 @@
+{
+  "name": "eventstream-deploy",
+  "type": "FabricDataPipeline",
+  "parameters": {
+    "country": "dk",
+    "eventhouse": "udcsp-${country}-rti"
+  },
+  "activities": [
+    {
+      "name": "CreateEventstream",
+      "type": "Rest",
+      "method": "PUT",
+      "url": "/eventstreams/udcsp-${country}-sla-events"
+    },
+    {
+      "name": "DeployAlertNotebook",
+      "type": "Notebook",
+      "path": "notebooks/04_real_time_intelligence_eventstream.py",
+      "dependsOn": [
+        "CreateEventstream"
+      ]
+    }
+  ]
+}

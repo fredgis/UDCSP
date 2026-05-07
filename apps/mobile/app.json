@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "UDCSP Citizen",
+    "slug": "udcsp-citizen",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "udcsp",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "eu.udcsp.citizen"
+    },
+    "android": {
+      "package": "eu.udcsp.citizen"
+    },
+    "extra": {
+      "b2cPolicy": "B2C_1A_SignUpOrSignIn"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "no-share-with-eidas-only-claims",
+  "policyType": "claims-based-data-sharing",
+  "legalBasis": "public-task-with-country-specific-review",
+  "minimisation": "share claims only; no raw national IDs",
+  "retentionDays": 90,
+  "from": "NO",
+  "to": "EU",
+  "purpose": "eIDAS identity assurance",
+  "allowedClaims": [
+    "assuranceLevel",
+    "identityProofedAt"
+  ],
+  "requiresConsent": false
+}

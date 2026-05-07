@@ -1,0 +1,9 @@
+name: udcsp-eidas-sandbox-conformance
+scenario_id: D1
+README_eval_rows: [2, 9, 10, 14, 15]
+metadata: { sandboxEndpoint: '${EIDAS_SANDBOX_ENDPOINT}', relyingPartyEntityId: '${UDCSP_EIDAS_ENTITY_ID}' }
+tests:
+  - id: eid-oidc-federated-login
+    asserts: [openid-connect, signed-claims, no-pii-copy]
+  - id: eid-cross-border-claim-token
+    asserts: [country-claim, assurance-level, replay-protection]

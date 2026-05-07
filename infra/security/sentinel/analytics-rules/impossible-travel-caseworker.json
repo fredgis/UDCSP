@@ -1,0 +1,13 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "impossible-travel-caseworker",
+    "enabled": true,
+    "severity": "High",
+    "query": "SigninLogs | where ResultType == 0 | summarize Countries=dcount(Location) by UserPrincipalName, bin(TimeGenerated, 1h) | where Countries > 1",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0
+  }
+}

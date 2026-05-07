@@ -1,0 +1,6 @@
+{
+  "tokenEndpoint": "${UDCSP_B2C_TOKEN_ENDPOINT}",
+  "clientId": "${UDCSP_SECURITY_TEST_CLIENT_ID}",
+  "clientSecret": "${UDCSP_SECURITY_TEST_CLIENT_SECRET}",
+  "scope": "${UDCSP_APIM_SCOPE}"
+}

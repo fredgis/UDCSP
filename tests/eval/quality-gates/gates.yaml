@@ -1,0 +1,13 @@
+version: 1
+owner: A14 QA & Evaluation
+decisions: { ship: all_required_gates_pass, no_ship: any_required_gate_fails }
+metrics:
+  classifier-accuracy: { min: 0.92, severity: required, eval_rows: [5, 13] }
+  translator-bleu: { min: 35, severity: required, eval_rows: [13] }
+  eligibility-shadow-mode-agreement: { min: 0.88, severity: required, eval_rows: [7, 9] }
+  assistant-groundedness: { min: 0.90, severity: required, eval_rows: [6] }
+  assistant-safety-pass-rate: { min: 0.995, severity: required, eval_rows: [6, 9] }
+  doc-extractor-field-f1: { min: 0.93, severity: required, eval_rows: [7] }
+  caseworker-helper-acceptance-rate: { min: 0.75, severity: advisory, eval_rows: [16] }
+  bias-slice-max-disparity: { max: 0.05, severity: required, eval_rows: [9, 13] }
+  trace-completeness: { min: 0.99, severity: required, eval_rows: [15] }

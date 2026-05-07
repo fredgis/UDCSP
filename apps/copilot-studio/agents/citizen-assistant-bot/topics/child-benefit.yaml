@@ -1,0 +1,40 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: child-benefit
+  intent:
+    displayName: Child Benefit
+    triggerQueries:
+      - language: da
+        text: "child benefit (da)"
+      - language: sv
+        text: "child benefit (sv)"
+      - language: nb
+        text: "child benefit (nb)"
+      - language: nn
+        text: "child benefit (nn)"
+      - language: se
+        text: "child benefit (se)"
+      - language: en
+        text: "child benefit (en)"
+      - language: de
+        text: "child benefit (de)"
+      - language: fr
+        text: "child benefit (fr)"
+      - language: pl
+        text: "child benefit (pl)"
+      - language: ar
+        text: "child benefit (ar)"
+      - language: uk
+        text: "child benefit (uk)"
+      - language: fi
+        text: "child benefit (fi)"
+actions:
+  - kind: InvokeConnector
+    connector: foundry-classifier
+    input: =turn.activity.text
+  - kind: InvokeConnector
+    connector: foundry-citizen-assistant
+    input: =turn.activity.text
+  - kind: SendActivity
+    text: =Topic.Answer

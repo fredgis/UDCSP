@@ -1,0 +1,25 @@
+{
+  "name": "dataverse-to-fabric-mirror",
+  "environment": "parameterized",
+  "connectionReferences": {
+    "shared_commondataserviceforapps": "@parameters('dataverseConnection')"
+  },
+  "definition": {
+    "triggers": {
+      "dataverse": {
+        "type": "OpenApiConnectionWebhook",
+        "description": "When Dataverse row changes"
+      }
+    },
+    "actions": {
+      "step_1": {
+        "type": "OpenApiConnection",
+        "description": "Validate mirror table"
+      },
+      "step_2": {
+        "type": "OpenApiConnection",
+        "description": "Emit Fabric bronze lineage event"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "agent": "translator",
+  "tools": [
+    {
+      "name": "azure-ai-translator",
+      "type": "placeholder",
+      "description": "azure-ai-translator integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "terminology-glossary",
+      "type": "placeholder",
+      "description": "terminology-glossary integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    },
+    {
+      "name": "back-translation-qa",
+      "type": "placeholder",
+      "description": "back-translation-qa integration. Configure endpoint and managed identity in the real Foundry tenant.",
+      "auth": "managedIdentity",
+      "network": "privateEndpoint"
+    }
+  ],
+  "notes": "Scaffold only; do not call live Azure APIs from this repository."
+}

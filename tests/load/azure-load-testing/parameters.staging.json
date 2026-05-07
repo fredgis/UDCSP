@@ -1,0 +1,5 @@
+{
+  "environment": "staging",
+  "apimBaseUrl": "${UDCSP_APIM_BASE_URL}",
+  "zone": "all"
+}

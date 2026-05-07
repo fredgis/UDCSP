@@ -1,0 +1,29 @@
+{
+  "name": "ai-pre-assessment-on-create",
+  "environment": "parameterized",
+  "connectionReferences": {
+    "shared_commondataserviceforapps": "@parameters('dataverseConnection')"
+  },
+  "definition": {
+    "triggers": {
+      "dataverse": {
+        "type": "OpenApiConnectionWebhook",
+        "description": "When udcsp_application is created"
+      }
+    },
+    "actions": {
+      "step_1": {
+        "type": "OpenApiConnection",
+        "description": "Call APIM eligibility-checks"
+      },
+      "step_2": {
+        "type": "OpenApiConnection",
+        "description": "Create udcsp_eligibility_assessment"
+      },
+      "step_3": {
+        "type": "OpenApiConnection",
+        "description": "Advance BPF to Pre-assess"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "foundry-citizen-assistant",
+  "type": "customConnector",
+  "endpoint": "${FOUNDRY_CITIZEN_ASSISTANT_ENDPOINT}",
+  "auth": "managedIdentity",
+  "status": "placeholder",
+  "note": "Configure in real tenant; no API call from scaffold."
+}

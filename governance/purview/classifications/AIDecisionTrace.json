@@ -1,0 +1,19 @@
+{
+  "classificationDef": {
+    "category": "CLASSIFICATION",
+    "name": "AIDecisionTrace",
+    "description": "Foundry trace fields needed for AI decision auditability",
+    "typeVersion": "1.0",
+    "attributeDefs": [
+      {
+        "name": "owner",
+        "typeName": "string",
+        "isOptional": true
+      }
+    ],
+    "options": {
+      "pattern": "\\b(trace_id|model_id|recommendation|confidence|human_overridden)\\b",
+      "minimumMatchThreshold": "0.8"
+    }
+  }
+}

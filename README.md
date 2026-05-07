@@ -166,13 +166,16 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
-| 🏛️ `infra/` *(future)* | Bicep / Terraform landing zone & per-domain modules. |
-| 💻 `apps/` *(future)* | Citizen portals, mobile shell, voice bot, Copilot Studio agents. |
-| 🔌 `services/` *(future)* | API microservices and Logic Apps definitions. |
-| 🧠 `foundry/` *(future)* | Foundry agents, prompts, evaluations, datasets. |
-| 📊 `data/` *(future)* | Fabric items, semantic models, Power BI reports, **synthetic personas & cases for DK/SE/NO** (A15). |
-| 🛡️ `governance/` *(future)* | Purview policies, AI Act registry entries, DPIAs. |
-| 🛠️ `scripts/install/` *(future)* | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16), tear-down counterpart, dev-onboarding scripts. |
+| 🏛️ `infra/` | Bicep landing zone, Entra External ID + Azure AD B2C custom policies, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
+| 💻 `apps/` | React web portal, Expo mobile shell, ACS + AI Speech voice bot (6 languages), Copilot Studio bot, D365 model-driven apps + Power Platform solutions. |
+| 🔌 `services/` | API Management (8 OpenAPI APIs), Logic Apps (6 workflows), Functions / Container Apps, Power Automate flows. |
+| 🧠 `foundry/` | 6 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper), prompts, evaluations, datasets. |
+| 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO) + 9 lakehouses + notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
+| 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
+| 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
+| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./installation.md). |
+| ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
+| 📑 `agents.md` · `installation.md` · `recipe.md` | Build execution log · install procedure · acceptance walk-through. |
 
 ---
 
@@ -213,7 +216,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
 | 🏗️ **Architects** | [`architecture.md`](./architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`plan.md`](./plan.md) §A16 + the future `scripts/install/Install-UDCSP.ps1` one-shot installer. |
+| 🛠️ **Operators / DevOps** | [`installation.md`](./installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
 | 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./architecture.md). |
 | 📚 **Original case study** | [`case-study-11.md`](./case-study-11.md). |
 

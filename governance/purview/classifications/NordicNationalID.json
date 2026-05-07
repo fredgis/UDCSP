@@ -1,0 +1,19 @@
+{
+  "classificationDef": {
+    "category": "CLASSIFICATION",
+    "name": "NordicNationalID",
+    "description": "DK CPR, SE personnummer or NO fødselsnummer patterns",
+    "typeVersion": "1.0",
+    "attributeDefs": [
+      {
+        "name": "owner",
+        "typeName": "string",
+        "isOptional": true
+      }
+    ],
+    "options": {
+      "pattern": "(\\b\\d{6}[- ]?\\d{4}\\b)|(\\b\\d{10}\\b)|(\\b\\d{11}\\b)",
+      "minimumMatchThreshold": "0.8"
+    }
+  }
+}

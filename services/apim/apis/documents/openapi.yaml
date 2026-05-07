@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Documents API
+  version: 1.0.0
+servers:
+  - url: https://{gateway-host}/documents
+paths:
+  /upload-url:
+    post:
+      summary: Create pre-signed upload URL
+      operationId: post-documents-upload-url
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Request" }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+  /virus-scan-callback:
+    post:
+      summary: Receive virus-scan callback
+      operationId: post-documents-virus-scan-callback
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Request" }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Request: { type: object, additionalProperties: true }
+    Response:
+      type: object
+      properties:
+        correlationId: { type: string }
+        status: { type: string }

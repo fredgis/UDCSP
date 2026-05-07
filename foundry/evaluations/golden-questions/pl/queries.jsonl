@@ -1,0 +1,6 @@
+{"id": "gq-pl-01", "language": "pl", "query": "Chcę sprawdzić status sprawy #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-pl-02", "language": "pl", "query": "Chcę sprawdzić status sprawy #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-pl-03", "language": "pl", "query": "Chcę sprawdzić status sprawy #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-pl-04", "language": "pl", "query": "Chcę sprawdzić status sprawy #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-pl-05", "language": "pl", "query": "Chcę sprawdzić status sprawy #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-pl-06", "language": "pl", "query": "Chcę sprawdzić status sprawy #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

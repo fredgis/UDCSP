@@ -1,0 +1,25 @@
+{
+  "location": "${location}",
+  "properties": {
+    "dataSources": {},
+    "destinations": {
+      "logAnalytics": [
+        {
+          "name": "central",
+          "workspaceResourceId": "${workspaceResourceId}"
+        }
+      ]
+    },
+    "dataFlows": [
+      {
+        "streams": [
+          "Microsoft-Perf",
+          "Microsoft-Event"
+        ],
+        "destinations": [
+          "central"
+        ]
+      }
+    ]
+  }
+}

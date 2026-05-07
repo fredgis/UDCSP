@@ -1,0 +1,27 @@
+{
+  "labels": [
+    {
+      "name": "Public",
+      "description": "Open government information",
+      "priority": 0
+    },
+    {
+      "name": "Internal",
+      "description": "Operational data without citizen PII",
+      "priority": 10
+    },
+    {
+      "name": "Confidential-Citizen",
+      "description": "Citizen PII, applications and case data",
+      "priority": 50,
+      "encryption": "required"
+    },
+    {
+      "name": "Restricted-Cross-Border",
+      "description": "Data products shareable across countries only under approved policy",
+      "priority": 90,
+      "encryption": "required",
+      "watermark": "UDCSP restricted"
+    }
+  ]
+}

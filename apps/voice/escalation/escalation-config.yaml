@@ -1,0 +1,10 @@
+version: 1
+routeToHumanWhen:
+  negativeSentimentScoreAtOrBelow: -0.45
+  repeatedMisunderstandings: 2
+  sensitiveTopics: [domestic_violence, homelessness, child_safety, legal_appeal, identity_theft]
+  citizenSays: [agent, human, caseworker, complaint]
+  authenticationFailures: 2
+queues:
+  default: d365-citizen-service
+  sensitive: d365-sensitive-cases

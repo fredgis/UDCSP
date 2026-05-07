@@ -1,0 +1,22 @@
+{
+  "entity": {
+    "typeName": "powerbi_workspace",
+    "attributes": {
+      "qualifiedName": "fabric://udcsp-no-data",
+      "name": "udcsp-no-data",
+      "description": "Norway Fabric workspace in UDCSP Citizen Services domain"
+    },
+    "relationshipAttributes": {
+      "domain": {
+        "displayText": "UDCSP Citizen Services"
+      }
+    },
+    "contacts": {
+      "Owner": [
+        {
+          "id": "A4"
+        }
+      ]
+    }
+  }
+}

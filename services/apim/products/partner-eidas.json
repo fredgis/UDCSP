@@ -1,0 +1,15 @@
+{
+  "name": "partner-eidas",
+  "displayName": "Partner Eidas",
+  "subscriptionRequired": true,
+  "approvalRequired": true,
+  "quota": {
+    "calls": 10000,
+    "renewalPeriod": "P1D"
+  },
+  "apis": [
+    "citizen-applications",
+    "case-management",
+    "documents"
+  ]
+}

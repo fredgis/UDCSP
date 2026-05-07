@@ -1,0 +1,17 @@
+id: doc-extractor
+name: "Document Intelligence Extractor"
+riskLevel: limited
+purpose: "Extracts structured fields from passports, leases and benefit evidence for caseworker review."
+dataSources:
+  - citizen uploaded documents
+  - D365 case attachments
+trainingDataset: "document-intelligence custom extraction samples managed by A6"
+evalDataset: "foundry/evals/doc-extractor-field-accuracy"
+fairnessMetrics:
+  - field accuracy by document language >= 95%
+  - manual correction parity by country <= 5pp
+humanOversight: "Extracted values are never final until confirmed by citizen or caseworker."
+postMarketMonitoring: "Monthly field-error and correction review."
+owner: "A6/A13"
+lastReview: 2026-05-07
+nextReview: 2026-08-07

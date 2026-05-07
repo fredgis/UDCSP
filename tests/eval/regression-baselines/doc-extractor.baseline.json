@@ -1,0 +1,9 @@
+{
+  "agent": "doc-extractor",
+  "baselineDate": "2026-05-07",
+  "sourceSuite": "foundry/evaluations/eval-suites/doc-extractor.yaml",
+  "scores": {
+    "trace-completeness": 0.99
+  },
+  "frozen": true
+}

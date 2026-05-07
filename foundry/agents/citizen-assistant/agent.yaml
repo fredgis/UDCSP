@@ -1,0 +1,33 @@
+name: udcsp-citizen-assistant
+description: Plain-language citizen assistant exposed through Copilot Studio, web, mobile and voice.
+model: gpt-5.4
+systemPromptFile: system-prompt.md
+tools:
+  - knowledge-search
+  - foundry-classifier
+  - content-safety
+  - handoff-to-copilot-studio
+temperature: 0.3
+maxTokens: 2400
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+evaluationSuite: ../../evaluations/eval-suites/citizen-assistant.yaml
+owner: A6 · Foundry & AI
+riskLevel: limited
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 1.8 s text; voice turn budget 2.5 s"
+registryEntryRef: governance-ai-act://udcsp/citizen-assistant/v1

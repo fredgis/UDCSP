@@ -1,0 +1,21 @@
+{
+  "runOnly": {
+    "type": "tag",
+    "values": [
+      "wcag2a",
+      "wcag2aa",
+      "best-practice"
+    ]
+  },
+  "rules": {
+    "color-contrast": {
+      "enabled": true
+    },
+    "label": {
+      "enabled": true
+    },
+    "aria-allowed-attr": {
+      "enabled": true
+    }
+  }
+}

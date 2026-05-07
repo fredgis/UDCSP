@@ -1,0 +1,25 @@
+{
+  "kind": "LogAlert",
+  "properties": {
+    "displayName": "b2c-error-rate",
+    "severity": 2,
+    "enabled": true,
+    "evaluationFrequency": "PT5M",
+    "windowSize": "PT15M",
+    "criteria": {
+      "allOf": [
+        {
+          "query": "SigninLogs | where ResultType != 0 | summarize Errors=count() by bin(TimeGenerated, 5m) | where Errors > 50",
+          "timeAggregation": "Count",
+          "operator": "GreaterThan",
+          "threshold": 0
+        }
+      ]
+    },
+    "actions": {
+      "actionGroups": [
+        "${actionGroupId}"
+      ]
+    }
+  }
+}

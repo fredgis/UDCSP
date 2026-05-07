@@ -1,0 +1,20 @@
+{
+  "name": "udcsp-sharepoint-policies",
+  "type": "sharepoint",
+  "url": "${UDCSP_POLICY_SITE_URL}",
+  "languages": [
+    "da",
+    "sv",
+    "nb",
+    "nn",
+    "se",
+    "en",
+    "de",
+    "fr",
+    "pl",
+    "ar",
+    "uk",
+    "fi"
+  ],
+  "status": "placeholder"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Storage",
+  "type": "managedApi",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/storage-connection",
+  "owner": "A7"
+}

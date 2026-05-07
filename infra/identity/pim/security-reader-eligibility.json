@@ -1,0 +1,10 @@
+{
+  "role": "security-reader",
+  "scope": "/subscriptions/${subscriptionId}",
+  "principalId": "TODO: case-study scaffold \u2014 replace with real values when deploying",
+  "assignmentState": "Eligible",
+  "justification": "UDCSP controlled privileged access",
+  "schedule": {
+    "duration": "PT8H"
+  }
+}

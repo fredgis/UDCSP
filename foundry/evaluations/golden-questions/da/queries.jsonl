@@ -1,0 +1,6 @@
+{"id": "gq-da-01", "language": "da", "query": "Jeg vil søge om ophold i Sverige #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-da-02", "language": "da", "query": "Jeg vil søge om ophold i Sverige #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-da-03", "language": "da", "query": "Jeg vil søge om ophold i Sverige #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-da-04", "language": "da", "query": "Jeg vil søge om ophold i Sverige #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-da-05", "language": "da", "query": "Jeg vil søge om ophold i Sverige #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-da-06", "language": "da", "query": "Jeg vil søge om ophold i Sverige #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

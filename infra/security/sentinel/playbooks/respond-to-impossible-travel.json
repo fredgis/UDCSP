@@ -1,0 +1,29 @@
+{
+  "definition": {
+    "triggers": {
+      "sentinel_incident": {
+        "type": "Request",
+        "kind": "Http"
+      }
+    },
+    "actions": {
+      "disable_user": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "https://graph.microsoft.com/v1.0/users/${userId}/revokeSignInSessions"
+        }
+      },
+      "notify_soc": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": "teams",
+          "body": "Impossible travel detected for caseworker"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "userId": "TODO: case-study scaffold \u2014 replace with real values when deploying"
+  }
+}

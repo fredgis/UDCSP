@@ -1,0 +1,40 @@
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: language-switch
+  intent:
+    displayName: Language Switch
+    triggerQueries:
+      - language: da
+        text: "language switch (da)"
+      - language: sv
+        text: "language switch (sv)"
+      - language: nb
+        text: "language switch (nb)"
+      - language: nn
+        text: "language switch (nn)"
+      - language: se
+        text: "language switch (se)"
+      - language: en
+        text: "language switch (en)"
+      - language: de
+        text: "language switch (de)"
+      - language: fr
+        text: "language switch (fr)"
+      - language: pl
+        text: "language switch (pl)"
+      - language: ar
+        text: "language switch (ar)"
+      - language: uk
+        text: "language switch (uk)"
+      - language: fi
+        text: "language switch (fi)"
+actions:
+  - kind: InvokeConnector
+    connector: foundry-classifier
+    input: =turn.activity.text
+  - kind: InvokeConnector
+    connector: foundry-citizen-assistant
+    input: =turn.activity.text
+  - kind: SendActivity
+    text: =Topic.Answer

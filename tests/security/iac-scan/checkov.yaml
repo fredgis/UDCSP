@@ -1,0 +1,4 @@
+framework: bicep
+directory:
+  - infra
+skip-check: []

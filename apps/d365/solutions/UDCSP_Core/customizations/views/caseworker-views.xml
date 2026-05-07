@@ -1,0 +1,1 @@
+<SavedQueries><SavedQuery name="My Open Cases" fetch="status=open and owner=currentuser" /><SavedQuery name="SLA-Risk" fetch="slaStatus in warning,breached" /><SavedQuery name="AI Pre-assessed" fetch="udcsp_confidence gt 0.7" /></SavedQueries>

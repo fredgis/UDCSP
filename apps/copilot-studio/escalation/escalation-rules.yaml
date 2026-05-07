@@ -1,0 +1,13 @@
+rules:
+  - name: low-confidence
+    when: classifierConfidence < 0.70
+    action: createD365Case
+  - name: high-risk-benefit-or-residency
+    when: topic in [social-benefit, residency-application] and asksForDecision == true
+    action: humanCaseworkerReview
+  - name: accessibility-request
+    when: accessibilityNeed != 'none'
+    action: priorityAccessibilityQueue
+  - name: citizen-asks-human
+    when: userIntent == 'escalate-to-human'
+    action: createD365Case

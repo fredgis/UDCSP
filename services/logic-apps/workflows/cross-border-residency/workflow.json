@@ -1,0 +1,164 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "eidasValidationEndpoint": {
+        "type": "String"
+      },
+      "dkResidencyFacadeEndpoint": {
+        "type": "String"
+      },
+      "d365CasesEndpoint": {
+        "type": "String"
+      },
+      "acsNotificationEndpoint": {
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_message_received": {
+        "type": "ServiceProvider",
+        "inputs": {
+          "serviceProviderConfiguration": {
+            "connectionName": "serviceBus",
+            "operationId": "receiveQueueMessages",
+            "serviceProviderId": "/serviceProviders/serviceBus"
+          },
+          "parameters": {
+            "queueName": "cross-border-coordination"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "cross-border-residency",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')"
+          }
+        },
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Validate_eIDAS_claims": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('eidasValidationEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Fetch_DK_record_token": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('dkResidencyFacadeEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Validate_eIDAS_claims": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Create_SE_D365_case": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('d365CasesEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Fetch_DK_record_token": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Notify_citizen_ACS": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('acsNotificationEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Create_SE_D365_case": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Publish_cross_border_lineage": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('purviewLineageTopicEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aeg-event-type": "Notification"
+          },
+          "body": [
+            {
+              "eventType": "CitizenApplicationSubmitted",
+              "subject": "@{parameters('country')}/@{workflow().run.name}",
+              "data": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "piiTouched": true,
+                "purviewLineage": true
+              },
+              "dataVersion": "1.0"
+            }
+          ]
+        },
+        "runAfter": {
+          "Notify_citizen_ACS": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

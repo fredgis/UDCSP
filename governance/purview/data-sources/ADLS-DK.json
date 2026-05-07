@@ -1,0 +1,22 @@
+{
+  "entity": {
+    "typeName": "azure_datalake_gen2",
+    "attributes": {
+      "qualifiedName": "https://udcspdk${env}adls.dfs.core.windows.net/",
+      "name": "ADLS-DK",
+      "description": "Denmark sovereign landing zone for mirrored documents and OneLake shortcuts"
+    },
+    "classifications": [
+      {
+        "typeName": "Confidential-Citizen"
+      }
+    ],
+    "contacts": {
+      "Owner": [
+        {
+          "id": "A13"
+        }
+      ]
+    }
+  }
+}

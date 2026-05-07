@@ -1,0 +1,2 @@
+import { Pressable, Text } from 'react-native';
+export function AccessibleButton({ label, hint, onPress }: { label: string; hint?: string; onPress?: () => void }) { return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={hint} onPress={onPress} style={{ padding: 14, backgroundColor: '#005ea8', borderRadius: 6, marginVertical: 6 }}><Text style={{ color: '#fff', fontWeight: '600' }}>{label}</Text></Pressable>; }

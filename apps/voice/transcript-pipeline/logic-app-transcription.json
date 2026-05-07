@@ -1,0 +1,21 @@
+{
+  "name": "udcsp-live-transcription-route",
+  "trigger": "ACS call connected event",
+  "steps": [
+    "Stream call audio to Azure AI Speech STT",
+    "Attach traceparent/callCorrelationId",
+    "Send transcript chunks to Foundry classifier endpoint placeholder",
+    "Route to Copilot Studio dialog by intent/language",
+    "Escalate to D365 human agent when escalation policy matches",
+    "Persist redacted transcript metadata for audit"
+  ],
+  "outputs": {
+    "dialogRoute": "copilotStudio.topicId",
+    "humanQueue": "d365.queueId"
+  },
+  "placeholders": [
+    "FOUNDRY_CLASSIFIER_ENDPOINT",
+    "COPILOT_STUDIO_VOICE_ENDPOINT",
+    "D365_OMNICHANNEL_QUEUE_ID"
+  ]
+}

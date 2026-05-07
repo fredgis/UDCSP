@@ -1,0 +1,11 @@
+{
+  "country": "se",
+  "localTerminology": {
+    "residency": "Folkbokf\u00f6ring"
+  },
+  "queueNames": [
+    "residency-SE",
+    "tax-SE"
+  ],
+  "dependsOn": "UDCSPCore"
+}

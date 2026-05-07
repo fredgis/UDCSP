@@ -1,0 +1,4 @@
+article,control,evidence_path,owner,status
+25,Data protection by design,tests/conformance/gdpr/dpia-evidence-template.md,A13,scaffold
+32,Security of processing,tests/security/results,A3,scaffold
+35,DPIA,tests/conformance/gdpr/dpia-evidence-template.md,A3,scaffold

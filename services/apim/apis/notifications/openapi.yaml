@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: Notifications API
+  version: 1.0.0
+servers:
+  - url: https://{gateway-host}/notifications
+paths:
+  /messages:
+    post:
+      summary: Send ACS Teams or email notification
+      operationId: post-notifications-messages
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Request" }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+  /messages/{messageId}:
+    get:
+      summary: Read notification status
+      operationId: get-notifications-messages-messageId
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Request: { type: object, additionalProperties: true }
+    Response:
+      type: object
+      properties:
+        correlationId: { type: string }
+        status: { type: string }

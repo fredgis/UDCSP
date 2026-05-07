@@ -1,0 +1,16 @@
+{
+  "name": "caseworker-portal",
+  "displayName": "Caseworker Portal",
+  "subscriptionRequired": true,
+  "approvalRequired": false,
+  "quota": {
+    "calls": 10000,
+    "renewalPeriod": "P1D"
+  },
+  "apis": [
+    "case-management",
+    "eligibility-checks",
+    "notifications",
+    "agent-classifier"
+  ]
+}

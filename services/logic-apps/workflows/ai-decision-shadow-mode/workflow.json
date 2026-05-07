@@ -1,0 +1,113 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "eligibilityAgentEndpoint": {
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_request_received": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "ai-decision-shadow-mode",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')"
+          }
+        },
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Run_AI_eligibility_shadow": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('eligibilityAgentEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Compare_with_caseworker_decision": {
+        "type": "Compose",
+        "inputs": {
+          "agreement": "@equals(body('Run_AI_eligibility_shadow')?['recommendation'], triggerBody()?['caseworkerDecision'])",
+          "traceparent": "@outputs('Ensure_traceparent')"
+        },
+        "runAfter": {
+          "Run_AI_eligibility_shadow": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Publish_shadow_metrics_lineage": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('purviewLineageTopicEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aeg-event-type": "Notification"
+          },
+          "body": [
+            {
+              "eventType": "EligibilityAssessed",
+              "subject": "@{parameters('country')}/@{workflow().run.name}",
+              "data": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "piiTouched": true,
+                "purviewLineage": true
+              },
+              "dataVersion": "1.0"
+            }
+          ]
+        },
+        "runAfter": {
+          "Compare_with_caseworker_decision": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

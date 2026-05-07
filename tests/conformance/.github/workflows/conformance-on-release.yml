@@ -1,0 +1,11 @@
+name: A14 Conformance On Release
+on: { workflow_dispatch: {}, release: { types: [published] } }
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: pwsh
+        run: tests/conformance/scripts/Generate-Conformance-Pack.ps1 -ReleaseVersion ${{ github.ref_name }}
+      - uses: actions/upload-artifact@v4
+        with: { name: conformance-pack, path: tests/conformance/results }

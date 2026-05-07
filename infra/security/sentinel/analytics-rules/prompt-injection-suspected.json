@@ -1,0 +1,13 @@
+{
+  "kind": "Scheduled",
+  "properties": {
+    "displayName": "prompt-injection-suspected",
+    "enabled": true,
+    "severity": "High",
+    "query": "FoundryTraces_CL | where SafetySignal has \"prompt_injection\" or Prompt has_any (\"ignore previous\", \"system prompt\")",
+    "queryFrequency": "PT15M",
+    "queryPeriod": "PT1H",
+    "triggerOperator": "GreaterThan",
+    "triggerThreshold": 0
+  }
+}

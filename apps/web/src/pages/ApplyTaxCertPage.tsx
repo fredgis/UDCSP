@@ -1,0 +1,2 @@
+import { submitApplication } from '../api/applications';
+export function ApplyTaxCertPage() { return <form onSubmit={e => { e.preventDefault(); void submitApplication({ type: 'tax-cert', country: 'dk', payload: Object.fromEntries(new FormData(e.currentTarget)) }); }}><h1>Tax certificate</h1><label htmlFor="taxYear">Tax year</label><input id="taxYear" name="taxYear" inputMode="numeric" required /><label htmlFor="purpose">Purpose</label><textarea id="purpose" name="purpose" required /><button>Request certificate</button></form>; }

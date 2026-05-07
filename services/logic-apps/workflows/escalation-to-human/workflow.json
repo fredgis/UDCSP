@@ -1,0 +1,121 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "d365EscalationEndpoint": {
+        "type": "String"
+      },
+      "d365QueueEndpoint": {
+        "type": "String"
+      }
+    },
+    "triggers": {
+      "When_request_received": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "escalation-to-human",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')"
+          }
+        },
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Create_D365_escalation_case": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('d365EscalationEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Route_to_skill_queue": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('d365QueueEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": "@triggerBody()"
+        },
+        "runAfter": {
+          "Create_D365_escalation_case": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Publish_safety_or_low_confidence_lineage": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('purviewLineageTopicEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aeg-event-type": "Notification"
+          },
+          "body": [
+            {
+              "eventType": "ContentSafetyHit",
+              "subject": "@{parameters('country')}/@{workflow().run.name}",
+              "data": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "piiTouched": true,
+                "purviewLineage": true
+              },
+              "dataVersion": "1.0"
+            }
+          ]
+        },
+        "runAfter": {
+          "Route_to_skill_queue": [
+            "Succeeded"
+          ]
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful"
+}

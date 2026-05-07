@@ -1,0 +1,3 @@
+<fragment>
+  <validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer"><openid-config url="{{entra-openid-config-url}}" /><audiences><audience>{{entra-api-audience}}</audience></audiences></validate-jwt>
+</fragment>

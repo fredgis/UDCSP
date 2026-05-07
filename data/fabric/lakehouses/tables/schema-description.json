@@ -1,0 +1,199 @@
+{
+  "tables": [
+    {
+      "name": "citizens",
+      "columns": [
+        {
+          "name": "citizen_id",
+          "type": "string",
+          "description": "Pseudonymous citizen key"
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "description": "DK/SE/NO"
+        },
+        {
+          "name": "national_id_hash",
+          "type": "string",
+          "description": "Hashed CPR/personnummer/fødselsnummer"
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "description": "Preferred language"
+        },
+        {
+          "name": "consent_cross_border",
+          "type": "boolean",
+          "description": "Consent flag"
+        }
+      ]
+    },
+    {
+      "name": "applications",
+      "columns": [
+        {
+          "name": "application_id",
+          "type": "string",
+          "description": "Case/application identifier"
+        },
+        {
+          "name": "citizen_id",
+          "type": "string",
+          "description": "Pseudonymous citizen key"
+        },
+        {
+          "name": "case_type",
+          "type": "string",
+          "description": "Residency/tax/benefit"
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp",
+          "description": "Submission time"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "description": "Current state"
+        }
+      ]
+    },
+    {
+      "name": "applications_decisions",
+      "columns": [
+        {
+          "name": "application_id",
+          "type": "string",
+          "description": "Application identifier"
+        },
+        {
+          "name": "decision",
+          "type": "string",
+          "description": "Approved/denied/more-info"
+        },
+        {
+          "name": "decided_at",
+          "type": "timestamp",
+          "description": "Human decision time"
+        },
+        {
+          "name": "processing_days",
+          "type": "decimal(9,2)",
+          "description": "Elapsed days"
+        },
+        {
+          "name": "caseworker_id_hash",
+          "type": "string",
+          "description": "Pseudonymous reviewer"
+        }
+      ]
+    },
+    {
+      "name": "ai_decisions",
+      "columns": [
+        {
+          "name": "trace_id",
+          "type": "string",
+          "description": "Foundry trace id"
+        },
+        {
+          "name": "application_id",
+          "type": "string",
+          "description": "Application identifier"
+        },
+        {
+          "name": "model_id",
+          "type": "string",
+          "description": "AI Act registry id"
+        },
+        {
+          "name": "recommendation",
+          "type": "string",
+          "description": "AI recommendation"
+        },
+        {
+          "name": "confidence",
+          "type": "double",
+          "description": "Model confidence"
+        },
+        {
+          "name": "human_overridden",
+          "type": "boolean",
+          "description": "Oversight outcome"
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "description": "Decision language for fairness and accuracy metrics"
+        },
+        {
+          "name": "human_decision",
+          "type": "string",
+          "description": "Final human decision used to assess AI accuracy"
+        }
+      ]
+    },
+    {
+      "name": "conversations",
+      "columns": [
+        {
+          "name": "conversation_id",
+          "type": "string",
+          "description": "Channel session"
+        },
+        {
+          "name": "citizen_id",
+          "type": "string",
+          "description": "Pseudonymous citizen key"
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "description": "ISO language"
+        },
+        {
+          "name": "csat_score",
+          "type": "int",
+          "description": "1-5 score"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp",
+          "description": "Start time"
+        }
+      ]
+    },
+    {
+      "name": "sla_events",
+      "columns": [
+        {
+          "name": "event_id",
+          "type": "string",
+          "description": "Event id"
+        },
+        {
+          "name": "application_id",
+          "type": "string",
+          "description": "Application identifier"
+        },
+        {
+          "name": "event_type",
+          "type": "string",
+          "description": "queued/assigned/breach-risk/breached"
+        },
+        {
+          "name": "event_time",
+          "type": "timestamp",
+          "description": "Event time"
+        },
+        {
+          "name": "risk_score",
+          "type": "double",
+          "description": "Breach probability"
+        }
+      ]
+    }
+  ]
+}

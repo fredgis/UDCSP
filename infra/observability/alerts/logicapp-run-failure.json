@@ -1,0 +1,25 @@
+{
+  "kind": "LogAlert",
+  "properties": {
+    "displayName": "logicapp-run-failure",
+    "severity": 2,
+    "enabled": true,
+    "evaluationFrequency": "PT5M",
+    "windowSize": "PT15M",
+    "criteria": {
+      "allOf": [
+        {
+          "query": "AzureDiagnostics | where ResourceProvider == \"MICROSOFT.LOGIC\" and status_s == \"Failed\"",
+          "timeAggregation": "Count",
+          "operator": "GreaterThan",
+          "threshold": 0
+        }
+      ]
+    },
+    "actions": {
+      "actionGroups": [
+        "${actionGroupId}"
+      ]
+    }
+  }
+}

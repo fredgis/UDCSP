@@ -1,0 +1,6 @@
+{"id": "gq-fr-01", "language": "fr", "query": "Je veux demander une allocation enfant #1", "expected_intent": "residency-application", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-fr-02", "language": "fr", "query": "Je veux demander une allocation enfant #2", "expected_intent": "tax-certificate-request", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-fr-03", "language": "fr", "query": "Je veux demander une allocation enfant #3", "expected_intent": "child-benefit", "expected_priority": "normal", "expected_country": "NO"}
+{"id": "gq-fr-04", "language": "fr", "query": "Je veux demander une allocation enfant #4", "expected_intent": "social-benefit", "expected_priority": "normal", "expected_country": "DK"}
+{"id": "gq-fr-05", "language": "fr", "query": "Je veux demander une allocation enfant #5", "expected_intent": "business-registration", "expected_priority": "normal", "expected_country": "SE"}
+{"id": "gq-fr-06", "language": "fr", "query": "Je veux demander une allocation enfant #6", "expected_intent": "status-of-application", "expected_priority": "high", "expected_country": "NO"}

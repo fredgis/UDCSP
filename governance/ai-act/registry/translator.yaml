@@ -1,0 +1,17 @@
+id: translator
+name: "AI Translator"
+riskLevel: minimal
+purpose: "Translates citizen documents and messages between supported Nordic/EU languages."
+dataSources:
+  - uploaded documents
+  - citizen messages
+trainingDataset: "Managed Microsoft Translator service; no UDCSP fine-tuning"
+evalDataset: "foundry/evals/translation-sample-set"
+fairnessMetrics:
+  - human review BLEU/COMET sample by language
+  - critical field preservation >= 99%
+humanOversight: "Caseworkers see source text and translated text for material decisions."
+postMarketMonitoring: "Quarterly sample review for critical document categories."
+owner: "A6/A13"
+lastReview: 2026-05-07
+nextReview: 2026-08-07

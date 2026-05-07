@@ -1,0 +1,7 @@
+{
+  "name": "ServiceBus",
+  "type": "serviceProvider",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/servicebus-connection",
+  "owner": "A7"
+}

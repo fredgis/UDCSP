@@ -1,0 +1,9 @@
+{
+  "name": "country",
+  "kind": "closedList",
+  "values": [
+    "DK",
+    "SE",
+    "NO"
+  ]
+}

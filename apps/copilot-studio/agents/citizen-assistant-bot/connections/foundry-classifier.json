@@ -1,0 +1,8 @@
+{
+  "name": "foundry-classifier",
+  "type": "customConnector",
+  "endpoint": "${FOUNDRY_CLASSIFIER_ENDPOINT}",
+  "auth": "managedIdentity",
+  "status": "placeholder",
+  "note": "Configure in real tenant; no API call from scaffold."
+}

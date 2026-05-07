@@ -1,0 +1,7 @@
+{
+  "name": "D365-Dataverse",
+  "type": "managedApi",
+  "authentication": "ManagedIdentity",
+  "keyVaultReference": "https://<kv>.vault.azure.net/secrets/d365-dataverse-connection",
+  "owner": "A7"
+}

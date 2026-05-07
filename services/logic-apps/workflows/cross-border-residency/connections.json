@@ -1,0 +1,15 @@
+{
+  "managedApiConnections": {},
+  "serviceProviderConnections": {
+    "serviceBus": {
+      "parameterValues": {
+        "connectionString": "@appsetting('ServiceBusConnection')"
+      }
+    },
+    "eventGrid": {
+      "parameterValues": {
+        "topicEndpoint": "@appsetting('EventGridTopicEndpoint')"
+      }
+    }
+  }
+}

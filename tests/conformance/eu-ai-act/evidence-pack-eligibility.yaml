@@ -1,0 +1,13 @@
+system: Eligibility Pre-Assessor
+risk_classification: high-risk
+scenario_ids: [D1, D3, D4, D6, D7]
+README_eval_rows: [7, 9, 15, 16, 17]
+evidence:
+  risk_management: governance/ai-act/risk-management/eligibility.md
+  data_governance: data/synthetic/eval-datasets/eligibility/
+  technical_documentation: foundry/agents/eligibility/
+  record_keeping: foundry/evaluations/eval-suites/eligibility.yaml
+  transparency: apps/web/i18n/accessibility/
+  human_oversight: apps/d365/
+  accuracy_robustness: tests/eval/regression-baselines/eligibility.baseline.json
+  conformity_assessment: governance/ai-act/conformity/eligibility.md
