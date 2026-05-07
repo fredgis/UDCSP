@@ -41,6 +41,7 @@ UDCSP is **one** federated platform that:
 ## 📈 Before vs After at a Glance
 
 ```mermaid
+%%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 graph LR
     Before["⏳ <b>Today</b><br/>━━━━━━━━━━━<br/>📂 47 portals<br/>📅 28-day decisions<br/>🚫 No federation<br/>🗣️ Partial languages<br/>♿ A11y gaps<br/>🧩 Conflicting DPA rules"]
     UDCSP(["🇩🇰 🇸🇪 🇳🇴<br/><b>UDCSP</b>"])
@@ -58,6 +59,7 @@ graph LR
 ## 🏛️ Simplified Architecture
 
 ```mermaid
+%%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 graph TB
     Citizens["👥 Citizens — 🇩🇰 🇸🇪 🇳🇴<br/>2.1 M · 12 languages"]
     Channels["🌐 Web · 📱 Mobile · ☎️ Voice"]
@@ -222,6 +224,25 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🛠️ **Operators / DevOps** | [`installation.md`](./docs/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
 | 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./docs/architecture.md). |
 | 📚 **Original case study** | [`case-study-11.md`](./docs/case-study-11.md). |
+
+---
+
+## 🗂️ All Documentation
+
+Every markdown lives under [`docs/`](./docs/). One file per concern, each readable on its own.
+
+| 📄 File | 🎯 Purpose | 👤 Best for |
+|---|---|---|
+| [`docs/case-study-11.md`](./docs/case-study-11.md) | The verbatim case study brief — the source of truth for what UDCSP must deliver. | Everyone (read first to understand the constraints). |
+| [`docs/architecture.md`](./docs/architecture.md) | Full platform deep-dive — 15 sections covering principles, logical architecture, sovereignty topology, identity federation, AI architecture, integration, case management, data, governance, security, observability, multilingual strategy, end-to-end flows, service inventory, deployment. | Architects, tech leads. |
+| [`docs/ai.md`](./docs/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
+| [`docs/uses.md`](./docs/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
+| [`docs/recipe.md`](./docs/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
+| [`docs/installation.md`](./docs/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
+| [`docs/plan.md`](./docs/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
+| [`docs/agents.md`](./docs/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
+
+> All eight files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
 ---
 
