@@ -100,7 +100,7 @@ graph TB
     Web & Mobile & Voice --> EXTID
     eIDAS --> Entra
     Entra --> APIM
-    External ID --> APIM
+    EXTID --> APIM
     APIM --> OpenAI
     APIM --> LogicApps
     Foundry --> LogicApps
@@ -229,7 +229,7 @@ graph TB
     VOICE --> FD
     WAGENT --> FD
     FD --> EXTID
-    External ID --> ENTRA
+    EXTID --> ENTRA
     ENTRA --> APIM
     APIM --> AGENTS
     APIM --> LA
