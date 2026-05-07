@@ -184,7 +184,7 @@ The HTML report it produces is the **single artefact** to attach to the case-stu
 
 ## 11. Eval-matrix coverage map
 
-This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](./README.md#evaluation-criteria-matrix-coverage):
+This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../README.md#evaluation-criteria-matrix-coverage):
 
 | Row | Criterion | Covered by recipe step |
 |---|---|---|

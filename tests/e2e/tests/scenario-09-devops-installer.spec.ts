@@ -1,4 +1,4 @@
-// Scenario ID: D10 from uses.md — Ole DevOps installer smoke.
+// Scenario ID: D10 from docs/uses.md — Ole DevOps installer smoke.
 // Eval matrix rows: 10,14,17,18.
 // TODO: case-study scaffold. Verifies A16 report presence without running installer.
 import { test, expect } from '../fixtures/personas'; import { existsSync, readdirSync } from 'fs'; import { join } from 'path';

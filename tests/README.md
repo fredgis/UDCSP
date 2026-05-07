@@ -4,7 +4,7 @@ Owner: **A14 — QA & Evaluation build agent**.
 
 | Layer | Path | Purpose | Local run | CI run |
 |---|---|---|---|---|
-| E2E | `tests/e2e/` | Playwright journeys mapped to `uses.md` demos and README eval rows 1–18. | `cd tests/e2e && npm ci && npm run test` | `tests/e2e/.github/workflows/e2e-playwright.yml` |
+| E2E | `tests/e2e/` | Playwright journeys mapped to `docs/uses.md` demos and README eval rows 1–18. | `cd tests/e2e && npm ci && npm run test` | `tests/e2e/.github/workflows/e2e-playwright.yml` |
 | Eval | `tests/eval/` | Foundry regression, bias, safety and promotion gates. | `pwsh tests/eval/scripts/Run-Eval-Pipeline.ps1 -Pipeline nightly-assistant` | `tests/eval/.github/workflows/` |
 | Accessibility | `tests/accessibility/` | WCAG 2.1 AA automated and manual evidence. | `pwsh tests/accessibility/scripts/Run-Accessibility.ps1` | `tests/accessibility/.github/workflows/accessibility-gate.yml` |
 | Load | `tests/load/` | k6/Azure Load Testing against SLOs. | `pwsh tests/load/scripts/Run-Load.ps1 -Scenario burst` | `tests/load/.github/workflows/load-weekly.yml` |

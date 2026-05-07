@@ -1,6 +1,6 @@
 # UDCSP — Deep-Dive Architecture
 
-> Companion document to the [README](./README.md). This document describes **what is built and how it fits together** — every layer, every sovereignty zone, every AI agent, every governance control. No source code is presented here; this is the platform definition that the development plan ([`plan.md`](./plan.md)) will execute.
+> Companion document to the [README](../README.md). This document describes **what is built and how it fits together** — every layer, every sovereignty zone, every AI agent, every governance control. No source code is presented here; this is the platform definition that the development plan ([`plan.md`](./plan.md)) will execute.
 
 ---
 
@@ -45,7 +45,7 @@
 
 ### 2.1 High-level view (whole-platform)
 
-This is the same diagram surfaced in [`README.md`](./README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
+This is the same diagram surfaced in [`README.md`](../README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
 
 ```mermaid
 graph TB
