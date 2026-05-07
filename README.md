@@ -164,6 +164,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
 | 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
+| 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
 | 🏛️ `infra/` *(future)* | Bicep / Terraform landing zone & per-domain modules. |
 | 💻 `apps/` *(future)* | Citizen portals, mobile shell, voice bot, Copilot Studio agents. |
@@ -209,6 +210,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | Audience | Start with |
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
+| 🎬 **Evaluators / demo audiences** | [`uses.md`](./uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
 | 🏗️ **Architects** | [`architecture.md`](./architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
 | 🛠️ **Operators / DevOps** | [`plan.md`](./plan.md) §A16 + the future `scripts/install/Install-UDCSP.ps1` one-shot installer. |
