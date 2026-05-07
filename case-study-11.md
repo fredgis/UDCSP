@@ -21,7 +21,7 @@ Key challenges include:
 
 ## Transformation Objective
 
-Create a federated digital citizen services platform that enables cross-border service delivery, automates back-office processing, and provides inclusive, accessible experiences within national sovereignty frameworks.
+Create a federated digital citizen services platform that enables cross-border service delivery, automates back-office processing, and delivers inclusive, accessible experiences — **multilingual, voice-friendly and disability-aware by design** across all citizen channels — within national sovereignty frameworks.
 
 ## Azure Services
 
@@ -35,8 +35,12 @@ Create a federated digital citizen services platform that enables cross-border s
 
 ## Expected Outcomes
 
-Application processing time reduced from 28 days to 4 days, citizen satisfaction scores increased by 38%, cross-border identity federation established for 2.1 million citizens, full WCAG 2.1 AA accessibility compliance achieved.
+- **Throughput:** application processing time reduced from **28 days to 4 days**.
+- **Citizen experience:** **+38 % citizen satisfaction**, full **WCAG 2.1 AA** accessibility compliance.
+- **Identity at scale:** cross-border identity federation established for **2.1 million citizens**.
+- **Single front door, many back doors:** the **47 national portals are rationalised into one unified citizen experience**, while each country keeps its sovereign back-office systems intact.
+- **Compliance by design:** a **unified governance fabric** (Microsoft Purview catalog, EU AI Act registry, end-to-end traceability) makes cross-border data sharing strictly compliant with **GDPR** and each national data protection authority — built-in, not bolted on.
 
 ## AI Infusion Point
 
-An AI application processing engine classifies and routes citizen requests in 12 languages. A GenAI citizen assistant answers service queries in natural language across web, mobile, and telephone channels. An automated eligibility determination model pre-assesses benefit entitlements before human review.
+An AI application processing engine classifies and routes citizen requests in **12 languages**. A GenAI citizen assistant answers service queries in natural language across web, mobile, and telephone channels. An automated eligibility determination model pre-assesses benefit entitlements before human review — **every recommendation is traceable, explainable, and systematically validated or adjusted by a human caseworker** before any final decision, reflecting the *AI-first, but supervised* principle.
