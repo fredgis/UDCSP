@@ -63,7 +63,7 @@ graph TB
 
     subgraph Identity[" 🔐 Cross-border identity "]
         Entra["Microsoft Entra ID"]
-        B2C["Azure AD B2C"]
+        EXTID["Microsoft Entra External ID"]
         eIDAS["eIDAS bridge"]
     end
 
@@ -97,10 +97,10 @@ graph TB
 
     DK & SE & NO --> Web & Mobile & Voice
     Web & Mobile & Voice --> Entra
-    Web & Mobile & Voice --> B2C
+    Web & Mobile & Voice --> EXTID
     eIDAS --> Entra
     Entra --> APIM
-    B2C --> APIM
+    External ID --> APIM
     APIM --> OpenAI
     APIM --> LogicApps
     Foundry --> LogicApps
@@ -129,7 +129,7 @@ graph TB
     style Voice fill:#2ea44f,stroke:#238636,color:#fff
 
     style Entra fill:#8957e5,stroke:#6e40c9,color:#fff
-    style B2C fill:#8957e5,stroke:#6e40c9,color:#fff
+    style External ID fill:#8957e5,stroke:#6e40c9,color:#fff
     style eIDAS fill:#8957e5,stroke:#6e40c9,color:#fff
 
     style APIM fill:#e36209,stroke:#c24e00,color:#fff
@@ -171,8 +171,8 @@ graph TB
 
     subgraph L1["Layer 1 — Edge & Identity"]
         FD["Azure Front Door + WAF"]
-        B2C["Azure AD B2C (per country)"]
-        ENTRA["Microsoft Entra External ID + eIDAS bridge"]
+        EXTID["Microsoft Entra External ID (per country)"]
+        ENTRA["Microsoft Entra ID + eIDAS bridge"]
     end
 
     subgraph L2["Layer 2 — API & Integration"]
@@ -228,8 +228,8 @@ graph TB
     MOB --> FD
     VOICE --> FD
     WAGENT --> FD
-    FD --> B2C
-    B2C --> ENTRA
+    FD --> EXTID
+    External ID --> ENTRA
     ENTRA --> APIM
     APIM --> AGENTS
     APIM --> LA
@@ -277,7 +277,7 @@ graph TB
     classDef l7 fill:#ECEFF1,stroke:#455A64,color:#263238
 
     class C,WEB,MOB,VOICE,WAGENT l0
-    class FD,B2C,ENTRA l1
+    class FD,EXTID,ENTRA l1
     class APIM,SB,EG,LA l2
     class FOUNDRY,AOAI,AGENTS,EVAL,CS,AISPEECH,AITRANS,AIDOC l3
     class D365,FUNC,COSMOS,SQL,STORAGE l4
@@ -295,7 +295,7 @@ Each country runs its own **sovereign zone** in the closest Azure region; cross-
 ```mermaid
 graph TB
     subgraph DK["🇩🇰 Sovereign Zone — Denmark (Azure North Europe)"]
-        DK_B2C["B2C tenant DK"]
+        DK_EXTID["External ID tenant DK"]
         DK_FAB["Fabric workspace DK"]
         DK_D365["D365 environment DK"]
         DK_LA["Logic Apps DK"]
@@ -303,7 +303,7 @@ graph TB
     end
 
     subgraph SE["🇸🇪 Sovereign Zone — Sweden (Azure Sweden Central)"]
-        SE_B2C["B2C tenant SE"]
+        SE_EXTID["External ID tenant SE"]
         SE_FAB["Fabric workspace SE"]
         SE_D365["D365 environment SE"]
         SE_LA["Logic Apps SE"]
@@ -311,7 +311,7 @@ graph TB
     end
 
     subgraph NO["🇳🇴 Sovereign Zone — Norway (Azure Norway East)"]
-        NO_B2C["B2C tenant NO"]
+        NO_EXTID["External ID tenant NO"]
         NO_FAB["Fabric workspace NO"]
         NO_D365["D365 environment NO"]
         NO_LA["Logic Apps NO"]
@@ -319,16 +319,16 @@ graph TB
     end
 
     subgraph HUB["🌐 Federation Hub (multi-region active-active)"]
-        ENTRA["Microsoft Entra External ID<br/>eIDAS bridge"]
+        ENTRA["Microsoft Entra ID<br/>eIDAS bridge"]
         APIM["API Management — global"]
         FOUNDRY["Microsoft Foundry — multi-region"]
         PURVIEW["Microsoft Purview — federated catalog"]
         FAB_DOMAIN["Fabric Domain federating the 3 workspaces"]
     end
 
-    DK_B2C -->|OIDC federation| ENTRA
-    SE_B2C -->|OIDC federation| ENTRA
-    NO_B2C -->|OIDC federation| ENTRA
+    DK_EXTID -->|OIDC federation| ENTRA
+    SE_EXTID -->|OIDC federation| ENTRA
+    NO_EXTID -->|OIDC federation| ENTRA
 
     ENTRA --> APIM
     APIM --> DK_LA
@@ -349,9 +349,9 @@ graph TB
     classDef no fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
     classDef hub fill:#FFF3E0,stroke:#E65100,color:#BF360C
 
-    class DK_B2C,DK_FAB,DK_D365,DK_LA,DK_DATA dk
-    class SE_B2C,SE_FAB,SE_D365,SE_LA,SE_DATA se
-    class NO_B2C,NO_FAB,NO_D365,NO_LA,NO_DATA no
+    class DK_EXTID,DK_FAB,DK_D365,DK_LA,DK_DATA dk
+    class SE_EXTID,SE_FAB,SE_D365,SE_LA,SE_DATA se
+    class NO_EXTID,NO_FAB,NO_D365,NO_LA,NO_DATA no
     class ENTRA,APIM,FOUNDRY,PURVIEW,FAB_DOMAIN hub
 ```
 
@@ -371,18 +371,18 @@ graph TB
     CITIZEN["Citizen"]
     DEVICE["Device — web · mobile · phone"]
     CHANNEL["Channel app"]
-    B2C_LOCAL["Azure AD B2C — local country"]
+    EXTID_LOCAL["Microsoft Entra External ID — local country"]
     EID_LOCAL["National eID — MitID · BankID · BankID NO"]
-    ENTRA_HUB["Microsoft Entra External ID — federation hub"]
+    ENTRA_HUB["Microsoft Entra ID — federation hub"]
     EIDAS["eIDAS Node"]
     APIM["API Management — token validation"]
     APP["Backend service"]
 
     CITIZEN --> DEVICE
     DEVICE --> CHANNEL
-    CHANNEL -->|OIDC| B2C_LOCAL
-    B2C_LOCAL -->|SAML / OIDC| EID_LOCAL
-    B2C_LOCAL -->|federation| ENTRA_HUB
+    CHANNEL -->|OIDC| EXTID_LOCAL
+    EXTID_LOCAL -->|SAML / OIDC| EID_LOCAL
+    EXTID_LOCAL -->|federation| ENTRA_HUB
     ENTRA_HUB <-->|cross-border| EIDAS
     CHANNEL -->|access token + ID token| APIM
     APIM -->|JWT validation, scopes, country claim| APP
@@ -402,12 +402,12 @@ graph TB
     classDef wf fill:#FCE4EC,stroke:#AD1457,color:#880E4F
 
     class CITIZEN,DEVICE,CHANNEL cit
-    class B2C_LOCAL,EID_LOCAL,ENTRA_HUB,EIDAS ident
+    class EXTID_LOCAL,EID_LOCAL,ENTRA_HUB,EIDAS ident
     class APIM,APP gw
     class WUSER,ENTRA_WF,PIM wf
 ```
 
-- **Citizens** authenticate locally (national eID) → B2C → Entra hub → API Management.
+- **Citizens** authenticate locally (national eID) → External ID → Entra hub → API Management.
 - **Caseworkers** authenticate against the Entra workforce tenant with **PIM** for sensitive actions (e.g. eligibility override).
 - **Cross-border** is achieved by *claim mapping* in the Entra hub: a citizen authenticated in DK can be authorised for an SE service if and only if the SE policy accepts the DK eIDAS assurance level.
 
@@ -824,7 +824,7 @@ sequenceDiagram
     autonumber
     participant Citizen
     participant Web as Web Portal (SE)
-    participant B2C as B2C SE
+    participant EXTID as Microsoft Entra External ID SE
     participant Entra as Entra Hub
     participant APIM as API Management
     participant Class as Foundry — Classifier
@@ -835,8 +835,8 @@ sequenceDiagram
     participant D365 as D365 SE
     participant DK as Partner DK Agency
     Citizen->>Web: Start "Move to Sweden" application
-    Web->>B2C: Login (BankID)
-    B2C->>Entra: Federated login
+    Web->>EXTID: Login (BankID)
+    EXTID->>Entra: Federated login
     Entra-->>Web: ID token (with country claim)
     Citizen->>Web: Upload DK passport, lease
     Web->>APIM: Submit application
@@ -888,11 +888,43 @@ sequenceDiagram
 
 ## 14. Service Inventory
 
+### 14.0 Identity deviation from the case study's B2C mandate
+
+The case study lists **Azure AD B2C** as one of nine mandatory Azure services. **As of 1 May 2025, Azure AD B2C is no longer available to new customers** ([Microsoft Learn — Tutorial: Create an Azure AD B2C tenant](https://learn.microsoft.com/en-us/azure/active-directory-b2c/tutorial-create-tenant)). Microsoft's [announced successor](https://learn.microsoft.com/en-us/entra/external-id/customers/concept-supported-features-customers) is **Microsoft Entra External ID** (CIAM external tenants), which is the product line currently offered, supported, and extended.
+
+UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across the entire platform. The substitution is intentional and documented; no other case-study service is changed.
+
+**Capability mapping — every B2C feature relied on by the case study is preserved or improved:**
+
+| Case study capability (B2C term) | UDCSP implementation (Entra External ID term) | Notes |
+|---|---|---|
+| Per-country B2C tenant            | Per-country **External (CIAM) tenant** (`Microsoft.AzureActiveDirectory/ciamDirectories`) | Same isolation model: one tenant per sovereign zone (DK / SE / NO). |
+| `B2C_1A_*` custom policies (XML)  | **User flows** + **Custom Authentication Extensions** (JSON, Microsoft Graph beta) | Lower complexity; same extensibility for token augmentation, federation, and custom claims. See [`infra/identity/external-id/user-flows/`](../infra/identity/external-id/user-flows/). |
+| eIDAS bridge via Identity Experience Framework | eIDAS bridge as an **Azure Function** invoked by an `onTokenIssuanceStart` custom authentication extension | First-class, supported integration pattern. |
+| `*.b2clogin.com` authority URL    | `*.ciamlogin.com` authority URL                                                            | Same MSAL.js client; only the host changes. |
+| Self-service password reset (B2C user flow) | Native **SSPR** in External ID                                                       | Tenant-level, multi-method (email today, SMS roadmap). |
+| Profile editing (B2C user flow)   | **My Account portal** + Microsoft Graph `PATCH /me`                                        | Server-side write filter via `profile-edit.json`. |
+| Conditional Access for citizens   | Conditional Access available **natively in External ID** (preview / GA per region)         | Country, risk, MFA, device-state policies. |
+| Multilingual UI in 12 languages   | Tenant **branding localizations** in External ID                                            | Same 12-language scope as the rest of the platform. |
+| MFA, social logins, federated IdPs | All supported in External ID                                                              | Equivalent or wider IdP catalogue. |
+| Auditing of every sign-in / token | `SigninLogs` + `AuditLogs` in Entra External ID                                            | Same Sentinel / Log Analytics ingestion path; analytics rules updated accordingly. |
+
+**Operational consequences of the substitution:**
+
+1. The installer (`scripts/install/Install-UDCSP.ps1` phase `Identity`) provisions `ciamDirectories` per country instead of `b2cDirectories`.
+2. The OpenID discovery URL pattern is `https://<tenant>.ciamlogin.com/<tenant>.onmicrosoft.com/<UserFlow>/v2.0/.well-known/openid-configuration` (no `?p=` query parameter).
+3. APIM `validate-jwt` policies (`services/apim/policies/jwt-validate-external-id.xml`) point at the External ID issuer.
+4. Every Sentinel analytics rule and Application Insights alert that monitors authentication failures has been re-named (`external-id-failed-signin-spike`, `external-id-error-rate`); the underlying KQL targets the same `SigninLogs` table — telemetry continuity is preserved.
+5. CSP `connect-src` allow-list on the citizen Static Web Apps now lists `https://*.ciamlogin.com`.
+6. Tests against the auth flow (`tests/security/dast/`, `tests/e2e/fixtures/auth.ts`) reference `EXTERNAL_ID_*` environment variables.
+
+**Why this is the correct architectural call rather than a deviation to challenge:** the case study was written before the B2C retirement announcement; following its B2C mandate literally would force any new customer to deploy a product they cannot purchase. The substitution preserves intent (sovereign customer-identity-and-access-management with eIDAS federation across DK/SE/NO) while using a product Microsoft will continue to invest in.
+
 ### 14.1 Mandatory (case study)
 
 | Service | Where it lives in the architecture |
 |---|---|
-| Azure Active Directory B2C | §4 Identity Federation Detail |
+| Microsoft Entra External ID | §4 Identity Federation Detail |
 | Microsoft Entra ID | §4 Identity Federation Detail |
 | Azure OpenAI *(via Microsoft Foundry)* | §5 AI Architecture |
 | Microsoft Fabric | §8 Data & Analytics Architecture |

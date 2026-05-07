@@ -26,7 +26,7 @@ graph TB
   classDef sub fill:#2ea44f,stroke:#238636,color:#fff
 ```
 
-Each country sub gets its own landing zone, B2C tenant, Fabric capacity, APIM region, Logic Apps workspace, D365 environment, ACS resource and Foundry project. Cross-zone analytics, governance and SOC tooling sit in the shared sub.
+Each country sub gets its own landing zone, External ID tenant, Fabric capacity, APIM region, Logic Apps workspace, D365 environment, ACS resource and Foundry project. Cross-zone analytics, governance and SOC tooling sit in the shared sub.
 
 ---
 
@@ -39,7 +39,7 @@ Each country sub gets its own landing zone, B2C tenant, Fabric capacity, APIM re
 | PowerShell | 7.4+ | Required by the installer |
 | Azure CLI | 2.60+ | `az bicep upgrade` after install |
 | Az PowerShell | 12.x | `Install-Module Az -Scope CurrentUser` |
-| Microsoft.Graph PowerShell | 2.x | For Entra/B2C automation |
+| Microsoft.Graph PowerShell | 2.x | For Entra ID / Entra External ID automation |
 | Power Platform CLI (`pac`) | latest | D365 solution import |
 | Bicep | 0.27+ | Bundled by az CLI |
 | Node.js | 20 LTS | For frontend & i18n tooling |
@@ -61,7 +61,7 @@ You need owner-level access to:
 3. **One shared Azure subscription** for cross-zone analytics & governance.
 4. **Capacity** to deploy: APIM Premium (multi-region), Microsoft Fabric F-SKU per country, ACS, AI Foundry hub & projects, AI Speech, Document Intelligence, Sentinel, Defender for Cloud, Key Vault Premium, ADLS Gen2.
 5. **Three D365 Customer Service environments** (one per country) — sandbox SKU is fine for the case study.
-6. **Three Azure AD B2C tenants** — `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com` (or your own naming).
+6. **Three Microsoft Entra External ID tenants** — `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com` (or your own naming).
 7. A **Microsoft Foundry workspace** with model quota for the agents listed in `foundry/agents/`.
 
 > **EU residency note:** every workload region MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`). The installer refuses to deploy to non-EU regions.
@@ -86,7 +86,7 @@ Mandatory keys:
     SE             = '<sub-guid>'
     NO             = '<sub-guid>'
   }
-  B2CTenants = @{
+  ExternalIdTenants = @{
     DK = 'udcspdk.onmicrosoft.com'
     SE = 'udcspse.onmicrosoft.com'
     NO = 'udcspno.onmicrosoft.com'
@@ -111,7 +111,7 @@ Mandatory keys:
 }
 ```
 
-Secrets (B2C signing keys, D365 application-user secrets, Foundry deployment keys) are fetched **just-in-time** from a bootstrap Key Vault — the installer's first task is to provision that vault under the shared platform subscription and prompt for any secret it cannot resolve.
+Secrets (External ID signing keys, D365 application-user secrets, Foundry deployment keys) are fetched **just-in-time** from a bootstrap Key Vault — the installer's first task is to provision that vault under the shared platform subscription and prompt for any secret it cannot resolve.
 
 ---
 
@@ -190,7 +190,7 @@ Phase names accepted by `-Phase`:
 | Phase | Module | Owner WP | What it installs |
 |---|---|---|---|
 | `LandingZone` | `Install-LandingZone.psm1` | A1 | MG hierarchy, RGs, networking, Key Vault, ACR, Storage |
-| `Identity` | `Install-Identity.psm1` | A2 | B2C tenants, custom policies, Entra External ID, CA, PIM |
+| `Identity` | `Install-Identity.psm1` | A2 | External ID tenants, custom user flows, Microsoft Entra ID, CA, PIM |
 | `Security` | `Install-Security.psm1` | A3 | Defender for Cloud, Sentinel, Azure Policy, DPIA artefacts |
 | `Observability` | `Install-Observability.psm1` | A5 | Log Analytics, App Insights, workbooks, alerts |
 | `Fabric` | `Install-Fabric.psm1` | A4 | Capacities, workspaces, lakehouses, notebooks, semantic models |
@@ -255,7 +255,7 @@ A **green** smoke gate produces `scripts/install/reports/<timestamp>/install-rep
 pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment dev -Confirm
 ```
 
-Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, deletes B2C tenants flagged disposable, and unregisters Purview sources. Refuses to run against `prod` unless `-Force` is supplied.
+Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, deletes External ID tenants flagged disposable, and unregisters Purview sources. Refuses to run against `prod` unless `-Force` is supplied.
 
 ---
 
@@ -263,11 +263,11 @@ Removes every resource group tagged `costCenter=UDCSP` across all configured sub
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Install-Identity` fails on B2C custom policy upload | TenantId in config doesn't match the B2C tenant | Re-check `B2CTenants` block; the installer will attempt with the right tenant when corrected |
+| `Install-Identity` fails on External ID user flow upload | TenantId in config doesn't match the External ID tenant | Re-check `ExternalIdTenants` block; the installer will attempt with the right tenant when corrected |
 | `Install-Fabric` returns `403 CapacityNotFound` | Fabric F-SKU not provisioned in the country region | Provision the capacity in Azure Portal → re-run with `-Phase Fabric` |
 | `Install-Foundry` fails on model deployment | Quota exhausted in the Foundry region | Request quota in Foundry portal or change region in config |
 | `Install-Apim` slow on first run | Premium APIM cold start ≈ 45 minutes | This is expected. The installer streams progress every 60 s. |
-| Cross-border test fails (DK→SE) | Identity bridge claim mapping wrong | Re-deploy `infra/identity/b2c/custom-policies/eidas-bridge-claims.xml` and re-run scenario 01 |
+| Cross-border test fails (DK→SE) | Identity bridge claim mapping wrong | Re-deploy `infra/identity/external-id/custom-policies/eidas-bridge-claims.xml` and re-run scenario 01 |
 | `Test-Observability` reports broken trace | Correlation header dropped at APIM | Verify `services/apim/policies/correlation-id.xml` is attached to all APIs |
 
 Reports for every run are written under `scripts/install/reports/<timestamp>/install-report.json` and include the exact phase, status, duration, error stack and remediation hint.

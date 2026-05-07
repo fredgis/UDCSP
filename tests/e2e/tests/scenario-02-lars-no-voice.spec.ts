@@ -2,12 +2,12 @@
 // Eval matrix rows: 2,4,5,6,8,10,12,13,14,15,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';
-import { signInWithB2CTestToken } from '../fixtures/auth';
+import { signInWithExternalIdTestToken } from '../fixtures/auth';
 import { createTraceparent } from '../helpers/traceparent';
 import { postJson, getJson, expectTraceVisible } from '../helpers/api-client';
 
 test('Scenario 02 - Lars Norwegian voice status query', async ({ page, request, persona }) => {
-  const traceparent=createTraceparent(); const token=await signInWithB2CTestToken(page,'NO',persona.id);
+  const traceparent=createTraceparent(); const token=await signInWithExternalIdTestToken(page,'NO',persona.id);
   await page.setExtraHTTPHeaders({ traceparent }); await page.goto('/demo/d2');
   await expect(page.getByRole('heading',{ name:/UDCSP|Citizen|Case|Audit|Cockpit/i })).toBeVisible();
   await page.getByTestId('scenario-intent').fill('voice-tax-status'); await page.getByTestId('start-scenario').click();

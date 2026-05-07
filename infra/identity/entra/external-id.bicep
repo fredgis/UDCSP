@@ -1,4 +1,4 @@
-// name: external-id | owner agent: A2 | purpose: Entra External ID hub placeholders for eIDAS federation
+// name: external-id-federation | owner agent: A2 | purpose: workforce Entra ID hub → Microsoft Entra External ID federation placeholders for eIDAS
 
 targetScope = 'subscription'
 

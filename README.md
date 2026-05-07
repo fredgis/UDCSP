@@ -61,7 +61,7 @@ graph LR
 graph TB
     Citizens["👥 Citizens — 🇩🇰 🇸🇪 🇳🇴<br/>2.1 M · 12 languages"]
     Channels["🌐 Web · 📱 Mobile · ☎️ Voice"]
-    Edge["🔐 Identity Federation + 🚪 API Gateway<br/>Entra ID · B2C · eIDAS · APIM"]
+    Edge["🔐 Identity Federation + 🚪 API Gateway<br/>Entra ID · External ID · eIDAS · APIM"]
     Foundry["🧠 Microsoft AI Foundry<br/>classifier · translator · eligibility ·<br/>citizen assistant · doc extractor · Azure OpenAI"]
     Process["⚙️ Logic Apps  ➜  📋 Dynamics 365"]
     Data["📊 Microsoft Fabric  ➜  📈 Power BI"]
@@ -127,7 +127,7 @@ All nine services from the case study are first-class citizens of the platform �
 
 | | # | Service | Role in UDCSP |
 |:-:|:-:|---|---|
-| 🟦 | 1 | **Azure Active Directory B2C** | Citizen-facing identity store; per-country tenants federated through Entra. |
+| 🟦 | 1 | **Microsoft Entra External ID** ¹ | Citizen-facing identity store; per-country tenants federated through Entra. |
 | 🟦 | 2 | **Microsoft Entra ID** | Workforce identity for caseworkers & administrators; cross-border federation hub (eIDAS bridge). |
 | 🟧 | 3 | **Azure OpenAI** *(via Microsoft Foundry)* | Foundation models for the classifier, translator, eligibility reasoner, and citizen assistant. |
 | 🟩 | 4 | **Microsoft Fabric** | Lakehouse, real-time intelligence, semantic models, and the federated analytics layer across the 3 countries. |
@@ -136,6 +136,8 @@ All nine services from the case study are first-class citizens of the platform �
 | 🟥 | 7 | **Microsoft Purview** | Data catalogue, classification, lineage, DLP, and the EU AI Act risk register for AI assets. |
 | 🟨 | 8 | **Azure Logic Apps** | Workflow orchestration of the 4-day end-to-end process across agencies. |
 | 🟩 | 9 | **Power BI** | Operational, executive, citizen-facing, and auditor dashboards on top of Fabric. |
+
+> ¹ **Substitution note** — the case study lists *Azure AD B2C* as the citizen-identity service. **Azure AD B2C is no longer available to new customers as of 1 May 2025**; Microsoft's official successor is **Microsoft Entra External ID**, which UDCSP adopts. Full rationale and feature-by-feature mapping in [`docs/architecture.md` § 14.0 — Identity deviation](./docs/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
 
 > 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./docs/architecture.md).
 
@@ -166,7 +168,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
-| 🏛️ `infra/` | Bicep landing zone, Entra External ID + Azure AD B2C custom policies, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
+| 🏛️ `infra/` | Bicep landing zone, Microsoft Entra External ID + Microsoft Entra ID + custom user flows, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
 | 💻 `apps/` | React web portal, Expo mobile shell, ACS + AI Speech voice bot (6 languages), Copilot Studio bot, D365 model-driven apps + Power Platform solutions. |
 | 🔌 `services/` | API Management (8 OpenAPI APIs), Logic Apps (6 workflows), Functions / Container Apps, Power Automate flows. |
 | 🧠 `foundry/` | 6 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper), prompts, evaluations, datasets. |
@@ -188,7 +190,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | | # | Case-study requirement / outcome | Delivered by | Validation method |
 |:-:|:-:|---|---|---|
 | 🟦 | 1 | Consolidate **47 legacy portals** into a unified front door | Static Web Apps + design system + API Management aggregation layer | Inventory mapping in `architecture.md`; portal-decommission tracker |
-| 🟦 | 2 | **Cross-border identity federation** for 2.1 M citizens | Entra External ID + Azure AD B2C + eIDAS bridge | Federation conformance test against eIDAS sandbox; SSO load test |
+| 🟦 | 2 | **Cross-border identity federation** for 2.1 M citizens | Microsoft Entra External ID (per country) + Microsoft Entra ID + eIDAS bridge | Federation conformance test against eIDAS sandbox; SSO load test |
 | 🟩 | 3 | Reduce processing time **28 d → 4 d** | Logic Apps end-to-end orchestration + Foundry eligibility pre-assessment + D365 queues | Process-mining KPI in Fabric; Power BI SLA dashboard |
 | 🟩 | 4 | **+38 % citizen satisfaction** | GenAI assistant (Copilot Studio + Foundry) + omnichannel + WCAG-compliant UI | CSAT survey pipeline → Fabric → Power BI trend |
 | 🟧 | 5 | AI **classification & routing in 12 languages** | Foundry classifier agent + AI Translator + Azure OpenAI | Foundry evaluations (accuracy, BLEU, language coverage); golden dataset per language |
@@ -196,7 +198,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🟥 | 7 | **Automated eligibility pre-assessment** before human review | Foundry eligibility model (high-risk under EU AI Act) + business rules in Logic Apps + D365 review queue | Shadow-mode evaluation (model vs. caseworker), bias audit, EU AI Act conformity |
 | 🟥 | 8 | **WCAG 2.1 AA** accessibility | Accessible design system + automated axe scans in CI/CD + manual annual audit | axe-core CI gate; third-party accessibility audit report |
 | 🟥 | 9 | **GDPR + EU AI Act + sector directives** compliance | Purview classification & policies + AI Act registry + DPIA per use case + Sentinel + Defender for Cloud | DPIA checklist; AI Act high-risk system documentation; Purview compliance report |
-| 🟦 | 10 | **National data sovereignty** preserved per country | Three sovereign Azure regions (DK / SE / NO) + per-country Fabric workspaces + per-country B2C tenants + cross-border data-sharing policies in Purview | Network topology review; data-residency tests; Purview policy diff |
+| 🟦 | 10 | **National data sovereignty** preserved per country | Three sovereign Azure regions (DK / SE / NO) + per-country Fabric workspaces + per-country External ID tenants + cross-border data-sharing policies in Purview | Network topology review; data-residency tests; Purview policy diff |
 | 🟥 | 11 | Different **DPA interpretations** of data-sharing rules | Per-tenant policy packs in Purview + per-country Logic Apps connectors + DPIA per data-flow | Policy unit-tests; legal sign-off per country |
 | 🟨 | 12 | **Web, mobile, telephone** channels | Static Web Apps + native mobile shell + AI Speech + Azure Communication Services | Channel UAT scripts; voice bot transcription accuracy |
 | 🟦 | 13 | **Multilingual support across all 12 languages** | ICU i18n in UI; Translator agent in Foundry; Speech STT/TTS in 12 languages; multilingual Copilot Studio topics; per-language KPIs | Per-language Foundry eval suites; per-language CSAT slicing in Power BI |

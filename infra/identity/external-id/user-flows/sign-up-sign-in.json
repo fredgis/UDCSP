@@ -1,0 +1,41 @@
+{
+  "_comment": "Microsoft Entra External ID — combined sign-up + sign-in user flow. Substitutes the legacy Azure AD B2C custom policy 'B2C_1A_SignUpOrSignIn'. Apply via Microsoft Graph: POST /identity/authenticationEventsFlows.",
+  "@odata.type": "#microsoft.graph.externalUsersSelfServiceSignUpEventsFlow",
+  "id": "udcsp-signup-signin",
+  "displayName": "UDCSP Sign-up / Sign-in",
+  "priority": 100,
+  "conditions": {
+    "applications": {
+      "includeApplications": [
+        { "appId": "{{web-portal-app-id}}" },
+        { "appId": "{{mobile-app-id}}" }
+      ]
+    }
+  },
+  "onAuthenticationMethodLoadStart": {
+    "@odata.type": "#microsoft.graph.onAuthenticationMethodLoadStartExternalUsersSelfServiceSignUp",
+    "identityProviders": [
+      { "@odata.type": "#microsoft.graph.builtInIdentityProvider", "id": "EmailPassword-OAUTH" },
+      { "@odata.type": "#microsoft.graph.identityProviderBase",   "id": "{{eidas-bridge-saml-id}}" }
+    ]
+  },
+  "onAttributeCollection": {
+    "@odata.type": "#microsoft.graph.onAttributeCollectionExternalUsersSelfServiceSignUp",
+    "attributes": [
+      { "id": "country",       "isRequired": true,  "userInputType": "RadioSingleSelect" },
+      { "id": "preferredLang", "isRequired": true,  "userInputType": "DropdownSingleSelect" },
+      { "id": "displayName",   "isRequired": true },
+      { "id": "givenName",     "isRequired": true },
+      { "id": "surname",       "isRequired": true }
+    ]
+  },
+  "onTokenIssuanceStart": {
+    "@odata.type": "#microsoft.graph.onTokenIssuanceStartCustomExtensionHandler",
+    "customExtension": { "id": "{{eidas-claims-augmentation-extension-id}}" }
+  },
+  "_todo_case_study_scaffold": [
+    "Replace {{web-portal-app-id}} and {{mobile-app-id}} with the real app registration appIds in the External tenant.",
+    "Provision the eIDAS SAML bridge identity provider and substitute its id.",
+    "Deploy the token-augmentation custom authentication extension that injects 'country', 'eidasLoA' and 'nationalIdHash' claims, then substitute its id."
+  ]
+}

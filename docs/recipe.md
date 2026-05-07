@@ -25,7 +25,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
 | 1.1 | Open the Swedish citizen portal | `https://udcsp-se.swa.azurestaticapps.net/` | Portal loads in Swedish (auto-detected) |
-| 1.2 | Click "Logga in med dansk eID" | Login page | Federated B2C flow → DK B2C → eIDAS bridge → SE B2C |
+| 1.2 | Click "Logga in med dansk eID" | Login page | Federated External ID flow → DK External ID → eIDAS bridge → SE External ID |
 | 1.3 | Confirm citizen lands authenticated as `anna@SYNTH-PERSONAS-DK` | Portal header | Display name + DK→SE migration banner shown |
 | 1.4 | Apply for residency permit | Wizard "Apply / Boenderegistrering" | Multi-step accessible form, ARIA live region, no a11y violations |
 | 1.5 | Upload payslip + passport scan (samples in `data/synthetic/documents/`) | Upload step | Doc Extractor (Foundry agent) returns structured fields, latency < 4 s |
@@ -79,7 +79,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 4.1 | Launch Expo dev build of the mobile app | `apps/mobile` | DK B2C login screen |
+| 4.1 | Launch Expo dev build of the mobile app | `apps/mobile` | DK External ID login screen |
 | 4.2 | Login with `erik@SYNTH-PERSONAS-DK` | Native OIDC flow | Token acquired |
 | 4.3 | Take a photo of the payslip stub | `data/synthetic/documents/payslip_dk_001.jpg` | Image uploaded, virus-scanned (Defender for Storage), Doc Intelligence extracts fields |
 | 4.4 | App displays parsed payslip | Form prefill | Net pay, employer, period, NIN auto-populated; user confirms |
@@ -130,7 +130,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
 | 7.1 | Ingrid opens Sentinel | Sentinel Workbook in shared sub | "Impossible travel — caseworker" rule has fired (synthetic) |
-| 7.2 | Pivot to user investigation | Sentinel investigation graph | Sign-ins, B2C events, role activations stitched |
+| 7.2 | Pivot to user investigation | Sentinel investigation graph | Sign-ins, External ID events, role activations stitched |
 | 7.3 | Run containment playbook | `respond-to-impossible-travel` Logic App | User session revoked, PIM eligibility removed, ticket opened in D365 |
 | 7.4 | Verify trace | Log Analytics KQL `union ... | where TraceId == 'X'` | Single trace ID shows all SOC actions |
 
@@ -159,7 +159,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 9.1 | Tear down environment | `pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment test` | RGs deleted, B2C disabled, Purview unregistered |
+| 9.1 | Tear down environment | `pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment test` | RGs deleted, External ID disabled, Purview unregistered |
 | 9.2 | Re-install | `pwsh ./scripts/install/Install-UDCSP.ps1 -Environment test` | Full platform up in one shot |
 | 9.3 | Diff install reports | `Compare-Object (Get-Content reports/run1.json) (Get-Content reports/run2.json)` | Same phases, same status, same checksums |
 | 9.4 | Run smoke | `Install-UDCSP.ps1 -SmokeOnly` | All 4 smoke tests green |

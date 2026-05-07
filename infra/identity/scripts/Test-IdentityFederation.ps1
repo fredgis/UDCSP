@@ -1,12 +1,14 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)] [string] $TenantDomain,
-  [string[]] $Policies = @('B2C_1A_SIGNUP_SIGNIN','B2C_1A_PROFILEEDIT','B2C_1A_PASSWORDRESET')
+  [string[]] $UserFlows = @('SignUpSignIn','ProfileEdit','PasswordReset')
 )
 $ErrorActionPreference = 'Stop'
-foreach ($policy in $Policies) {
-  $url = "https://$TenantDomain/$TenantDomain/$policy/v2.0/.well-known/openid-configuration"
+foreach ($flow in $UserFlows) {
+  # Microsoft Entra External ID OIDC discovery (CIAM tenant). The legacy Azure AD B2C ?p=<policy> query
+  # parameter is replaced by appending the user-flow name as a path segment.
+  $url = "https://$TenantDomain/$TenantDomain/$flow/v2.0/.well-known/openid-configuration"
   $doc = Invoke-RestMethod -Uri $url -Method Get
-  if (-not $doc.authorization_endpoint -or -not $doc.issuer) { throw "Policy $policy discovery missing endpoints" }
-  Write-Host "OK $policy $($doc.issuer)"
+  if (-not $doc.authorization_endpoint -or -not $doc.issuer) { throw "User flow $flow discovery missing endpoints" }
+  Write-Host "OK $flow $($doc.issuer)"
 }

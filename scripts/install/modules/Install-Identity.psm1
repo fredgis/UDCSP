@@ -1,7 +1,10 @@
 <#
 .SYNOPSIS
-    Install-Identity (A2) — B2C tenants, custom policies, Entra External ID,
-    Conditional Access, PIM eligibility.
+    Install-Identity (A2) — Microsoft Entra External ID (CIAM) tenants per country,
+    user flows, custom authentication extensions, Entra ID (workforce) Conditional Access,
+    PIM eligibility.
+    NOTE: Substitutes the legacy Microsoft Entra External ID product, which is unavailable to new customers
+    as of 1 May 2025. See docs/architecture.md.
 #>
 function Install-Identity {
     [CmdletBinding(SupportsShouldProcess)]
@@ -9,12 +12,12 @@ function Install-Identity {
 
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     foreach ($country in 'DK','SE','NO') {
-        $tenant = $Config.B2CTenants[$country]
-        Write-Host "  → B2C tenant $tenant"
-        if ($PSCmdlet.ShouldProcess($tenant, 'Upload custom policies + CA + PIM')) {
-            $policies = Get-ChildItem (Join-Path $repo "infra\identity\b2c\custom-policies") -Filter '*.xml' -ErrorAction SilentlyContinue
-            foreach ($p in $policies) {
-                "[scaffold] msgraph upload trustframework policy $tenant <- $($p.Name)" |
+        $tenant = $Config.ExternalIdTenants[$country]
+        Write-Host "  → External ID tenant $tenant"
+        if ($PSCmdlet.ShouldProcess($tenant, 'Apply user flows + custom auth extensions + CA + PIM')) {
+            $flows = Get-ChildItem (Join-Path $repo "infra\identity\external-id\user-flows") -Filter '*.json' -ErrorAction SilentlyContinue
+            foreach ($f in $flows) {
+                "[scaffold] msgraph apply user-flow / extension $tenant <- $($f.Name)" |
                     Add-Content (Join-Path $ReportDir 'install-identity.log')
             }
         }
@@ -25,8 +28,8 @@ function Test-Identity {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     foreach ($country in 'DK','SE','NO') {
-        $tenant = $Config.B2CTenants[$country]
-        $url = "https://$($tenant.Split('.')[0]).b2clogin.com/$tenant/.well-known/openid-configuration?p=B2C_1A_SignUpOrSignIn"
+        $tenant = $Config.ExternalIdTenants[$country]
+        $url = "https://$($tenant.Split('.')[0]).ciamlogin.com/$tenant/.well-known/openid-configuration"
         Write-Host "  → discover $url (offline-skipped in scaffold)"
     }
     $script = Join-Path $repo 'infra\identity\scripts\Test-IdentityFederation.ps1'

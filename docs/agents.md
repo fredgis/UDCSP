@@ -61,7 +61,7 @@ The orchestrator (this CLI session) writes the installer, master docs and CI plu
 | `agent-frontend` | A9, A10 | Claude Sonnet 4.6 | T+0 | 7 m 15 s | ✅ | 103 | React 18 + TS · Expo mobile · ACS + AI Speech IVR (6 languages) |
 | `agent-qa` | A14 | Claude Sonnet 4.6 | T+0 | 7 m 26 s | ✅ | 89 | Playwright (10 scenarios) · 8 eval pipelines · WCAG · k6 · OWASP ZAP · eIDAS/GDPR/AI Act conformance |
 | `agent-services` | A7, A8 | Claude Sonnet 4.6 | T+0 | 10 m 2 s | ✅ | 102 | APIM (8 APIs) · Logic Apps (6 workflows) · D365 solutions × 4 · 5 Power Automate flows · 3 Functions/ACA |
-| `agent-platform` | A1, A2, A3, A5 | Claude Sonnet 4.6 | T+0 | 11 m 5 s | ✅ | 64 | Landing-zone Bicep · 3 B2C tenants + custom policies · Defender + Sentinel + 6 analytics rules · Log Analytics + 3 workbooks |
+| `agent-platform` | A1, A2, A3, A5 | Claude Sonnet 4.6 | T+0 | 11 m 5 s | ✅ | 64 | Landing-zone Bicep · 3 External ID tenants + custom policies · Defender + Sentinel + 6 analytics rules · Log Analytics + 3 workbooks |
 
 > Default model for the `task` tool is Claude Sonnet 4.6. All vertical sub-agents ran on this model; no overrides applied.
 
@@ -138,7 +138,7 @@ Recorded by the sub-agents themselves at hand-off; resolved during orchestrator 
 | `agent-services` (`services/apim/apis/*/openapi.yaml`) | `agent-frontend` (`apps/{web,mobile}/src/api/*.ts`) | OpenAPI 3 contracts | Web/mobile clients written against the contract; can be regenerated from spec |
 | `agent-services` (D365 case-create connector) | `agent-foundry` (Copilot Studio `connections/d365-case-create.json`) | Dataverse Web API schema for `udcsp_application` | Connector JSON references the table; D365 solution declares it |
 | `agent-data-gov` (Fabric mirroring sink) | `agent-services` (Dataverse → Fabric mirroring) | Mirror config destination workspace per country | `data/fabric/workspaces/workspace-config.json` × `apps/d365/dataverse-to-fabric-mirroring/mirror-config.json` |
-| `agent-platform` (B2C URLs, Key Vault names) | All agents that call B2C / read secrets | Per-country B2C authority URLs + bootstrap KV name | Centralised in `scripts/install/config/udcsp.config.template.psd1` |
+| `agent-platform` (External ID URLs, Key Vault names) | All agents that call External ID / read secrets | Per-country External ID authority URLs + bootstrap KV name | Centralised in `scripts/install/config/udcsp.config.template.psd1` |
 
 ---
 
@@ -146,7 +146,7 @@ Recorded by the sub-agents themselves at hand-off; resolved during orchestrator 
 
 These are deliberate placeholders in the scaffolds; resolving them is the job of an actual tenant install.
 
-- B2C tenant IDs, client IDs, redirect URIs (`infra/identity/`, `apps/web/src/auth/msalConfig.ts`)
+- External ID tenant IDs, client IDs, redirect URIs (`infra/identity/`, `apps/web/src/auth/msalConfig.ts`)
 - Foundry workspace endpoint, model deployment names, content-safety endpoint (`scripts/install/config/udcsp.config.psd1`)
 - D365 environment URLs (template provided, real values needed)
 - ACS toll-free phone numbers per country (`apps/voice/acs/phone-numbers.bicep`)

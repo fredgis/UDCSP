@@ -2,12 +2,12 @@
 // Eval matrix rows: 6,9,14,15,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';
-import { signInWithB2CTestToken } from '../fixtures/auth';
+import { signInWithExternalIdTestToken } from '../fixtures/auth';
 import { createTraceparent } from '../helpers/traceparent';
 import { postJson, getJson, expectTraceVisible } from '../helpers/api-client';
 
 test('Scenario 08 - Ingrid SOC impossible travel alert', async ({ page, request, persona }) => {
-  const traceparent=createTraceparent(); const token=await signInWithB2CTestToken(page,'NO',persona.id);
+  const traceparent=createTraceparent(); const token=await signInWithExternalIdTestToken(page,'NO',persona.id);
   await page.setExtraHTTPHeaders({ traceparent }); await page.goto('/demo/d8');
   await expect(page.getByRole('heading',{ name:/UDCSP|Citizen|Case|Audit|Cockpit/i })).toBeVisible();
   await page.getByTestId('scenario-intent').fill('security-containment'); await page.getByTestId('start-scenario').click();

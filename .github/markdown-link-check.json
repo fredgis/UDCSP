@@ -4,7 +4,7 @@
     { "pattern": "udcspdk\\.crm4\\.dynamics\\.com" },
     { "pattern": "udcspse\\.crm4\\.dynamics\\.com" },
     { "pattern": "udcspno\\.crm4\\.dynamics\\.com" },
-    { "pattern": "\\.b2clogin\\.com" },
+    { "pattern": "\\.ciamlogin\\.com" },
     { "pattern": "\\.swa\\.azurestaticapps\\.net" },
     { "pattern": "SYNTH-PERSONAS" }
   ],

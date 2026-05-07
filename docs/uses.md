@@ -102,7 +102,7 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 
 #### 🎞️ Walk-through
 
-1. Anna lands on `borger.dk`-style **DK portal** (Static Web App), authenticates via **B2C DK** + national eID.
+1. Anna lands on `borger.dk`-style **DK portal** (Static Web App), authenticates via **Microsoft Entra External ID (DK tenant)** + national eID.
 2. She selects **"Move to another Nordic country"** — the portal calls the **Foundry Classifier** through APIM; intent detected as `cross-border-residency-transfer`.
 3. The portal pre-fills the form with claims-based data from DK agencies — **Once-Only Principle (OOP)**. Anna only adds destination address and employer.
 4. She uploads her employment contract; **Document Extractor** (Foundry + AI Document Intelligence) confirms employer and salary.
@@ -118,7 +118,7 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 | Case-study requirement | Eval row | How it shows up in this demo |
 |---|:-:|---|
 | Consolidate 47 portals → 1 | #1 | Anna uses a single federated front door across DK + SE. |
-| Cross-border identity federation | #2 | DK eID → token accepted by SE B2C via eIDAS bridge. |
+| Cross-border identity federation | #2 | DK eID → token accepted by SE External ID via eIDAS bridge. |
 | 28d → 4d processing | #3 | SLA timer in D365; Power BI confirms median 4d for this case type. |
 | +38 % satisfaction | #4 | Post-completion CSAT survey captured for the journey. |
 | AI classification & routing in 12 languages | #5 | Foundry Classifier picks the right case type from a DA description. |
@@ -129,13 +129,13 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 | DPA differences | #11 | Logic Apps applies the DK ⇄ SE data-sharing policy pack from Purview. |
 | Web channel | #12 | Static Web App + responsive UI used by Anna. |
 | Multilingual support | #13 | UI in EN; communications in SV; KB in SV; AI agents handle DA → SV. |
-| All 9 mandatory Azure services | #14 | B2C, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI all light up. |
+| All 9 mandatory Azure services | #14 | External ID, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI all light up. |
 | Auditability of every AI decision | #15 | Foundry tracing → trace ID is shown to Anna and to the caseworker. |
 | Caseworker productivity | #16 | Astrid uses Copilot for Service to compose reply in 90 s vs. 8 min baseline. |
 | Synthetic data | #17 | Anna and her DK history come from A15's persona library. |
 
 #### 🧰 Stack exercised
-- **Mandatory:** B2C, Entra ID, Azure OpenAI (via Foundry), Microsoft Fabric, D365 Customer Service, APIM, Purview, Logic Apps, Power BI.
+- **Mandatory:** External ID, Entra ID, Azure OpenAI (via Foundry), Microsoft Fabric, D365 Customer Service, APIM, Purview, Logic Apps, Power BI.
 - **Additional:** Microsoft Foundry, Static Web Apps, AI Document Intelligence, AI Translator, Azure Communication Services, Service Bus, Key Vault, Application Insights, Copilot Studio.
 - **Foundry agents:** Classifier, Translator, Eligibility Pre-Assessor, Citizen Assistant, Document Extractor.
 - **Synthetic data (A15):** persona "Anna Jensen", DK address, employment contract PDF, Danish/Swedish KB articles, multilingual notification templates.
@@ -235,7 +235,7 @@ Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal
 
 | Case-study requirement | Eval row | How it shows up |
 |---|:-:|---|
-| Cross-border identity federation | #2 | Maria authenticates via her Polish eID through the SE B2C tenant. |
+| Cross-border identity federation | #2 | Maria authenticates via her Polish eID through the SE External ID tenant. |
 | 28d → 4d processing | #3 | The same SLA path; AI pre-assessment shaves time off the queue. |
 | +38 % satisfaction | #4 | Post-submission CSAT captured per language. |
 | AI classification in 12 languages | #5 | Classifier handles PL → routes to SV caseworker queue. |
@@ -247,7 +247,7 @@ Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal
 | Synthetic data | #17 | Persona "Maria Kowalska", PL lease, SV KB articles. |
 
 #### 🧰 Stack exercised
-- **Mandatory:** B2C (SE tenant), Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
+- **Mandatory:** External ID (SE tenant), Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
 - **Additional:** Microsoft Foundry, Static Web Apps, AI Document Intelligence, AI Translator, AI Content Safety, design system.
 - **Foundry agents:** Classifier, Translator, Citizen Assistant, Document Extractor, Eligibility Pre-Assessor.
 - **Synthetic data (A15):** persona "Maria Kowalska", PL lease document, PL/SV KB pair.
@@ -278,7 +278,7 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 
 #### 🎞️ Walk-through
 
-1. Erik opens the mobile app; authenticates with **MitID** through B2C DK.
+1. Erik opens the mobile app; authenticates with **MitID** through External ID DK.
 2. He taps **"Apply for income supplement"**; the app guides him to capture payslips.
 3. **AI Document Intelligence** extracts gross/net amounts, employer, period — confidence per field.
 4. **Document Extractor (Foundry)** validates the extraction by cross-referencing tax records via APIM.
@@ -290,7 +290,7 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 
 | Case-study requirement | Eval row | How it shows up |
 |---|:-:|---|
-| Cross-border identity (DK MitID) | #2 | National eID accepted by B2C DK. |
+| Cross-border identity (DK MitID) | #2 | National eID accepted by External ID DK. |
 | 28d → 4d | #3 | Extraction + pre-assessment shorten the back-office cycle. |
 | +38 % satisfaction | #4 | In-app CSAT after decision. |
 | AI classification in 12 languages | #5 | DA intent classified directly. |
@@ -304,7 +304,7 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 | Synthetic data | #17 | Persona "Erik Hansen", payslips from A15's DK document templates. |
 
 #### 🧰 Stack exercised
-- **Mandatory:** B2C, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
+- **Mandatory:** External ID, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
 - **Additional:** Microsoft Foundry, AI Document Intelligence, mobile shell, ACS (push notifications), Key Vault.
 - **Foundry agents:** Classifier, Document Extractor, Eligibility Pre-Assessor, Citizen Assistant, Translator (none needed — DA-native).
 - **Synthetic data (A15):** persona "Erik Hansen", DK payslip templates with realistic amounts and watermark.
@@ -489,7 +489,7 @@ A malicious citizen attempts to make the Citizen Assistant exfiltrate caseworker
 2. **Foundry Citizen Assistant** flags the input; **AI Content Safety** scores it as `prompt-injection` high.
 3. The agent **refuses safely** in plain language; the **Foundry trace** is tagged `safety-incident`.
 4. **Sentinel** receives the event via Log Analytics; an analytics rule raises an incident.
-5. Ingrid opens the incident; sees the trace, the user agent, the IP, the B2C user object ID.
+5. Ingrid opens the incident; sees the trace, the user agent, the IP, the External ID user object ID.
 6. She runs an automated **playbook** — the session is invalidated, the citizen account is rate-limited, an email is queued for the user with appeal instructions.
 7. The incident is closed with full forensic trail; **per-country incident KPIs** update in Power BI.
 
@@ -505,7 +505,7 @@ A malicious citizen attempts to make the Citizen Assistant exfiltrate caseworker
 
 #### 🧰 Stack exercised
 - **Mandatory:** OpenAI/Foundry, APIM, Fabric, Purview, Power BI, Logic Apps (playbooks).
-- **Additional:** Microsoft Sentinel, Defender for Cloud, AI Content Safety, Key Vault, B2C.
+- **Additional:** Microsoft Sentinel, Defender for Cloud, AI Content Safety, Key Vault, External ID.
 - **Foundry agents:** Citizen Assistant + Content Safety integration.
 - **Synthetic data (A15):** adversarial conversation corpus including injection attempts in 12 languages.
 
