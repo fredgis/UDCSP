@@ -1,5 +1,26 @@
+<div align="center">
+
 # 🧠 UDCSP — The AI Architecture
 
+### Microsoft Foundry · Microsoft Copilot Studio · Azure OpenAI · 6 agents · 12 languages
+
+*One brain (Foundry), many faces (Copilot Studio). Why both products are mandatory, how they cooperate, and what every Foundry agent does.*
+
+[![AI Brain](https://img.shields.io/badge/🧠_Brain-Microsoft_Foundry-FF6F00?style=for-the-badge)](#)
+[![Façade](https://img.shields.io/badge/🗣️_Façade-Copilot_Studio-0078D4?style=for-the-badge)](#)
+[![Agents](https://img.shields.io/badge/🤖_Agents-6-2E7D32?style=for-the-badge)](#)
+[![Languages](https://img.shields.io/badge/🗣️_Languages-12-AD1457?style=for-the-badge)](#)
+
+[![Compliance](https://img.shields.io/badge/🛡️_EU_AI_Act-Registered-C62828?style=flat-square)](#)
+[![Safety](https://img.shields.io/badge/🛡️_Content_Safety-Always_On-1565C0?style=flat-square)](#)
+[![Eval](https://img.shields.io/badge/📊_Evals-Per_PR_·_Per_Release-5E35B1?style=flat-square)](#)
+[![Trace](https://img.shields.io/badge/🔍_Tracing-OTel_·_App_Insights-00796B?style=flat-square)](#)
+
+</div>
+
+---
+
+> [!IMPORTANT]
 > **TL;DR.** UDCSP runs **two** AI products side-by-side, by design.
 > **Microsoft Foundry** is the AI **control plane** — every model call, every agent, every evaluation, every trace, and every EU AI Act registration lives there.
 > **Microsoft Copilot Studio** is the conversational **façade** — it owns dialog state, channel adapters (Web, Teams, Voice, M365 Copilot, WhatsApp) and topic-based intent routing, and it *delegates* its hard reasoning to Foundry agents through APIM.
@@ -8,7 +29,7 @@
 
 ---
 
-## 📖 Table of contents
+## 📑 Table of contents
 
 1. [Why this document exists](#1-why-this-document-exists)
 2. [The mental model in one picture](#2-the-mental-model-in-one-picture)
@@ -31,7 +52,7 @@
 
 The case study hands us a tricky-looking pair: **Azure OpenAI** *and* **Microsoft Copilot Studio**, both flagged as mandatory, plus a strong implicit demand for governance (EU AI Act, GDPR, Purview lineage) and for multi-channel reach (citizens on web, mobile, voice, plus caseworkers in D365). A naïve reading is "two AI products doing the same thing — pick one and hide the other." That is **wrong**.
 
-This document explains, in one place, what each product does in UDCSP, why both are needed, and how they cooperate. Read it once and the rest of the AI surface (`docs/architecture.md` § 5, the Foundry assets under `foundry/`, the Copilot Studio assets under `copilot-studio/`, the eval pipelines under `tests/eval/`) becomes self-evident.
+This document explains, in one place, what each product does in UDCSP, why both are needed, and how they cooperate. Read it once and the rest of the AI surface (`docs/tech/architecture.md` § 5, the Foundry assets under `foundry/`, the Copilot Studio assets under `copilot-studio/`, the eval pipelines under `tests/eval/`) becomes self-evident.
 
 ---
 
@@ -574,4 +595,4 @@ sequenceDiagram
 
 > *Microsoft Foundry is the brain — it runs every model call, evaluates every output, traces every step, classifies every agent under the EU AI Act, and centralises Content Safety. Microsoft Copilot Studio is the face — it owns the conversation, the channels, and the dialog state, and it delegates every reasoning step to a Foundry agent through APIM. Together they let UDCSP serve 2.1 M citizens in 12 languages on 5 channels, with a single auditable AI control plane.*
 
-— Companion docs: [`architecture.md`](./architecture.md) (full platform), [`agents.md`](./agents.md) (build agents), [`uses.md`](./uses.md) (demo scenarios).
+— Companion docs: [`architecture.md`](../tech/architecture.md) (full platform), [`agents.md`](../tech/agents.md) (build agents), [`uses.md`](./uses.md) (demo scenarios).

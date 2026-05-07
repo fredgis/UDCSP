@@ -328,7 +328,7 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 The full per-vertical breakdown of files and durations is in [`agents.md`](./agents.md) §3.
 
 ### A0 · Platform Architect
-- **Inputs:** [`README.md`](../README.md), [`architecture.md`](./architecture.md), [`case-study-11.md`](./case-study-11.md).
+- **Inputs:** [`README.md`](../../README.md), [`architecture.md`](./architecture.md), [`case-study-11.md`](../biz/case-study-11.md).
 - **Tasks:** Repository structure ADR; naming convention ADR; environment topology ADR (DEV/TEST/PREPROD/PROD per zone); contract templates (OpenAPI, AsyncAPI, Bicep, Power Platform solution); decision log.
 - **Outputs:** `docs/adr/*`, `docs/conventions/*`, `contracts/templates/*`.
 - **Exit criteria:** All downstream agents have a template they can pick up.

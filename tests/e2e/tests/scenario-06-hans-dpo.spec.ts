@@ -1,4 +1,4 @@
-// Scenario ID: D7 from docs/uses.md — Hans DPO subject access request.
+// Scenario ID: D7 from docs/biz/uses.md — Hans DPO subject access request.
 // Eval matrix rows: 7,9,10,11,13,14,15,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

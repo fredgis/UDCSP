@@ -1,6 +1,6 @@
 # UDCSP — Deep-Dive Architecture
 
-> Companion document to the [README](../README.md). This document describes **what is built and how it fits together** — every layer, every sovereignty zone, every AI agent, every governance control. No source code is presented here; this is the platform definition that the development plan ([`plan.md`](./plan.md)) will execute.
+> Companion document to the [README](../../README.md). This document describes **what is built and how it fits together** — every layer, every sovereignty zone, every AI agent, every governance control. No source code is presented here; this is the platform definition that the development plan ([`plan.md`](./plan.md)) will execute.
 
 ---
 
@@ -45,7 +45,7 @@
 
 ### 2.1 High-level view (whole-platform)
 
-This is the same diagram surfaced in [`README.md`](../README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
+This is the same diagram surfaced in [`README.md`](../../README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
 
 ```mermaid
 graph TB
@@ -415,7 +415,7 @@ graph TB
 
 ## 5. AI Architecture — Microsoft Foundry at the Core
 
-> 📘 **For the dedicated AI deep-dive** (why Foundry **and** Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](./ai.md). This section is the architecture-level summary.
+> 📘 **For the dedicated AI deep-dive** (why Foundry **and** Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
 
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
 
@@ -901,7 +901,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | Case study capability (B2C term) | UDCSP implementation (Entra External ID term) | Notes |
 |---|---|---|
 | Per-country B2C tenant            | Per-country **External (CIAM) tenant** (`Microsoft.AzureActiveDirectory/ciamDirectories`) | Same isolation model: one tenant per sovereign zone (DK / SE / NO). |
-| `B2C_1A_*` custom policies (XML)  | **User flows** + **Custom Authentication Extensions** (JSON, Microsoft Graph beta) | Lower complexity; same extensibility for token augmentation, federation, and custom claims. See [`infra/identity/external-id/user-flows/`](../infra/identity/external-id/user-flows/). |
+| `B2C_1A_*` custom policies (XML)  | **User flows** + **Custom Authentication Extensions** (JSON, Microsoft Graph beta) | Lower complexity; same extensibility for token augmentation, federation, and custom claims. See [`infra/identity/external-id/user-flows/`](../../infra/identity/external-id/user-flows/). |
 | eIDAS bridge via Identity Experience Framework | eIDAS bridge as an **Azure Function** invoked by an `onTokenIssuanceStart` custom authentication extension | First-class, supported integration pattern. |
 | `*.b2clogin.com` authority URL    | `*.ciamlogin.com` authority URL                                                            | Same MSAL.js client; only the host changes. |
 | Self-service password reset (B2C user flow) | Native **SSPR** in External ID                                                       | Tenant-level, multi-method (email today, SMS roadmap). |

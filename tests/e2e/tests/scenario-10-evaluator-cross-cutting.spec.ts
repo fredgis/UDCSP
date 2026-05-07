@@ -1,4 +1,4 @@
-// Scenario ID: D1-D10 from docs/uses.md — Evaluator dry-run all demos.
+// Scenario ID: D1-D10 from docs/biz/uses.md — Evaluator dry-run all demos.
 // Eval matrix rows: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

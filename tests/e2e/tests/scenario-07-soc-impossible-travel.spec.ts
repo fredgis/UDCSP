@@ -1,4 +1,4 @@
-// Scenario ID: D8 from docs/uses.md — Ingrid SOC impossible travel alert.
+// Scenario ID: D8 from docs/biz/uses.md — Ingrid SOC impossible travel alert.
 // Eval matrix rows: 6,9,14,15,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

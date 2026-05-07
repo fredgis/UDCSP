@@ -1,4 +1,4 @@
-// Scenario ID: D5/D6 from docs/uses.md — Astrid caseworker AI review.
+// Scenario ID: D5/D6 from docs/biz/uses.md — Astrid caseworker AI review.
 // Eval matrix rows: 3,7,9,13,14,15,16,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

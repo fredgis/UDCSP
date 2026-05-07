@@ -1,4 +1,4 @@
-// Scenario ID: D3 from docs/uses.md — Maria Polish screen-reader benefit.
+// Scenario ID: D3 from docs/biz/uses.md — Maria Polish screen-reader benefit.
 // Eval matrix rows: 2,3,4,5,6,7,8,12,13,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

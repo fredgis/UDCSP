@@ -1,4 +1,4 @@
-// Scenario ID: D1 from docs/uses.md — Anna DK to SE residency.
+// Scenario ID: D1 from docs/biz/uses.md — Anna DK to SE residency.
 // Eval matrix rows: 1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17.
 // TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';

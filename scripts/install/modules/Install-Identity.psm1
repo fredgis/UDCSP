@@ -4,7 +4,7 @@
     user flows, custom authentication extensions, Entra ID (workforce) Conditional Access,
     PIM eligibility.
     NOTE: Substitutes the legacy Microsoft Entra External ID product, which is unavailable to new customers
-    as of 1 May 2025. See docs/architecture.md.
+    as of 1 May 2025. See docs/tech/architecture.md.
 #>
 function Install-Identity {
     [CmdletBinding(SupportsShouldProcess)]

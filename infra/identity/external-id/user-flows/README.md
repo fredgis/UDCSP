@@ -13,4 +13,4 @@ This folder replaces the legacy Azure AD B2C custom-policy XML files. **Azure AD
 Each JSON file is consumed by Microsoft Graph beta endpoints under `/identity/authenticationEventsFlows` and `/identity/customAuthenticationExtensions`. Use the per-country External tenant set in `scripts/install/config/udcsp.config.psd1 > ExternalIdTenants`.
 
 ## Why External ID and not B2C?
-See [`docs/architecture.md` § Identity deviation note](../../../docs/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
+See [`docs/tech/architecture.md` § Identity deviation note](../../../../docs/tech/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
