@@ -1,0 +1,240 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1080"
+     font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif"
+     role="img"
+     aria-label="UDCSP simplified architecture: citizens of Denmark, Sweden and Norway access the platform through web, mobile and voice channels; their identity is federated through Entra ID and Azure AD B2C; an API Management gateway routes requests to the Microsoft Foundry AI brain (classifier, translator, eligibility, assistant, document extractor) and to Logic Apps workflows; cases are managed in Dynamics 365 Customer Service; data and insights flow through Microsoft Fabric and Power BI; Microsoft Purview governs every layer.">
+  <defs>
+    <filter id="card-shadow" x="-5%" y="-10%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1A237E" flood-opacity="0.10"/>
+    </filter>
+    <filter id="brain-shadow" x="-5%" y="-10%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#E65100" flood-opacity="0.30"/>
+    </filter>
+    <filter id="pill-shadow" x="-10%" y="-15%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#1A237E" flood-opacity="0.15"/>
+    </filter>
+
+    <linearGradient id="g-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FAFBFF"/>
+      <stop offset="1" stop-color="#F0F4FF"/>
+    </linearGradient>
+    <linearGradient id="g-citizens" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3F2FD"/><stop offset="1" stop-color="#BBDEFB"/>
+    </linearGradient>
+    <linearGradient id="g-channels" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E1F5FE"/><stop offset="1" stop-color="#B3E5FC"/>
+    </linearGradient>
+    <linearGradient id="g-identity" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EDE7F6"/><stop offset="1" stop-color="#D1C4E9"/>
+    </linearGradient>
+    <linearGradient id="g-gateway" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E0F2F1"/><stop offset="1" stop-color="#B2DFDB"/>
+    </linearGradient>
+    <linearGradient id="g-foundry" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF3E0"/><stop offset="1" stop-color="#FFCC80"/>
+    </linearGradient>
+    <linearGradient id="g-workflow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFDE7"/><stop offset="1" stop-color="#FFF59D"/>
+    </linearGradient>
+    <linearGradient id="g-cases" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCE4EC"/><stop offset="1" stop-color="#F8BBD0"/>
+    </linearGradient>
+    <linearGradient id="g-data" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8F5E9"/><stop offset="1" stop-color="#C8E6C9"/>
+    </linearGradient>
+    <linearGradient id="g-gov" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFEBEE"/><stop offset="1" stop-color="#FFCDD2"/>
+    </linearGradient>
+
+    <linearGradient id="g-flag-dk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C8102E"/><stop offset="1" stop-color="#A1001E"/>
+    </linearGradient>
+    <linearGradient id="g-flag-se" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#005EB8"/><stop offset="1" stop-color="#004990"/>
+    </linearGradient>
+    <linearGradient id="g-flag-no" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#00205B"/><stop offset="1" stop-color="#001540"/>
+    </linearGradient>
+
+    <linearGradient id="g-arrow-flow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5E35B1"/>
+      <stop offset="1" stop-color="#00897B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Page background -->
+  <rect width="1200" height="1080" fill="url(#g-bg)"/>
+
+  <!-- ===== CITIZENS BAND (top) ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="40" width="820" height="120" rx="24" fill="url(#g-citizens)" stroke="#1565C0" stroke-width="2"/>
+  </g>
+  <text x="470" y="78" text-anchor="middle" font-size="22" font-weight="700" fill="#0D47A1">👥  Citizens · 2.1 M · 12 languages</text>
+
+  <!-- 3 country flag pills -->
+  <g filter="url(#pill-shadow)">
+    <rect x="190" y="98" width="160" height="48" rx="24" fill="url(#g-flag-dk)"/>
+  </g>
+  <text x="270" y="129" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">🇩🇰  Denmark</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="390" y="98" width="160" height="48" rx="24" fill="url(#g-flag-se)"/>
+  </g>
+  <text x="470" y="129" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">🇸🇪  Sweden</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="590" y="98" width="160" height="48" rx="24" fill="url(#g-flag-no)"/>
+  </g>
+  <text x="670" y="129" text-anchor="middle" font-size="18" font-weight="700" fill="#FFFFFF">🇳🇴  Norway</text>
+
+  <!-- flow arrow to channels -->
+  <line x1="470" y1="160" x2="470" y2="190" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,186 478,186 470,200" fill="#5E35B1"/>
+
+  <!-- ===== CHANNELS ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="200" width="820" height="80" rx="20" fill="url(#g-channels)" stroke="#0277BD" stroke-width="2"/>
+  </g>
+  <text x="470" y="234" text-anchor="middle" font-size="20" font-weight="700" fill="#01579B">🌐  Omnichannel Front Door</text>
+  <text x="470" y="262" text-anchor="middle" font-size="16" fill="#01579B">💻  Web Portal     📱  Mobile App     ☎️  Voice / IVR</text>
+
+  <line x1="470" y1="280" x2="470" y2="310" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,306 478,306 470,320" fill="#5E35B1"/>
+
+  <!-- ===== IDENTITY ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="320" width="820" height="80" rx="20" fill="url(#g-identity)" stroke="#5E35B1" stroke-width="2"/>
+  </g>
+  <text x="470" y="354" text-anchor="middle" font-size="20" font-weight="700" fill="#311B92">🔐  Cross-Border Identity Federation</text>
+  <text x="470" y="382" text-anchor="middle" font-size="16" fill="#311B92" font-style="italic">Microsoft Entra ID  ·  Azure AD B2C  ·  eIDAS</text>
+
+  <line x1="470" y1="400" x2="470" y2="430" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,426 478,426 470,440" fill="#5E35B1"/>
+
+  <!-- ===== GATEWAY ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="440" width="820" height="70" rx="20" fill="url(#g-gateway)" stroke="#00796B" stroke-width="2"/>
+  </g>
+  <text x="470" y="482" text-anchor="middle" font-size="20" font-weight="700" fill="#004D40">🚪  Azure API Management</text>
+
+  <line x1="470" y1="510" x2="470" y2="540" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,536 478,536 470,550" fill="#5E35B1"/>
+
+  <!-- ===== FOUNDRY BRAIN (featured) ===== -->
+  <g filter="url(#brain-shadow)">
+    <rect x="60" y="550" width="820" height="170" rx="24" fill="url(#g-foundry)" stroke="#E65100" stroke-width="3"/>
+  </g>
+  <text x="470" y="588" text-anchor="middle" font-size="24" font-weight="800" fill="#BF360C">🧠  AI Brain — Microsoft Foundry</text>
+  <line x1="220" y1="603" x2="720" y2="603" stroke="#E65100" stroke-width="2" opacity="0.3"/>
+
+  <!-- Foundry agent pills -->
+  <g filter="url(#pill-shadow)">
+    <rect x="100" y="625" width="170" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="185" y="650" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">✨  Azure OpenAI</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="285" y="625" width="170" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="370" y="650" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">🎯  Classifier</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="470" y="625" width="170" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="555" y="650" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">🌍  Translator</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="655" y="625" width="200" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="755" y="650" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">⚖️  Eligibility</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="195" y="675" width="200" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="295" y="700" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">🤖  Citizen Assistant</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="410" y="675" width="240" height="40" rx="20" fill="#FFFFFF" stroke="#E65100" stroke-width="1.5"/>
+  </g>
+  <text x="530" y="700" text-anchor="middle" font-size="14" font-weight="600" fill="#BF360C">📄  Document Extractor</text>
+
+  <line x1="470" y1="720" x2="470" y2="750" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,746 478,746 470,760" fill="#5E35B1"/>
+
+  <!-- ===== WORKFLOW ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="760" width="820" height="80" rx="20" fill="url(#g-workflow)" stroke="#F9A825" stroke-width="2"/>
+  </g>
+  <text x="470" y="794" text-anchor="middle" font-size="20" font-weight="700" fill="#F57F17">⚙️  Azure Logic Apps — Workflow Orchestration</text>
+  <text x="470" y="822" text-anchor="middle" font-size="16" fill="#F57F17" font-style="italic">28 days  ➜  4 days</text>
+
+  <line x1="470" y1="840" x2="470" y2="870" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,866 478,866 470,880" fill="#5E35B1"/>
+
+  <!-- ===== CASE MANAGEMENT ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="880" width="820" height="70" rx="20" fill="url(#g-cases)" stroke="#AD1457" stroke-width="2"/>
+  </g>
+  <text x="470" y="922" text-anchor="middle" font-size="20" font-weight="700" fill="#880E4F">📋  Dynamics 365 Customer Service</text>
+
+  <line x1="470" y1="950" x2="470" y2="980" stroke="url(#g-arrow-flow)" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="462,976 478,976 470,990" fill="#5E35B1"/>
+
+  <!-- ===== DATA ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="60" y="990" width="820" height="70" rx="20" fill="url(#g-data)" stroke="#2E7D32" stroke-width="2"/>
+  </g>
+  <text x="470" y="1032" text-anchor="middle" font-size="20" font-weight="700" fill="#1B5E20">📊  Microsoft Fabric  ·  📈  Power BI</text>
+
+  <!-- ===== GOVERNANCE SIDEBAR ===== -->
+  <g filter="url(#card-shadow)">
+    <rect x="910" y="200" width="230" height="860" rx="24" fill="url(#g-gov)" stroke="#C62828" stroke-width="2"/>
+  </g>
+  <text x="1025" y="248" text-anchor="middle" font-size="20" font-weight="800" fill="#B71C1C">🛡️  Trust &amp;</text>
+  <text x="1025" y="276" text-anchor="middle" font-size="20" font-weight="800" fill="#B71C1C">Governance</text>
+  <line x1="950" y1="296" x2="1100" y2="296" stroke="#C62828" stroke-width="2" opacity="0.3"/>
+
+  <!-- gov pills -->
+  <g filter="url(#pill-shadow)">
+    <rect x="940" y="320" width="170" height="56" rx="14" fill="#FFFFFF" stroke="#C62828" stroke-width="1.5"/>
+  </g>
+  <text x="1025" y="345" text-anchor="middle" font-size="14" font-weight="700" fill="#B71C1C">Microsoft</text>
+  <text x="1025" y="365" text-anchor="middle" font-size="14" font-weight="700" fill="#B71C1C">Purview</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="940" y="396" width="170" height="44" rx="14" fill="#FFFFFF" stroke="#C62828" stroke-width="1.5"/>
+  </g>
+  <text x="1025" y="423" text-anchor="middle" font-size="14" font-weight="700" fill="#B71C1C">GDPR</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="940" y="460" width="170" height="44" rx="14" fill="#FFFFFF" stroke="#C62828" stroke-width="1.5"/>
+  </g>
+  <text x="1025" y="487" text-anchor="middle" font-size="14" font-weight="700" fill="#B71C1C">EU AI Act</text>
+
+  <g filter="url(#pill-shadow)">
+    <rect x="940" y="524" width="170" height="44" rx="14" fill="#FFFFFF" stroke="#C62828" stroke-width="1.5"/>
+  </g>
+  <text x="1025" y="551" text-anchor="middle" font-size="14" font-weight="700" fill="#B71C1C">WCAG 2.1 AA</text>
+
+  <text x="1025" y="608" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">classifies</text>
+  <text x="1025" y="626" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">labels</text>
+  <text x="1025" y="644" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">audits</text>
+  <text x="1025" y="662" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">protects</text>
+  <text x="1025" y="680" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">every layer</text>
+
+  <!-- governance dotted connectors -->
+  <line x1="880" y1="365" x2="940" y2="365" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="880" y1="475" x2="940" y2="475" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="880" y1="635" x2="940" y2="635" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="880" y1="800" x2="940" y2="800" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="880" y1="915" x2="940" y2="915" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+  <line x1="880" y1="1025" x2="940" y2="1025" stroke="#C62828" stroke-width="2" stroke-dasharray="5,4" opacity="0.6"/>
+
+  <text x="1025" y="780" text-anchor="middle" font-size="14" font-weight="600" fill="#B71C1C">Audit  ·  Trace</text>
+  <text x="1025" y="800" text-anchor="middle" font-size="14" font-weight="600" fill="#B71C1C">DPIA  ·  Lineage</text>
+  <text x="1025" y="820" text-anchor="middle" font-size="14" font-weight="600" fill="#B71C1C">AI Registry</text>
+  <text x="1025" y="840" text-anchor="middle" font-size="14" font-weight="600" fill="#B71C1C">Sovereignty</text>
+
+  <text x="1025" y="1010" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">By design,</text>
+  <text x="1025" y="1028" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">not as an</text>
+  <text x="1025" y="1046" text-anchor="middle" font-size="12" fill="#7F1D1D" font-style="italic">afterthought.</text>
+</svg>

@@ -40,52 +40,21 @@ UDCSP is **one** federated platform that:
 
 ## 📈 Before vs After at a Glance
 
-```mermaid
-graph LR
-    BEFORE["⏳ <b>Today</b><br/>━━━━━━<br/>📂 47 portals<br/>📅 28-day decisions<br/>🚫 No federation<br/>🗣️ Partial languages<br/>♿ A11y gaps"]:::before
-    AFTER["🚀 <b>UDCSP Tomorrow</b><br/>━━━━━━━━━━<br/>🏛️ 1 platform · 3 zones<br/>📅 4-day decisions<br/>🔐 2.1 M federated<br/>🗣️ 12 languages<br/>♿ WCAG 2.1 AA"]:::after
-    BEFORE ==>|UDCSP| AFTER
-
-    classDef before fill:#FFEBEE,stroke:#C62828,stroke-width:3px,color:#B71C1C
-    classDef after fill:#E8F5E9,stroke:#2E7D32,stroke-width:3px,color:#1B5E20
-```
+<p align="center">
+  <img src="./assets/before-after.svg" alt="Before vs After UDCSP — from 47 fragmented portals and 28-day decisions today, to 1 federated platform with 4-day decisions, 12 languages and full accessibility tomorrow." width="900"/>
+</p>
 
 ---
 
 ## 🏛️ Simplified Architecture
 
-```mermaid
-graph TB
-    C(["👥 <b>Citizens</b><br/>🇩🇰 🇸🇪 🇳🇴  ·  2.1 M  ·  12 languages"]):::citizens
-    CH["🌐 Web &nbsp;·&nbsp; 📱 Mobile &nbsp;·&nbsp; ☎️ Voice"]:::channels
-    ID["🔐 <b>Cross-Border Identity</b><br/><i>Microsoft Entra ID · Azure AD B2C · eIDAS</i>"]:::identity
-    GW["🚪 <b>Azure API Management</b>"]:::gateway
-    AI["🧠 <b>Microsoft Foundry — AI Brain</b><br/>✨ Azure OpenAI &nbsp;·&nbsp; 🎯 Classifier &nbsp;·&nbsp; 🌍 Translator<br/>⚖️ Eligibility &nbsp;·&nbsp; 🤖 Assistant &nbsp;·&nbsp; 📄 Doc Extractor"]:::ai
-    WF["⚙️ <b>Azure Logic Apps</b> — Workflow Orchestration<br/><i>28 days ➜ 4 days</i>"]:::workflow
-    CM["📋 <b>Dynamics 365</b> Customer Service"]:::cases
-    DT["📊 <b>Microsoft Fabric</b> &nbsp;·&nbsp; 📈 Power BI"]:::data
-    GV["🛡️ <b>Microsoft Purview</b> · GDPR · EU AI Act · WCAG 2.1 AA"]:::gov
+<p align="center">
+  <img src="./assets/architecture-overview.svg" alt="UDCSP simplified architecture — citizens of Denmark, Sweden and Norway access the platform through web, mobile and voice channels; their identity is federated through Entra ID and Azure AD B2C; an API Management gateway routes requests to the Microsoft Foundry AI brain (classifier, translator, eligibility, assistant, document extractor) and to Logic Apps workflows; cases are managed in Dynamics 365 Customer Service; data and insights flow through Microsoft Fabric and Power BI; Microsoft Purview governs every layer." width="900"/>
+</p>
 
-    C --> CH --> ID --> GW
-    GW --> AI
-    GW --> WF
-    AI --> WF
-    WF --> CM --> DT
-    AI -. traces & evals .-> DT
-    GV -. governs every layer .-> GW
-
-    classDef citizens fill:#E3F2FD,stroke:#1565C0,stroke-width:3px,color:#0D47A1
-    classDef channels fill:#E1F5FE,stroke:#0277BD,stroke-width:2px,color:#01579B
-    classDef identity fill:#EDE7F6,stroke:#5E35B1,stroke-width:2px,color:#311B92
-    classDef gateway fill:#E0F2F1,stroke:#00796B,stroke-width:2px,color:#004D40
-    classDef ai fill:#FFF3E0,stroke:#E65100,stroke-width:3px,color:#BF360C
-    classDef workflow fill:#FFF9C4,stroke:#F9A825,stroke-width:2px,color:#F57F17
-    classDef cases fill:#FCE4EC,stroke:#AD1457,stroke-width:2px,color:#880E4F
-    classDef data fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20
-    classDef gov fill:#FFEBEE,stroke:#C62828,stroke-width:3px,color:#B71C1C
-```
-
-> 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom through identity, the API gateway, and the Foundry-hosted AI brain before reaching the back-office case spine and the data platform. **Governance is a horizontal concern** that audits and constrains every layer.
+> 📖 **Reading the diagram:** every citizen interaction flows top-to-bottom through identity, the API gateway, and the Foundry-hosted AI brain before reaching the back-office case spine and the data platform. **Governance is a horizontal concern** (right-hand column) that audits and constrains every layer.
+>
+> 👉 *Looking for the deep technical diagrams?* See [`architecture.md`](./architecture.md) — it keeps the full Mermaid views (data flows, AI request lifecycle, deployment topology, installer flow, …).
 
 ---
 
@@ -166,6 +135,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
+| 🎨 `assets/` | SVG infographics rendered in this README (`before-after.svg`, `architecture-overview.svg`). |
 | 🏛️ `infra/` *(future)* | Bicep / Terraform landing zone & per-domain modules. |
 | 💻 `apps/` *(future)* | Citizen portals, mobile shell, voice bot, Copilot Studio agents. |
 | 🔌 `services/` *(future)* | API microservices and Logic Apps definitions. |
