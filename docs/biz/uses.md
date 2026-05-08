@@ -20,7 +20,8 @@
 1. [How to Use This Document](#how-to-use-this-document)
 2. [Demo Categories](#demo-categories)
 3. [Coverage Matrix — Demos × Evaluation Criteria](#coverage-matrix--demos--evaluation-criteria)
-4. [The 10 Scenarios](#the-10-scenarios)
+4. [Coverage Matrix — Demos × Communication Channels](#coverage-matrix--demos--communication-channels) ★
+5. [The 10 Scenarios](#the-10-scenarios)
    - [🌐 Demo 1 — Anna moves from Copenhagen to Stockholm (flagship)](#-demo-1--anna-moves-from-copenhagen-to-stockholm-flagship)
    - [🌐 Demo 2 — Lars asks the voice assistant about his tax refund (Norwegian)](#-demo-2--lars-asks-the-voice-assistant-about-his-tax-refund-norwegian)
    - [🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Sweden)](#-demo-3--maria-submits-a-benefit-application-with-a-screen-reader-polish-in-sweden)
@@ -31,7 +32,7 @@
    - [🛡️ Demo 8 — A prompt-injection attempt is contained and investigated](#%EF%B8%8F-demo-8--a-prompt-injection-attempt-is-contained-and-investigated)
    - [📊 Demo 9 — CIO reviews per-country, per-language outcomes & 47-portal sunset](#-demo-9--cio-reviews-per-country-per-language-outcomes--47-portal-sunset)
    - [💻 Demo 10 — DevOps stands up the entire platform from a clean tenant](#-demo-10--devops-stands-up-the-entire-platform-from-a-clean-tenant)
-5. [Cross-Cutting "Watch-For" List](#cross-cutting-watch-for-list)
+6. [Cross-Cutting "Watch-For" List](#cross-cutting-watch-for-list)
 
 ---
 
@@ -79,6 +80,46 @@ The columns are the **18 evaluation matrix rows** from the [README](../../README
 | **Total demos hitting row** | **2** | **5** | **6** | **5** | **4** | **5** | **5** | **3** | **5** | **6** | **2** | **6** | **8** | **10** | **8** | **4** | **9** | **1** |
 
 > Every one of the 18 rows is exercised by **at least one** demo, and most by several — giving the evaluator multiple converging lines of evidence.
+
+---
+
+## Coverage Matrix — Demos × Communication Channels
+
+A complementary view: which **citizen-or-workforce-facing channels** each demo exercises. Use this to plan a *channel-focused* walkthrough — pick a channel, run only the demos that light it up, and you cover the full lifecycle of that surface.
+
+> Channel deep-dives live under `docs/biz/`: 📞 [`voice.md`](./voice.md) · 🌐 [`web.md`](./web.md) · 📱 [`mobile.md`](./mobile.md) · 💬 [`chat.md`](./chat.md) · 📲 [`sms.md`](./sms.md) · 📧 [`email.md`](./email.md) · 🧑‍💼 [`caseworker.md`](./caseworker.md). For a per-channel **AI breakdown** (which Foundry agents fire on each channel) see [`ai.md` § 7](./ai.md#7-ai-per-communication-channel).
+
+| Demo | 📞 Voice | 🌐 Web | 📱 Mobile | 💬 Chat | 📲 SMS | 📧 Email | 🧑‍💼 Caseworker |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **D1** Anna DK→SE *(flagship)* | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **D2** Lars · voice NB | ✅ | | | | ✅ | | ✅ |
+| **D3** Maria · PL screen reader | | ✅ | | ✅ | | | ✅ |
+| **D4** Erik · payslip mobile | | | ✅ | | | | ✅ |
+| **D5** Astrid · caseworker | | | | | | | ✅ |
+| **D6** Eligibility human-in-the-loop | | | | | | | ✅ |
+| **D7** Hans · DPO audit *(admin)* | — | — | — | — | — | — | — |
+| **D8** Prompt-injection contained | | | | ✅ | | | |
+| **D9** CIO outcomes & 47→1 *(admin)* | — | — | — | — | — | — | — |
+| **D10** Installer + seed *(admin)* | — | — | — | — | — | — | — |
+| **Total demos hitting channel** | **1** | **2** | **2** | **3** | **2** | **1** | **6** |
+
+> **Reading the dashes.** D7, D9 and D10 are **admin-tool demos** (Power BI executive workspace, Foundry trace explorer, PowerShell installer). They do not exercise a citizen-or-workforce conversation channel directly, but they *prove the trail* every channel produces (D7), *expose the outcomes* every channel contributes to (D9), or *deploy* every channel from scratch (D10).
+
+### Per-channel walkthrough — "I want to see channel X end-to-end"
+
+If the evaluator wants a focused tour of one channel, here is the recommended demo path:
+
+| Channel | Demos to run, in order | What you'll see |
+|---|---|---|
+| 📞 **Voice** | **D2** | Real Norwegian phone call → STT → Foundry agent → TTS → SMS follow-up → warm transfer to a Norwegian caseworker (D5 is a natural follow-up to see where the warm-transferred case lands). |
+| 🌐 **Web** | **D1 → D3** | D1 demonstrates the federated front door (DK eID, ICU MessageFormat, OOP pre-fill); D3 demonstrates accessibility on the same surface (NVDA in Polish on the SE tenant). |
+| 📱 **Mobile** | **D4 → D1** | D4 is the mobile-native showcase (camera capture + Document Extractor + push); D1's Anna also receives a mobile push, closing the loop. |
+| 💬 **Chat widget** | **D3 → D8** | D3 shows the assistant being helpful in PL inside the SE portal; D8 shows the same widget being attacked and Content Safety + Sentinel containing the attempt. |
+| 📲 **SMS** | **D2 → D1** | D2 is the post-call NB summary; D1's Anna also gets an SV/EN SMS confirming her residency — same Translator agent, two languages. |
+| 📧 **Email** | **D1** | Bidirectional: D1 generates an outbound notification email; if Anna replies, the Foundry classifier auto-routes the reply onto her case. |
+| 🧑‍💼 **Caseworker** | **D5 → D6** | D5 is productivity (queue triage with Copilot for Service); D6 is governance (overriding an AI eligibility recommendation under Art. 14 oversight). |
+
+> **Tip — the "all 7 channels in 30 minutes" tour:** run **D2** (Voice + Caseworker + SMS), then **D3** (Web + Chat + Caseworker), then **D4** (Mobile + Caseworker), then **D1** (every channel including Email). Total wall-clock ≈ 30 min and every channel deep-dive doc is exercised at least once.
 
 ---
 
