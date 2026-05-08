@@ -167,6 +167,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 |---|---|
 | 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
 | 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
+| 🗄️ `data.md` | Storage architecture: 5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping, right-to-erasure playbook. |
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
@@ -263,12 +264,13 @@ For architects, builders, operators, and reviewers of the implementation itself.
 | 📄 File | 🎯 Purpose | 👤 Best for |
 |---|---|---|
 | [`docs/tech/architecture.md`](./docs/tech/architecture.md) | Full platform deep-dive — 15 sections covering principles, logical architecture, sovereignty topology, identity federation, AI architecture, integration, case management, data, governance, security, observability, multilingual strategy, end-to-end flows, service inventory, deployment. | Architects, tech leads. |
+| [`docs/tech/data.md`](./docs/tech/data.md) | **The storage truth** — five storage zones (Operational · Documents · Conversations · Knowledge & Memory · Analytics), per-data-category storage map, retention matrix anchored on EU AI Act Art. 26(6) + GDPR Art. 5/17 + ePrivacy Art. 5, right-to-erasure operational playbook, sovereignty & federation rules. | DPOs, architects, compliance. |
 | [`docs/tech/plan.md`](./docs/tech/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
 | [`docs/tech/agents.md`](./docs/tech/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
 | [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
 | [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
 
-> All fourteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
+> All fifteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
 ---
 

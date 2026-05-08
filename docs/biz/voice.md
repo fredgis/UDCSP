@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services** answers → **Azure AI Speech** transcribes in streaming → **Microsoft Copilot Studio** voice channel routes the intent → **APIM** validates & audits → the **same Foundry agents** that power the web do the reasoning → **Speech TTS** speaks the answer back in a per-locale neural voice → an **SMS récap** is sent through ACS. **One brain, many faces** — the voice channel re-uses the entire AI control plane, with zero duplication.
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake Bronze. |
 
 ---
 
@@ -40,6 +44,7 @@
 11. [How to test it (three levels)](#11-how-to-test-it-three-levels)
 12. [The demo script for a jury](#12-the-demo-script-for-a-jury)
 13. [Anti-patterns we avoid](#13-anti-patterns-we-avoid)
+14. [Where the conversation is stored](#14-where-the-conversation-is-stored)
 
 ---
 
@@ -471,6 +476,25 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 | Recording everything by default | Disclosure first; opt-out via `0` is a real, fully-functional path |
 | Voice has its own KB | Same KB as the web; voice queries the same RAG indices |
 | Skip the warm transfer (hard transfer to a queue) | Warm transfer with conversation context preserved into the D365 case |
+
+---
+
+## 14. Where the conversation is stored
+
+Voice writes both media and dialog records: raw `.wav` plus STT JSON go to the per-country `voice-recordings/` store, while the Copilot Studio conversation is retained as the canonical dialog transcript in Dataverse. ACS lifecycle events and Foundry traces stay in Zone 3 so audits can correlate call, transcript, and AI invocation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| Audio `.wav` + STT JSON | ADLS Gen2 `voice-recordings/` (per country, WORM, CMK) | 90 days; audio purged for minimisation |
+| Dialog transcript | Dataverse `bot_session`; mirrored to OneLake | 6 months hot; 6 years OneLake |
+| ACS call events | ACS Event Hubs → ADLS Gen2 `acs-events/` | See § 5 retention matrix |
+| Foundry trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> Audio is deliberately shorter-lived than transcripts: the transcript persists for EU AI Act Art. 26(6), while audio is purged after 90 days under GDPR minimisation.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 

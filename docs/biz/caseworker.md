@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** Every escalation from voice, web, mobile, chat, SMS, and email lands here. **Microsoft Dynamics 365 Customer Service** receives the case with full conversation context. **Power Automate** routes it to the right country/language queue. The **Foundry eligibility model** attaches a recommendation — confidence score, reasoning trace, and cited policy articles. The caseworker reviews and decides: **AI-first, human-in-the-loop, audited**. Every override is captured for EU AI Act Art. 14 conformity. The 28-day baseline becomes 4 days — not because AI decides, but because AI does the preparation.
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | Case/actions in Dataverse `case` + `case_audit`; overrides in `eligibility_override`; Copilot conversations in `bot_session`; traces in App Insights → OneLake. |
 
 ---
 
@@ -42,6 +46,7 @@
 13. [How to test it (three levels)](#13-how-to-test-it-three-levels)
 14. [The demo script for a jury](#14-the-demo-script-for-a-jury)
 15. [Anti-patterns we avoid](#15-anti-patterns-we-avoid)
+16. [Where the caseworker activity is stored](#16-where-the-caseworker-activity-is-stored)
 
 ---
 
@@ -486,6 +491,23 @@ This corresponds to **Demo 5** and **Demo 6** in [`uses.md`](./uses.md#️-demo-
 | No AI Act audit row | Every `udcsp_eligibility_assessment` is mirrored to Fabric and tagged in the Purview AI Act registry; completeness is checked nightly |
 | Caseworker training without adversarial cases | The sandbox is seeded with adversarial synthetic cases that force override decisions; caseworkers who never override in training are flagged for a follow-up session |
 | Deploy country solutions without Core | `country-overrides.json` declares `"dependsOn": "UDCSPCore"`; the installer enforces this order for all three countries |
+
+---
+
+## 16. Where the caseworker activity is stored
+
+The caseworker channel is the legally accountable system of record: case state, human actions, and override decisions live in Dataverse, while every AI suggestion is correlated to a Foundry trace. Copilot for Service conversations use the same Microsoft conversational store as Copilot Studio, and precedent knowledge is read from anonymised OneLake Gold only. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| Case state + actions | Dataverse `case` + `case_audit` | 10 years |
+| Human override | Dataverse `eligibility_override` + Foundry `human-override` annotation | 10 years / case retention |
+| Copilot for Service chat | Dataverse `bot_session` | 6 months hot; 6 years OneLake |
+| AI traces + precedents | App Insights → OneLake Bronze; OneLake Gold read-only precedents | Traces 180 days hot; precedents anonymised |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 
