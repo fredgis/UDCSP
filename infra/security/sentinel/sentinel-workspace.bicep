@@ -1,4 +1,4 @@
-// name: sentinel-workspace | owner agent: A3 | purpose: Log Analytics workspace with Sentinel enabled
+// name: sentinel-workspace | owner agent: A3 | purpose: Log Analytics workspace with Sentinel enabled (180-day retention to align with EU AI Act Art. 26(6) and NIS2 incident-forensic needs)
 
 targetScope = 'resourceGroup'
 
@@ -12,7 +12,11 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   location: location
   tags: tags
   properties: {
-    retentionInDays: 90
+    // Aligned with the platform-wide Log Analytics floor (180 days) so that
+    // Sentinel can correlate AI-trace incidents with the same retention
+    // window mandated by EU AI Act Art. 26(6). NIS2 (Dir. EU 2022/2555)
+    // incident forensics also benefit from the longer hot window.
+    retentionInDays: 180
     sku: { name: 'PerGB2018' }
   }
 }

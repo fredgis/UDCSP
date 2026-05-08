@@ -1,0 +1,45 @@
+id: caseworker-helper
+name: "Caseworker Helper (internal copilot)"
+riskLevel: limited
+purpose: "Assists caseworkers inside D365 Customer Service with case summarisation, next-best-action suggestions, drafting of citizen-facing messages, and policy lookup. Never citizen-facing; never decisional."
+deployedIn:
+  - "D365 Customer Service workspace (caseworker channel only)"
+  - "Copilot for Service prompts in apps/d365/solutions/UDCSP_Core/customizations/copilot-for-service/"
+dataSources:
+  - "Case record + activity history (Dataverse, sovereign country tenant)"
+  - "Internal policy knowledge base (SharePoint, country-scoped)"
+  - "Approved playbooks and SLAs (curated content, no external web)"
+trainingDataset: "No fine-tuning; prompt engineering + retrieval over country-scoped knowledge sources only."
+evalDataset: "foundry/evaluations/eval-suites/caseworker-helper.yaml + golden-questions per language"
+fairnessMetrics:
+  - "groundedness >= 0.92 (citations to internal policy must resolve)"
+  - "drafting helpfulness >= 0.85 (caseworker rating, weekly sample)"
+  - "language parity (DA / SV / NB / EN) >= 0.95"
+humanOversight: |
+  Every output is suggestive, not directive. The caseworker explicitly accepts,
+  edits, or rejects each suggestion before it is committed to Dataverse or sent
+  to the citizen. Copilot for Service surfaces the agent's reasoning trace and
+  citations alongside each suggestion. No suggestion is auto-applied.
+postMarketMonitoring: |
+  - Weekly safety + grounding sampling on a stratified random subset of cases
+    across DK / SE / NO.
+  - Monthly review of caseworker accept/edit/reject rates per use case.
+  - Quarterly bias review across language and country, with results filed in
+    governance/ai-act/registry/post-market-monitoring/.
+incidentHandling: |
+  Serious incidents (caseworker reports clearly wrong policy citation, harmful
+  draft, or systematic bias) are reported to the AI governance board within
+  72 hours and, if Art. 73 EU AI Act criteria are met, to the relevant national
+  competent authority within 15 days via governance/ai-act/procedures/serious-incident-reporting.md.
+loggingTraceability: |
+  All invocations are logged to the country Log Analytics workspace with
+  >= 180-day hot retention (EU AI Act Art. 26(6)). Each log line carries
+  the caseworker identity, the case ID, the suggestion text, the underlying
+  prompt + retrieved chunks, and the caseworker's action (accept/edit/reject).
+authorityContacts:
+  DK: "Datatilsynet (dt@datatilsynet.dk) — competent authority for AI Act in DK"
+  SE: "Integritetsskyddsmyndigheten (IMY) (imy@imy.se)"
+  NO: "Datatilsynet NO (postkasse@datatilsynet.no)"
+owner: "A6 (Foundry agent owner) + A11 (D365 / caseworker workspace owner)"
+lastReview: 2026-05-08
+nextReview: 2026-08-08
