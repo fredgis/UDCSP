@@ -168,6 +168,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
 | 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
 | 🗄️ `data.md` | Storage architecture: 5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping, right-to-erasure playbook. |
+| 🛡️ `datacompliance.md` | Data compliance — every regulation responded to (GDPR, EU AI Act, ePrivacy, eIDAS, NIS2, WCAG, DK·SE·NO national law) with article-by-article responses, citizen rights SLAs, and evidence pack. |
 | 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
@@ -224,7 +225,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
 | 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
-| 🛡️ **Auditors / DPOs** | The *Evaluation Criteria* matrix above, then the *Governance* sections of [`architecture.md`](./docs/tech/architecture.md). |
+| 🛡️ **Auditors / DPOs** | [`datacompliance.md`](./docs/biz/datacompliance.md) — every regulation we answer to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses + evidence pack. |
 | 📚 **Original case study** | [`case-study-11.md`](./docs/biz/case-study-11.md). |
 
 ---
@@ -241,6 +242,7 @@ For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
 |---|---|---|
 | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
 | [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
+| [`docs/biz/datacompliance.md`](./docs/biz/datacompliance.md) | **Data compliance — the executive answer.** Every regulation UDCSP responds to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses, citizen-rights operational SLAs, and the evidence pack a regulator can demand. | DPOs, legal, auditors, citizen advocates. |
 | [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
 
 #### 🔀 Channel deep-dives — one file per communication channel
@@ -270,7 +272,7 @@ For architects, builders, operators, and reviewers of the implementation itself.
 | [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
 | [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
 
-> All fifteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
+> All sixteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
 ---
 
