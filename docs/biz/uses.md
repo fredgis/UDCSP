@@ -152,6 +152,7 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 ### 🌐 Demo 2 — Lars asks the voice assistant about his tax refund (Norwegian)
 
 > **Voice channel + multilingual GenAI assistant + safe escalation to a human.**
+> 📖 *For the full architecture of this channel — call lifecycle, neural voices, accessibility, sovereignty, and **how to procure a real Nordic toll-free number** — see [`voice.md`](./voice.md).*
 
 | | |
 |---|---|
