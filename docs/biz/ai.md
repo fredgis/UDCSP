@@ -26,6 +26,8 @@
 > **Microsoft Copilot Studio** is the conversational **façade** — it owns dialog state, channel adapters (Web, Teams, Voice, M365 Copilot, WhatsApp) and topic-based intent routing, and it *delegates* its hard reasoning to Foundry agents through APIM.
 >
 > One brain (Foundry), many faces (Copilot Studio). Mandatory because the case study lists both — and architecturally correct because each does what the other should not.
+>
+> 📞 *For the deep-dive on the **telephone channel** specifically — call lifecycle, neural voices, accessibility, per-country sovereignty, and how to procure a real Nordic toll-free number — see [`voice.md`](./voice.md).*
 
 ---
 

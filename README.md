@@ -219,6 +219,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 👔 **Citizens / business sponsors** | This README. |
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
 | 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
+| 📞 **Voice channel designers / demo team** | [`voice.md`](./docs/biz/voice.md) — call lifecycle, neural voices in 12 languages, accessibility, per-country sovereignty, **how to procure a real Nordic toll-free number**. |
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
 | 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
@@ -239,6 +240,7 @@ For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
 |---|---|---|
 | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
 | [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
+| [`docs/biz/voice.md`](./docs/biz/voice.md) | The phone channel deep-dive — call lifecycle, multilingual neural voices, accessibility (DTMF + slow-speech), per-country sovereignty, **how to procure a real Nordic toll-free number**. | Anyone designing or demoing the telephone channel. |
 | [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
 
 ### 🛠️ Technical documents — [`docs/tech/`](./docs/tech/)
