@@ -1,0 +1,42 @@
+{
+  "_comment": "Microsoft Entra External ID — BankID identity provider federation (Sweden). BankID is the Swedish national digital identity (operated by Finansiell ID-Teknik BID AB, owned by major Swedish banks). Issues eIDAS LoA SUBSTANTIAL or HIGH depending on the credential. UDCSP federates against the BankID OIDC connector rather than embedding the autostart/QR launcher directly to keep the assurance chain inside External ID.",
+  "@odata.type": "#microsoft.graph.identityProvider",
+  "id": "bankid-se",
+  "displayName": "BankID (Sverige)",
+  "type": "OpenIDConnect",
+  "country": "SE",
+  "loa": "SUBSTANTIAL",
+  "claimsMapping": {
+    "userId":     "sub",
+    "givenName":  "given_name",
+    "surname":    "family_name",
+    "displayName":"name",
+    "_nationalId":"se:gov:bankid:personnummer",
+    "country":    "static:SE",
+    "eidasLoA":   "claim:acr -> map(loa)"
+  },
+  "endpointConfiguration": {
+    "wellKnownUrl": "https://appapi2.bankid.com/oidc/.well-known/openid-configuration",
+    "scopes":       ["openid", "profile", "bankid:personnummer"],
+    "responseType": "code",
+    "responseMode": "query"
+  },
+  "clientConfiguration": {
+    "clientId":     "{{bankid-rp-clientid}}",
+    "clientSecret": "{{bankid-rp-clientsecret-keyvault-ref}}",
+    "mtlsCertificate": "{{bankid-rp-mtls-cert-keyvault-ref}}"
+  },
+  "trustChain": {
+    "expectedIssuer":     "https://appapi2.bankid.com/oidc",
+    "signingKeysJwksUri": "https://appapi2.bankid.com/oidc/.well-known/jwks.json",
+    "expectedAcrValues":  ["urn:se:bankid:loa:substantial", "urn:se:bankid:loa:high"]
+  },
+  "_pseudonymisationOnReceive": [
+    "Hash se:gov:bankid:personnummer with the country-scoped pepper from Key Vault before persisting; never store the raw personnummer. The hash is what gets emitted as 'nationalIdHash' by the eidas-claims-extension."
+  ],
+  "_todo_case_study_scaffold": [
+    "Real onboarding requires a BankID Relying Party agreement signed via Finansiell ID-Teknik BID AB and an mTLS client certificate issued to the SE-region UDCSP tenant.",
+    "Substitute bankid-rp-clientid, the Key Vault references, and the production endpoint (appapi2 = production; use https://appapi2.test.bankid.com for staging).",
+    "Verify which ACR / LoA mapping the latest BankID OIDC catalogue publishes — the spec evolves."
+  ]
+}

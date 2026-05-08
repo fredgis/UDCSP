@@ -1,0 +1,41 @@
+{
+  "_comment": "Microsoft Entra External ID — MitID identity provider federation (Denmark). MitID is the Danish national digital identity (operated by Digitaliseringsstyrelsen, partnered with Nets). Issues eIDAS LoA HIGH. UDCSP federates against the MitID OIDC broker rather than embedding MitID's SDK in the front-end so the assurance level is preserved end-to-end inside the External tenant.",
+  "@odata.type": "#microsoft.graph.identityProvider",
+  "id": "mitid-dk",
+  "displayName": "MitID (Danmark)",
+  "type": "OpenIDConnect",
+  "country": "DK",
+  "loa": "HIGH",
+  "claimsMapping": {
+    "userId":     "sub",
+    "givenName":  "given_name",
+    "surname":    "family_name",
+    "displayName":"name",
+    "_nationalId":"dk:gov:saml:attribute:CprNumberIdentifier",
+    "country":    "static:DK",
+    "eidasLoA":   "static:HIGH"
+  },
+  "endpointConfiguration": {
+    "wellKnownUrl": "https://broker.mitid.dk/op/.well-known/openid-configuration",
+    "scopes":       ["openid", "profile", "mitid:cpr"],
+    "responseType": "code",
+    "responseMode": "query"
+  },
+  "clientConfiguration": {
+    "clientId":     "{{mitid-broker-clientid}}",
+    "clientSecret": "{{mitid-broker-clientsecret-keyvault-ref}}"
+  },
+  "trustChain": {
+    "expectedIssuer":     "https://broker.mitid.dk/op",
+    "signingKeysJwksUri": "https://broker.mitid.dk/op/.well-known/jwks.json",
+    "expectedAcrValues":  ["urn:dk:gov:mitid:loa:high"]
+  },
+  "_pseudonymisationOnReceive": [
+    "Hash dk:gov:saml:attribute:CprNumberIdentifier with the country-scoped pepper from Key Vault before persisting; never store the raw CPR in any UDCSP system. The hash is what gets emitted as 'nationalIdHash' by the eidas-claims-extension."
+  ],
+  "_todo_case_study_scaffold": [
+    "Real onboarding requires registering UDCSP as a 'tjenesteudbyder' (service provider) with Digitaliseringsstyrelsen via the MitID partner portal.",
+    "Substitute mitid-broker-clientid and the Key Vault reference for the secret.",
+    "Verify the trust-chain expectedAcrValues match the broker tenant's published catalogue."
+  ]
+}
