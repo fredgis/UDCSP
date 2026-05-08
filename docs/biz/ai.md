@@ -772,12 +772,14 @@ Traces are stored in App Insights, exported nightly to a Fabric lakehouse for an
 
 ## 11. Governance, lineage, EU AI Act
 
+> 🛡️ **For the wider regulation map** (every regulation UDCSP responds to — GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law — with article-by-article responses and the evidence pack), see [`datacompliance.md`](./datacompliance.md). This section is the **AI-specific** governance view.
+
 | Concern | Where it lives | Owner |
 |---|---|---|
 | **Risk classification** per agent (minimal / limited / high) | `foundry/ai-act-registry/<agent>.json` | Compliance + agent owner |
 | **Technical documentation** (Annex IV) | Same file + linked specs in `docs/` | Agent owner |
 | **Data governance** (training data summary, GDPR DPIA) | Purview catalog + `governance/dpia/` | DPO |
-| **Logging &amp; traceability** | App Insights traces (≥ 6 months hot, ≥ 6 years cold per EU AI Act Article 12) | Platform team |
+| **Logging &amp; traceability** | App Insights traces (≥ 6 months hot per EU AI Act Art. 26(6) — see [`datacompliance.md`](./datacompliance.md) § 5) | Platform team |
 | **Human oversight** | D365 caseworker queue for high-risk; escalation topics in Copilot Studio | Service owner |
 | **Accuracy &amp; robustness metrics** | Foundry eval reports, exported nightly | Agent owner |
 | **Cybersecurity** | Defender for Cloud, Sentinel, content-safety verdicts, jailbreak monitoring | SOC |

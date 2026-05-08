@@ -10,6 +10,8 @@
 > 📡 The novelty introduced by this document — and the gap it fills compared to the original architecture — is **Zone 3 "Conversations"**: until now the platform doc described where *cases* and *documents* are stored, but did not formalise where the **per-channel conversations themselves** (voice `.wav`, dialog transcripts, SMS exchanges, email bodies, AI traces) are persisted, indexed, and eventually purged. § 3 below is the answer.
 >
 > ⚠️ **Compliance disclaimer.** Every retention duration in § 5 is a **platform default** that respects the EU baseline. Each Member State (DK · SE · NO) has its own administrative-law retention rules for public-service records that may **extend** these periods (typically 5 to 10 years for case files); the per-country Purview policy holds the authoritative number for each market. The defaults below are the floor, not the ceiling.
+>
+> 🛡️ *For the **business-language regulation-by-regulation answer** (DPO / auditor / citizen advocate audience) — what each regulation demands, what UDCSP does, where the evidence lives — see the companion document [`../biz/datacompliance.md`](../biz/datacompliance.md).*
 
 ---
 
