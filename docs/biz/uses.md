@@ -87,6 +87,7 @@ The columns are the **18 evaluation matrix rows** from the [README](../../README
 ### 🌐 Demo 1 — Anna moves from Copenhagen to Stockholm (flagship)
 
 > The scenario the entire platform was built for. **Cross-border residency transfer in 4 days, end to end.**
+> 📖 *This demo crosses three channels — see the deep-dives:* 🌐 [`web.md`](./web.md) · 📱 [`mobile.md`](./mobile.md) · 🧑‍💼 [`caseworker.md`](./caseworker.md) · 📲 [`sms.md`](./sms.md) · 📧 [`email.md`](./email.md).
 
 | | |
 |---|---|
@@ -209,6 +210,7 @@ Lars dials the national tax-administration toll-free number. He is greeted in No
 ### 🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Sweden)
 
 > **Accessibility (WCAG 2.1 AA) + minority language + AI helps without taking control.**
+> 📖 *For the full architecture of this channel — landmarks, focus management, axe-core CI, contrast tokens, dyslexic font, accessibility statement — see* 🌐 [`web.md`](./web.md). *AI assistance side: see* 💬 [`chat.md`](./chat.md).
 
 | | |
 |---|---|
@@ -264,6 +266,7 @@ Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal
 ### 🌐 Demo 4 — Erik snaps a payslip for an income-based benefit (Danish, mobile)
 
 > **Mobile + AI Document Intelligence + Eligibility — a paper-heavy process, paperless.**
+> 📖 *For the full architecture of this channel — Expo native camera bridge, biometric MSAL re-auth, push notifications, OS-level a11y — see* 📱 [`mobile.md`](./mobile.md).
 
 | | |
 |---|---|
@@ -320,6 +323,7 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 ### 🛠️ Demo 5 — Astrid the caseworker triages a queue with Copilot for Service
 
 > **Caseworker productivity — the back-office story.**
+> 📖 *For the full architecture of this channel — D365 Customer Service, Copilot for Service prompts, eligibility AI as recommendation-not-decision, per-country Dataverse, EU AI Act Art. 14 oversight — see* 🧑‍💼 [`caseworker.md`](./caseworker.md).
 
 | | |
 |---|---|

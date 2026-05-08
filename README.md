@@ -219,7 +219,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 👔 **Citizens / business sponsors** | This README. |
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
 | 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
-| 📞 **Voice channel designers / demo team** | [`voice.md`](./docs/biz/voice.md) — call lifecycle, neural voices in 12 languages, accessibility, per-country sovereignty, **how to procure a real Nordic toll-free number**. |
+| 🔀 **Channel designers / demo team** | One deep-dive per channel under [`docs/biz/`](./docs/biz/) — 📞 [`voice`](./docs/biz/voice.md) · 🌐 [`web`](./docs/biz/web.md) · 📱 [`mobile`](./docs/biz/mobile.md) · 💬 [`chat`](./docs/biz/chat.md) · 📲 [`sms`](./docs/biz/sms.md) · 📧 [`email`](./docs/biz/email.md) · 🧑‍💼 [`caseworker`](./docs/biz/caseworker.md). |
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
 | 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
@@ -240,8 +240,21 @@ For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
 |---|---|---|
 | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
 | [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
-| [`docs/biz/voice.md`](./docs/biz/voice.md) | The phone channel deep-dive — call lifecycle, multilingual neural voices, accessibility (DTMF + slow-speech), per-country sovereignty, **how to procure a real Nordic toll-free number**. | Anyone designing or demoing the telephone channel. |
 | [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
+
+#### 🔀 Channel deep-dives — one file per communication channel
+
+Same hero / badges / mermaid lifecycle / sovereignty / activation runbook layout in every file. Each is **independently readable** — you can drop into one without reading the others.
+
+| 📄 File | 🎯 Purpose | 👤 Best for |
+|---|---|---|
+| [`docs/biz/voice.md`](./docs/biz/voice.md) | 📞 The **telephone** channel — call lifecycle, neural voices in 12 languages, DTMF + slow-speech, per-country sovereignty, **how to procure a real Nordic toll-free number**. | Voice designers · demo team. |
+| [`docs/biz/web.md`](./docs/biz/web.md) | 🌐 The **web portal** channel — Static Web App, React 18 + TS, External ID per country, ICU MessageFormat, WCAG 2.1 AA, embedded chat widget. | Web teams · accessibility leads. |
+| [`docs/biz/mobile.md`](./docs/biz/mobile.md) | 📱 The **mobile app** channel — Expo + React Native, MSAL biometrics, native camera capture, push notifications, VoiceOver / TalkBack, *one binary · three OIDC authorities*. | Mobile teams · push-notification ops. |
+| [`docs/biz/chat.md`](./docs/biz/chat.md) | 💬 The **chat widget** channel — Copilot Studio web embed, DirectLine token broker, shared topics + escalation rules with the voice channel, **one bot two channels one brain**. | Conversation designers · Copilot Studio admins. |
+| [`docs/biz/sms.md`](./docs/biz/sms.md) | 📲 The **SMS** channel — ACS SMS, 12-language templates, STOP keyword + GDPR consent, per-country sender IDs, sender-ID procurement (alphanumeric · short code · long code). | Notification ops · compliance. |
+| [`docs/biz/email.md`](./docs/biz/email.md) | 📧 The **email** channel — bidirectional ACS Email, per-country sender domain + DKIM/SPF/DMARC, D365 email-to-case with Foundry classifier auto-routing, GDPR S/MIME exports. | Email ops · DPO. |
+| [`docs/biz/caseworker.md`](./docs/biz/caseworker.md) | 🧑‍💼 The **caseworker** channel — D365 Customer Service + Copilot for Service, where every escalation lands and the eligibility AI is human-supervised (EU AI Act Art. 14). | Caseworker leads · D365 specialists · DPO. |
 
 ### 🛠️ Technical documents — [`docs/tech/`](./docs/tech/)
 
@@ -255,7 +268,7 @@ For architects, builders, operators, and reviewers of the implementation itself.
 | [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
 | [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
 
-> All eight files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
+> All fourteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
 ---
 
