@@ -7,11 +7,44 @@
     "scheme": "udcsp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "eu.udcsp.citizen"
+      "bundleIdentifier": "eu.udcsp.citizen",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Used to confirm sensitive case actions (view case details, submit application). Your biometric template never leaves the device."
+      },
+      "associatedDomains": [
+        "applinks:citizens.udcsp.eu",
+        "applinks:citizens.udcsp.dk",
+        "applinks:citizens.udcsp.se",
+        "applinks:citizens.udcsp.no"
+      ]
     },
     "android": {
-      "package": "eu.udcsp.citizen"
+      "package": "eu.udcsp.citizen",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "citizens.udcsp.eu" },
+            { "scheme": "https", "host": "citizens.udcsp.dk" },
+            { "scheme": "https", "host": "citizens.udcsp.se" },
+            { "scheme": "https", "host": "citizens.udcsp.no" },
+            { "scheme": "udcsp" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
+    "plugins": [
+      "expo-local-authentication",
+      "expo-notifications",
+      "expo-secure-store"
+    ],
     "extra": {
       "userFlow": "SignUpSignIn"
     }

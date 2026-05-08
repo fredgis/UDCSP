@@ -1,0 +1,87 @@
+name: udcsp-sovereignty-cross-border-deny
+scenario_id: D3
+README_eval_rows: [3, 5, 13, 17, 18]
+description: >
+  Asserts the **negative** controls — that nothing in the platform allows a
+  citizen record from one sovereign zone to leak into another, nor outside
+  the EU/EFTA boundary. Anchors on the Microsoft EU Data Boundary, on the
+  Azure Policy initiatives, on the per-country Logic App connections, and
+  on the Foundry agent network configuration.
+
+metadata:
+  data_boundary_reference: https://learn.microsoft.com/privacy/eudb/eu-data-boundary-learn
+  sovereignty_zones: [dk, se, no]
+  forbidden_destinations:
+    regions:
+      - eastus
+      - eastus2
+      - westus
+      - westus2
+      - centralus
+      - southcentralus
+      - australiaeast
+      - southeastasia
+      - japaneast
+      - canadacentral
+      - brazilsouth
+    public_endpoints:
+      - "*.openai.com"
+      - "api.openai.com"
+      - "api.anthropic.com"
+      - "generativelanguage.googleapis.com"
+
+tests:
+  - id: bicep-no-non-eu-regions
+    asserts:
+      - grep_no_match:
+          paths:
+            - data/fabric/capacities/
+            - infra/data/cosmos/
+            - infra/landing-zone/
+          patterns:
+            - "eastus"
+            - "westus"
+            - "australiaeast"
+            - "southeastasia"
+            - "japaneast"
+            - "canadacentral"
+            - "brazilsouth"
+    severity: critical
+
+  - id: foundry-no-public-openai-endpoint
+    asserts:
+      - grep_no_match:
+          paths: [foundry/agents/, services/, apps/]
+          patterns:
+            - "api.openai.com"
+            - "api.anthropic.com"
+            - "generativelanguage.googleapis.com"
+    severity: critical
+
+  - id: per-country-fabric-capacity-allowed-only
+    asserts:
+      - file_contains: { path: data/fabric/capacities/fabric-capacity-dk.bicep, substring: "@allowed(['northeurope'])" }
+      - file_contains: { path: data/fabric/capacities/fabric-capacity-se.bicep, substring: "@allowed(['swedencentral'])" }
+      - file_contains: { path: data/fabric/capacities/fabric-capacity-no.bicep, substring: "@allowed(['norwayeast'])" }
+    severity: critical
+
+  - id: cosmos-allowed-locations-only
+    asserts:
+      - file_contains: { path: infra/data/cosmos/cosmos-account.bicep, substring: "@allowed(['northeurope','swedencentral','norwayeast'])" }
+    severity: critical
+
+  - id: archive-handover-no-cross-country
+    asserts:
+      - file_contains: { path: services/logic-apps/workflows/archive-handover-dk/workflow.json, substring: "/incoming/udcsp/dk/" }
+      - file_contains: { path: services/logic-apps/workflows/archive-handover-se/workflow.json, substring: "/incoming/udcsp/se/" }
+      - file_contains: { path: services/logic-apps/workflows/archive-handover-no/workflow.json, substring: "/incoming/udcsp/no/" }
+      - file_does_not_contain: { path: services/logic-apps/workflows/archive-handover-dk/workflow.json, substring: "/incoming/udcsp/se/" }
+      - file_does_not_contain: { path: services/logic-apps/workflows/archive-handover-dk/workflow.json, substring: "/incoming/udcsp/no/" }
+    severity: high
+
+  - id: governance-sub-processors-published
+    asserts:
+      - file_exists: governance/gdpr/sub-processors.md
+      - file_contains: { path: governance/gdpr/sub-processors.md, substring: "Microsoft Online Subprocessors" }
+      - file_contains: { path: governance/gdpr/sub-processors.md, substring: "EU Data Boundary" }
+    severity: medium

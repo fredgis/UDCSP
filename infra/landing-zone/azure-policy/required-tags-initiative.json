@@ -18,9 +18,31 @@
     },
     "policyDefinitions": [
       {
-        "policyDefinitionReferenceId": "require-tag-and-its-value",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
-        "parameters": {}
+        "policyDefinitionReferenceId": "require-tag-costcenter",
+        "_displayName": "Require a tag on resources (costCenter)",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/871b6d14-10aa-478d-b590-94f262ecfa99.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+        "parameters": { "tagName": { "value": "costCenter" } }
+      },
+      {
+        "policyDefinitionReferenceId": "require-tag-country",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+        "parameters": { "tagName": { "value": "country" } }
+      },
+      {
+        "policyDefinitionReferenceId": "require-tag-dataresidency",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+        "parameters": { "tagName": { "value": "dataResidency" } }
+      },
+      {
+        "policyDefinitionReferenceId": "require-tag-dataclassification",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+        "parameters": { "tagName": { "value": "dataClassification" } }
+      },
+      {
+        "policyDefinitionReferenceId": "require-tag-owner",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/871b6d14-10aa-478d-b590-94f262ecfa99",
+        "parameters": { "tagName": { "value": "owner" } }
       }
     ]
   }

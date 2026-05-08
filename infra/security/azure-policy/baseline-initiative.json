@@ -11,26 +11,37 @@
         "GDPR"
       ]
     },
+    "_note": "These reference Azure built-in policy *initiatives* (policySetDefinitions), not single policy definitions. They are layered together to give a single 'NIST 800-53 + GDPR' compliance posture per UDCSP landing zone. Initiative GUIDs are stable Microsoft built-ins; verify with 'az policy set-definition show --name <guid>'.",
     "policyDefinitions": [
       {
-        "policyDefinitionReferenceId": "nist-800-53-audit",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id"
+        "policyDefinitionReferenceId": "microsoft-cloud-security-benchmark",
+        "_displayName": "Microsoft cloud security benchmark",
+        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/azure-security-benchmark",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8"
       },
       {
-        "policyDefinitionReferenceId": "gdpr-data-protection",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id"
+        "policyDefinitionReferenceId": "nist-sp-800-53-rev5",
+        "_displayName": "NIST SP 800-53 Rev. 5",
+        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/nist-sp-800-53-r5",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/179d1daa-458f-4e47-8086-2a68d0d6c38f"
       },
       {
-        "policyDefinitionReferenceId": "deny-public-network",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id"
+        "policyDefinitionReferenceId": "iso-27001-2013",
+        "_displayName": "ISO 27001:2013",
+        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/iso-27001",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/89c6cddc-1c73-4ac1-b19c-54d1a15a42f2"
       },
       {
-        "policyDefinitionReferenceId": "require-private-endpoints",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id"
+        "policyDefinitionReferenceId": "cmk-on-storage",
+        "_displayName": "Storage accounts should use customer-managed key for encryption",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/6fac406b-40ca-413b-bf8e-0bf964659c25.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/6fac406b-40ca-413b-bf8e-0bf964659c25"
       },
       {
-        "policyDefinitionReferenceId": "require-cmk",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id"
+        "policyDefinitionReferenceId": "audit-public-network-paas",
+        "_displayName": "Audit public network access for PaaS services",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/0e246bcf-5f6f-4f87-bc6f-775d4712c7ea.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/0e246bcf-5f6f-4f87-bc6f-775d4712c7ea"
       }
     ]
   }

@@ -1,4 +1,14 @@
 article,control,evidence_path,owner,status
+5(1)(c),Data minimisation,docs/tech/data.md,A4,documented
+5(1)(e),Storage limitation,docs/tech/data.md,A4,documented
+6(1)(e),Lawful basis - public task,docs/biz/datacompliance.md,A13,documented
+13,Information notice,apps/web/src/legal/privacy.md,A2,scaffold
+17,Right to erasure,services/logic-apps/workflows/gdpr-data-erase/workflow.json,A6,implemented
 25,Data protection by design,tests/conformance/gdpr/dpia-evidence-template.md,A13,scaffold
+28,Sub-processors,governance/gdpr/sub-processors.md,A13,documented
+30,Records of processing activities,governance/gdpr/ropa.md,A13,scaffold
 32,Security of processing,tests/security/results,A3,scaffold
-35,DPIA,tests/conformance/gdpr/dpia-evidence-template.md,A3,scaffold
+33,Notification of breach,governance/security/breach-notification.md,A13,scaffold
+35,DPIA,governance/dpia/dpia-template.md,A13,documented
+44-49,International transfers,governance/gdpr/sub-processors.md,A13,documented
+

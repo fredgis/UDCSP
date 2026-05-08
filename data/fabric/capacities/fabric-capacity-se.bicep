@@ -1,9 +1,12 @@
-@description('Country sovereignty zone code.')
+@description('Country sovereignty zone code. Pinned to se; do not deploy DK/NO data into this capacity.')
+@allowed(['se'])
 param country string = 'se'
 @description('Deployment environment.')
+@allowed(['dev','test','preprod','prod'])
 param env string = 'dev'
-@description('Azure region for the country zone.')
-param location string
+@description('Azure region. SE pins to Sweden Central - the only Microsoft cloud region with full Fabric F-SKU and OneLake GA inside Sweden.')
+@allowed(['swedencentral'])
+param location string = 'swedencentral'
 @description('Fabric F-SKU capacity size.')
 param capacitySku string = 'F64'
 @description('Fabric capacity administrator object IDs or UPNs.')

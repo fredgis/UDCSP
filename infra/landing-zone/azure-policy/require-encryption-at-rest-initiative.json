@@ -10,13 +10,24 @@
     "parameters": {},
     "policyDefinitions": [
       {
-        "policyDefinitionReferenceId": "storage-accounts-should-use-encryption",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "policyDefinitionReferenceId": "storage-account-infrastructure-encryption",
+        "_displayName": "Storage accounts should have infrastructure encryption",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/4733ea7b-a883-42fe-8cac-97454c2a9e4a.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/4733ea7b-a883-42fe-8cac-97454c2a9e4a",
         "parameters": {}
       },
       {
-        "policyDefinitionReferenceId": "key-vault-purge-protection-should-be-enabled",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "policyDefinitionReferenceId": "key-vault-purge-protection",
+        "_displayName": "Key vaults should have purge protection enabled",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/0b60c0b2-2dc2-4e1c-b5c9-abbed971de53.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/0b60c0b2-2dc2-4e1c-b5c9-abbed971de53",
+        "parameters": {}
+      },
+      {
+        "policyDefinitionReferenceId": "key-vault-soft-delete",
+        "_displayName": "Key vaults should have soft delete enabled",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/1e66c121-a66a-4b1f-9b83-0fd99bf0fc2d.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/1e66c121-a66a-4b1f-9b83-0fd99bf0fc2d",
         "parameters": {}
       }
     ]

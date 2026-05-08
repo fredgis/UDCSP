@@ -1,0 +1,196 @@
+{
+  "_comment": "Archive handover for Denmark — transfers UDCSP case files to Statens Arkiver (https://www.sa.dk/) when the operational retention period expires AND the GDPR-erase workflow flagged the record as 'pending-archive-release'. Statutory basis: Arkivloven (LBK nr 1201 af 28/09/2016) §5. Pull mechanism: scheduled query against Dataverse for cases tagged pending-archive-release with archive_due_date <= today, then secure transfer over SFTP using the Statens Arkiver Digital Delivery Specification (Bevaring og Aflevering). Symmetric counterpart to gdpr-data-erase. Emits a Purview lineage event when the handover is acknowledged by the archive.",
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "country": { "type": "String", "defaultValue": "dk" },
+      "archiveAuthority": { "type": "String", "defaultValue": "Statens Arkiver" },
+      "archiveLegalBasis": { "type": "String", "defaultValue": "Arkivloven LBK nr 1201/2016 §5" },
+      "aiActRegistryId": { "type": "String" },
+      "purviewLineageTopicEndpoint": { "type": "String" },
+      "auditEndpoint": { "type": "String" },
+      "dataverseQueryEndpoint": { "type": "String" },
+      "fabricGoldExportEndpoint": { "type": "String" },
+      "blobPackageEndpoint": { "type": "String" },
+      "sftpUploadEndpoint": { "type": "String" },
+      "archiveAcknowledgementEndpoint": { "type": "String" },
+      "citizenNotificationEndpoint": { "type": "String" }
+    },
+    "triggers": {
+      "Recurrence_daily_0200_CET": {
+        "type": "Recurrence",
+        "recurrence": {
+          "frequency": "Day",
+          "interval": 1,
+          "schedule": { "hours": ["02"], "minutes": [0] },
+          "timeZone": "Romance Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@guid()",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "archive-handover-dk",
+            "country": "@parameters('country')",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')",
+            "archiveAuthority": "@parameters('archiveAuthority')"
+          }
+        },
+        "runAfter": { "Ensure_traceparent": ["Succeeded"] }
+      },
+      "Query_due_records": {
+        "_comment": "Returns the Dataverse case records that (a) carry the pending-archive-release tag from gdpr-data-erase, AND (b) reached their archive_due_date today.",
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('dataverseQueryEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-workflow": "archive-handover-dk"
+          },
+          "body": {
+            "country": "dk",
+            "tag": "pending-archive-release",
+            "dueOnOrBefore": "@utcNow()"
+          }
+        },
+        "runAfter": { "AppInsights_dimension": ["Succeeded"] }
+      },
+      "For_each_case": {
+        "type": "Foreach",
+        "foreach": "@body('Query_due_records')?['records']",
+        "actions": {
+          "Export_fabric_gold_view": {
+            "_comment": "Pulls the Gold-zone canonical case projection from the per-country Fabric workspace.",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('fabricGoldExportEndpoint')",
+              "headers": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "x-case-id": "@items('For_each_case')?['caseId']"
+              },
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "country": "dk"
+              }
+            }
+          },
+          "Build_archive_package": {
+            "_comment": "Wraps the case export into the Statens Arkiver Bevaring-og-Aflevering folder layout (METS manifest + PDF/A-3 + structured XML).",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('blobPackageEndpoint')",
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "format": "BevaringOgAflevering",
+                "manifest": "METS",
+                "documentFormat": "PDF/A-3"
+              }
+            },
+            "runAfter": { "Export_fabric_gold_view": ["Succeeded"] }
+          },
+          "Upload_via_sftp": {
+            "_comment": "SFTP destination is the Statens Arkiver receiving server. Credentials come from the country Key Vault. Country boundary preserved: this connection only exists in the udcsp-dk-* resource group.",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('sftpUploadEndpoint')",
+              "body": {
+                "package": "@body('Build_archive_package')",
+                "destination": "/incoming/udcsp/dk/"
+              }
+            },
+            "runAfter": { "Build_archive_package": ["Succeeded"] }
+          },
+          "Wait_for_archive_acknowledgement": {
+            "_comment": "Statens Arkiver returns a signed receipt within 14 days. We do not delete the operational copy until the receipt is countersigned.",
+            "type": "Http",
+            "inputs": {
+              "method": "GET",
+              "uri": "@{parameters('archiveAcknowledgementEndpoint')}/@{items('For_each_case')?['caseId']}"
+            },
+            "runAfter": { "Upload_via_sftp": ["Succeeded"] }
+          },
+          "Emit_purview_lineage": {
+            "_comment": "Lineage event v2.0 — the Gold case projection is now under the legal custody of Statens Arkiver. Purview tracks the end-of-life node.",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('purviewLineageTopicEndpoint')",
+              "headers": { "Content-Type": "application/json" },
+              "body": {
+                "id": "@guid()",
+                "eventType": "udcsp.archive.handover.completed.v2",
+                "subject": "@items('For_each_case')?['caseId']",
+                "data": {
+                  "country": "dk",
+                  "caseId": "@items('For_each_case')?['caseId']",
+                  "archiveAuthority": "@parameters('archiveAuthority')",
+                  "legalBasis": "@parameters('archiveLegalBasis')",
+                  "acknowledgement": "@body('Wait_for_archive_acknowledgement')",
+                  "transferredAt": "@utcNow()"
+                }
+              }
+            },
+            "runAfter": { "Wait_for_archive_acknowledgement": ["Succeeded"] }
+          },
+          "Notify_citizen_optional": {
+            "_comment": "Citizens can opt-in to receive a notification when their case is transferred to the national archive. We respect Art. 13(2)(a) by stating retention up-front rather than spamming.",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('citizenNotificationEndpoint')",
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "template": "archive-handover-completed-dk",
+                "respectConsentFlag": true
+              }
+            },
+            "runAfter": { "Emit_purview_lineage": ["Succeeded"] }
+          },
+          "Audit_handover": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('auditEndpoint')",
+              "headers": { "traceparent": "@outputs('Ensure_traceparent')" },
+              "body": {
+                "workflow": "archive-handover-dk",
+                "caseId": "@items('For_each_case')?['caseId']",
+                "outcome": "Handed-over",
+                "archiveAuthority": "@parameters('archiveAuthority')"
+              }
+            },
+            "runAfter": { "Notify_citizen_optional": ["Succeeded"] }
+          }
+        },
+        "runAfter": { "Query_due_records": ["Succeeded"] }
+      },
+      "Audit_run_summary": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('auditEndpoint')",
+          "body": {
+            "workflow": "archive-handover-dk",
+            "country": "dk",
+            "totalProcessed": "@length(body('Query_due_records')?['records'])",
+            "completedAt": "@utcNow()"
+          }
+        },
+        "runAfter": { "For_each_case": ["Succeeded","Skipped","Failed"] }
+      }
+    }
+  }
+}

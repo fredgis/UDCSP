@@ -176,7 +176,7 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 💻 `apps/` | React web portal, Expo mobile shell, ACS + AI Speech voice bot (6 languages), Copilot Studio bot, D365 model-driven apps + Power Platform solutions. |
 | 🔌 `services/` | API Management (8 OpenAPI APIs), Logic Apps (6 workflows), Functions / Container Apps, Power Automate flows. |
 | 🧠 `foundry/` | 6 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper), prompts, evaluations, datasets. |
-| 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO) + 9 lakehouses + notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
+| 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO), each holding 1 Lakehouse with 3 medallion layers (Bronze · Silver · Gold) — i.e. 3 Lakehouses × 3 layers = **9 logical zones**. Notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
 | 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |

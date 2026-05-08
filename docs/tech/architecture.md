@@ -377,7 +377,7 @@ graph TB
     DEVICE["Device — web · mobile · phone"]
     CHANNEL["Channel app"]
     EXTID_LOCAL["Microsoft Entra External ID — local country"]
-    EID_LOCAL["National eID — MitID · BankID · BankID NO"]
+    EID_LOCAL["National eID — MitID (DK) · BankID (SE) · Vipps (NO)"]
     ENTRA_HUB["Microsoft Entra ID — federation hub"]
     EIDAS["eIDAS Node"]
     APIM["API Management — token validation"]
@@ -415,6 +415,8 @@ graph TB
 - **Citizens** authenticate locally (national eID) → External ID → Entra hub → API Management.
 - **Caseworkers** authenticate against the Entra workforce tenant with **PIM** for sensitive actions (e.g. eligibility override).
 - **Cross-border** is achieved by *claim mapping* in the Entra hub: a citizen authenticated in DK can be authorised for an SE service if and only if the SE policy accepts the DK eIDAS assurance level.
+- **Per-country IdP wiring** is documented in [`governance/identity/identity-providers.md`](../../governance/identity/identity-providers.md) (MitID for DK, BankID for SE, Vipps for NO).
+- **EUDI Wallet readiness** (eIDAS-2, Reg. (EU) 2024/1183) is captured in [`governance/identity/eudi-wallet-readiness.md`](../../governance/identity/eudi-wallet-readiness.md): the platform accepts OpenID4VP `vp_token` once member-state wallets land, with no back-end code change.
 
 ---
 
@@ -581,6 +583,20 @@ graph TB
 - **Event Grid** carries domain events (e.g. *application submitted*, *eligibility recomputed*) for analytics & cross-service reactions.
 - Each integration to a partner legacy system is wrapped in a **dedicated Logic App + Function** and exposed through API Management with its own facade contract.
 
+**Lifecycle workflows.** Two symmetric *closed-loop* Logic Apps pairs cover the
+end-of-data-life journey:
+
+| Concern | Workflow | Trigger | Notes |
+|---|---|---|---|
+| GDPR right-to-erasure (Art. 17) | [`services/logic-apps/workflows/gdpr-data-erase/`](../../services/logic-apps/workflows/gdpr-data-erase/workflow.json) | HTTP from citizen self-service | Tags records under archive-law hold as `pending-archive-release` instead of physically deleting them. |
+| National-archive handover (DK Arkivloven · SE Arkivlagen · NO Arkivlova) | [`services/logic-apps/workflows/archive-handover-{dk,se,no}/`](../../services/logic-apps/workflows/) | Daily 02:00 CET / WET | Picks up records flagged by the erase workflow when their statutory hold expires; packages METS + PDF/A-3 (`Bevaring og Aflevering` for DK, `FGS-PSI` for SE, `Noark 5 SIP` for NO) and pushes via SFTP to the national archive. |
+
+**Inbound document virus-scan.** Defender for Storage emits an Event Grid
+event for every uploaded blob; the
+[`services/functions/func-document-virus-scan/`](../../services/functions/func-document-virus-scan/index.js)
+Function tags the blob `VirusScanStatus=Clean` or moves a malicious blob to
+the `quarantine/` container and raises a Sentinel incident. NIS2 Art. 21(2)(d).
+
 ---
 
 ## 7. Case Management Architecture (Dynamics 365)
@@ -732,12 +748,15 @@ graph TB
 
 | Regulation / standard | Control(s) |
 |---|---|
-| **GDPR** | Lawful basis registered per use case; ROPA in Purview; data minimisation enforced via API Management redaction policies; subject-rights workflow in Logic Apps; DPIA per high-risk processing. |
-| **EU AI Act** | Risk classification per agent, technical documentation, post-market monitoring plan, human oversight, logging of inputs/outputs (Foundry tracing), conformity assessment for high-risk (Eligibility Pre-Assessor). |
-| **Sector EU directives** (e.g. eIDAS 2.0, EUDI Wallet, SDG / Single Digital Gateway, Once-Only Technical System) | eIDAS bridge in Entra; SDG-compliant API contracts in APIM; OOTS connectors for evidence exchange. |
+| **GDPR** | Lawful basis registered per use case; ROPA in Purview *and* in [`governance/gdpr/ropa.md`](../../governance/gdpr/ropa.md); data minimisation enforced via API Management redaction policies; subject-rights workflow in Logic Apps; DPIA per high-risk processing. |
+| **GDPR Art. 28 (sub-processors)** | Public sub-processor register at [`governance/gdpr/sub-processors.md`](../../governance/gdpr/sub-processors.md) with 30-day citizen pre-notice and an append-only change log. EU Data Boundary for Microsoft Cloud is the master transfer mechanism. |
+| **GDPR Art. 33-34 + NIS2 Art. 23 (breach)** | Operational playbook with the 24h / 72h / 30d clocks at [`governance/security/breach-notification.md`](../../governance/security/breach-notification.md). |
+| **EU AI Act** | Risk classification per agent, technical documentation, post-market monitoring plan ([`governance/ai-act/procedures/post-market-monitoring.md`](../../governance/ai-act/procedures/post-market-monitoring.md)), serious-incident procedure with 15/10/2-day deadlines ([`governance/ai-act/procedures/serious-incident-reporting.md`](../../governance/ai-act/procedures/serious-incident-reporting.md)), human oversight, logging of inputs/outputs (Foundry tracing), conformity assessment for high-risk (Eligibility Pre-Assessor). |
+| **Sector EU directives** (e.g. eIDAS 2.0, EUDI Wallet, SDG / Single Digital Gateway, Once-Only Technical System) | eIDAS bridge in Entra ([`governance/identity/identity-providers.md`](../../governance/identity/identity-providers.md)); EUDI-Wallet readiness ([`governance/identity/eudi-wallet-readiness.md`](../../governance/identity/eudi-wallet-readiness.md)); SDG-compliant API contracts in APIM; OOTS connectors for evidence exchange. |
 | **National DPA differences** | Per-country Purview policy packs; per-country Logic Apps orchestrations; per-country sensitivity label sets. |
 | **WCAG 2.1 AA** | Design system with audited components; axe-core in CI/CD; manual annual audit; accessibility statements per portal. |
-| **ISO 27001 / SOC 2** *(operational baseline)* | Defender for Cloud, Sentinel, Key Vault, managed identities, Azure Policy. |
+| **ePrivacy Directive (2002/58/EC, art. 5(1))** | Cookie banner with a per-purpose consent log; non-essential cookies (Microsoft Clarity, product analytics) are gated behind explicit opt-in. |
+| **ISO 27001 / SOC 2** *(operational baseline)* | Defender for Cloud, Sentinel, Key Vault, managed identities, Azure Policy initiatives at [`infra/security/azure-policy/baseline-initiative.json`](../../infra/security/azure-policy/baseline-initiative.json) (MCSB + NIST 800-53 + ISO 27001:2013 built-in initiatives). |
 
 **Storage retention and right-to-erasure operational playbook**: documented in [`data.md`](./data.md) §§ 5, 6, and 9.
 
@@ -748,10 +767,13 @@ graph TB
 - **Network** — Hub-and-spoke per sovereign zone, peered via the federation hub VNet. **Private Endpoints** on every PaaS service. No public ingress except via **Azure Front Door + WAF** and APIM's external gateway.
 - **Identity** — Managed identities everywhere; no service principals with secrets in code; PIM for elevated access; Conditional Access on the workforce tenant.
 - **Secrets** — **Azure Key Vault** with RBAC and Private Endpoint; secrets accessed via managed identity references; no plain-text secrets in app settings.
-- **Threat protection** — **Microsoft Defender for Cloud** (CSPM + workload protection), **Microsoft Sentinel** as SIEM/SOAR, with playbooks for AI-specific incidents (e.g. prompt injection, model exfiltration).
+- **Threat protection** — **Microsoft Defender for Cloud** (CSPM + workload protection), **Microsoft Sentinel** as SIEM/SOAR, with playbooks for AI-specific incidents (e.g. prompt injection, model exfiltration). Defender for Storage scans every inbound document and emits an Event Grid event consumed by `func-document-virus-scan` (Clean → tag · Malicious → tag + quarantine + Sentinel incident · Unknown → manual-review queue).
+- **Audit retention** — Sentinel + Log Analytics retain audit and security telemetry for **180 days hot** then 7 years in cold archive (NIS2 Art. 21(2)(g) + Art. 23 evidence baseline).
+- **Citizen-side privacy controls** — ePrivacy-compliant **cookie consent banner** with per-purpose toggles; Microsoft Clarity and any product analytics are gated behind explicit opt-in. Mobile push notifications (`apps/mobile/src/notifications/registerPushToken.ts`) require an in-app consent flag *before* the OS-level prompt is requested.
 - **Container supply chain** — Images signed and scanned; **ACR** with content trust; SBOM generated and stored.
 - **Data protection** — At-rest encryption with customer-managed keys (per country); TLS 1.3 in transit; field-level encryption for the most sensitive PII (e.g. national ID).
 - **API security** — OAuth 2.0 + PKCE on all citizen flows; mutual TLS for partner integrations; APIM rate-limiting and IP filtering; OWASP Top 10 + LLM Top 10 controls.
+- **Sovereignty enforcement (policy-as-code)** — Five Azure Policy initiatives in [`infra/landing-zone/azure-policy/`](../../infra/landing-zone/azure-policy/) and [`infra/security/azure-policy/`](../../infra/security/azure-policy/) deny non-EU regions, public IPs on data resources, missing tags, missing encryption-at-rest, and missing CMK; covered end-to-end by the conformance test pack at [`tests/conformance/sovereignty/`](../../tests/conformance/sovereignty/).
 
 ---
 
@@ -759,11 +781,12 @@ graph TB
 
 | Concern | Tool |
 |---|---|
-| Metrics & logs | **Azure Monitor + Log Analytics** (per zone) federated into a shared workspace. |
+| Metrics & logs | **Azure Monitor + Log Analytics** (per zone) federated into a shared workspace, **180-day** hot retention. |
 | Distributed tracing | **Application Insights** with a unified `correlation-id` propagated from APIM through Logic Apps, Functions, D365 plugins, and Foundry traces. |
 | Dashboards | **Power BI** for business KPIs; Azure Workbooks for SRE; Foundry built-in dashboards for AI quality. |
 | Alerting | Azure Monitor alerts → Action Groups → on-call rotation in PagerDuty / Teams. |
 | AI quality | Foundry **Evaluations** (continuous) + drift monitors; alerts on safety / accuracy regressions. |
+| Document virus-scan telemetry | Defender-for-Storage scan results emit Event Grid events consumed by `func-document-virus-scan`; outcomes (`Clean` / `Malicious` / `Unknown`) carry the `traceparent` and the country tag and surface in the same App Insights dashboard. |
 | SLOs | Citizen-facing channels: 99.9 %; AI agent latency p95 < 2 s; case-creation latency p95 < 5 s. |
 
 ---
@@ -902,6 +925,55 @@ sequenceDiagram
     end
 ```
 
+### 13.3 GDPR right-to-erasure with statutory archive hold
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Citizen
+    participant Web as Web Portal
+    participant APIM as API Management
+    participant Erase as Logic App<br/>gdpr-data-erase
+    participant Hold as Retention-hold check<br/>(Arkivloven · Arkivlagen · Arkivlova)
+    participant DV as Dataverse
+    participant Lake as OneLake (Bronze/Silver/Gold)
+    participant Cos as Cosmos DB
+    participant AppI as Application Insights
+    participant Purv as Purview lineage
+    participant Notify as Citizen notification
+    participant Arch as Logic App<br/>archive-handover-{dk,se,no}
+    participant Archive as National Archive<br/>(Statens Arkiver · Riksarkivet · Arkivverket)
+
+    Citizen->>Web: "Delete my data" (Art. 17)
+    Web->>APIM: POST /privacy/erase + identity proof
+    APIM->>Erase: trigger
+    Erase->>Hold: Which records are under archive law?
+    Hold-->>Erase: list of records to TAG (not delete)
+    par Physical erase outside hold
+        Erase->>DV: Erase tagged-removable records
+        Erase->>Lake: Tombstone non-archive partitions
+        Erase->>Cos: Delete drafts / cache
+        Erase->>AppI: Purge customDimensions
+    end
+    Erase->>DV: Tag held records "pending-archive-release"
+    Erase->>Purv: Emit udcsp.gdpr.erase.completed.v2
+    Erase->>Notify: Confirm to citizen + outline what's held & why
+    Notify-->>Citizen: Confirmation + held-records explanation
+
+    Note over Arch: Daily 02:00 (CET / WET)
+    Arch->>DV: Query "pending-archive-release" + due today
+    Arch->>Lake: Export Gold case projection
+    Arch->>Archive: Upload package (METS / Bevaring og Aflevering / FGS-PSI / Noark 5)
+    Archive-->>Arch: Signed acknowledgement
+    Arch->>Purv: Emit udcsp.archive.handover.completed.v2
+    Arch->>DV: Mark record as transferred
+```
+
+This flow shows that the platform **never silently keeps** data the citizen
+asked to delete — it deletes everything outside the statutory hold, and
+makes the held records' eventual destination (the national archive) visible
+to the citizen.
+
 ---
 
 ## 14. Service Inventory
@@ -961,7 +1033,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure Static Web Apps** | Hosting for citizen web portals. |
 | **Azure Container Apps** | Domain microservices. |
 | **Azure Functions** | Event-driven glue and lightweight integrations. |
-| **Azure Cosmos DB** | Case state, draft applications. |
+| **Azure Cosmos DB** | Operational, low-latency document store for **draft applications, slot-filling cache and ephemeral session state**, 3 accounts (one per country) pinned to North Europe / Sweden Central / Norway East with `enableMultipleWriteLocations=false`, AAD-only auth, CMK from the country Key Vault, private endpoint, TTL-based auto-purge. Bicep at [`infra/data/cosmos/cosmos-account.bicep`](../../infra/data/cosmos/cosmos-account.bicep). |
 | **Azure SQL Database** | Reference data, business rules. |
 | **Azure Storage / ADLS Gen2** | Three per-country Storage accounts: citizen-uploads/ (documents), voice-recordings/ (PSTN audio + STT transcripts, WORM 90 days), email-attachments/ (email binaries). All CMK-encrypted. See data.md § 3.2. |
 | **Azure Service Bus** | Reliable command messaging. |

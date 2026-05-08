@@ -1,9 +1,43 @@
 name: udcsp-eidas-sandbox-conformance
 scenario_id: D1
 README_eval_rows: [2, 9, 10, 14, 15]
-metadata: { sandboxEndpoint: '${EIDAS_SANDBOX_ENDPOINT}', relyingPartyEntityId: '${UDCSP_EIDAS_ENTITY_ID}' }
+description: >
+  Asserts that the eIDAS-2 / EUDI-Wallet readiness anchors of the platform
+  are present and that every cross-border identity assertion is
+  pseudonymised before any other system sees it. Also asserts the per-country
+  identity provider mapping (MitID / BankID / Vipps).
+metadata:
+  sandboxEndpoint: '${EIDAS_SANDBOX_ENDPOINT}'
+  relyingPartyEntityId: '${UDCSP_EIDAS_ENTITY_ID}'
+  identity_providers:
+    dk: MitID
+    se: BankID
+    no: Vipps
+
 tests:
   - id: eid-oidc-federated-login
     asserts: [openid-connect, signed-claims, no-pii-copy]
+
   - id: eid-cross-border-claim-token
     asserts: [country-claim, assurance-level, replay-protection]
+
+  - id: eid-per-country-idp-wired
+    asserts:
+      - file_contains: { path: governance/identity/identity-providers.md, substring: MitID }
+      - file_contains: { path: governance/identity/identity-providers.md, substring: BankID }
+      - file_contains: { path: governance/identity/identity-providers.md, substring: Vipps }
+
+  - id: eid-eudi-wallet-readiness-doc
+    asserts:
+      - file_exists: governance/identity/eudi-wallet-readiness.md
+
+  - id: eid-pseudonymisation-on-ingress
+    asserts:
+      - grep_no_match:
+          paths: [foundry/agents/, services/, apps/]
+          patterns:
+            - "rawNationalId"
+            - "fullCpr"
+            - "fullPersonnummer"
+            - "fullFoedselsnummer"
+
