@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** A citizen opens the chat panel embedded in every page of the UDCSP web portal (and in the mobile WebView) → the React `ChatWidget` fetches a **DirectLine token** from APIM (never the raw secret) → **Microsoft Copilot Studio** receives the message on its **web channel** → a topic is matched, slots are filled, and the **Foundry citizen-assistant** is invoked via APIM → the answer arrives with citations, adaptive cards, and suggested actions → if the citizen types "agent", the same `escalate-to-human` topic that the voice channel uses opens a warm D365 case with the full transcript attached. **The brain is shared; the channel is typed conversation.**
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | Canonical dialog store is Copilot Studio Dataverse `bot_session`; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
 
 ---
 
@@ -41,6 +45,7 @@
 12. [How to test it (three levels)](#12-how-to-test-it-three-levels)
 13. [The demo script for a jury](#13-the-demo-script-for-a-jury)
 14. [Anti-patterns we avoid](#14-anti-patterns-we-avoid)
+15. [Where the conversation is stored](#15-where-the-conversation-is-stored)
 
 ---
 
@@ -636,6 +641,23 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 | No audit trail for chat sessions | Every session writes a pseudonymised transcript to the per-country Fabric workspace via Logic App. The `traceparent` header correlates the chat transcript with the Foundry distributed trace, making every AI decision auditable end-to-end. |
 | Assume citizens will always type; ignore that the same bot answers the phone | The **same bot** publishes a voice channel (one `bot.yaml`, two channel publishings). If a citizen needs to speak instead of type, [`voice.md`](./voice.md) documents the voice-specific stack (ACS, AI Speech STT/TTS, DTMF fallback). The two documents are companion pieces. |
 | Ignore the mobile use case — build the widget only for desktop browsers | The `ChatWidget` component accepts a `channel='mobile-handoff'` prop. The mobile app renders the widget inside a WebView with the same `locale` forwarded, and the `voice-fallback.yaml` topic handles mid-session handoffs from the voice channel to the typed widget. |
+
+---
+
+## 15. Where the conversation is stored
+
+Chat is the reference storage pattern for UDCSP dialog: every DirectLine session is written to Copilot Studio's Dataverse-backed `bot_session` table and mirrored for analytics. Voice, web, and mobile inherit this pattern; uploaded files, per-citizen memory, and Foundry traces stay in their specialised stores. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| Dialog transcript | Copilot Studio Dataverse `bot_session` (canonical) | 6 months hot; 6 years OneLake |
+| Uploaded documents | ADLS Gen2 `citizen-uploads/` | While case open + lifecycle tiers |
+| Per-citizen memory | Azure AI Search vector store | TTL 12 months rolling |
+| Foundry trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 

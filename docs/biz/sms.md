@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** A citizen's phone receives a text from UDCSP through one shared rail: **Azure Communication Services SMS**. Three categories of sender use it — **Power Automate** (`citizen-status-notify`, `sla-risk-alert`), **Logic Apps** (voice post-call récap, escalation notifications), and (**roadmap**) **External ID SSPR verification codes**. Every SMS is localised in **12 languages**, sent from a **per-country sender ID**, rate-limited to protect the FinOps budget, and carries no PII beyond a case ID and a short branded portal link. The STOP keyword is honoured within 24 hours and writes `smsOptOut=true` to the `udcsp_consent_record` in D365.
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | SMS bypasses Copilot Studio: message bodies live in Dataverse `sms_activity`; ACS events in `acs-events/`; AI traces in App Insights → OneLake; no vector memory. |
 
 ---
 
@@ -40,6 +44,7 @@
 11. [How to test it (three levels)](#11-how-to-test-it-three-levels)
 12. [The demo script for a jury](#12-the-demo-script-for-a-jury)
 13. [Anti-patterns we avoid](#13-anti-patterns-we-avoid)
+14. [Where the conversation is stored](#14-where-the-conversation-is-stored)
 
 ---
 
@@ -453,6 +458,23 @@ This demo closes the omnichannel loop documented in `docs/biz/case-study-11.md` 
 | Use one ACS resource for all three countries | One `udcsp-{dk,se,no}-acs` per country, `dataLocation` pinned — same sovereignty discipline as the voice channel |
 | Add emoji to SMS templates to look friendly | Emoji force UCS-2 encoding and halve the per-part character budget — forbidden in production templates; run `-ValidateTemplates` before any template commit |
 | Skip delivery receipt logging | Every send → App Insights → per-country Fabric workspace; the receipt is the audit proof that the citizen was notified |
+
+---
+
+## 14. Where the conversation is stored
+
+SMS is not a Copilot Studio channel, so it never creates a `bot_session` row. The canonical conversation log is the Dataverse `sms_activity` table; ACS delivery/inbound events and occasional AI traces sit beside it in Zone 3 for audit correlation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| SMS body in + out | Dataverse custom `sms_activity` table | 6 months hot; 6 years OneLake |
+| ACS SMS events | ACS Event Hubs → ADLS Gen2 `acs-events/` | See § 5 retention matrix |
+| Translator/classifier trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |
+| Per-citizen memory | Not indexed for SMS | N/A |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 

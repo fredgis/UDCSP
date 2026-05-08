@@ -2,6 +2,11 @@
 
 > Companion document to the [README](../../README.md). This document describes **what is built and how it fits together** — every layer, every sovereignty zone, every AI agent, every governance control. No source code is presented here; this is the platform definition that the development plan ([`plan.md`](./plan.md)) will execute.
 
+> [!TIP]
+> **Companion documents.** This file describes *the entire platform* at the architecture level. Two deeper dives extend it:
+> - [`ai.md`](../biz/ai.md) — every AI decision, every agent, every safety control, every channel pattern.
+> - [`data.md`](./data.md) — every storage zone, every retention period, every compliance article.
+
 ---
 
 ## Table of Contents
@@ -13,7 +18,7 @@
 5. [AI Architecture — Microsoft Foundry at the Core](#5-ai-architecture--microsoft-foundry-at-the-core)
 6. [Integration & Workflow Architecture](#6-integration--workflow-architecture)
 7. [Case Management Architecture (Dynamics 365)](#7-case-management-architecture-dynamics-365)
-8. [Data & Analytics Architecture (Microsoft Fabric)](#8-data--analytics-architecture-microsoft-fabric)
+8. [Data & Analytics Architecture (Microsoft Fabric)](#8-data--analytics-architecture-microsoft-fabric) — *see also [`data.md`](./data.md)*
 9. [Governance, Compliance & EU AI Act](#9-governance-compliance--eu-ai-act)
 10. [Security & Network Architecture](#10-security--network-architecture)
 11. [Observability & Operations](#11-observability--operations)
@@ -595,6 +600,8 @@ graph TB
 
 ## 8. Data & Analytics Architecture (Microsoft Fabric)
 
+**Cross-reference.** Section 8 covers the **analytics destination** (Microsoft Fabric / OneLake) of every dataset the platform produces. The **operational and conversational sources** that feed Fabric — including the new "Conversations" zone introduced for AI Act Art. 26(6) compliance (≥ 6 months log retention) — are documented in [`data.md`](./data.md). This section deliberately stays focused on the analytics layer; for the per-zone storage decisions, retention matrix, and right-to-erasure playbook, read `data.md` first.
+
 ```mermaid
 graph TB
     subgraph SOURCES["Sources"]
@@ -603,6 +610,9 @@ graph TB
         SRC_AI["Foundry traces & evaluations"]
         SRC_APIM["APIM telemetry"]
         SRC_PARTNER["Partner agency feeds"]
+        SRC_CS["Copilot Studio transcripts<br/>(Dataverse-backed)"]
+        SRC_ACS["ACS event capture<br/>(SMS/Email/Voice events)"]
+        SRC_ADLS_CONV["ADLS conversation blobs<br/>(voice .wav, email attachments)"]
     end
 
     subgraph FABRIC["Microsoft Fabric — OneLake"]
@@ -630,6 +640,9 @@ graph TB
     SRC_AI --> BRONZE
     SRC_APIM --> BRONZE
     SRC_PARTNER --> BRONZE
+    SRC_CS --> BRONZE
+    SRC_ACS --> BRONZE
+    SRC_ADLS_CONV --> BRONZE
 
     BRONZE --> SILVER --> GOLD --> SEMANTIC
     SILVER --> RTI
@@ -645,7 +658,7 @@ graph TB
     classDef dom fill:#E0F2F1,stroke:#00796B,color:#004D40
     classDef cons fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
 
-    class SRC_D365,SRC_LA,SRC_AI,SRC_APIM,SRC_PARTNER src
+    class SRC_D365,SRC_LA,SRC_AI,SRC_APIM,SRC_PARTNER,SRC_CS,SRC_ACS,SRC_ADLS_CONV src
     class BRONZE,SILVER,GOLD,RTI,SEMANTIC fab
     class DOMAIN dom
     class PBI_OPS,PBI_EXEC,PBI_CIT,PBI_AUD,AI_FB cons
@@ -658,6 +671,7 @@ graph TB
 - **Real-Time Intelligence** powers live SLA dashboards (e.g. queues, average processing time).
 - **Power BI semantic models** are the only analytics surface — no direct queries on bronze/silver from the front-end.
 - A **feedback loop** anonymises closed cases and pushes them back to Foundry as training/evaluation datasets.
+- New conversation sources (Copilot Studio Dataverse-backed transcripts, ACS event capture for SMS/Email/Voice, ADLS conversation blobs) feed Bronze nightly — this is what makes the platform AI Act Art. 26(6) compliant (≥ 6 months log retention).
 
 ---
 
@@ -724,6 +738,8 @@ graph TB
 | **National DPA differences** | Per-country Purview policy packs; per-country Logic Apps orchestrations; per-country sensitivity label sets. |
 | **WCAG 2.1 AA** | Design system with audited components; axe-core in CI/CD; manual annual audit; accessibility statements per portal. |
 | **ISO 27001 / SOC 2** *(operational baseline)* | Defender for Cloud, Sentinel, Key Vault, managed identities, Azure Policy. |
+
+**Storage retention and right-to-erasure operational playbook**: documented in [`data.md`](./data.md) §§ 5, 6, and 9.
 
 ---
 
@@ -947,10 +963,12 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure Functions** | Event-driven glue and lightweight integrations. |
 | **Azure Cosmos DB** | Case state, draft applications. |
 | **Azure SQL Database** | Reference data, business rules. |
-| **Azure Storage / ADLS Gen2** | Citizen-uploaded documents, lakehouse storage. |
+| **Azure Storage / ADLS Gen2** | Three per-country Storage accounts: citizen-uploads/ (documents), voice-recordings/ (PSTN audio + STT transcripts, WORM 90 days), email-attachments/ (email binaries). All CMK-encrypted. See data.md § 3.2. |
 | **Azure Service Bus** | Reliable command messaging. |
 | **Azure Event Grid** | Domain eventing. |
 | **Azure Communication Services** | Voice, SMS, email channels. |
+| **Azure Communication Services Event Capture** | Append-only ACS event log (SMS / Email / Voice events) routed via Event Hubs to ADLS Gen2 acs-events/. See data.md § 3.3. |
+| **Azure AI Search** | Per-citizen long-term conversational memory (vector store with ACL row-level by citizen_id, TTL 12 months rolling). See data.md § 3.4. |
 | **Azure AI Speech** | Speech-to-text and text-to-speech for the voice channel. |
 | **Azure AI Translator** | High-quality translation across the 12 languages. |
 | **Azure AI Document Intelligence** | OCR and structured extraction from citizen documents. |
@@ -959,7 +977,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure Key Vault** | Secrets, keys, certificates with private endpoints. |
 | **Microsoft Defender for Cloud** | CSPM and workload protection. |
 | **Microsoft Sentinel** | SIEM / SOAR. |
-| **Azure Monitor + Log Analytics + Application Insights** | Observability. |
+| **Azure Monitor + Log Analytics + Application Insights** | Observability. Also serves as Foundry AI trace store — see data.md § 3.3. |
 | **Azure Container Registry** | Container image registry with content trust. |
 | **Azure Policy + Blueprints** | Guardrails, compliance enforcement. |
 | **Azure DevOps / GitHub Actions** | CI/CD. |

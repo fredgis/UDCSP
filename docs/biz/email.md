@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** A D365 case-status change triggers **Power Automate `citizen-status-notify`** → **Azure Communication Services Email** sends a DKIM-signed, localised, HTML+plain-text message from the citizen's country-specific sender domain (`noreply@dk.udcsp.gov` / `noreply@se.udcsp.gov` / `noreply@no.udcsp.gov`) → the citizen replies → the reply lands on the country's MX → **D365 email-to-case** routes it to the correct caseworker queue → **Foundry classifier** enriches the intent onto the existing case → caseworker is notified. **One ACS resource per country, one DKIM key per country, zero cross-border data bleed.** GDPR Art. 15 right-of-access exports are delivered as S/MIME-signed encrypted attachments through the same rail.
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | Email body in Dataverse `email_activity`; attachments in ADLS `email-attachments/`; ACS events in `acs-events/`; AI traces in App Insights → OneLake. |
 
 ---
 
@@ -40,6 +44,7 @@
 11. [How to test it (three levels)](#11-how-to-test-it-three-levels)
 12. [The demo script for a jury](#12-the-demo-script-for-a-jury)
 13. [Anti-patterns we avoid](#13-anti-patterns-we-avoid)
+14. [Where the conversation is stored](#14-where-the-conversation-is-stored)
 
 ---
 
@@ -515,6 +520,23 @@ This corresponds to **Demo 1** (Anna / Lars journey) in [`uses.md`](./uses.md) a
 | Bypass Purview DLP on outbound email | Purview DLP scans outbound content for `NordicNationalID` classification; over-share is blocked, not just alerted |
 | Deploy DMARC at `p=reject` on day one | Start at `p=none`, monitor aggregate reports for 30–90 days, then promote — rushing to `p=reject` rejects legitimate sub-system mail |
 | Build a separate "email microservice" | Email is a thin channel adapter on top of the shared ACS resource and the shared Foundry agents — zero duplication |
+
+---
+
+## 14. Where the conversation is stored
+
+Email also bypasses Copilot Studio, so the canonical correspondence record is Dataverse `email_activity`. Attachments are stored separately in ADLS to avoid the binary-in-Dataverse anti-pattern, while ACS events and AI traces provide the audit trail around delivery and classification. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| Email body in + out | Dataverse `email_activity` | 6 months hot; 6 years OneLake |
+| Email attachments | ADLS Gen2 `email-attachments/` (per country, CMK) | Per case retention or erasure |
+| ACS Email events | ACS Event Hubs → ADLS Gen2 `acs-events/` | See § 5 retention matrix |
+| AI traces | App Insights → OneLake Bronze | 180 days hot; then Bronze |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 

@@ -4,6 +4,9 @@
 >
 > **Goal:** stand up every component referenced by [`architecture.md`](./architecture.md) and validated by [`recipe.md`](./recipe.md) in a single guided session.
 
+> [!TIP]
+> **Storage architecture context.** Before installing, understand what each storage component is for and why it's needed: read [`data.md`](./data.md) for the full storage zone breakdown, retention matrix, and compliance article-by-article mapping.
+
 ---
 
 ## 1. Topology installed
@@ -27,6 +30,16 @@ graph TB
 ```
 
 Each country sub gets its own landing zone, External ID tenant, Fabric capacity, APIM region, Logic Apps workspace, D365 environment, ACS resource and Foundry project. Cross-zone analytics, governance and SOC tooling sit in the shared sub.
+
+Country-scoped provisioning also includes the conversational data layer introduced by [`data.md`](./data.md) §§3.2-3.4:
+
+- `udcspvox{country}{env}` — Storage account for `voice-recordings/` (StorageV2, ADLS Gen2 hierarchical namespace ON, GZRS, CMK from the country Key Vault, immutability policy enabled, lifecycle auto-purge at 90 days).
+- `udcspeml{country}{env}` — Storage account for `email-attachments/` (same StorageV2/ADLS Gen2/GZRS/CMK/immutability baseline; lifecycle retention is driven by the `case-closed + 90 days` event).
+- `udcspsearch{country}{env}` — Azure AI Search Standard S1 service with 3 replicas, 1 partition, semantic ranker enabled and CMK from the country Key Vault; used as the per-citizen conversational memory vector store.
+- `udcspevh{country}{env}` — Azure Event Hubs Standard namespace with 4 throughput units and capture enabled to existing `udcspadls{country}{env}` storage in the `acs-events/` container for ACS SMS, Email and Voice events.
+- Copilot Studio transcript persistence — enable **Store transcripts in Dataverse** for each country bot. In Power Platform admin center, open **Environments** > `<country environment>` > **Settings** > **Product** > **Features** > **Copilot Studio** and turn on **Store transcripts in Dataverse**; the bound Dataverse environment auto-creates the `bot_session` table.
+
+Required Bicep module coverage: add country-looped modules for `voice-recordings` storage, `email-attachments` storage, AI Search memory, Event Hubs capture, and the new `acs-events/` container on the existing ADLS account. The Copilot Studio transcript setting remains a post-deploy Power Platform admin action, not a Bicep resource.
 
 ---
 
@@ -63,6 +76,16 @@ You need owner-level access to:
 5. **Three D365 Customer Service environments** (one per country) — sandbox SKU is fine for the case study.
 6. **Three Microsoft Entra External ID tenants** — `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com` (or your own naming).
 7. A **Microsoft Foundry workspace** with model quota for the agents listed in `foundry/agents/`.
+
+Additional quota and permission checks for the conversational data layer:
+
+| Requirement | Scope | Notes |
+|---|---|---|
+| Quota: 6 additional Storage accounts per environment | Azure subscription or country resource groups | 3 countries x 2 new ADLS Gen2 accounts: `udcspvox*` and `udcspeml*` |
+| Quota: 3 Azure AI Search services per environment | Azure subscription | One S1 service per country for per-citizen conversational memory |
+| Quota: 3 Event Hubs namespaces per environment | Azure subscription | One Standard namespace per country for ACS event capture |
+| Permission: Owner on the country resource group | Azure RBAC | Required for CMK linkage between the new resources and the country Key Vault |
+| Permission: Power Platform admin on each Dataverse environment | Power Platform | Required to enable Copilot Studio Dataverse-backed transcript storage |
 
 > **EU residency note:** every workload region MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`). The installer refuses to deploy to non-EU regions.
 
@@ -207,6 +230,24 @@ Phase names accepted by `-Phase`:
 
 The master script declares a DAG matching `plan.md` §4 and refuses to run a phase whose prerequisites are missing.
 
+### 4.1 Conversational data layer (new)
+
+This phase provisions the storage that captures every dialog turn, every voice second, every SMS, every email, and every AI trace — the foundation for EU AI Act Art. 26(6) compliance (>= 6 months high-risk AI log retention).
+
+Per-country resources provisioned:
+
+- ADLS Gen2 `voice-recordings/` account (audio `.wav` plus STT transcripts, WORM 90 days)
+- ADLS Gen2 `email-attachments/` account (binary attachments, separated from Dataverse for cost and performance)
+- Azure AI Search service (per-citizen long-term memory vector store)
+- Event Hubs namespace (ACS event capture for SMS, Email and Voice events)
+
+The Bicep deployment creates the storage accounts, AI Search service, Event Hubs namespace, capture destination, `acs-events/` container and CMK bindings. After Bicep deploys these resources:
+
+1. Run [Set-CopilotStudioTranscriptBacking.ps1](#) for each environment to enable Dataverse-backed transcript persistence. Power Platform admin center path: **Environments** > `<country environment>` > **Settings** > **Product** > **Features** > **Copilot Studio** > **Store transcripts in Dataverse**.
+2. Run [Set-AISearchIndex.ps1](#) to create the per-citizen memory index schema with row-level ACL by `citizen_id`.
+3. Run [Set-EventHubCapture.ps1](#) to wire ACS Event Grid -> Event Hubs -> ADLS capture path.
+4. Verify retention: [Test-RetentionPolicies.ps1](#) checks that lifecycle rules, immutability policies and Cosmos TTLs are set per [`data.md`](./data.md) §5.
+
 ---
 
 ## 5. Independent component testing
@@ -246,6 +287,14 @@ The QA phase smoke kicks off:
 4. `tests/load/k6/citizen-application-submit.k6.js` — short ramp.
 
 A **green** smoke gate produces `scripts/install/reports/<timestamp>/install-report.html` and closes with the platform's URLs printed to console.
+
+Conversational data smoke tests to add to the post-install checklist:
+
+- Send a test SMS via the platform; verify it lands in the `sms_activity` Dataverse table and in the `acs-events/` ADLS container.
+- Make a test voice call; verify the `.wav` lands in the `voice-recordings/` ADLS account, the STT transcript is stored alongside it, and the dialog turn is in Copilot Studio's `bot_session` table.
+- Send a test email with attachment; verify the body is in the `email_activity` Dataverse table and the attachment is in the `email-attachments/` ADLS account, not in Dataverse.
+- Trigger a Foundry agent invocation; verify the trace is in App Insights and mirrored to OneLake Bronze.
+- Run an erasure simulation: `POST /privacy/erase/{test_citizen_id}`; verify deletion cascades across all 5 zones within 30 minutes in test mode.
 
 ---
 

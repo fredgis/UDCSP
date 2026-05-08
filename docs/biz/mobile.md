@@ -22,6 +22,10 @@
 
 > [!IMPORTANT]
 > **TL;DR.** A citizen opens the UDCSP mobile app → **MSAL React Native** authenticates them against their country's **Microsoft Entra External ID** tenant → the app calls the **same APIM** gateway that the web portal uses → the **same Foundry agents** reason over the request → results (decisions, case status, eligibility) are pushed back as a **native push notification** (APNs / FCM) and shown in the app. Native extras — camera capture for ID or document scanning, biometric re-auth, OS locale propagation — make tasks frictionless that would be laborious on a browser. **One brain, many faces** — the mobile app is a channel adapter, not a second AI system.
+>
+> | Field | Value |
+> |---|---|
+> | 🗄️ **Where stored** | Same as web: `bot_session`, Cosmos drafts, ADLS `citizen-uploads/`, AI Search memory, App Insights traces; push receipts in Cosmos DB (TTL 30 days). |
 
 ---
 
@@ -40,6 +44,7 @@
 11. [How to test it (three levels)](#11-how-to-test-it-three-levels)
 12. [The demo script for a jury](#12-the-demo-script-for-a-jury)
 13. [Anti-patterns we avoid](#13-anti-patterns-we-avoid)
+14. [Where the conversation is stored](#14-where-the-conversation-is-stored)
 
 ---
 
@@ -497,6 +502,23 @@ This corresponds to **Demo 4** in [`uses.md`](./uses.md#-demo-4--erik-snaps-a-pa
 | Polling for case-status updates | Push notifications (APNs / FCM) via ACS — no polling, no battery drain, p95 ≤ 30 s delivery |
 | Separate i18n bundles for mobile | `loadWebCatalogue()` imports from `apps/web/i18n/messages/` at build time — single source of truth, zero string drift |
 | Per-channel Foundry agents | The same `citizen-assistant`, `doc-extractor`, and `eligibility-pre-assessor` agents serve web and mobile; mobile is a channel adapter, not a second AI system |
+
+---
+
+## 14. Where the conversation is stored
+
+Mobile intentionally shares the web channel's storage pattern because the app embeds the same bot/widget bundle in a WebView and calls the same APIM contracts. Native additions — camera captures and push receipts — land in the same document and operational stores rather than creating a second mobile-only archive. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+
+| What | Where | Retention |
+|---|---|---|
+| Bot transcript | Copilot Studio Dataverse `bot_session` | 6 months hot; 6 years OneLake |
+| Camera-captured documents | ADLS Gen2 `citizen-uploads/` (same as web) | While case open + lifecycle tiers |
+| Drafts + push receipts | Cosmos DB | Draft TTL 30 days; receipts TTL 30 days |
+| Memory + traces | Azure AI Search; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |
+
+For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
+
+> 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 
 ---
 
