@@ -24,7 +24,14 @@ function Install-Security {
 function Test-Security {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $required = @('infra\security\defender\defender-for-cloud.bicep','infra\security\sentinel\sentinel-workspace.bicep','infra\security\dpia\dpia-template.md')
+    # DPIA artefacts moved from infra/security/dpia/ to governance/dpia/ (commit 736dc14)
+    # to align with docs/biz/ai.md §11 and EDPB Guidelines 04/2018 governance ownership.
+    $required = @(
+        'infra\security\defender\defender-for-cloud.bicep',
+        'infra\security\sentinel\sentinel-workspace.bicep',
+        'governance\dpia\dpia-template.md',
+        'governance\dpia\dpia-eligibility-model.md'
+    )
     foreach ($r in $required) {
         $p = Join-Path $repo $r
         if (-not (Test-Path $p)) { throw "Missing security artefact: $r" }

@@ -1,0 +1,190 @@
+{
+  "_comment": "Archive handover for Sweden — transfers UDCSP case files to Riksarkivet (https://riksarkivet.se/) when the operational retention period expires AND the GDPR-erase workflow flagged the record as 'pending-archive-release'. Statutory basis: Arkivlagen (1990:782) 3§. Pull mechanism: scheduled query against Dataverse for cases tagged pending-archive-release with archive_due_date <= today, then secure transfer over the FGS (Förvaltningsgemensamma Specifikationer) FGS-PSI delivery format. Symmetric counterpart to gdpr-data-erase. Emits a Purview lineage event when the handover is acknowledged by the archive.",
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "country": { "type": "String", "defaultValue": "se" },
+      "archiveAuthority": { "type": "String", "defaultValue": "Riksarkivet" },
+      "archiveLegalBasis": { "type": "String", "defaultValue": "Arkivlagen 1990:782 3§" },
+      "aiActRegistryId": { "type": "String" },
+      "purviewLineageTopicEndpoint": { "type": "String" },
+      "auditEndpoint": { "type": "String" },
+      "dataverseQueryEndpoint": { "type": "String" },
+      "fabricGoldExportEndpoint": { "type": "String" },
+      "blobPackageEndpoint": { "type": "String" },
+      "sftpUploadEndpoint": { "type": "String" },
+      "archiveAcknowledgementEndpoint": { "type": "String" },
+      "citizenNotificationEndpoint": { "type": "String" }
+    },
+    "triggers": {
+      "Recurrence_daily_0200_CET": {
+        "type": "Recurrence",
+        "recurrence": {
+          "frequency": "Day",
+          "interval": 1,
+          "schedule": { "hours": ["02"], "minutes": [0] },
+          "timeZone": "Romance Standard Time"
+        }
+      }
+    },
+    "actions": {
+      "Ensure_traceparent": {
+        "type": "Compose",
+        "inputs": "@guid()",
+        "runAfter": {}
+      },
+      "AppInsights_dimension": {
+        "type": "Compose",
+        "inputs": {
+          "customDimensions": {
+            "workflow": "archive-handover-se",
+            "country": "@parameters('country')",
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "aiActRegistryId": "@parameters('aiActRegistryId')",
+            "archiveAuthority": "@parameters('archiveAuthority')"
+          }
+        },
+        "runAfter": { "Ensure_traceparent": ["Succeeded"] }
+      },
+      "Query_due_records": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('dataverseQueryEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-workflow": "archive-handover-se"
+          },
+          "body": {
+            "country": "se",
+            "tag": "pending-archive-release",
+            "dueOnOrBefore": "@utcNow()"
+          }
+        },
+        "runAfter": { "AppInsights_dimension": ["Succeeded"] }
+      },
+      "For_each_case": {
+        "type": "Foreach",
+        "foreach": "@body('Query_due_records')?['records']",
+        "actions": {
+          "Export_fabric_gold_view": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('fabricGoldExportEndpoint')",
+              "headers": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "x-case-id": "@items('For_each_case')?['caseId']"
+              },
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "country": "se"
+              }
+            }
+          },
+          "Build_archive_package": {
+            "_comment": "Wraps the case export into the Riksarkivet FGS-PSI delivery format (METS-based manifest + PDF/A-3 + structured XML), per FGS-Förvaltningsspecifikationer.",
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('blobPackageEndpoint')",
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "format": "FGS-PSI",
+                "manifest": "METS",
+                "documentFormat": "PDF/A-3"
+              }
+            },
+            "runAfter": { "Export_fabric_gold_view": ["Succeeded"] }
+          },
+          "Upload_via_sftp": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('sftpUploadEndpoint')",
+              "body": {
+                "package": "@body('Build_archive_package')",
+                "destination": "/incoming/udcsp/se/"
+              }
+            },
+            "runAfter": { "Build_archive_package": ["Succeeded"] }
+          },
+          "Wait_for_archive_acknowledgement": {
+            "type": "Http",
+            "inputs": {
+              "method": "GET",
+              "uri": "@{parameters('archiveAcknowledgementEndpoint')}/@{items('For_each_case')?['caseId']}"
+            },
+            "runAfter": { "Upload_via_sftp": ["Succeeded"] }
+          },
+          "Emit_purview_lineage": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('purviewLineageTopicEndpoint')",
+              "headers": { "Content-Type": "application/json" },
+              "body": {
+                "id": "@guid()",
+                "eventType": "udcsp.archive.handover.completed.v2",
+                "subject": "@items('For_each_case')?['caseId']",
+                "data": {
+                  "country": "se",
+                  "caseId": "@items('For_each_case')?['caseId']",
+                  "archiveAuthority": "@parameters('archiveAuthority')",
+                  "legalBasis": "@parameters('archiveLegalBasis')",
+                  "acknowledgement": "@body('Wait_for_archive_acknowledgement')",
+                  "transferredAt": "@utcNow()"
+                }
+              }
+            },
+            "runAfter": { "Wait_for_archive_acknowledgement": ["Succeeded"] }
+          },
+          "Notify_citizen_optional": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('citizenNotificationEndpoint')",
+              "body": {
+                "caseId": "@items('For_each_case')?['caseId']",
+                "template": "archive-handover-completed-se",
+                "respectConsentFlag": true
+              }
+            },
+            "runAfter": { "Emit_purview_lineage": ["Succeeded"] }
+          },
+          "Audit_handover": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('auditEndpoint')",
+              "headers": { "traceparent": "@outputs('Ensure_traceparent')" },
+              "body": {
+                "workflow": "archive-handover-se",
+                "caseId": "@items('For_each_case')?['caseId']",
+                "outcome": "Handed-over",
+                "archiveAuthority": "@parameters('archiveAuthority')"
+              }
+            },
+            "runAfter": { "Notify_citizen_optional": ["Succeeded"] }
+          }
+        },
+        "runAfter": { "Query_due_records": ["Succeeded"] }
+      },
+      "Audit_run_summary": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('auditEndpoint')",
+          "body": {
+            "workflow": "archive-handover-se",
+            "country": "se",
+            "totalProcessed": "@length(body('Query_due_records')?['records'])",
+            "completedAt": "@utcNow()"
+          }
+        },
+        "runAfter": { "For_each_case": ["Succeeded","Skipped","Failed"] }
+      }
+    }
+  }
+}

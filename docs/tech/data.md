@@ -251,6 +251,9 @@ flowchart LR
 | **OneLake — Gold** (per country) | Domain marts (citizen, case, eligibility, satisfaction); semantic-model-ready | Power BI consumption; cross-country aggregations via Domain | Fabric plane |
 | **Fabric Real-Time Intelligence** (KQL DB) | Live KPIs: queue depth, avg processing time, SLA breach alerts | KQL real-time queries; sub-second freshness | Fabric plane |
 
+> [!IMPORTANT]
+> **3 Lakehouses, 9 medallion zones** — Fabric exposes **one** Lakehouse object per country (`udcsp-lh-dk`, `udcsp-lh-se`, `udcsp-lh-no`); inside each Lakehouse, Delta tables are organised into the three medallion folders Bronze / Silver / Gold. The platform-level claim of *"9 lakehouses"* is shorthand for **3 sovereign Lakehouses × 3 medallion layers = 9 logical zones**, not 9 separate Fabric items. Per-country isolation is enforced at the Lakehouse boundary; per-layer governance (PII gates, data-quality checks, Purview classification) is enforced at the medallion folder boundary.
+
 ---
 
 ## 4. Storage map per data category

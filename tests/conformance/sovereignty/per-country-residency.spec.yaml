@@ -1,0 +1,84 @@
+name: udcsp-sovereignty-per-country-residency
+scenario_id: D3
+README_eval_rows: [3, 5, 8, 12, 13, 14]
+description: >
+  Asserts that for each of the three sovereign zones (DK · SE · NO), every
+  Azure resource that processes citizen personal data is pinned to the
+  country's primary EU region, customer-managed-key wrapped by the country
+  Key Vault, and reachable only via private endpoints. Anchors on the Azure
+  policy initiatives in `infra/landing-zone/azure-policy/` and on the
+  per-country Bicep parameter files.
+metadata:
+  policy_initiatives:
+    allowed_locations: infra/landing-zone/azure-policy/allowed-regions-initiative.json
+    deny_public_ip:    infra/landing-zone/azure-policy/deny-public-ip-initiative.json
+    encryption_at_rest: infra/landing-zone/azure-policy/require-encryption-at-rest-initiative.json
+    required_tags:     infra/landing-zone/azure-policy/required-tags-initiative.json
+    baseline:          infra/security/azure-policy/baseline-initiative.json
+  sovereignty_zones:
+    dk: { primaryRegion: northeurope,   keyVault: udcsp-dk-dev-kv, fabricCapacityRegion: northeurope }
+    se: { primaryRegion: swedencentral, keyVault: udcsp-se-dev-kv, fabricCapacityRegion: swedencentral }
+    no: { primaryRegion: norwayeast,    keyVault: udcsp-no-dev-kv, fabricCapacityRegion: norwayeast }
+
+tests:
+  - id: residency-fabric-capacity-pinned
+    asserts:
+      - bicep_param_eq: { file: data/fabric/capacities/fabric-capacity-dk.bicep, param: location, value: northeurope }
+      - bicep_param_eq: { file: data/fabric/capacities/fabric-capacity-se.bicep, param: location, value: swedencentral }
+      - bicep_param_eq: { file: data/fabric/capacities/fabric-capacity-no.bicep, param: location, value: norwayeast }
+    severity: critical
+
+  - id: residency-cosmos-pinned
+    asserts:
+      - bicep_param_eq: { file: infra/data/cosmos/parameters/dk.bicepparam, param: location, value: northeurope }
+      - bicep_param_eq: { file: infra/data/cosmos/parameters/se.bicepparam, param: location, value: swedencentral }
+      - bicep_param_eq: { file: infra/data/cosmos/parameters/no.bicepparam, param: location, value: norwayeast }
+    severity: critical
+
+  - id: residency-policy-initiative-allowed-locations
+    asserts:
+      - file_contains: { path: infra/landing-zone/azure-policy/allowed-regions-initiative.json, substring: e56962a6-4747-49cd-b67b-bf8b01975c4c }
+      - file_contains: { path: infra/landing-zone/azure-policy/allowed-regions-initiative.json, substring: e765b5de-1225-4ba3-bd56-1ac6695af988 }
+    severity: critical
+
+  - id: residency-deny-public-ip
+    asserts:
+      - file_contains: { path: infra/landing-zone/azure-policy/deny-public-ip-initiative.json, substring: 83a86a26-fd1f-447c-b59d-e51f44264114 }
+      - file_contains: { path: infra/landing-zone/azure-policy/deny-public-ip-initiative.json, substring: 4fa4b6c0-31ca-4c0d-b10d-24b96f62a751 }
+      - file_contains: { path: infra/landing-zone/azure-policy/deny-public-ip-initiative.json, substring: 55615ac9-af46-4a59-874e-391cc3dfb490 }
+    severity: high
+
+  - id: residency-encryption-at-rest
+    asserts:
+      - file_contains: { path: infra/landing-zone/azure-policy/require-encryption-at-rest-initiative.json, substring: 4733ea7b-a883-42fe-8cac-97454c2a9e4a }
+      - file_contains: { path: infra/landing-zone/azure-policy/require-encryption-at-rest-initiative.json, substring: 0b60c0b2-2dc2-4e1c-b5c9-abbed971de53 }
+      - file_contains: { path: infra/landing-zone/azure-policy/require-encryption-at-rest-initiative.json, substring: 1e66c121-a66a-4b1f-9b83-0fd99bf0fc2d }
+    severity: high
+
+  - id: residency-required-tags
+    asserts:
+      - file_contains: { path: infra/landing-zone/azure-policy/required-tags-initiative.json, substring: country }
+      - file_contains: { path: infra/landing-zone/azure-policy/required-tags-initiative.json, substring: dataResidency }
+      - file_contains: { path: infra/landing-zone/azure-policy/required-tags-initiative.json, substring: dataClassification }
+    severity: medium
+
+  - id: residency-baseline-initiative
+    asserts:
+      - file_contains: { path: infra/security/azure-policy/baseline-initiative.json, substring: 1f3afdf9-d0c9-4c3d-847f-89da613e70a8 }
+      - file_contains: { path: infra/security/azure-policy/baseline-initiative.json, substring: 179d1daa-458f-4e47-8086-2a68d0d6c38f }
+      - file_contains: { path: infra/security/azure-policy/baseline-initiative.json, substring: 89c6cddc-1c73-4ac1-b19c-54d1a15a42f2 }
+    severity: high
+
+  - id: archive-handover-per-country
+    asserts:
+      - file_exists: services/logic-apps/workflows/archive-handover-dk/workflow.json
+      - file_exists: services/logic-apps/workflows/archive-handover-se/workflow.json
+      - file_exists: services/logic-apps/workflows/archive-handover-no/workflow.json
+    severity: medium
+
+  - id: per-country-cosmos-iso-zone
+    asserts:
+      - file_contains: { path: infra/data/cosmos/cosmos-account.bicep, substring: enableMultipleWriteLocations }
+      - file_contains: { path: infra/data/cosmos/cosmos-account.bicep, substring: "publicNetworkAccess: 'Disabled'" }
+      - file_contains: { path: infra/data/cosmos/cosmos-account.bicep, substring: "disableLocalAuth: true" }
+    severity: critical

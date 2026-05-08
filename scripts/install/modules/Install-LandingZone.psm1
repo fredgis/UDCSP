@@ -24,9 +24,21 @@ function Install-LandingZone {
 
 function Test-LandingZone {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
-    $bicepRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..\infra\landing-zone')
-    $required = @('main.bicep','modules\networking.bicep','modules\keyvault.bicep','modules\storage.bicep','modules\acr.bicep')
-    $missing = $required | Where-Object { -not (Test-Path (Join-Path $bicepRoot $_)) }
+    $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+    $bicepRoot = Join-Path $repo 'infra\landing-zone'
+    $cosmosRoot = Join-Path $repo 'infra\data\cosmos'
+    $required = @(
+        (Join-Path $bicepRoot 'main.bicep'),
+        (Join-Path $bicepRoot 'modules\networking.bicep'),
+        (Join-Path $bicepRoot 'modules\keyvault.bicep'),
+        (Join-Path $bicepRoot 'modules\storage.bicep'),
+        (Join-Path $bicepRoot 'modules\acr.bicep'),
+        (Join-Path $cosmosRoot 'cosmos-account.bicep'),
+        (Join-Path $cosmosRoot 'parameters\dk.bicepparam'),
+        (Join-Path $cosmosRoot 'parameters\se.bicepparam'),
+        (Join-Path $cosmosRoot 'parameters\no.bicepparam')
+    )
+    $missing = $required | Where-Object { -not (Test-Path $_) }
     if ($missing) { throw "Missing landing-zone artefacts: $($missing -join ', ')" }
     "{`"phase`":`"LandingZone`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-landing-zone.json')
 }

@@ -12,5 +12,12 @@
       "topicEndpointUri": "PurviewLineageTopicEndpoint",
       "topicKeySetting": "PurviewLineageTopicKey"
     }
+  ],
+  "scriptFile": "index.js",
+  "_eventGridSourceTopic": "Microsoft.Security.MalwareScanningResult",
+  "_subscribesTo": [
+    "udcspupldk{env}/providers/Microsoft.EventGrid/systemTopics/defender-malware-results",
+    "udcspuplse{env}/providers/Microsoft.EventGrid/systemTopics/defender-malware-results",
+    "udcspuplno{env}/providers/Microsoft.EventGrid/systemTopics/defender-malware-results"
   ]
 }

@@ -17,9 +17,26 @@
     },
     "policyDefinitions": [
       {
-        "policyDefinitionReferenceId": "allowed-locations",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
-        "parameters": {}
+        "policyDefinitionReferenceId": "allowed-locations-resources",
+        "_displayName": "Allowed locations",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/e56962a6-4747-49cd-b67b-bf8b01975c4c.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c",
+        "parameters": {
+          "listOfAllowedLocations": {
+            "value": "[parameters('listOfAllowedLocations')]"
+          }
+        }
+      },
+      {
+        "policyDefinitionReferenceId": "allowed-locations-rg",
+        "_displayName": "Allowed locations for resource groups",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/e765b5de-1225-4ba3-bd56-1ac6695af988.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e765b5de-1225-4ba3-bd56-1ac6695af988",
+        "parameters": {
+          "listOfAllowedLocations": {
+            "value": "[parameters('listOfAllowedLocations')]"
+          }
+        }
       }
     ]
   }

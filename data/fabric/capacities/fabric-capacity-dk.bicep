@@ -1,9 +1,12 @@
-@description('Country sovereignty zone code.')
+@description('Country sovereignty zone code. Pinned to dk; do not deploy SE/NO data into this capacity.')
+@allowed(['dk'])
 param country string = 'dk'
 @description('Deployment environment.')
+@allowed(['dev','test','preprod','prod'])
 param env string = 'dev'
-@description('Azure region for the country zone.')
-param location string
+@description('Azure region. DK pins to North Europe (Dublin) - the closest EU public-cloud region with Fabric F-SKU GA. Sovereignty: data never leaves EU.')
+@allowed(['northeurope'])
+param location string = 'northeurope'
 @description('Fabric F-SKU capacity size.')
 param capacitySku string = 'F64'
 @description('Fabric capacity administrator object IDs or UPNs.')

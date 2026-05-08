@@ -11,12 +11,23 @@
     "policyDefinitions": [
       {
         "policyDefinitionReferenceId": "network-interfaces-should-not-have-public-ips",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "_displayName": "Network interfaces should not have public IPs",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/83a86a26-fd1f-447c-b59d-e51f44264114.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/83a86a26-fd1f-447c-b59d-e51f44264114",
         "parameters": {}
       },
       {
-        "policyDefinitionReferenceId": "public-network-access-should-be-disabled-for-paas",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/TODO-built-in-policy-id",
+        "policyDefinitionReferenceId": "storage-account-public-access-disallowed",
+        "_displayName": "Storage account public access should be disallowed",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/4fa4b6c0-31ca-4c0d-b10d-24b96f62a751.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/4fa4b6c0-31ca-4c0d-b10d-24b96f62a751",
+        "parameters": {}
+      },
+      {
+        "policyDefinitionReferenceId": "key-vault-firewall-enabled",
+        "_displayName": "Azure Key Vault should have firewall enabled",
+        "_source": "https://www.azadvertizer.net/azpolicyadvertizer/55615ac9-af46-4a59-874e-391cc3dfb490.html",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/55615ac9-af46-4a59-874e-391cc3dfb490",
         "parameters": {}
       }
     ]
