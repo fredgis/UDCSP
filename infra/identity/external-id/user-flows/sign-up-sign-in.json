@@ -14,9 +14,13 @@
   },
   "onAuthenticationMethodLoadStart": {
     "@odata.type": "#microsoft.graph.onAuthenticationMethodLoadStartExternalUsersSelfServiceSignUp",
+    "_comment": "Three country-specific national-identity providers are listed first (in country order, alphabetically) so a citizen who selects 'country' on the attribute-collection screen sees their provider as the natural choice. EmailPassword-OAUTH stays as the fallback for cross-border / EU citizens reaching the service via the eIDAS bridge.",
     "identityProviders": [
-      { "@odata.type": "#microsoft.graph.builtInIdentityProvider", "id": "EmailPassword-OAUTH" },
-      { "@odata.type": "#microsoft.graph.identityProviderBase",   "id": "{{eidas-bridge-saml-id}}" }
+      { "@odata.type": "#microsoft.graph.identityProviderBase", "id": "mitid-dk",  "_displayName": "MitID (Danmark)" },
+      { "@odata.type": "#microsoft.graph.identityProviderBase", "id": "vipps-no",  "_displayName": "Vipps Login (Norge)" },
+      { "@odata.type": "#microsoft.graph.identityProviderBase", "id": "bankid-se", "_displayName": "BankID (Sverige)" },
+      { "@odata.type": "#microsoft.graph.identityProviderBase", "id": "{{eidas-bridge-saml-id}}", "_displayName": "Other EU/EEA (eIDAS)" },
+      { "@odata.type": "#microsoft.graph.builtInIdentityProvider", "id": "EmailPassword-OAUTH", "_displayName": "Email + password (fallback)" }
     ]
   },
   "onAttributeCollection": {

@@ -1,0 +1,42 @@
+{
+  "_comment": "Microsoft Entra External ID — Vipps Login identity provider federation (Norway). 'Vipps Login' (operated by Vipps MobilePay AS) is the Norwegian login built on top of BankID for digital identity. Issues eIDAS LoA SUBSTANTIAL. UDCSP federates against the Vipps OIDC endpoint rather than calling Vipps APIs directly so the assurance level is preserved.",
+  "@odata.type": "#microsoft.graph.identityProvider",
+  "id": "vipps-no",
+  "displayName": "Vipps Login (Norge)",
+  "type": "OpenIDConnect",
+  "country": "NO",
+  "loa": "SUBSTANTIAL",
+  "claimsMapping": {
+    "userId":     "sub",
+    "givenName":  "given_name",
+    "surname":    "family_name",
+    "displayName":"name",
+    "_nationalId":"no:vipps:nin",
+    "country":    "static:NO",
+    "eidasLoA":   "static:SUBSTANTIAL"
+  },
+  "endpointConfiguration": {
+    "wellKnownUrl": "https://api.vipps.no/access-management-1.0/access/.well-known/openid-configuration",
+    "scopes":       ["openid", "name", "nin"],
+    "responseType": "code",
+    "responseMode": "query"
+  },
+  "clientConfiguration": {
+    "clientId":     "{{vipps-merchant-clientid}}",
+    "clientSecret": "{{vipps-merchant-clientsecret-keyvault-ref}}",
+    "subscriptionKey": "{{vipps-merchant-subscriptionkey-keyvault-ref}}"
+  },
+  "trustChain": {
+    "expectedIssuer":     "https://api.vipps.no/access-management-1.0/access/",
+    "signingKeysJwksUri": "https://api.vipps.no/access-management-1.0/access/jwk",
+    "expectedAcrValues":  ["urn:vipps:loa:substantial"]
+  },
+  "_pseudonymisationOnReceive": [
+    "Hash no:vipps:nin (foedselsnummer) with the country-scoped pepper from Key Vault before persisting; never store the raw foedselsnummer. The hash is what gets emitted as 'nationalIdHash' by the eidas-claims-extension."
+  ],
+  "_todo_case_study_scaffold": [
+    "Real onboarding requires registering UDCSP as a Vipps Login merchant via portal.vipps.no and being approved for the 'nin' scope (national identity number).",
+    "Substitute vipps-merchant-clientid, vipps-merchant-clientsecret, vipps-merchant-subscriptionkey from Key Vault.",
+    "Use https://apitest.vipps.no/... for staging."
+  ]
+}
