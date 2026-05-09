@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: language-switch
+displayName: Language Switch
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/language-switch.yaml
+triggerPatterns:
+    - language: da
+      text: "language switch (da)"
+    - language: sv
+      text: "language switch (sv)"
+    - language: nb
+      text: "language switch (nb)"
+    - language: nn
+      text: "language switch (nn)"
+    - language: se
+      text: "language switch (se)"
+    - language: en
+      text: "language switch (en)"
+    - language: de
+      text: "language switch (de)"
+    - language: fr
+      text: "language switch (fr)"
+    - language: pl
+      text: "language switch (pl)"
+    - language: ar
+      text: "language switch (ar)"
+    - language: uk
+      text: "language switch (uk)"
+    - language: fi
+      text: "language switch (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_translator, write_session_redis]
+skillPrompt: >-
+  Detect or ask for the preferred UDCSP language, confirm it in that language, and persist locale.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

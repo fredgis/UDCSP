@@ -2,12 +2,12 @@
 
 # 💬 UDCSP — The Chat Widget
 
-### One bot, two channels (chat + voice), one shared brain
+### One brain (Foundry topic-router) for web chat and voice
 
 *How a citizen opens a corner panel, types a question in any of 12 languages, and gets a grounded answer — complete with cited adaptive cards, suggested actions, and a one-click escalation to a human caseworker — powered by the same Foundry brain that also answers the phone.*
 
-[![Channel](https://img.shields.io/badge/💬_Channel-Web_Chat_·_DirectLine-1565C0?style=for-the-badge)](#)
-[![Stack](https://img.shields.io/badge/🛰️_Stack-Copilot_Studio_·_DirectLine-FF6F00?style=for-the-badge)](#)
+[![Channel](https://img.shields.io/badge/💬_Channel-Web_Chat_·_APIM `/agents/topic-router`-1565C0?style=for-the-badge)](#)
+[![Stack](https://img.shields.io/badge/🛰️_Stack-Copilot_Studio_·_APIM `/agents/topic-router`-FF6F00?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12_·_multilingual_routing-AD1457?style=for-the-badge)](#)
 [![Brain](https://img.shields.io/badge/🧠_Brain-shared_with_voice-2E7D32?style=for-the-badge)](#)
 
@@ -21,11 +21,15 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen opens the chat panel embedded in every page of the UDCSP web portal (and in the mobile WebView) → the React `ChatWidget` fetches a **DirectLine token** from APIM (never the raw secret) → **Microsoft Copilot Studio** receives the message on its **web channel** → a topic is matched, slots are filled, and the **Foundry citizen-assistant** is invoked via APIM → the answer arrives with citations, adaptive cards, and suggested actions → if the citizen types "agent", the same `escalate-to-human` topic that the voice channel uses opens a warm D365 case with the full transcript attached. **The brain is shared; the channel is typed conversation.**
+> **TL;DR.** A citizen opens the chat panel embedded in the web portal or mobile WebView → React `ChatWidget.tsx` sends the message to **APIM `/agents/topic-router`** with the Entra token and `traceparent` → the Foundry `topic-router` agent selects the right downstream agent → the answer returns with citations, adaptive cards, and suggested actions → escalation opens a warm D365 case with the full transcript attached. **This was Copilot Studio channel adapter in the previous version; it is now Foundry topic-router via APIM.**
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Canonical dialog store is Copilot Studio Dataverse `bot_session`; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
+> | 🗄️ **Where stored** | Canonical dialog transcript in Dataverse `bot_session`; slot state in Redis Enterprise; drafts over 24 h in PostgreSQL JSONB; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake and Confidential Ledger anchors. |
+> | 🧱 **Implementation note** | `ChatWidget.tsx` will be updated by the orchestrator separately; this document describes the target contract. |
+
+---|---|
+> | 🗄️ **Where stored** | Canonical dialog store is Foundry `topic-router` Dataverse `bot_session`; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
 
 ---
 
@@ -69,123 +73,71 @@ The design principle, shown in `docs/biz/uses.md` Demo 1 and Demo 3:
 > *"Expected outcomes: citizen satisfaction scores increased by **38 %**, application processing time reduced from **28 days to 4 days**."* — `docs/biz/case-study-11.md` § Expected Outcomes
 
 > [!NOTE]
-> **Shared bot, shared brain, channel-specific adapter.** The voice channel (`voice.md`) and the chat widget share the same Copilot Studio bot definition, the same 10 topics, the same Foundry agents, and the same APIM gateway. The **only** channel-specific components are the channel publishing configuration (web vs. voice), the DirectLine token broker (chat only), and the ACS + AI Speech stack (voice only). When the citizen-assistant Foundry agent is improved, both channels benefit simultaneously.
+> **Shared bot, shared brain, channel-specific renderer.** The voice channel (`voice.md`) and the chat widget share the same Foundry `topic-router` agent definition, the same 10 topics, the same Foundry agents, and the same APIM gateway. The **only** channel-specific components are the channel renderer (web vs. voice) and the ACS + AI Speech stack (voice only). When the citizen-assistant Foundry agent is improved, both channels benefit simultaneously.
 
 ---
 
 ## 2. The mental model in one picture
 
 ```mermaid
-%%{ init: { 'flowchart': { 'nodeSpacing': 30, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '13px' } } }%%
 flowchart TB
     subgraph CITIZEN["💬 Citizen (browser or mobile WebView)"]
-        BROWSER["🌐 React SPA / Mobile WebView<br/><i>ChatWidget component · iframe</i>"]
+        BROWSER["🌐 React ChatWidget<br/><i>no iframe · direct APIM</i>"]
     end
-
-    subgraph EDGE["🔑 Token broker (per country, via APIM)"]
-        APIM_TOKEN["APIM DirectLine<br/>token endpoint<br/><i>issues short-lived DL token<br/>JWT validate · rate-limit</i>"]
+    subgraph GATEWAY["🚪 APIM — per country"]
+        APIM["POST /agents/topic-router<br/><i>JWT · rate-limit · traceparent</i>"]
     end
-
-    subgraph FACADE["🗣️ Conversational façade"]
-        CS_WEB["Microsoft Copilot Studio<br/>web channel<br/><i>topics · slot fill · adaptive cards<br/>suggested actions · carousel</i>"]
-        CS_VOICE["Copilot Studio<br/>voice channel<br/><i>📞 same bot — see voice.md</i>"]
+    subgraph FOUNDRY["🧠 One brain: Microsoft Foundry"]
+        ROUTER["topic-router<br/><i>route · slots · escalation</i>"]
+        ASSIST["citizen-assistant"]
+        CLASS["classifier"]
+        ELIG["eligibility (TEE)"]
+        TRANS["translator"]
     end
-
-    subgraph CORE["🧠 Brain (shared with voice)"]
-        APIM["APIM gateway<br/><i>JWT · audit · rate-limit<br/>correlation-id · traceparent</i>"]
-        FOUNDRY["Microsoft Foundry<br/><i>classifier · citizen-assistant<br/>translator · content safety</i>"]
-    end
-
     subgraph BACK["📋 Back-office"]
-        D365["Dynamics 365<br/><i>case create on escalation<br/>per-country org</i>"]
-        FABRIC["Microsoft Fabric<br/><i>transcripts + Foundry traces<br/>per country workspace</i>"]
+        D365["Dynamics 365"]
+        FABRIC["Fabric + App Insights"]
     end
-
-    BROWSER -->|"fetch DL token (Entra bearer)"| APIM_TOKEN
-    APIM_TOKEN -->|"short-lived token (5 min)"| BROWSER
-    BROWSER -->|"DirectLine WebSocket"| CS_WEB
-    CS_WEB -->|"HTTPS + JWT + traceparent"| APIM
-    APIM --> FOUNDRY
-    FOUNDRY --> CS_WEB
-    CS_WEB -->|"warm transfer + full transcript"| D365
-    CS_WEB -->|"session transcript"| FABRIC
-
-    CS_WEB -. "same bot · shared topics" .-> CS_VOICE
-
-    classDef cit fill:#2ea44f,stroke:#238636,color:#fff
-    classDef token fill:#e36209,stroke:#c24e00,color:#fff
-    classDef facade fill:#0078d4,stroke:#004578,color:#fff
-    classDef brain fill:#8957e5,stroke:#6e40c9,color:#fff
-    classDef back fill:#1565c0,stroke:#0d47a1,color:#fff
-    classDef voice fill:#757575,stroke:#424242,color:#fff
-
-    class BROWSER cit
-    class APIM_TOKEN token
-    class CS_WEB facade
-    class CS_VOICE voice
-    class APIM,FOUNDRY brain
-    class D365,FABRIC back
+    BROWSER -->|HTTPS JSON + Entra token| APIM
+    APIM --> ROUTER
+    ROUTER --> CLASS & ASSIST & ELIG & TRANS
+    ROUTER -->|warm escalation| D365
+    ROUTER -->|transcript + trace| FABRIC
 ```
 
-> 📖 **Reading the picture.** Green = citizen browser or mobile WebView. Orange = DirectLine token broker (APIM issues a short-lived token; the raw DirectLine secret never leaves the Key Vault). Blue = Copilot Studio **web channel** (the typed conversation). The dashed arrow shows the same bot definition also publishes a **voice channel** — cross-link: [`voice.md`](./voice.md). Purple = the shared Foundry brain (identical agents regardless of whether the question was typed or spoken). Dark blue = back-office. **The bot definition and the brain are shared; the channel adapter is channel-specific.**
+> 📖 **Reading the picture.** Channel code renders the panel; APIM is the only ingress; Foundry `topic-router` is the shared brain for both web chat and voice. This was Copilot Studio in the previous version; the routing now lives in Foundry.
 
 ---
 
 ## 3. The conversation lifecycle, step by step
 
 ```mermaid
-%%{ init: { 'sequence': { 'mirrorActors': false, 'actorMargin': 35 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 sequenceDiagram
     autonumber
     actor C as 💬 Citizen
-    participant SPA as 🌐 React SPA
-    participant APIM_T as 🔑 APIM (token)
-    participant CS as 🗣️ Copilot Studio
-    participant APIM as 🚪 APIM (agent)
-    participant F as 🧠 Foundry
+    participant SPA as 🌐 React ChatWidget
+    participant APIM as 🚪 APIM /agents/topic-router
+    participant R as 🧠 Foundry topic-router
+    participant A as 🤖 Citizen Assistant
     participant D as 📋 D365
-
-    C->>SPA: opens portal page
-    SPA->>APIM_T: GET /directline/token (Entra bearer)
-    APIM_T->>APIM_T: validate JWT · log · rate-limit
-    APIM_T-->>SPA: short-lived DirectLine token (5 min)
-    SPA->>CS: open DirectLine WebSocket with token
-    CS-->>SPA: greeting adaptive card rendered
     C->>SPA: types question in their language
-    SPA->>CS: Activity { type: message, text, locale, traceparent }
-    CS->>CS: language detect + topic match (slot fill)
-    CS->>APIM: POST /agents/citizen-assistant + traceparent header
-    APIM->>APIM: JWT validate · audit log · rate-limit (120/min)
-    APIM->>F: invoke foundry-citizen-assistant
-    F->>F: content safety check (input)
-    F->>F: invoke foundry-classifier (small model)
-    F->>F: RAG against multilingual knowledge base
-    F->>F: content safety check (output)
-    F-->>APIM: answer + citations + x-correlation-id
-    APIM-->>CS: response streamed with x-correlation-id
-    CS-->>SPA: Activity { type: message, attachments: [AdaptiveCard] }
-    SPA-->>C: answer rendered with cards + suggested actions
-    Note over C,D: citizen taps "Create case" suggested action →
-    C->>SPA: taps suggested action "Create case"
-    SPA->>CS: Activity { type: message, text: "create case" }
-    CS->>D: Power Automate → D365 case-create (with transcript + traceId)
-    D-->>CS: case ID + case URL
-    CS-->>SPA: confirmation adaptive card with case reference
-    SPA-->>C: "Your case CAS-XXXXX has been created"
+    SPA->>APIM: POST message + Entra token + traceparent
+    APIM->>APIM: validate JWT · rate-limit · audit
+    APIM->>R: invoke topic-router
+    R->>R: detect locale · fill slots · choose route
+    R->>A: delegate grounded answer
+    A-->>R: answer + citations + next actions
+    R-->>APIM: channel-shaped response
+    APIM-->>SPA: JSON response + x-correlation-id
+    SPA-->>C: render answer + adaptive actions
+    C->>SPA: taps "Create case"
+    SPA->>APIM: POST escalation action
+    APIM->>R: route escalation
+    R->>D: create warm case + transcript + trace ID
+    D-->>SPA: case reference
 ```
 
-**Latency budget** (target: time-to-first-token p95 ≤ 800 ms):
-
-| Hop | Budget | How we hit it |
-|---|---|---|
-| DirectLine WebSocket send | ~20 ms | WebSocket — no HTTP round-trip per message |
-| Copilot Studio topic match | ~50 ms | Local intent classification, no external call |
-| APIM gateway | ~30 ms | Cached JWKS, no cold start, JWT validated in-policy |
-| Foundry classifier (small model) | ~120 ms | Small low-latency model gates the citizen-assistant |
-| Foundry citizen-assistant (streaming) | ~500 ms | Streaming response — first token visible in panel before full answer |
-| DirectLine → browser render | ~80 ms | Adaptive card rendered incrementally |
-
-The streaming response pattern is critical: the citizen sees the first fragment of the answer while the rest of the Foundry response is still being generated, giving perceived responsiveness well below the 800 ms end-to-end budget.
+**Latency budget** (target: time-to-first-token p95 ≤ 800 ms): APIM validation ~30 ms, topic-router route ~80 ms, downstream Foundry agent first token ~600 ms, browser render ~80 ms.
 
 ### What makes this different from a traditional FAQ chatbot
 
@@ -201,10 +153,10 @@ A traditional FAQ chatbot matches a question to a pre-written answer using keywo
 
 ### The `traceparent` utility — end-to-end observability from keypress to Fabric
 
-The `ChatWidget` calls `generateTraceparent()` (`apps/web/src/utils/traceparent.ts`) before opening the iframe. This W3C Trace Context header is forwarded to Copilot Studio, included in every APIM call, and propagated to Foundry. A single string links:
+The `ChatWidget` calls `generateTraceparent()` (`apps/web/src/utils/traceparent.ts`) before posting to APIM. This W3C Trace Context header is forwarded to Foundry `topic-router`, included in every APIM call, and propagated to Foundry. A single string links:
 
 1. The citizen's browser session (SWA Application Insights)
-2. The Copilot Studio activity log
+2. The Foundry `topic-router` activity log
 3. The APIM audit entry (correlation-id)
 4. The Foundry distributed trace (prompt → classifier → citizen-assistant → content safety)
 5. The Fabric transcript record (pseudonymised, per-country workspace)
@@ -217,13 +169,13 @@ A DPO or caseworker can use this single `traceparent` to reconstruct the entire 
 
 | # | Block | What it does | Where it lives |
 |:-:|---|---|---|
-| **1** | **Copilot Studio bot** | Owns the dialog state machine, topic routing, slot filling, and adaptive-card rendering for **both** web and voice channels. One bot definition (`bot.yaml`), multiple channel publishings. Supports 12 languages out of the box. | `apps/copilot-studio/agents/citizen-assistant-bot/bot.yaml` |
-| **2** | **Topics** | Each `.yaml` topic file is a dialog node: `OnRecognizedIntent` with 12-language trigger phrases, slot-fill actions, and connector invocations. Topics are **shared between web and voice** — a change to `child-benefit.yaml` affects both channels simultaneously. | `apps/copilot-studio/agents/citizen-assistant-bot/topics/*.yaml` |
-| **3** | **Entities** | Five closed-list entities used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). | `apps/copilot-studio/agents/citizen-assistant-bot/entities/*.json` |
-| **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `apps/copilot-studio/knowledge-sources/*.json` |
-| **5** | **Connections** | Three custom connector definitions: `foundry-classifier.json` routes to the Foundry classifier endpoint, `foundry-citizen-assistant.json` routes to the grounding + answer agent, `d365-case-create.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `apps/copilot-studio/agents/citizen-assistant-bot/connections/*.json` |
-| **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `apps/copilot-studio/escalation/escalation-rules.yaml` |
-| **7** | **DirectLine token broker** | APIM policy issues a short-lived DirectLine token per conversation (never exposes the raw DirectLine secret). The React `ChatWidget` fetches this token before opening the WebSocket. Policy applies: correlation-id injection, Entra JWT validation, rate-limit (120 calls/min), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
+| **1** | **Foundry `topic-router` bot** | Owns the dialog state machine, topic routing, slot filling, and adaptive-card rendering for **both** web and voice channels. One bot definition (`bot.yaml`), multiple channel publishings. Supports 12 languages out of the box. | `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml` |
+| **2** | **Topics** | Each `.yaml` topic file is a dialog node: `OnRecognizedIntent` with 12-language trigger phrases, slot-fill actions, and connector invocations. Topics are **shared between web and voice** — a change to `child-benefit.yaml` affects both channels simultaneously. | `foundry/agents/topic-router/agents/citizen-assistant-bot/topics/*.yaml` |
+| **3** | **Entities** | Five closed-list entities used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). | `foundry/agents/topic-router/agents/citizen-assistant-bot/entities/*.json` |
+| **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `foundry/agents/topic-router/knowledge-sources/*.json` |
+| **5** | **Connections** | Three custom connector definitions: `foundry-classifier.json` routes to the Foundry classifier endpoint, `foundry-citizen-assistant.json` routes to the grounding + answer agent, `d365-case-create.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/agents/citizen-assistant-bot/connections/*.json` |
+| **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation/escalation-rules.yaml` |
+| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS. Policy applies: correlation-id injection, Entra JWT validation, rate-limit (120 calls/min), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
 
 The five entities used for slot filling — shown verbatim from source:
 
@@ -241,7 +193,7 @@ The five entities used for slot filling — shown verbatim from source:
   "values": ["residency", "tax-cert", "child-allowance",
              "social-benefit", "business-registration"] }
 
-// entities/language.json — all 12 bot locales
+// entities/language.json — all 12 router locales
 { "name": "language", "kind": "closedList",
   "values": ["da","sv","nb","nn","se","en","de","fr","pl","ar","uk","fi"] }
 
@@ -256,35 +208,35 @@ Two cross-cutting concerns shared with voice:
 | | Concern | Where |
 |:-:|---|---|
 | 📜 | **Transcript pipeline** — Logic App pushes every chat transcript to the **per-country** Fabric workspace, pseudonymised via Purview DLP, correlated with Foundry traces by `correlation-id`. | Same Logic App pattern as the voice transcript pipeline |
-| ⚖️ | **Content safety** — Foundry Azure AI Content Safety Standard checks both user input and bot output. Any triggered verdict blocks the message and logs the event to the audit trail. | `apps/copilot-studio/agents/citizen-assistant-bot/bot.yaml` `contentSafety` field |
+| ⚖️ | **Content safety** — Foundry Azure AI Content Safety Standard checks both user input and bot output. Any triggered verdict blocks the message and logs the event to the audit trail. | `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml` `contentSafety` field |
 
 ### The Export / Import workflow for bot lifecycle management
 
-The `apps/copilot-studio/scripts/` directory contains two scripts for bot CI/CD:
+The `foundry/agents/topic-router/scripts/` directory contains two scripts for bot CI/CD:
 
 ```powershell
-# Export-CopilotStudio.ps1 — snapshot the bot from a running tenant
-# (placeholder: wraps `pac copilot export`)
+# Export-TopicRouter.ps1 — snapshot the bot from a running tenant
+# (placeholder: exports the Foundry topic-router package)
 param(
   [string]$EnvironmentId = $env:POWER_PLATFORM_ENVIRONMENT_ID,
   [string]$OutputPath = "..\exports"
 )
 
-# Import-CopilotStudio.ps1 — push bot.yaml into a target tenant
-# (placeholder: wraps `pac copilot import`)
+# Import-TopicRouter.ps1 — push bot.yaml into a target tenant
+# (placeholder: imports the Foundry topic-router package)
 param(
   [string]$EnvironmentId = $env:POWER_PLATFORM_ENVIRONMENT_ID,
   [string]$BotPath = "..\agents\citizen-assistant-bot"
 )
 ```
 
-The pattern: every change to `bot.yaml`, topics, or entities is committed to the repository. The CI pipeline calls `Import-CopilotStudio.ps1` to push changes to the non-production Copilot Studio environment. After automated topic tests in 12 languages, a release pipeline pushes to production. **The bot state in production is always reproducible from the repository.**
+The pattern: every change to `agent.yaml`, topics, or entities is committed to the repository. The CI pipeline publishes the `foundry/agents/topic-router` package to the non-production Foundry environment. After automated topic tests in 12 languages, a release pipeline pushes to production. **The router state in production is always reproducible from the repository.**
 
 ---
 
 ## 5. Topics — what the bot can do
 
-Every topic is a `.yaml` file under `apps/copilot-studio/agents/citizen-assistant-bot/topics/`. Each carries trigger phrases in all 12 bot languages (`da`, `sv`, `nb`, `nn`, `se`, `en`, `de`, `fr`, `pl`, `ar`, `uk`, `fi`). Topics are **shared between the web chat channel and the voice channel** — the same YAML is loaded by both publishing targets.
+Every topic is a `.yaml` file under `foundry/agents/topic-router/agents/citizen-assistant-bot/topics/`. Each carries trigger phrases in all 12 bot languages (`da`, `sv`, `nb`, `nn`, `se`, `en`, `de`, `fr`, `pl`, `ar`, `uk`, `fi`). Topics are **shared between the web chat channel and the voice channel** — the same YAML is loaded by both publishing targets.
 
 | Topic file | Display name | One-line summary | Example trigger phrases |
 |---|---|---|---|
@@ -306,7 +258,7 @@ Every topic is a `.yaml` file under `apps/copilot-studio/agents/citizen-assistan
 
 ## 6. Multilingual — language switch + per-locale routing
 
-The bot is defined with **12 supported languages** in `apps/copilot-studio/agents/citizen-assistant-bot/bot.yaml`:
+The router is defined with **12 supported languages** in `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml`:
 
 ```json
 "languages": ["da","sv","nb","nn","se","en","de","fr","pl","ar","uk","fi"]
@@ -327,11 +279,11 @@ The bot is defined with **12 supported languages** in `apps/copilot-studio/agent
 | 🇺🇦 | Ukrainian | `uk` | citizens-faq (uk), sharepoint-policies (uk) |
 | 🇫🇮 | Finnish | `fi` | citizens-faq (fi), sharepoint-policies (fi) |
 
-**How language routing works** (`apps/copilot-studio/topics/multilingual-routing.md`):
+**How language routing works** (`foundry/agents/topic-router/topics/multilingual-routing.md`):
 
 1. **Auto-detect on first message.** The Foundry classifier reads the citizen's opening message and returns the detected `locale` with a confidence score. No language-picker screen, no pre-amble, no page reload. A Norwegian citizen writing *"Hva er status på søknaden min?"* is immediately understood and answered in Norwegian Bokmål.
 
-2. **Topic trigger phrases per locale.** Every topic YAML carries trigger phrases for all 12 locales. The Copilot Studio intent engine matches against the locale-appropriate phrases, so a Polish citizen saying *"zasiłek na dziecko"* hits `child-benefit.yaml` with the same reliability as an English speaker saying *"child benefit"*.
+2. **Topic trigger phrases per locale.** Every topic YAML carries trigger phrases for all 12 locales. The Foundry `topic-router` intent engine matches against the locale-appropriate phrases, so a Polish citizen saying *"zasiłek na dziecko"* hits `child-benefit.yaml` with the same reliability as an English speaker saying *"child benefit"*.
 
 3. **Mid-conversation language switch.** If the citizen sends a language-switch signal at any point ("switch to English", "på dansk", "auf Deutsch"), the `language-switch.yaml` topic fires, updates the conversation `locale`, and re-greets in the new language. Slot-fill state is preserved — a citizen who started a residency application in Polish and switched to English does not have to restart or re-answer any questions.
 
@@ -372,7 +324,7 @@ The chat widget is the **typed-conversation inclusivity layer** of UDCSP — the
 
 **⌨️ Keyboard-only operation.** The widget is fully navigable without a mouse. `Tab` moves focus into the chat panel; `Enter` submits a message; `Arrow keys` scroll the transcript; `Escape` collapses the panel and returns focus to the main page content. The `ChatWidget` React component renders inside a `<section aria-labelledby="chat-title">` landmark (`apps/web/src/components/ChatWidget.tsx`), making the widget a named region in every screen reader's document outline — NVDA, JAWS, and VoiceOver all announce it correctly.
 
-**📢 ARIA-live regions for incoming messages.** New bot messages are announced by screen readers without requiring the citizen to move keyboard focus away from the input field. The Copilot Studio WebChat render layer emits `aria-live="polite"` on the transcript container. A citizen using NVDA in Polish, as in Demo 3 (`uses.md`), hears each bot message announced as it arrives while keeping focus on the text input, maintaining a seamless conversational flow.
+**📢 ARIA-live regions for incoming messages.** New bot messages are announced by screen readers without requiring the citizen to move keyboard focus away from the input field. The Foundry `topic-router` WebChat render layer emits `aria-live="polite"` on the transcript container. A citizen using NVDA in Polish, as in Demo 3 (`uses.md`), hears each bot message announced as it arrives while keeping focus on the text input, maintaining a seamless conversational flow.
 
 **🧯 Always-available human escape — typing "agent" = pressing 0 on the voice channel.** At any point in the conversation, typing `agent`, `human`, `caseworker`, or the locale-equivalent term triggers the `escalate-to-human.yaml` topic:
 
@@ -387,7 +339,7 @@ This is the **exact same topic and escalation rule** used by the voice channel w
 
 **🔍 Content with sufficient context.** Adaptive cards include text alternatives for all non-text content (icons, status indicators, document thumbnails). Suggested-action buttons carry descriptive `title` attributes, not just icon labels. The widget never auto-submits or auto-progresses a step — the citizen controls every action, consistent with WCAG 2.1 AA Success Criterion 3.2.2 (On Input) and EU AI Act human-oversight requirements for high-risk AI systems.
 
-**🍪 GDPR consent banner on first open.** Before the citizen sends their first message, a consent banner is displayed explaining that the conversation may be stored and processed to handle their case, with a link to the privacy notice. This banner is rendered **above** the input field and must be accepted before the WebSocket is opened. It ensures that no message is transmitted — and no data is stored in Fabric — without a lawful basis under GDPR Art. 6(1)(e) (public task). Citizens who decline are offered the `accessibility-help` topic link and the phone number for the voice channel instead.
+**🍪 GDPR consent banner on first open.** Before the citizen sends their first message, a consent banner is displayed explaining that the conversation may be stored and processed to handle their case, with a link to the privacy notice. This banner is rendered **above** the input field and must be accepted before the HTTPS is opened. It ensures that no message is transmitted — and no data is stored in Fabric — without a lawful basis under GDPR Art. 6(1)(e) (public task). Citizens who decline are offered the `accessibility-help` topic link and the phone number for the voice channel instead.
 
 > [!NOTE]
 > **Chat is the accessibility peer of voice, not a fallback.** Demo 3 in `uses.md` features Maria, who uses NVDA and Polish — the chat widget is her primary channel. Demo 2 features Lars, who prefers phone and Norwegian — the voice channel is his. Neither is a fallback for the other; both are first-class citizen-facing surfaces. **If a citizen cannot use voice, chat is their high-quality alternative. If a citizen cannot use a screen, [`voice.md`](./voice.md) is the document for them.**
@@ -399,25 +351,25 @@ This is the **exact same topic and escalation rule** used by the voice channel w
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart LR
-    BOT["🤖 One Copilot Studio<br/>bot definition<br/><i>bot.yaml — shared</i>"]
+    BOT["🤖 One Foundry `topic-router`<br/>bot definition<br/><i>bot.yaml — shared</i>"]
 
     subgraph DK["🇩🇰 Denmark"]
         PUB_DK["Web channel publishing DK<br/><i>udcsp-dk brand · da-DK locale default</i>"]
-        DL_DK["DirectLine secret DK<br/><i>Key Vault: udcsp-dk-kv</i>"]
+        DL_DK["APIM `/agents/topic-router` secret DK<br/><i>Key Vault: udcsp-dk-kv</i>"]
         FAB_DK["Fabric workspace DK<br/><i>transcripts — DK data region</i>"]
         D365_DK["D365 DK org<br/><i>d365-case-create connector DK</i>"]
     end
 
     subgraph SE["🇸🇪 Sweden"]
         PUB_SE["Web channel publishing SE<br/><i>udcsp-se brand · sv-SE locale default</i>"]
-        DL_SE["DirectLine secret SE<br/><i>Key Vault: udcsp-se-kv</i>"]
+        DL_SE["APIM `/agents/topic-router` secret SE<br/><i>Key Vault: udcsp-se-kv</i>"]
         FAB_SE["Fabric workspace SE<br/><i>transcripts — SE data region</i>"]
         D365_SE["D365 SE org<br/><i>d365-case-create connector SE</i>"]
     end
 
     subgraph NO["🇳🇴 Norway"]
         PUB_NO["Web channel publishing NO<br/><i>udcsp-no brand · nb-NO locale default</i>"]
-        DL_NO["DirectLine secret NO<br/><i>Key Vault: udcsp-no-kv</i>"]
+        DL_NO["APIM `/agents/topic-router` secret NO<br/><i>Key Vault: udcsp-no-kv</i>"]
         FAB_NO["Fabric workspace NO<br/><i>transcripts — NO data region</i>"]
         D365_NO["D365 NO org<br/><i>d365-case-create connector NO</i>"]
     end
@@ -444,18 +396,18 @@ flowchart LR
     class BOT shared
 ```
 
-**Design decision: one bot, three channel publishings.** Rather than building three separate Copilot Studio bots (one per country), UDCSP uses a **single bot definition** and publishes it three times — once per country web channel. This mirrors the voice channel design (one set of topics, per-country ACS resource). Each publishing gets:
+**Design decision: one bot, three channel publishings.** Rather than building three separate Foundry `topic-router` bots (one per country), UDCSP uses a **single bot definition** and publishes it three times — once per country web channel. This mirrors the voice channel design (one set of topics, per-country ACS resource). Each publishing gets:
 
 | Country-specific element | What differs | What is shared |
 |---|---|---|
 | Brand persona | Greeting name, primary colour, logo in the widget header | All topic logic, entities, escalation rules |
 | Disclaimer footer | Per-DPA legally-required GDPR notice for DK / SE / NO | Knowledge source language routing |
-| DirectLine secret | Separate credential per country, in per-country Key Vault | APIM token-broker policy template |
+| APIM `/agents/topic-router` secret | Separate credential per country, in per-country Key Vault | APIM token-broker policy template |
 | Default locale | `da` for DK portal, `sv` for SE, `nb` for NO (citizen still auto-detected) | All 12 languages available in every publishing |
 | D365 case connector | Points to the per-country D365 org | Escalation rules and connector interface |
 | Fabric workspace | Transcripts written to the per-country region | Foundry brain and agent definitions |
 
-**What stays in-country:** conversation transcripts, case metadata, DirectLine session tokens, GDPR consent records, content-safety audit logs.
+**What stays in-country:** conversation transcripts, case metadata, APIM `/agents/topic-router` session tokens, GDPR consent records, content-safety audit logs.
 **What is shared cross-country:** the bot definition (`bot.yaml`), all 10 topic files, all 5 entity files, both knowledge-source registrations, the Foundry agent definitions, and anonymised aggregate metrics in the Power BI dashboard.
 
 ---
@@ -495,15 +447,15 @@ import { generateTraceparent } from '../utils/traceparent';
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
 
 export function ChatWidget({ channel = 'web', locale }: Props) {
-  const src = import.meta.env.VITE_COPILOT_STUDIO_WEBCHAT_URL || 'about:blank';
+  const src = import.meta.env.VITE_TOPIC_ROUTER_APIM_URL || 'about:blank';
   const trace = generateTraceparent();
   return (
     <section aria-labelledby="chat-title">
       <h2 id="chat-title">Citizen assistant</h2>
-      <iframe
-        title="Copilot Studio citizen assistant"
-        src={`${src}?channel=${channel}&locale=${locale}&traceparent=${encodeURIComponent(trace)}`}
-        className="chat-frame"
+      <section
+        aria-label="Foundry topic-router citizen assistant"
+        data-endpoint={`${src}/agents/topic-router`}
+        className="chat-panel"
         loading="lazy"
       />
     </section>
@@ -511,7 +463,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
 }
 ```
 
-The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to the Copilot Studio embed URL as a query parameter, pre-seeding the bot with the correct default language before the citizen types the first message.
+The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to the Foundry `topic-router` embed URL as a query parameter, pre-seeding the bot with the correct default language before the citizen types the first message.
 
 ### How it is embedded on the home page
 
@@ -530,13 +482,13 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
 }
 ```
 
-### The DirectLine token broker pattern
+### The APIM `/agents/topic-router` pattern
 
 > [!WARNING]
-> **Never hard-code the DirectLine secret in the page, an environment variable, or a client-side bundle.** The secret grants full bot access to any holder. ALWAYS broker the token via APIM. The issued token is short-lived (5 minutes), scoped to a single conversation, and the raw DirectLine secret never leaves the per-country Key Vault.
+> **Never hard-code the APIM `/agents/topic-router` secret in the page, an environment variable, or a client-side bundle.** The secret grants full bot access to any holder. ALWAYS broker the token via APIM. The issued token is short-lived (5 minutes), scoped to a single conversation, and the raw APIM `/agents/topic-router` secret never leaves the per-country Key Vault.
 
 ```javascript
-// Token broker pattern — run before opening the WebSocket
+// Token broker pattern — run before posting to APIM
 const msalToken = await msalInstance.acquireTokenSilent({ scopes: [...] });
 
 const tokenResponse = await fetch('/api/directline/token', {
@@ -545,7 +497,7 @@ const tokenResponse = await fetch('/api/directline/token', {
 const { token } = await tokenResponse.json();
 
 // Use the short-lived per-conversation token (NOT the secret)
-const directLine = window.WebChat.createDirectLine({ token });
+const directLine = window.WebChat.createAPIM `/agents/topic-router`({ token });
 window.WebChat.renderWebChat({ directLine }, document.getElementById('webchat'));
 ```
 
@@ -575,14 +527,14 @@ The `traceparent` header is propagated all the way through to the Foundry agent,
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart TB
     P0["✅ Pre-reqs<br/><i>Foundry agents live · APIM deployed<br/>Key Vault per country provisioned<br/>D365 org per country live</i>"]
-    P1["1️⃣ Import bot<br/><i>pac copilot import --file bot.yaml<br/>→ apps/copilot-studio/scripts/<br/>Import-CopilotStudio.ps1</i>"]
+    P1["1️⃣ Import bot<br/><i>pac copilot import --file bot.yaml<br/>→ foundry/agents/topic-router/scripts/<br/>Import-TopicRouter.ps1</i>"]
     P2["2️⃣ Wire connections<br/><i>set APIM endpoint in<br/>foundry-classifier.json<br/>foundry-citizen-assistant.json<br/>d365-case-create.json</i>"]
     P3["3️⃣ Publish web channel × 3<br/><i>one publishing per country<br/>brand · disclaimer · locale default</i>"]
-    P4["4️⃣ Register DirectLine secrets<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
+    P4["4️⃣ Register APIM `/agents/topic-router` secrets<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
     P5["5️⃣ Deploy APIM token-broker<br/><i>agent-citizen-assistant/policy.xml<br/>per country APIM instance</i>"]
-    P6["6️⃣ Set SWA env var<br/><i>VITE_COPILOT_STUDIO_WEBCHAT_URL<br/>→ Azure Static Web App app settings</i>"]
+    P6["6️⃣ Set SWA env var<br/><i>VITE_TOPIC_ROUTER_APIM_URL<br/>→ Azure Static Web App app settings</i>"]
     P7["7️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric workspace<br/>per country · pseudonymise PII</i>"]
-    P8["8️⃣ Smoke test<br/><i>Import-CopilotStudio.ps1 -DryRun<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
+    P8["8️⃣ Smoke test<br/><i>Import-TopicRouter.ps1 -DryRun<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
     P9["✅ Phase complete<br/><i>chat widget live in all three portals</i>"]
 
     P0 --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8 --> P9
@@ -602,9 +554,9 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 
 | Level | Command / action | What it proves | Lead time |
 |---|---|---|---|
-| **🚦 Smoke (isolated)** | `pwsh apps/copilot-studio/scripts/Import-CopilotStudio.ps1 -DryRun` + `pwsh -Command "Import-Module scripts/install/modules/Install-CopilotStudio.psm1; Test-CopilotStudio -Config @{} -ReportDir ."` | `bot.yaml` present and parseable; all 10 topic files resolvable; all 5 entity files resolvable; all 3 connection files present; escalation rules parseable. **No network call, no Copilot Studio tenant, no billing.** | < 10 s |
-| **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's flagship journey exercises the chat widget end-to-end: the portal loads, the `ChatWidget` `<section>` is rendered with its ARIA label, a scenario intent is submitted, the Foundry agent responds, and the `traceId` is captured and asserted as visible in the audit trail. | ~2 min |
-| **🌐 Live (browser)** | Open the SWA portal URL in a browser; click into the chat widget; type *"What documents do I need for a residency application?"*; verify the adaptive-card response and suggested-action buttons; type "agent" and verify the D365 case-creation confirmation card. | The full stack — DirectLine token broker, Copilot Studio web channel, APIM, Foundry RAG, D365 case-create, Fabric transcript — works end-to-end with a real citizen-facing URL. | Manual |
+| **🚦 Smoke (isolated)** | `pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 -DryRun` + `pwsh -Command "Import-Module scripts/install/modules/Install-CopilotStudio.psm1; Test-CopilotStudio -Config @{} -ReportDir ."` | `bot.yaml` present and parseable; all 10 topic files resolvable; all 5 entity files resolvable; all 3 connection files present; escalation rules parseable. **No network call, no Foundry `topic-router` tenant, no billing.** | < 10 s |
+| **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's flagship journey exercises the chat widget end-to-end: the portal loads, the `ChatWidget` panel is rendered with its ARIA label, a scenario intent is submitted, the Foundry agent responds, and the `traceId` is captured and asserted as visible in the audit trail. | ~2 min |
+| **🌐 Live (browser)** | Open the SWA portal URL in a browser; click into the chat widget; type *"What documents do I need for a residency application?"*; verify the adaptive-card response and suggested-action buttons; type "agent" and verify the D365 case-creation confirmation card. | The full stack — APIM `/agents/topic-router` endpoint, Foundry `topic-router` route, APIM, Foundry RAG, D365 case-create, Fabric transcript — works end-to-end with a real citizen-facing URL. | Manual |
 
 > [!TIP]
 > For the jury demo, run the E2E Playwright scenario first (proves the automated path, shows the Foundry trace ID in the test output) and then do the live browser demo in the room (proves the UX with a real rendered widget, adaptive cards, and the D365 confirmation). The two together give converging evidence from different angles.
@@ -632,12 +584,12 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 
 | ❌ Anti-pattern | ✅ What we do instead |
 |---|---|
-| Build a separate "chat bot" with its own topics, its own KB, and its own escalation logic — separate from the voice bot | One Copilot Studio bot definition (`bot.yaml`), one set of 10 topics, one escalation-rules file; the web channel and voice channel are **publishings** of the same definition. A bug fix applies to both channels automatically. |
-| Embed the DirectLine secret directly in the HTML page, a `.env` file, or a client-side React environment variable | APIM token broker — raw secret in per-country Key Vault; APIM issues a short-lived (5 min) per-conversation token. The secret never appears in any client-visible artifact. |
+| Build a separate "chat bot" with its own topics, its own KB, and its own escalation logic — separate from the voice bot | One Foundry `topic-router` agent definition (`bot.yaml`), one set of 10 topics, one escalation-rules file; the web channel and voice channel are **publishings** of the same definition. A bug fix applies to both channels automatically. |
+| Embed the APIM `/agents/topic-router` secret directly in the HTML page, a `.env` file, or a client-side React environment variable | APIM validates Entra tokens and keeps backend credentials in per-country Key Vault. No agent secret appears in any client-visible artifact. |
 | Build per-language bots (one bot for EN, one for PL, one for NB, …) | One multilingual bot with 12-language trigger phrases per topic and language-aware RAG retrieval per knowledge source. The `language` entity and `language-switch` topic handle everything in a single bot. |
 | Hard transfer to a human (abruptly terminate the bot session and put the citizen in a phone queue) | Warm transfer via `escalate-to-human.yaml` and `d365-case-create.json`: full conversation transcript and Foundry `traceId` are attached to the D365 case before the caseworker receives it. Context is never dropped. |
 | Let the chat collect PII (CPR number, fødselsnummer, personnummer, name) in plaintext in the transcript | Content Safety + Purview DLP strip or pseudonymise PII fields before the transcript lands in the Fabric workspace. A GDPR consent banner is shown on first widget open, before any message is sent. |
-| No rate limit on the DirectLine token endpoint | APIM policy: 120 calls/min per subscription key or IP address, applied at the token endpoint and the agent endpoint independently. Burst spikes are absorbed by APIM before they reach Foundry. |
+| No rate limit on the APIM `/agents/topic-router` agent endpoint | APIM policy: 120 calls/min per subscription key or IP address, applied at the agent endpoint and the agent endpoint independently. Burst spikes are absorbed by APIM before they reach Foundry. |
 | No audit trail for chat sessions | Every session writes a pseudonymised transcript to the per-country Fabric workspace via Logic App. The `traceparent` header correlates the chat transcript with the Foundry distributed trace, making every AI decision auditable end-to-end. |
 | Assume citizens will always type; ignore that the same bot answers the phone | The **same bot** publishes a voice channel (one `bot.yaml`, two channel publishings). If a citizen needs to speak instead of type, [`voice.md`](./voice.md) documents the voice-specific stack (ACS, AI Speech STT/TTS, DTMF fallback). The two documents are companion pieces. |
 | Ignore the mobile use case — build the widget only for desktop browsers | The `ChatWidget` component accepts a `channel='mobile-handoff'` prop. The mobile app renders the widget inside a WebView with the same `locale` forwarded, and the `voice-fallback.yaml` topic handles mid-session handoffs from the voice channel to the typed widget. |
@@ -646,11 +598,11 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 
 ## 15. Where the conversation is stored
 
-Chat is the reference storage pattern for UDCSP dialog: every DirectLine session is written to Copilot Studio's Dataverse-backed `bot_session` table and mirrored for analytics. Voice, web, and mobile inherit this pattern; uploaded files, per-citizen memory, and Foundry traces stay in their specialised stores. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+Chat is the reference storage pattern for UDCSP dialog: every APIM `/agents/topic-router` session is written to Foundry `topic-router`'s Dataverse-backed `bot_session` table and mirrored for analytics. Voice, web, and mobile inherit this pattern; uploaded files, per-citizen memory, and Foundry traces stay in their specialised stores. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
-| Dialog transcript | Copilot Studio Dataverse `bot_session` (canonical) | 6 months hot; 6 years OneLake |
+| Dialog transcript | Foundry `topic-router` Dataverse `bot_session` (canonical) | 6 months hot; 6 years OneLake |
 | Uploaded documents | ADLS Gen2 `citizen-uploads/` | While case open + lifecycle tiers |
 | Per-citizen memory | Azure AI Search vector store | TTL 12 months rolling |
 | Foundry trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |

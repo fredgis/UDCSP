@@ -1,0 +1,27 @@
+{
+  "$schema": "https://udcsp.example/schemas/priva-policy.json",
+  "name": "UDCSP EU Data Boundary transfer control",
+  "description": "Flags transfers outside the EU Data Boundary; expected finding count is zero under the sovereignty model.",
+  "mode": "enforce",
+  "conditions": [
+    {
+      "field": "dataMovement.destinationBoundary",
+      "operator": "notEquals",
+      "value": "EU/EFTA"
+    }
+  ],
+  "actions": [
+    {
+      "type": "blockTransfer"
+    },
+    {
+      "type": "createFinding",
+      "severity": "critical"
+    },
+    {
+      "type": "notify",
+      "target": "dpo@udcsp.eu"
+    }
+  ],
+  "expectedFindings": 0
+}

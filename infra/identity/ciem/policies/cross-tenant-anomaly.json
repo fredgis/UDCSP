@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schemas.udcsp.example/ciem/policy-template.schema.json",
+  "id": "cross-tenant-anomaly",
+  "name": "Cross-tenant access anomaly",
+  "version": "1.0.0",
+  "description": "Alert when an identity shows cross-zone access patterns outside approved workforce-to-sovereign administration paths.",
+  "severity": "high",
+  "scope": {
+    "clouds": [
+      "azure"
+    ],
+    "zones": [
+      "dk",
+      "se",
+      "no",
+      "workforce"
+    ]
+  },
+  "condition": {
+    "resourceType": "identityAccessPath",
+    "operator": "notIn",
+    "metric": "observedAccessZonePair",
+    "allowedPairs": [
+      "workforce:dk",
+      "workforce:se",
+      "workforce:no",
+      "dk:dk",
+      "se:se",
+      "no:no"
+    ]
+  },
+  "actions": [
+    "alert",
+    "requirePimReview",
+    "openSovereigntyIncident"
+  ],
+  "evidence": [
+    "sourceTenant",
+    "targetTenant",
+    "principalId",
+    "resourceId",
+    "accessTimestamp"
+  ]
+}

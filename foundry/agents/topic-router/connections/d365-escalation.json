@@ -1,0 +1,9 @@
+{
+  "name": "d365-escalation",
+  "type": "customConnector",
+  "sourceMapping": "apps/copilot-studio/agents/citizen-assistant-bot/connections/d365-case-create.json",
+  "endpoint": "${D365_CASE_CREATE_ENDPOINT}",
+  "auth": "managedIdentity",
+  "status": "placeholder",
+  "note": "Creates human review, accessibility, complaint, and low-confidence cases."
+}

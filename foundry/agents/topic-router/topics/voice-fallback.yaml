@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: voice-fallback
+displayName: Voice Fallback
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/voice-fallback.yaml
+triggerPatterns:
+    - language: da
+      text: "voice fallback (da)"
+    - language: sv
+      text: "voice fallback (sv)"
+    - language: nb
+      text: "voice fallback (nb)"
+    - language: nn
+      text: "voice fallback (nn)"
+    - language: se
+      text: "voice fallback (se)"
+    - language: en
+      text: "voice fallback (en)"
+    - language: de
+      text: "voice fallback (de)"
+    - language: fr
+      text: "voice fallback (fr)"
+    - language: pl
+      text: "voice fallback (pl)"
+    - language: ar
+      text: "voice fallback (ar)"
+    - language: uk
+      text: "voice fallback (uk)"
+    - language: fi
+      text: "voice fallback (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_translator, write_session_redis]
+skillPrompt: >-
+  For voice turns, keep replies brief, confirm locale, preserve STT/TTS state, and offer human escalation on repeated uncertainty.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

@@ -1,0 +1,50 @@
+name: topic-router
+description: "Multi-turn conversational orchestrator. Replaces Copilot Studio topic engine. Routes citizen utterances to the appropriate domain skill (citizen-assistant for KB Q&A, classifier for intake routing, doc-extractor for upload flows, eligibility for pre-assess) while preserving 12-language slot-filling state in Redis."
+model: gpt-5.4
+systemPromptFile: system-prompt.md
+inputs:
+  - utterance
+  - locale
+  - sessionId
+  - channel: web|mobile|voice|chat
+outputs:
+  - response
+  - nextAction
+  - escalationReason
+tools:
+  - invoke_classifier
+  - invoke_citizen_assistant
+  - invoke_doc_extractor
+  - invoke_translator
+  - escalate_to_d365
+  - read_session_redis
+  - write_session_redis
+dependencies:
+  - classifier
+  - citizen-assistant
+  - translator
+# TODO(orchestrator): register topic-router in governance/ai-act/registry without editing governance here.
+registryEntryRef: topic-router
+eu_ai_act_class: limited risk
+riskLevel: limited
+temperature: 0.2
+maxTokens: 2200
+contentSafety:
+  input: azure-ai-content-safety-standard
+  output: azure-ai-content-safety-standard
+  blockCategories: [hate, sexual, violence, self_harm, jailbreak, pii_exfiltration]
+owner: A6 · Foundry & AI
+languages:
+  - da
+  - sv
+  - nb
+  - nn
+  - se
+  - en
+  - de
+  - fr
+  - pl
+  - ar
+  - uk
+  - fi
+sla: "p95 1.2 s orchestration; Redis state p95 80 ms"

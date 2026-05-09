@@ -54,7 +54,7 @@ The case study mandates **GDPR + EU AI Act compliance** for a platform that serv
 
 | Previously implicit | Now explicit (this document) |
 |---|---|
-| "Conversation transcripts are in App Insights" | § 3 Zone 3 — **explicit pipeline**: Copilot Studio → Dataverse-backed transcript table → nightly mirror to OneLake bronze (≥ 6 months on hot tier) |
+| "Conversation transcripts are in App Insights" | § 3 Zone 3 — **explicit pipeline**: Foundry topic-router → App Insights traces + Dataverse `bot_session` mirror → nightly mirror to OneLake bronze (≥ 6 months on hot tier) |
 | "Voice STT/TTS is via Azure Speech" | § 3 Zone 3 — **dedicated ADLS account** `voice-recordings/`, WORM-locked 90 days, lifecycle-purged automatically |
 | "Email is via D365 email-to-case" | § 3 Zone 3 — **separated**: email *body* in Dataverse, **attachments** in dedicated ADLS `email-attachments/` (cost + perf) |
 | "AI remembers the citizen" | § 3 Zone 4 — **dedicated Azure AI Search vector store** for per-citizen long-term conversational memory, ACL'd row-level by `citizen_id`, TTL 12 months rolling |
@@ -68,9 +68,9 @@ The bullet list above is also the **change log** versus the original `architectu
 
 | # | Principle | Implication |
 |---|---|---|
-| **D1** | **Right tool for the right shape** | Operational state → Cosmos / Dataverse · Binary blobs → ADLS · Search → AI Search · Analytics → OneLake. Never abuse one for another (e.g., binary attachments **never** in Dataverse). |
+| **D1** | **Right tool for the right shape** | Relational/JSONB → PostgreSQL · Sub-ms ephemeral state → Redis · CRM cases → Dataverse · Binary blobs → ADLS · Search → AI Search · Analytics → OneLake. Never abuse one for another (e.g., binary attachments **never** in Dataverse). |
 | **D2** | **Hot, warm, cold tiers — explicit** | Every store has a tier policy (hot for active cases, cool for closed-but-recent, archive for legal hold). Lifecycle rules are coded, not manual. |
-| **D3** | **Federation by country, never co-mingling** | Each of DK · SE · NO has its own **separate storage accounts, Cosmos containers, Dataverse environments, OneLake workspaces**. Cross-border = mediated, never co-mingled (architecture P1). |
+| **D3** | **Federation by country, never co-mingling** | Each of DK · SE · NO has its own **separate storage accounts, PostgreSQL servers, Redis instances, Dataverse environments, OneLake workspaces**. Cross-border = mediated, never co-mingled (architecture P1). |
 | **D4** | **Customer-managed keys (CMK) at every layer** | Each country brings its own key (Key Vault per country); platform-managed encryption is a fallback, not a default. Key rotation is automated. |
 | **D5** | **Retention is platform-enforced** | Lifecycle rules + immutability policies + Purview policies — not "we'll remember to delete it". All retention is implemented as Azure resource configuration. |
 | **D6** | **PII is classified at write-time** | Purview auto-classification fires on every new container; sensitivity labels follow the data through transformations (Bronze → Silver → Gold). |
@@ -99,8 +99,8 @@ flowchart LR
     subgraph Z1["🗂️ Zone 1<br/>OPERATIONAL"]
         direction TB
         DV["Dataverse<br/>(D365)"]
-        COSMOS["Cosmos DB"]
-        SQL["Azure SQL"]
+        PG["PostgreSQL<br/>Flexible Server<br/>(reference + JSONB)"]
+        REDIS["Azure Cache<br/>for Redis<br/>(slots / cache)"]
     end
 
     subgraph Z2["📄 Zone 2<br/>DOCUMENTS"]
@@ -112,9 +112,10 @@ flowchart LR
 
     subgraph Z3["💬 Zone 3<br/>CONVERSATIONS"]
         direction TB
-        CS_DV["Copilot Studio<br/>conversation transcripts<br/>(Dataverse-backed)<br/><b>★ NEW</b>"]
+        TR_LOG["Foundry topic-router<br/>transcripts<br/>(via App Insights)<br/><b>★ NEW</b>"]
         ACS_EVT["ACS event capture<br/>(SMS + Email + Voice<br/>events)<br/><b>★ NEW</b>"]
         APPI["App Insights<br/>(Foundry traces)"]
+        CL["Confidential Ledger<br/>(AI Act high-risk decisions)<br/><b>★ NEW</b>"]
     end
 
     subgraph Z4["📚 Zone 4<br/>KNOWLEDGE & MEMORY"]
@@ -140,24 +141,28 @@ flowchart LR
     end
 
     CITIZEN --> CHANNELS
-    CHANNELS --> CS_DV
+    CHANNELS --> TR_LOG
     CHANNELS --> ACS_EVT
     CHANNELS --> ADLS_DOC
     CHANNELS --> ADLS_VOX
     CHANNELS --> ADLS_EML
     CHANNELS --> DV
+    CHANNELS --> REDIS
 
     AI --> APPI
     AI --> AI_SEARCH
+    AI --> CL
     AI -. "reads" .-> FOUNDRY_IDX
     AI -. "reads" .-> SP
 
     CASEWORKER --> DV
-    DV --> COSMOS
+    DV --> PG
+    PG <--> REDIS
 
-    CS_DV -. "nightly" .-> BRONZE
+    TR_LOG -. "nightly" .-> BRONZE
     ACS_EVT -. "nightly" .-> BRONZE
     APPI -. "nightly" .-> BRONZE
+    CL -. "nightly" .-> BRONZE
     DV -. "mirror" .-> BRONZE
     BRONZE --> SILVER --> GOLD
     SILVER --> RTI
@@ -183,9 +188,9 @@ flowchart LR
     classDef z0 fill:#ECEFF1,stroke:#455A64,color:#263238
 
     class CITIZEN,CHANNELS,AI,CASEWORKER src
-    class DV,COSMOS,SQL z1
+    class DV,PG,REDIS z1
     class ADLS_DOC,ADLS_VOX,ADLS_EML z2
-    class CS_DV,ACS_EVT,APPI z3
+    class TR_LOG,ACS_EVT,APPI,CL z3
     class SP,FOUNDRY_IDX,AI_SEARCH z4
     class BRONZE,SILVER,GOLD,RTI z5
     class KV,PV,SENT z0
@@ -199,9 +204,9 @@ flowchart LR
 
 | Store | What lives there | Why this technology | Owner |
 |---|---|---|---|
-| **Microsoft Dataverse** (D365) | Cases, eligibility decisions, caseworker actions, conversation transcripts (Copilot Studio backing), email activity, audit | First-class CRM entities; native relationship model; built-in audit log; Copilot Studio writes here natively | D365 plane |
-| **Azure Cosmos DB** | Application drafts, slot-filling cache (TTL 24 h.), session state, ephemeral conversational context | Sub-10 ms p99 reads at scale; multi-region active-active; native TTL | App service plane |
-| **Azure SQL Database** | Reference data (countries, postal codes, currencies), business rules (eligibility tables, fee schedules), per-country glossaries | Strong consistency; analytics-friendly; tabular reference data | Reference data plane |
+| **Microsoft Dataverse** (D365) | Cases, eligibility decisions, caseworker actions, email activity, audit | First-class CRM entities; native relationship model; built-in audit log | D365 plane |
+| **Azure Database for PostgreSQL — Flexible Server** *(post-audit refactor — replaces Azure SQL **and** Cosmos DB)* | Reference data (countries, postal codes, currencies), business rules (eligibility tables, fee schedules), per-country glossaries, durable JSONB application drafts (>24 h retention), all relational lookups previously in SQL DB and all "JSON-document" workloads previously in Cosmos | Single OLTP engine consolidating relational + JSONB; CMK; private endpoint; geo-zone-redundant backup; Flexible Server HA; clear right-to-erasure surface | Reference + drafts plane |
+| **Azure Cache for Redis** *(post-audit refactor — replaces ephemeral Cosmos workloads)* | Slot-filling cache for the topic-router (TTL 24 h.), session state, rate-limit counters, ephemeral conversational context, in-progress draft autosaves (TTL ≤ 24 h.), distributed locks | Sub-millisecond p99 reads; native TTL; Enterprise SKU CMK + private endpoint; cheaper than Cosmos for ephemeral data | App service plane |
 
 ### 3.2 Zone 2 — Documents (binary, immuable)
 
@@ -221,9 +226,10 @@ flowchart LR
 
 | Store | What lives there | Why this technology | Owner |
 |---|---|---|---|
-| **Copilot Studio conversation transcripts** (Dataverse-backed) ★ | Per-turn transcript: user message, bot response, topic matched, slots filled, intent classification, locale, escalation flag | Native Copilot Studio capability when bound to Dataverse; row-level security; audited | Copilot Studio |
+| **Foundry topic-router transcripts** (via Application Insights, post-audit) ★ | Per-turn transcript: user message, agent reply, intent, slots filled, locale, escalation flag, model version, content-safety verdict | Native Foundry tracing exporter; KQL-queryable; row-level filtered by `country_tag` | AI plane (Foundry) |
 | **ACS event capture** (Event Hubs → ADLS Gen2 `acs-events/`) ★ | SMS `MessageReceived` / `DeliveryReportReceived` events; Email `EmailReceived` / `BounceReceived` events; Voice `CallStarted` / `CallEnded` / `RecordingStateChanged` events | High-throughput append-only; native ACS Event Grid integration; idempotent ingestion | Workflow plane (Logic Apps) |
 | **Application Insights** (Foundry traces) | Per-call OTEL traces: prompt version, retrieved chunks, tool invocations, model output, safety verdict, latency p50/p95, tokens in/out, evaluation scores | Native Foundry export; KQL-queryable; Sentinel-feedable; 90-day default retention extended to 180 d. | AI plane (Foundry) |
+| **Azure Confidential Ledger** ★ *(post-audit addition)* | Append-only, hardware-attested ledger of every **high-risk AI** decision (Eligibility Pre-Assessor): hash of input, hash of output, model version, attestation evidence | CCF-backed; tamper-evident; satisfies AI Act Art. 26(6) cryptographic-integrity bar that App Insights cannot meet alone | AI plane (governance) |
 
 **Why Zone 3 is its own zone** (and not a sub-zone of Operational or Analytics): conversations have **a different access pattern** (append-only, time-series), **a different retention curve** (≥ 6 months for AI Act compliance, but rarely needed beyond 12 months), **a different compliance regime** (ePrivacy + AI Act apply, on top of GDPR), and **a different consumer** (the data-science / eval / fine-tuning workflows pull from here, not from Operational).
 
@@ -246,7 +252,7 @@ flowchart LR
 
 | Store | What lives there | Why this technology | Owner |
 |---|---|---|---|
-| **OneLake — Bronze** (per country) | Raw mirrors of all sources (Dataverse, Cosmos, ACS events, Foundry traces, Logic Apps run history) | Append-only; cheap; fault-tolerant landing zone | Fabric plane |
+| **OneLake — Bronze** (per country) | Raw mirrors of all sources (Dataverse, PostgreSQL, ACS events, Foundry traces, Confidential Ledger, Logic Apps run history) | Append-only; cheap; fault-tolerant landing zone | Fabric plane |
 | **OneLake — Silver** (per country) | Cleansed, conformed, schema-enforced; PII classification applied | Data quality boundary; downstream consumers can trust types | Fabric plane |
 | **OneLake — Gold** (per country) | Domain marts (citizen, case, eligibility, satisfaction); semantic-model-ready | Power BI consumption; cross-country aggregations via Domain | Fabric plane |
 | **Fabric Real-Time Intelligence** (KQL DB) | Live KPIs: queue depth, avg processing time, SLA breach alerts | KQL real-time queries; sub-second freshness | Fabric plane |
@@ -264,15 +270,16 @@ The matrix below is the **definitive lookup table**: for each category of data t
 |---|---|---|---|---|---|
 | 1 | Citizen identity profile | Microsoft Entra External ID | (External, identity plane) | ❌ No (PII) | ✅ Yes (3 directories) |
 | 2 | Open case + workflow state | Dataverse | Zone 1 | ✅ Mirror nightly to OneLake bronze | ✅ Yes (3 environments) |
-| 3 | Application draft (in-progress form) | Cosmos DB | Zone 1 | ❌ No (ephemeral) | ✅ Yes (3 accounts) |
-| 4 | Reference data (rules, codes, taxes) | Azure SQL DB | Zone 1 | ✅ Snapshot to Bronze weekly | ❌ No (shared, public) |
+| 3 | Application draft (in-progress form) | PostgreSQL Flexible Server (JSONB) — durable; Redis — autosave (TTL ≤ 24h) | Zone 1 | ❌ No (ephemeral) | ✅ Yes (3 instances of each) |
+| 4 | Reference data (rules, codes, taxes) | PostgreSQL Flexible Server (relational) | Zone 1 | ✅ Snapshot to Bronze weekly | ❌ No (shared, public) |
 | 5 | Citizen-uploaded document | ADLS Gen2 `citizen-uploads/` | Zone 2 | ✅ Metadata only (not blob) to Bronze | ✅ Yes (3 accounts) |
 | 6 | **Voice call audio** ★ | ADLS Gen2 `voice-recordings/` | Zone 2 | ✅ STT transcript only to Bronze | ✅ Yes (3 accounts) |
 | 7 | **Email attachment** ★ | ADLS Gen2 `email-attachments/` | Zone 2 | ✅ Metadata + SHA only to Bronze | ✅ Yes (3 accounts) |
-| 8 | **Dialog transcript (Copilot Studio)** ★ | Dataverse — `bot_session` table | Zone 3 | ✅ Mirror nightly to Bronze | ✅ Yes (per-environment) |
+| 8 | **Dialog transcript (Foundry topic-router)** ★ | App Insights (Foundry traces) + Dataverse `bot_session` mirror | Zone 3 | ✅ Mirror nightly to Bronze | ✅ Yes (per-environment) |
 | 9 | **SMS message body** ★ | Dataverse — custom `sms_activity` table + ACS event | Zone 3 | ✅ Mirror nightly to Bronze | ✅ Yes |
 | 10 | **Email body** ★ | Dataverse — `email_activity` table | Zone 3 | ✅ Mirror nightly to Bronze | ✅ Yes |
 | 11 | **Foundry AI trace** | Application Insights | Zone 3 | ✅ Export nightly to Bronze | ✅ Yes (per-region App Insights) |
+| 11b | **High-risk AI decision proof** ★ *(post-audit)* | Azure Confidential Ledger | Zone 3 | ✅ Mirror nightly to Bronze (for query) | ✅ Yes (per country) |
 | 12 | Caseworker action / override | Dataverse — `case_audit` + custom `eligibility_override` | Zone 3 + Zone 1 | ✅ Mirror nightly to Bronze | ✅ Yes |
 | 13 | Public knowledge base | SharePoint | Zone 4 | ❌ No (it IS the source) | ❌ No (1 tenant, 3 site collections) |
 | 14 | Foundry RAG index | Foundry vector index | Zone 4 | N/A (rebuilt from SharePoint nightly) | ✅ Yes (per-agent + per-country) |
@@ -294,18 +301,20 @@ The matrix below is the **definitive lookup table**: for each category of data t
 
 ## 5. Retention matrix (the contractual baseline)
 
-> ⚠️ **Reading note.** Each row is the **EU baseline** the platform enforces by default through Azure resource configuration (lifecycle rules, immutability policies, Cosmos TTL, Sentinel retention, Purview policies). National administrative-law overrides may **extend** these — the per-country Purview policy holds the authoritative number. **Never shorter than the baseline below.**
+> ⚠️ **Reading note.** Each row is the **EU baseline** the platform enforces by default through Azure resource configuration (lifecycle rules, immutability policies, Postgres lifecycle jobs, Redis TTL, Sentinel retention, Purview policies). National administrative-law overrides may **extend** these — the per-country Purview policy holds the authoritative number. **Never shorter than the baseline below.**
 
 | Data category | Hot retention (active) | Warm / archive | Definitive deletion | Anchor article |
 |---|---|---|---|---|
 | Open case (Dataverse) | 7 years (active) | After closure → OneLake Gold (anonymised), Dataverse purged | Per national admin law (5-10 years) | National admin law + GDPR Art. 5(1)(e) |
 | Case audit log | 10 years | OneLake Bronze immutable | Aligned with case retention | National admin law |
-| Application draft (Cosmos) | TTL 30 days (auto) | None | TTL auto-purge | GDPR Art. 5(1)(c) minimisation |
-| Slot-filling cache (Cosmos) | TTL 24 h. (auto) | None | TTL auto-purge | GDPR Art. 5(1)(c) |
+| Application draft (Postgres JSONB) | Active until submission, then 30 days post-submission | Mirror to Bronze for analytics | DELETE on submission timeout | GDPR Art. 5(1)(c) minimisation |
+| Application draft autosave (Redis) | TTL ≤ 24 h. (auto) | None | TTL auto-purge | GDPR Art. 5(1)(c) |
+| Slot-filling cache (Redis) | TTL 24 h. (auto) | None | TTL auto-purge | GDPR Art. 5(1)(c) |
 | Citizen-uploaded document | While case open + 30 days | Cool tier 1 year, then Archive | On erasure request OR end of case retention | GDPR Art. 17 + national admin law |
 | **Voice call audio** ★ | 30 days clear-text | WORM 90 days total | Audio purged at 90 days; transcript follows "transcript" rule | GDPR Art. 5(1)(c) + ePrivacy Art. 5 |
 | **Voice STT transcript** ★ | 6 months hot in Dataverse | 6 years OneLake (anonymised at 6 months) | Per case retention | EU AI Act Art. 26(6) (≥ 6 months) + GDPR |
-| **Dialog transcript (Copilot Studio)** ★ | 6 months hot in Dataverse | 6 years OneLake (anonymised at 6 months) | Per case retention | EU AI Act Art. 26(6) |
+| **Dialog transcript (Foundry topic-router)** ★ | 6 months hot (App Insights) + Dataverse mirror | 6 years OneLake (anonymised at 6 months) | Per case retention | EU AI Act Art. 26(6) |
+| **High-risk AI decision proof (Confidential Ledger)** ★ *(post-audit)* | Append-only, immutable | Indefinite (immutable by design) | Never (only the citizen mapping in Postgres can be erased — the hash remains) | EU AI Act Art. 26(6) — cryptographic proof of integrity |
 | **SMS message** ★ | 6 months hot in Dataverse | 6 years OneLake | Per case retention | EU AI Act Art. 26(6) + ePrivacy |
 | **Email body + attachments** ★ | 6 months hot in Dataverse | 6 years OneLake | Per case retention OR erasure | EU AI Act Art. 26(6) + GDPR Art. 17 |
 | **Foundry AI trace** | 180 days App Insights | OneLake Bronze indefinite (anonymised) | Anonymisation at 6 months, per-trace deletion on erasure | **EU AI Act Art. 26(6) (≥ 6 months — this is the binding minimum)** |
@@ -331,10 +340,10 @@ Every storage decision in §§ 3-5 is anchored on one or more of the regulations
 
 | Regulation | Article | What it requires | Where UDCSP implements it |
 |---|---|---|---|
-| **GDPR** | Art. 5(1)(c) — data minimisation | Adequate, relevant, not excessive | Cosmos TTL; voice 90-day purge; AI memory 12-month TTL |
+| **GDPR** | Art. 5(1)(c) — data minimisation | Adequate, relevant, not excessive | Postgres draft 30-day cap; Redis TTL; voice 90-day purge; AI memory 12-month TTL |
 | **GDPR** | Art. 5(1)(e) — storage limitation | Kept no longer than necessary | All "definitive deletion" columns in § 5 |
 | **GDPR** | Art. 5(1)(f) — integrity & confidentiality | Appropriate security | CMK at every layer (§ 8); private endpoints; RBAC; managed identities |
-| **GDPR** | Art. 17 — right to erasure | Delete on data subject request, ≤ 30 days | Erasure playbook (§ 9) cascading across all 5 zones |
+| **GDPR** | Art. 17 — right to erasure | Delete on data subject request, ≤ 30 days | **Microsoft Priva** is the system of record for DSR (post-audit); the executor cascades through `gdpr-data-erase` Logic App across all 5 zones (§ 9). |
 | **GDPR** | Art. 25 — data protection by design | Privacy default settings | Encryption-at-rest is on by default for every store; sensitivity labels auto-applied |
 | **GDPR** | Art. 30 — records of processing activities (RoPA) | Document every processing | Purview catalog IS the RoPA — auto-populated by scans (§ 11) |
 | **GDPR** | Art. 32 — security of processing | Encryption + pseudonymisation + resilience | CMK + per-citizen pseudonymisation in OneLake Silver + GZRS replication (§ 10) |
@@ -343,7 +352,7 @@ Every storage decision in §§ 3-5 is anchored on one or more of the regulations
 | **EU AI Act** | Art. 12 — record-keeping (capability) | Logging capability over the lifetime | Foundry traces (App Insights) — § 3.3 Zone 3 |
 | **EU AI Act** | Art. 13 — transparency | Inform users of AI use | Citizen-facing notices + caseworker badges in D365 |
 | **EU AI Act** | Art. 14 — human oversight | Caseworker can override, with reason captured | `eligibility_override` table in Dataverse + mirrored to Foundry trace as `human-override` |
-| **EU AI Act** | **Art. 26(6) — log retention (deployer)** | **Logs kept ≥ 6 months from creation** | **Foundry traces 180 days App Insights + indefinite OneLake Bronze** |
+| **EU AI Act** | **Art. 26(6) — log retention (deployer)** | **Logs kept ≥ 6 months from creation** | **Foundry traces 180 days App Insights + indefinite OneLake Bronze + Confidential Ledger immutable proof for high-risk decisions** |
 | **EU AI Act** | Art. 71-72 — registration & post-market monitoring | Registry of high-risk systems + monitoring plan | `foundry/ai-act-registry/eligibility.json` + Power BI auditor dashboard |
 | **ePrivacy** | Art. 5(1) — confidentiality of communications | No interception/recording without consent or legal basis | Voice IVR opening notice + email banner; lawful basis = "obligation légale" (public-service mission) |
 | **ePrivacy** | Art. 5(3) — terminal storage (cookies) | Consent for non-essential storage | Cookie banner on web portal; only essential session cookie pre-consent |
@@ -428,8 +437,10 @@ flowchart TB
 | Layer | Encryption at rest | Encryption in transit | Key strategy |
 |---|---|---|---|
 | Dataverse | CMK from country Key Vault | TLS 1.2+ | Per-country CMK, rotated quarterly |
-| Cosmos DB | CMK from country Key Vault | TLS 1.2+ | Per-country CMK |
-| Azure SQL | TDE with CMK (BYOK) | TLS 1.2+ | Per-country CMK |
+| PostgreSQL Flexible Server | CMK (BYOK) from country Key Vault | TLS 1.2+ enforced | Per-country CMK; auto-rotate |
+| Azure Cache for Redis (Enterprise) | CMK from country Key Vault | TLS 1.2+ | Per-country CMK |
+| Confidential Ledger | CCF-managed keys (hardware-attested) | TLS 1.2+ | Hardware-rooted, not in customer Key Vault |
+| Confidential Container Apps | TEE memory encryption (SEV-SNP) + disk CMK | mTLS to APIM | Per-country CMK + remote attestation evidence stored alongside decisions |
 | ADLS Gen2 (all 3 accounts per country) | CMK + double encryption | TLS 1.2+ | Per-country CMK; HSM-backed; auto-rotate |
 | OneLake | Workspace-level encryption + CMK | TLS 1.2+ | Per-country CMK |
 | Azure AI Search | Service-managed + CMK option | TLS 1.2+ | Per-country CMK |
@@ -449,24 +460,27 @@ sequenceDiagram
     autonumber
     participant DPO as DPO Console
     participant API as APIM /privacy/erase
-    participant ORC as Erasure Orchestrator<br/>(Logic App)
-    participant Z1 as Zone 1<br/>Dataverse + Cosmos + SQL
+    participant Priva as Microsoft Priva<br/>(DSR system of record)
+    participant ORC as Erasure Executor<br/>(Logic App)
+    participant Z1 as Zone 1<br/>Dataverse + Postgres + Redis
     participant Z2 as Zone 2<br/>ADLS docs + voice + email
-    participant Z3 as Zone 3<br/>Conv. transcripts + AI traces
+    participant Z3 as Zone 3<br/>Conv. transcripts + AI traces<br/>+ Confidential Ledger
     participant Z4 as Zone 4<br/>AI Search memory
     participant Z5 as Zone 5<br/>OneLake (anonymise)
     participant PV as Purview<br/>(audit + lineage)
 
     DPO->>API: POST /privacy/erase/{citizen_id}
-    API->>ORC: trigger erasure (signed request)
+    API->>Priva: Open DSR ticket + SLA timer
+    Priva->>ORC: Trigger erasure (signed request, ticket id)
     ORC->>Z1: delete cases, drafts, references<br/>(or anonymise if legal hold)
     ORC->>Z2: tombstone documents<br/>(retain hash for chain-of-custody)
-    ORC->>Z3: anonymise transcripts<br/>(citizen_id → pseudonym)
+    ORC->>Z3: anonymise transcripts<br/>(citizen_id → pseudonym);<br/>Confidential Ledger entries are NOT deleted (immutable)<br/>but the citizen ↔ hash mapping in Postgres IS removed
     ORC->>Z4: hard-delete vector memory
     ORC->>Z5: re-anonymise gold marts<br/>(pseudonym replaced)
     ORC->>PV: log erasure with timestamp + scope
-    PV-->>DPO: erasure certificate (signed PDF)
-    Note over DPO,PV: Delivered ≤ 30 days per GDPR Art. 12(3)
+    ORC-->>Priva: Report completion + DPA evidence package
+    Priva-->>DPO: Erasure certificate (signed PDF) + audit trail
+    Note over DPO,PV: Delivered ≤ 30 days per GDPR Art. 12(3)<br/>(Priva tracks the SLA continuously)
 ```
 
 **Edge cases.**
@@ -481,13 +495,17 @@ sequenceDiagram
 | Store | Backup strategy | RPO | RTO | Geo-redundancy |
 |---|---|---|---|---|
 | Dataverse | Native long-term backup, point-in-time restore | 1 h. | 4 h. | Geo-paired region (within country) |
-| Cosmos DB | Continuous backup, point-in-time | 1 h. | 4 h. | Multi-region account, automatic failover |
-| Azure SQL | Geo-redundant backups, auto-failover groups | 1 h. | 1 h. | Geo-paired region |
-| ADLS Gen2 (all accounts) | Soft-delete + versioning + GZRS | 0 (versioning) | 1 h. | Geo-zone-redundant storage |
+| PostgreSQL Flexible Server | Azure Backup + Flexible Server PITR + GZRS-replicated backups | 15 min. | 1 h. | Zone-redundant HA + geo-paired backup |
+| Azure Cache for Redis (Enterprise) | Azure Backup of dataset (RDB export to Storage) | 15 min. | 30 min. | Geo-paired RDB store |
+| Confidential Ledger | CCF-managed multi-node consensus replication | 0 (synchronous) | < 5 min. | In-region multi-node + geo-paired second ledger for high-risk countries |
+| Confidential Container Apps | Stateless; image in ACR with geo-replication | N/A (stateless) | 10 min. | ACR geo-replicated; redeploy from IaC |
+| ADLS Gen2 (all accounts) | Soft-delete + versioning + GZRS + Azure Backup vault references | 0 (versioning) | 1 h. | Geo-zone-redundant storage |
 | OneLake | Workspace backup + git integration on artefacts | 24 h. | 24 h. | Per-region |
 | Azure AI Search | Service-managed snapshots | 24 h. | 4 h. | Multi-replica per service |
 | App Insights | Native long-term retention | 24 h. | N/A | Per-region workspace |
 | Key Vault | HSM-backed soft-delete + purge protection (90 d.) | 0 | 1 h. | HSM cluster |
+
+**BCDR ownership.** End-to-end backup + replication is centralised in **Azure Backup** vaults + **Azure Site Recovery** (per-country, geo-paired in-EU); see [`infra/security/backup-asr/`](../../infra/security/backup-asr/). Resilience is empirically validated by **Azure Chaos Studio** monthly experiments (region failover, NSG isolation, Postgres failover) — see [`infra/security/chaos-studio/`](../../infra/security/chaos-studio/).
 
 **DR drill cadence.** Twice yearly per country, with caseworker simulation; the runbook is in `docs/tech/runbook-dr.md` (created by the operations agent).
 
@@ -520,7 +538,7 @@ Sentinel sits **on top of** Purview for the live audit trail:
 | Centralising all 3 countries in one Fabric workspace | Sovereignty violation | Per-country workspace + Fabric Domain federation |
 | Storing voice `.wav` in clear forever | GDPR minimisation breach + cost | 90-day WORM purge; transcript persists |
 | Using the Foundry RAG vector index for per-citizen memory | Wrong tool — index is rebuilt nightly, can't ACL per-citizen | Dedicated Azure AI Search vector store |
-| Letting Cosmos containers grow unbounded | Cost + slow scans | Native TTL on every collection (24 h. cache, 30 d. drafts) |
+| Letting Postgres / Redis grow unbounded | Cost + slow scans | Postgres draft 30-day cap (lifecycle job); Redis native TTL on every key (24 h. cache, ≤ 24 h. autosaves) |
 | Backing up secrets to a regular storage account | Defeats Key Vault's purpose | HSM-backed soft-delete + purge protection in Key Vault itself |
 | Treating Sentinel as "logs we'll look at someday" | Misses 72-h. breach notification window | Active detection rules + paged on-call |
 | Using "consent" as the GDPR lawful basis for a regalian service | Brittle (can be withdrawn), wrong legal basis | Use Art. 6(1)(e) public-interest task; **inform** without conditioning service on consent |

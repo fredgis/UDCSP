@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schemas.udcsp.example/verified-id/presentation-policy.schema.json",
+  "id": "udcsp-eligibility-receipt-policy",
+  "name": "Verify UDCSP Eligibility Pre-Assessment Receipt",
+  "version": "1.0.0",
+  "purpose": "Allow a citizen to present a signed pre-assessment recommendation without replaying the original assessment.",
+  "inputDescriptors": [
+    {
+      "id": "udcsp-eligibility-receipt",
+      "schema": "udcsp-eligibility-receipt",
+      "constraints": {
+        "fields": [
+          {
+            "path": [
+              "$.credentialSubject.subjectId"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.assessmentId"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.recommendation"
+            ],
+            "filter": {
+              "type": "string",
+              "pattern": "^(eligible|likely-eligible|manual-review|not-eligible)$"
+            },
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.validUntil"
+            ],
+            "predicate": "isFutureDate",
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "trustedIssuers": [
+    "did:ion:udcsp-federation-hub",
+    "did:web:identity.udcsp.example"
+  ],
+  "openid4vp": {
+    "responseType": "vp_token",
+    "clientIdScheme": "redirect_uri",
+    "limitDisclosure": "preferred"
+  }
+}

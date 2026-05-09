@@ -29,6 +29,9 @@
 
 ---
 
+> [!NOTE]
+> GDPR opt-out, access, restriction, and erasure requests raised from this channel are handed to **Microsoft Priva** as the primary DSR orchestrator (`governance/priva/`), with channel evidence attached.
+
 ## 📑 Table of contents
 
 1. [Why an email channel at all](#1-why-an-email-channel-at-all)
@@ -525,7 +528,7 @@ This corresponds to **Demo 1** (Anna / Lars journey) in [`uses.md`](./uses.md) a
 
 ## 14. Where the conversation is stored
 
-Email also bypasses Copilot Studio, so the canonical correspondence record is Dataverse `email_activity`. Attachments are stored separately in ADLS to avoid the binary-in-Dataverse anti-pattern, while ACS events and AI traces provide the audit trail around delivery and classification. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+Email also bypasses Foundry `topic-router`, so the canonical correspondence record is Dataverse `email_activity`. Attachments are stored separately in ADLS to avoid the binary-in-Dataverse anti-pattern, while ACS events and AI traces provide the audit trail around delivery and classification. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|

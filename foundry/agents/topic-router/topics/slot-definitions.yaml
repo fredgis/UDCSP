@@ -1,0 +1,18 @@
+kind: FoundrySlotDefinitions
+source: apps/copilot-studio/agents/citizen-assistant-bot/entities
+slots:
+  accessibilityNeed:
+    kind: closedList
+    values: [screen-reader, voice-only, cognitive-support, mobility-support, none]
+  channel:
+    kind: closedList
+    values: [web, mobile, voice, chat]
+  country:
+    kind: closedList
+    values: [DK, SE, NO]
+  language:
+    kind: closedList
+    values: [da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi]
+  serviceType:
+    kind: closedList
+    values: [residency, tax-cert, child-allowance, social-benefit, business-registration]

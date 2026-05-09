@@ -171,7 +171,7 @@ graph TB
         WEB["Web Portal — Azure Static Web Apps"]
         MOB["Mobile App — native shell + Static Web Apps backend"]
         VOICE["Voice / IVR — Azure Communication Services + AI Speech"]
-        WAGENT["Web Chat Widget — Copilot Studio embed"]
+        WAGENT["Web Chat Widget — APIM → Foundry topic-router"]
     end
 
     subgraph L1["Layer 1 — Edge & Identity"]
@@ -190,9 +190,9 @@ graph TB
     subgraph L3["Layer 3 — AI Brain (Microsoft Foundry)"]
         FOUNDRY["Foundry Project + Hub"]
         AOAI["Azure OpenAI deployments"]
-        AGENTS["Foundry Agents:<br/>Classifier · Translator · Eligibility · Assistant"]
+        AGENTS["Foundry Agents:<br/>Topic-Router · Classifier · Translator · Eligibility · Assistant · DocExtractor · CaseworkerHelper"]
         EVAL["Foundry Evaluations + Tracing + Content Safety"]
-        CS["Microsoft Copilot Studio"]
+        TEE["Confidential Compute (TEE)<br/>for Eligibility (high-risk)"]
         AISPEECH["Azure AI Speech"]
         AITRANS["Azure AI Translator"]
         AIDOC["Azure AI Document Intelligence"]
@@ -201,8 +201,8 @@ graph TB
     subgraph L4["Layer 4 — Business Services"]
         D365["Dynamics 365 Customer Service<br/>+ Copilot for Service"]
         FUNC["Domain microservices — Azure Container Apps + Functions"]
-        COSMOS["Azure Cosmos DB — case state, draft applications"]
-        SQL["Azure SQL Database — reference data, rules"]
+        PG["Azure Database for PostgreSQL Flexible Server<br/>reference data · rules · drafts (JSONB) · glossaries"]
+        REDIS["Azure Cache for Redis Enterprise<br/>slot-filling · session · in-flight drafts"]
         STORAGE["Azure Storage / ADLS Gen2 — documents"]
     end
 
@@ -218,11 +218,19 @@ graph TB
 
     subgraph L7["Layer 7 — Security & Platform"]
         KV["Azure Key Vault"]
-        DEF["Microsoft Defender for Cloud"]
+        DEF["Microsoft Defender for Cloud<br/>+ Defender for APIs (post-audit)"]
         SENT["Microsoft Sentinel"]
         MON["Azure Monitor + Log Analytics + Application Insights"]
         POL["Azure Policy + Blueprints"]
         ACR["Azure Container Registry"]
+        DDOS["Azure DDoS Protection Standard (post-audit)"]
+        BAS["Azure Bastion (post-audit)"]
+        CIEM["Entra Permissions Management — CIEM (post-audit)"]
+        BKP["Azure Backup + Site Recovery (post-audit)"]
+        CHA["Azure Chaos Studio (post-audit)"]
+        CL["Azure Confidential Ledger (post-audit)<br/>AI Act Art. 26(6) tamper-evident registry"]
+        VID["Microsoft Entra Verified ID (post-audit)<br/>EUDI Wallet bridge"]
+        PRV["Microsoft Priva (post-audit)<br/>GDPR DSR orchestrator"]
     end
 
     C --> WEB
@@ -243,27 +251,33 @@ graph TB
     AGENTS --> AOAI
     AGENTS --> AITRANS
     AGENTS --> AIDOC
-    CS --> AGENTS
-    AISPEECH --> CS
+    AGENTS --> TEE
+    AGENTS -. AI Act log .-> CL
+    AISPEECH --> AGENTS
     LA --> SB
     LA --> EG
     LA --> D365
     LA --> FUNC
-    FUNC --> COSMOS
-    FUNC --> SQL
+    FUNC --> PG
+    FUNC --> REDIS
     FUNC --> STORAGE
-    D365 --> COSMOS
+    D365 --> PG
     D365 --> STORAGE
     FUNC -.events.-> EG
     EG --> FABRIC
     AGENTS -.tracing.-> MON
     MON --> FABRIC
     FABRIC --> POWERBI
-    PURVIEW -. scans .-> COSMOS
-    PURVIEW -. scans .-> SQL
+    PURVIEW -. scans .-> PG
+    PURVIEW -. scans .-> REDIS
     PURVIEW -. scans .-> STORAGE
     PURVIEW -. scans .-> FABRIC
     PURVIEW -. registers .-> AGENTS
+    PRV -. DSR .-> PG
+    PRV -. DSR .-> STORAGE
+    PRV -. DSR .-> D365
+    BKP -. backs up .-> PG
+    BKP -. backs up .-> STORAGE
     KV -.secrets.-> APIM
     KV -.secrets.-> FUNC
     KV -.secrets.-> LA
@@ -271,6 +285,11 @@ graph TB
     DEF -. posture .-> FUNC
     SENT -. SIEM .-> MON
     POL -. guardrails .-> APIM
+    DDOS -. L3/L4 .-> FD
+    BAS -. admin access .-> FUNC
+    CIEM -. continuous posture .-> ENTRA
+    CHA -. resilience .-> APIM
+    VID -. VC issuance .-> EXTID
 
     classDef l0 fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
     classDef l1 fill:#EDE7F6,stroke:#5E35B1,color:#311B92
@@ -284,11 +303,11 @@ graph TB
     class C,WEB,MOB,VOICE,WAGENT l0
     class FD,EXTID,ENTRA l1
     class APIM,SB,EG,LA l2
-    class FOUNDRY,AOAI,AGENTS,EVAL,CS,AISPEECH,AITRANS,AIDOC l3
-    class D365,FUNC,COSMOS,SQL,STORAGE l4
+    class FOUNDRY,AOAI,AGENTS,EVAL,TEE,AISPEECH,AITRANS,AIDOC l3
+    class D365,FUNC,PG,REDIS,STORAGE l4
     class FABRIC,POWERBI l5
     class PURVIEW,DPIA l6
-    class KV,DEF,SENT,MON,POL,ACR l7
+    class KV,DEF,SENT,MON,POL,ACR,DDOS,BAS,CIEM,BKP,CHA,CL,VID,PRV l7
 ```
 
 ---
@@ -422,7 +441,7 @@ graph TB
 
 ## 5. AI Architecture — Microsoft Foundry at the Core
 
-> 📘 **For the dedicated AI deep-dive** (why Foundry **and** Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
+> 📘 **For the dedicated AI deep-dive** (single brain — Foundry only — with the new `topic-router` agent absorbing what was Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
 
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
 
@@ -435,15 +454,15 @@ graph TB
         BO["Caseworker (D365 Copilot)"]
     end
 
-    subgraph CS["Microsoft Copilot Studio"]
-        TOPIC["Topics & dialogs<br/>(12 languages)"]
-        ACTION["Actions → Foundry agents"]
+    subgraph APIM_FACADE["API Management"]
+        APIM_RT["/agents/topic-router"]
     end
 
     subgraph FOUNDRY["Microsoft Foundry — Hub & Project"]
+        AG_TR["Agent — Topic Router<br/>(absorbs Copilot Studio topics<br/>· 12 languages · multi-turn)"]
         AG_CLASS["Agent — Request Classifier<br/>(intent, agency, language)"]
         AG_TRANS["Agent — Translator orchestrator"]
-        AG_ELIG["Agent — Eligibility Pre-Assessor<br/>(EU AI Act: high-risk)"]
+        AG_ELIG["Agent — Eligibility Pre-Assessor<br/>(EU AI Act: high-risk · runs in TEE)"]
         AG_ASSIST["Agent — Citizen Assistant<br/>(RAG over knowledge base)"]
         AG_DOC["Agent — Document Extractor"]
         AG_CASE["Agent — Caseworker Copilot helper"]
@@ -451,7 +470,11 @@ graph TB
         EVALS["Evaluations<br/>(accuracy · groundedness · safety · bias)"]
         TRACE["Tracing & Observability"]
         SAFETY["Azure AI Content Safety"]
-        REGISTRY["AI Act Risk Registry"]
+        REGISTRY["AI Act Risk Registry<br/>+ Confidential Ledger (immutable)"]
+    end
+
+    subgraph TEE_BOX["Azure Confidential Compute"]
+        TEE_HOST["Confidential Container App<br/>SEV-SNP · TEE attestation"]
     end
 
     subgraph KB["Knowledge Bases"]
@@ -466,19 +489,27 @@ graph TB
         SPEECH["Azure AI Speech (STT/TTS)"]
     end
 
-    WEB_AI --> CS
-    MOB_AI --> CS
+    subgraph SESSION["Conversational session state"]
+        REDIS_S["Azure Cache for Redis<br/>(slot-filling · session)"]
+    end
+
+    WEB_AI --> APIM_RT
+    MOB_AI --> APIM_RT
     IVR_AI --> SPEECH
-    SPEECH --> CS
+    SPEECH --> APIM_RT
     BO --> AG_CASE
-    CS --> ACTION
-    ACTION --> AG_CLASS
-    ACTION --> AG_ASSIST
+    APIM_RT --> AG_TR
+    AG_TR --> AG_CLASS
+    AG_TR --> AG_ASSIST
+    AG_TR --> AG_DOC
+    AG_TR --> AG_TRANS
+    AG_TR <--> REDIS_S
 
     AG_CLASS --> MODELS
     AG_TRANS --> MODELS
     AG_TRANS --> TRANS
-    AG_ELIG --> MODELS
+    AG_ELIG --> TEE_HOST
+    TEE_HOST --> MODELS
     AG_ASSIST --> MODELS
     AG_ASSIST -. RAG .-> SP
     AG_ASSIST -. RAG .-> FAB_KB
@@ -486,10 +517,12 @@ graph TB
     AG_DOC --> DOCINT
     AG_DOC --> MODELS
 
+    AG_TR --> SAFETY
     AG_CLASS --> SAFETY
     AG_ASSIST --> SAFETY
     AG_ELIG --> SAFETY
 
+    AG_TR -. trace .-> TRACE
     AG_CLASS -. trace .-> TRACE
     AG_ASSIST -. trace .-> TRACE
     AG_ELIG -. trace .-> TRACE
@@ -498,31 +531,38 @@ graph TB
     AG_ELIG -. registered .-> REGISTRY
     AG_CLASS -. registered .-> REGISTRY
     AG_ASSIST -. registered .-> REGISTRY
+    AG_TR -. registered .-> REGISTRY
 
+    EVALS -. continuous .-> AG_TR
     EVALS -. continuous .-> AG_CLASS
     EVALS -. continuous .-> AG_ELIG
     EVALS -. continuous .-> AG_ASSIST
 
     classDef chan fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
-    classDef cs fill:#E0F2F1,stroke:#00796B,color:#004D40
+    classDef apim fill:#E0F2F1,stroke:#00796B,color:#004D40
     classDef fnd fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C
+    classDef tee fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#B71C1C
     classDef kb fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
     classDef dai fill:#FFF9C4,stroke:#F9A825,color:#F57F17
+    classDef ses fill:#EDE7F6,stroke:#5E35B1,color:#311B92
 
     class WEB_AI,MOB_AI,IVR_AI,BO chan
-    class TOPIC,ACTION cs
-    class AG_CLASS,AG_TRANS,AG_ELIG,AG_ASSIST,AG_DOC,AG_CASE,MODELS,EVALS,TRACE,SAFETY,REGISTRY fnd
+    class APIM_RT apim
+    class AG_TR,AG_CLASS,AG_TRANS,AG_ELIG,AG_ASSIST,AG_DOC,AG_CASE,MODELS,EVALS,TRACE,SAFETY,REGISTRY fnd
+    class TEE_HOST tee
     class SP,FAB_KB,WEB_KB kb
     class TRANS,DOCINT,SPEECH dai
+    class REDIS_S ses
 ```
 
 ### 5.1 Agent Catalogue
 
 | Agent | Purpose | Model strategy | EU AI Act class | Human-in-the-loop |
 |---|---|---|---|---|
+| **Topic Router** *(post-audit, replaces Copilot Studio)* | Multi-turn conversational orchestrator. Detects intent, manages slot-filling state in Redis, routes to the appropriate downstream skill (classifier, citizen-assistant, doc-extractor, eligibility, translator). Owns 12-language topic logic that previously lived in Copilot Studio. | Small low-latency model with tool-use; topics versioned per locale; eval per language. | Limited risk | Caseworker can override routing; transcripts visible in caseworker copilot. |
 | **Request Classifier** | Detect intent, target agency, language, urgency. | Small, low-latency model; periodically fine-tuned on labelled traces. | Limited risk | Caseworker can re-route. |
 | **Translator orchestrator** | Translate citizen content and outbound communications across the 12 languages, preserving administrative terminology. | OpenAI + AI Translator hybrid. | Limited risk | Caseworker can edit translation before sending. |
-| **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a recommendation, never a decision. | Tool-using LLM with deterministic rule plug-ins; full lineage. | **High risk** | Always reviewed by a caseworker; never auto-approves. |
+| **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a recommendation, never a decision. **Inference orchestration runs inside Azure Confidential Compute (TEE / SEV-SNP)**; every decision is hashed and appended to **Azure Confidential Ledger** for AI Act Art. 26(6) tamper-evident logging. | Tool-using LLM with deterministic rule plug-ins; full lineage. | **High risk** | Always reviewed by a caseworker; never auto-approves. |
 | **Citizen Assistant** | Answer citizen questions in natural language; perform safe actions on behalf of the citizen. | RAG over public knowledge bases + grounded prompting. | Limited risk | Escalation to human caseworker on demand. |
 | **Document Extractor** | Extract structured data from uploaded documents (passport, payslip, lease). | AI Document Intelligence + LLM verification. | Limited risk | Caseworker validates extraction. |
 | **Caseworker Copilot Helper** | Summarise cases, draft replies, suggest knowledge articles, propose next-best-action. | OpenAI grounded on the case record + knowledge base. | Limited risk | Caseworker is the operator. |
@@ -533,7 +573,8 @@ graph TB
 - **Evaluations** are versioned, run in CI/CD on every prompt or model change, and gate promotion to PROD.
 - **Tracing** is continuous and stored in a dedicated Application Insights workspace exported to Fabric.
 - **Content Safety** filters every input and output; high-risk events are sent to Sentinel.
-- **AI Act Registry** in Foundry + Purview holds the risk classification, the technical documentation, the post-market monitoring plan, and the conformity declaration for every agent.
+- **AI Act Registry** in Foundry + Purview holds the risk classification, the technical documentation, the post-market monitoring plan, and the conformity declaration for every agent. **Post-audit refactor:** every high-risk decision (Eligibility) is also written to **Azure Confidential Ledger** (CCF-backed, tamper-evident) for cryptographic proof of integrity beyond what App Insights / Fabric can offer.
+- **Confidential Computing** wraps the Eligibility inference orchestration in a TEE (SEV-SNP-attested Confidential Container App), so citizen PII is encrypted in memory during the cross-border DK→SE / SE→NO scenarios documented in §13.1.
 
 ---
 
@@ -559,10 +600,18 @@ graph TB
     LA --> SB
     LA --> NOTIF
     FUNC --> SB
+    FUNC --> PG
+    FUNC --> REDIS
     FUNC -.events.-> EG
     SB --> LA
     EG --> FUNC
     EG --> LA
+    AGENTS --> TEE
+    AGENTS -. AI Act log .-> CL
+    PRV --> LA
+    PRV --> PG
+    BKP -. backs up .-> PG
+    BKP -. backs up .-> STORAGE
 
     classDef gw fill:#E0F2F1,stroke:#00796B,color:#004D40
     classDef wf fill:#FFF9C4,stroke:#F9A825,color:#F57F17
@@ -626,9 +675,11 @@ graph TB
         SRC_AI["Foundry traces & evaluations"]
         SRC_APIM["APIM telemetry"]
         SRC_PARTNER["Partner agency feeds"]
-        SRC_CS["Copilot Studio transcripts<br/>(Dataverse-backed)"]
+        SRC_TR["Foundry topic-router transcripts<br/>(via App Insights, post-audit)"]
         SRC_ACS["ACS event capture<br/>(SMS/Email/Voice events)"]
         SRC_ADLS_CONV["ADLS conversation blobs<br/>(voice .wav, email attachments)"]
+        SRC_CL["Confidential Ledger<br/>(AI Act high-risk decisions, post-audit)"]
+        SRC_PRV["Priva audit log<br/>(DSR fulfilment, post-audit)"]
     end
 
     subgraph FABRIC["Microsoft Fabric — OneLake"]
@@ -644,10 +695,10 @@ graph TB
     end
 
     subgraph CONS["Consumers"]
-        PBI_OPS["Power BI — operational"]
-        PBI_EXEC["Power BI — executive cross-country"]
-        PBI_CIT["Power BI embedded — citizen-facing portal"]
-        PBI_AUD["Power BI — auditor"]
+        PBI_OPS["Power BI Premium — operational (internal)"]
+        PBI_EXEC["Power BI Premium — executive cross-country (internal)"]
+        WEB_HTML["apps/web — HTML/JS Chart.js components<br/>(citizen-facing, post-audit · replaces PBI Embedded)"]
+        PBI_AUD["Power BI Premium — auditor (internal)"]
         AI_FB["Feedback to Foundry training datasets"]
     end
 
@@ -656,16 +707,18 @@ graph TB
     SRC_AI --> BRONZE
     SRC_APIM --> BRONZE
     SRC_PARTNER --> BRONZE
-    SRC_CS --> BRONZE
+    SRC_TR --> BRONZE
     SRC_ACS --> BRONZE
     SRC_ADLS_CONV --> BRONZE
+    SRC_CL --> BRONZE
+    SRC_PRV --> BRONZE
 
     BRONZE --> SILVER --> GOLD --> SEMANTIC
     SILVER --> RTI
     GOLD --> DOMAIN
     SEMANTIC --> PBI_OPS
     SEMANTIC --> PBI_EXEC
-    SEMANTIC --> PBI_CIT
+    GOLD --> WEB_HTML
     SEMANTIC --> PBI_AUD
     GOLD --> AI_FB
 
@@ -674,10 +727,10 @@ graph TB
     classDef dom fill:#E0F2F1,stroke:#00796B,color:#004D40
     classDef cons fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
 
-    class SRC_D365,SRC_LA,SRC_AI,SRC_APIM,SRC_PARTNER,SRC_CS,SRC_ACS,SRC_ADLS_CONV src
+    class SRC_D365,SRC_LA,SRC_AI,SRC_APIM,SRC_PARTNER,SRC_TR,SRC_ACS,SRC_ADLS_CONV,SRC_CL,SRC_PRV src
     class BRONZE,SILVER,GOLD,RTI,SEMANTIC fab
     class DOMAIN dom
-    class PBI_OPS,PBI_EXEC,PBI_CIT,PBI_AUD,AI_FB cons
+    class PBI_OPS,PBI_EXEC,WEB_HTML,PBI_AUD,AI_FB cons
 ```
 
 **Highlights**
@@ -685,9 +738,9 @@ graph TB
 - Each country owns its **Fabric workspace**; the **Fabric Domain** federates curated gold-layer products without copying raw data.
 - **OneLake shortcuts** allow zero-copy access where a country has explicitly published a data product.
 - **Real-Time Intelligence** powers live SLA dashboards (e.g. queues, average processing time).
-- **Power BI semantic models** are the only analytics surface — no direct queries on bronze/silver from the front-end.
+- **Power BI Premium semantic models** are the only analytics surface for **internal** users (ops / exec / auditor); citizen-facing portal insights moved to lightweight **HTML/JS Chart.js** components in `apps/web/src/components/insights/` (post-audit refactor — Power BI Embedded eliminated to reduce dependency surface).
 - A **feedback loop** anonymises closed cases and pushes them back to Foundry as training/evaluation datasets.
-- New conversation sources (Copilot Studio Dataverse-backed transcripts, ACS event capture for SMS/Email/Voice, ADLS conversation blobs) feed Bronze nightly — this is what makes the platform AI Act Art. 26(6) compliant (≥ 6 months log retention).
+- New conversation sources (Foundry topic-router transcripts via App Insights, ACS event capture for SMS/Email/Voice, ADLS conversation blobs, Confidential Ledger high-risk decisions, Priva DSR audit trail) feed Bronze nightly — this is what makes the platform AI Act Art. 26(6) compliant (≥ 6 months log retention) **with cryptographic tamper-evidence** (Confidential Ledger).
 
 ---
 
@@ -764,15 +817,20 @@ graph TB
 
 ## 10. Security & Network Architecture
 
-- **Network** — Hub-and-spoke per sovereign zone, peered via the federation hub VNet. **Private Endpoints** on every PaaS service. No public ingress except via **Azure Front Door + WAF** and APIM's external gateway.
-- **Identity** — Managed identities everywhere; no service principals with secrets in code; PIM for elevated access; Conditional Access on the workforce tenant.
+- **Network** — Hub-and-spoke per sovereign zone, peered via the federation hub VNet. **Private Endpoints** on every PaaS service. No public ingress except via **Azure Front Door + WAF** and APIM's external gateway. **Azure DDoS Protection Standard** is bound to every VNet that fronts a public IP (NIS2 Art. 21(2)(c) — defence in depth at L3/L4 in addition to the L7 protection from Front Door).
+- **Identity** — Managed identities everywhere; no service principals with secrets in code; PIM for elevated access; Conditional Access on the workforce tenant. **Microsoft Entra Permissions Management (CIEM)** continuously inventories effective entitlements across the 3 sovereign tenants and produces drift alerts; **Azure Bastion (Standard)** is the only path for caseworker / SRE shell access — no jump boxes, no public RDP/SSH.
+- **Verifiable credentials** — **Microsoft Entra Verified ID** is the issuer + verifier surface for the EUDI Wallet bridge (eIDAS 2.0). The OpenID4VP / OpenID4VCI flows live in `infra/identity/verified-id/`; see [`governance/identity/eudi-wallet-readiness.md`](../../governance/identity/eudi-wallet-readiness.md) for the rollout matrix per country.
 - **Secrets** — **Azure Key Vault** with RBAC and Private Endpoint; secrets accessed via managed identity references; no plain-text secrets in app settings.
-- **Threat protection** — **Microsoft Defender for Cloud** (CSPM + workload protection), **Microsoft Sentinel** as SIEM/SOAR, with playbooks for AI-specific incidents (e.g. prompt injection, model exfiltration). Defender for Storage scans every inbound document and emits an Event Grid event consumed by `func-document-virus-scan` (Clean → tag · Malicious → tag + quarantine + Sentinel incident · Unknown → manual-review queue).
-- **Audit retention** — Sentinel + Log Analytics retain audit and security telemetry for **180 days hot** then 7 years in cold archive (NIS2 Art. 21(2)(g) + Art. 23 evidence baseline).
+- **Threat protection** — **Microsoft Defender for Cloud** (CSPM + workload protection), **Microsoft Defender for APIs** plugged into APIM (runtime protection on the only ingress point of the 47 consolidated portals — discovers shadow APIs, detects anomalies in token use, sensitive-data leakage), **Microsoft Sentinel** as SIEM/SOAR, with playbooks for AI-specific incidents (e.g. prompt injection, model exfiltration). Defender for Storage scans every inbound document and emits an Event Grid event consumed by `func-document-virus-scan` (Clean → tag · Malicious → tag + quarantine + Sentinel incident · Unknown → manual-review queue).
+- **Confidential computing for high-risk AI** — The Eligibility Pre-Assessor (AI Act high-risk) inference orchestration runs inside an **Azure Confidential Container App** (SEV-SNP attested TEE). The citizen prompt and the data fetched from cross-border partners are encrypted in memory during inference; attestation evidence is stored alongside the decision in **Azure Confidential Ledger** (CCF-backed, tamper-evident) for AI Act Art. 26(6) compliance.
+- **Audit retention** — Sentinel + Log Analytics retain audit and security telemetry for **180 days hot** then 7 years in cold archive (NIS2 Art. 21(2)(g) + Art. 23 evidence baseline). **Confidential Ledger** holds the cryptographic ledger of every high-risk AI decision indefinitely (append-only, hardware-attested).
+- **BCDR — Backup & Site Recovery** — **Azure Backup** vaults are deployed per country (Postgres + Redis + critical Storage accounts + VMs hosting agent runtimes); **Azure Site Recovery** replicates to a paired in-EU region within the same sovereign zone. RPO ≤ 15 min, RTO ≤ 4 h documented in `infra/security/backup-asr/`. Mandatory for ISO 27001:2022 A.5.30 + NIS2 Art. 21(2)(c) audit.
+- **Resilience proof — Chaos engineering** — **Azure Chaos Studio** experiments target the citizen-facing path (Front Door → APIM → Container Apps → Postgres) on a monthly cadence. The 99.9 % SLO announced in §11 is empirically validated through experiments that inject region failover, NSG isolation and Postgres failover.
 - **Citizen-side privacy controls** — ePrivacy-compliant **cookie consent banner** with per-purpose toggles; Microsoft Clarity and any product analytics are gated behind explicit opt-in. Mobile push notifications (`apps/mobile/src/notifications/registerPushToken.ts`) require an in-app consent flag *before* the OS-level prompt is requested.
+- **Subject Rights Requests** — **Microsoft Priva** industrialises the GDPR DSR fulfilment pipeline (right of access, erasure, portability, rectification). The legacy `gdpr-data-erase` and `gdpr-data-export` Logic Apps still run as the *executor*, but Priva is the **system of record** for SLA tracking and DPA evidence. See [`governance/priva/`](../../governance/priva/) for the operating model.
 - **Container supply chain** — Images signed and scanned; **ACR** with content trust; SBOM generated and stored.
-- **Data protection** — At-rest encryption with customer-managed keys (per country); TLS 1.3 in transit; field-level encryption for the most sensitive PII (e.g. national ID).
-- **API security** — OAuth 2.0 + PKCE on all citizen flows; mutual TLS for partner integrations; APIM rate-limiting and IP filtering; OWASP Top 10 + LLM Top 10 controls.
+- **Data protection** — At-rest encryption with customer-managed keys (per country); TLS 1.3 in transit; field-level encryption for the most sensitive PII (e.g. national ID). Operational stores are now **Azure Database for PostgreSQL Flexible Server** + **Azure Cache for Redis** (post-audit consolidation; Azure SQL and Cosmos DB removed — see [`plan_post_audit.md`](./plan_post_audit.md)).
+- **API security** — OAuth 2.0 + PKCE on all citizen flows; mutual TLS for partner integrations; APIM rate-limiting and IP filtering; OWASP Top 10 + LLM Top 10 controls; Defender for APIs runtime detection on every published API.
 - **Sovereignty enforcement (policy-as-code)** — Five Azure Policy initiatives in [`infra/landing-zone/azure-policy/`](../../infra/landing-zone/azure-policy/) and [`infra/security/azure-policy/`](../../infra/security/azure-policy/) deny non-EU regions, public IPs on data resources, missing tags, missing encryption-at-rest, and missing CMK; covered end-to-end by the conformance test pack at [`tests/conformance/sovereignty/`](../../tests/conformance/sovereignty/).
 
 ---
@@ -802,7 +860,7 @@ UDCSP treats **language and accessibility as first-class platform invariants**. 
 | Channels — Web | Static Web Apps + design system | **ICU MessageFormat** for plurals/genders; per-locale resource bundles; language switcher; locale-aware date/number formatting; right-to-left support where applicable. |
 | Channels — Mobile | Mobile shell | Same i18n pipeline; OS-level locale propagation. |
 | Channels — Voice | ACS + Azure AI Speech | STT/TTS configured per language; per-locale lexicons for civic terminology; barge-in supported in all languages. |
-| Conversational AI | Microsoft Copilot Studio | Topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules. |
+| Conversational AI | Microsoft Foundry — `topic-router` agent | Multi-turn topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules; slot-filling state held in **Azure Cache for Redis**. *(Replaces the original Copilot Studio surface — single brain in Foundry now.)* |
 | AI Brain — Classifier | Foundry agent | Multilingual model; eval set covers all 12 languages with golden examples per agency type. |
 | AI Brain — Translator | Foundry agent | Hybrid Azure OpenAI + Azure AI Translator; **glossary** per agency to preserve administrative terminology; quality gate before outbound communication. |
 | AI Brain — Citizen Assistant | Foundry agent | RAG knowledge base indexed per language; cross-lingual retrieval as fallback; safety filters per locale. |
@@ -903,25 +961,32 @@ sequenceDiagram
     participant Citizen
     participant ACS as Communication Services (PSTN)
     participant Speech as AI Speech (STT/TTS)
-    participant CS as Copilot Studio
+    participant APIM as APIM /agents/topic-router
+    participant TR as Foundry — Topic Router
+    participant Redis as Redis (session)
     participant Class as Foundry — Classifier
     participant Assist as Foundry — Citizen Assistant
     participant KB as Knowledge Base (Fabric + SP)
     participant Safety as Content Safety
+    participant D365 as Dynamics 365
     Citizen->>ACS: Calls support number
     ACS->>Speech: Audio stream → text
-    Speech->>CS: "How do I file my late tax return?"
-    CS->>Class: Classify intent + language
-    CS->>Assist: Generate answer
+    Speech->>APIM: "How do I file my late tax return?" + traceparent
+    APIM->>TR: Route to topic-router
+    TR->>Redis: Hydrate session state
+    TR->>Class: Classify intent + language
+    TR->>Assist: Generate answer
     Assist->>KB: Retrieve grounding documents
     Assist->>Safety: Check input + output
     Safety-->>Assist: Approved
-    Assist-->>CS: Grounded answer + sources
-    CS->>Speech: Text → audio
+    Assist-->>TR: Grounded answer + sources
+    TR->>Redis: Persist updated state
+    TR-->>APIM: Reply text
+    APIM->>Speech: Text → audio
     Speech->>ACS: Audio
     ACS->>Citizen: Spoken answer
     alt Citizen requests human
-        CS->>D365: Escalate to caseworker queue
+        TR->>D365: Escalate to caseworker queue
     end
 ```
 
@@ -937,8 +1002,9 @@ sequenceDiagram
     participant Hold as Retention-hold check<br/>(Arkivloven · Arkivlagen · Arkivlova)
     participant DV as Dataverse
     participant Lake as OneLake (Bronze/Silver/Gold)
-    participant Cos as Cosmos DB
+    participant Cos as Postgres + Redis
     participant AppI as Application Insights
+    participant Priva as Microsoft Priva
     participant Purv as Purview lineage
     participant Notify as Citizen notification
     participant Arch as Logic App<br/>archive-handover-{dk,se,no}
@@ -946,17 +1012,19 @@ sequenceDiagram
 
     Citizen->>Web: "Delete my data" (Art. 17)
     Web->>APIM: POST /privacy/erase + identity proof
-    APIM->>Erase: trigger
+    APIM->>Priva: Create DSR ticket (system of record)
+    Priva->>Erase: Trigger executor workflow
     Erase->>Hold: Which records are under archive law?
     Hold-->>Erase: list of records to TAG (not delete)
     par Physical erase outside hold
         Erase->>DV: Erase tagged-removable records
         Erase->>Lake: Tombstone non-archive partitions
-        Erase->>Cos: Delete drafts / cache
+        Erase->>Cos: Delete drafts / cache from Postgres + Redis
         Erase->>AppI: Purge customDimensions
     end
     Erase->>DV: Tag held records "pending-archive-release"
     Erase->>Purv: Emit udcsp.gdpr.erase.completed.v2
+    Erase->>Priva: Report completion + DPA evidence package
     Erase->>Notify: Confirm to citizen + outline what's held & why
     Notify-->>Citizen: Confirmation + held-records explanation
 
@@ -1028,14 +1096,23 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 
 | Service | Role |
 |---|---|
-| **Microsoft Foundry** | AI agent runtime, model catalog, evaluations, tracing, AI Act registry. |
-| **Azure Front Door + WAF** | Global edge, TLS termination, DDoS, WAF. |
+| **Microsoft Foundry** | AI agent runtime, model catalog, evaluations, tracing, AI Act registry. Includes the new `topic-router` agent that absorbs the conversational orchestration responsibility (post-audit refactor). |
+| **Azure Front Door + WAF** | Global edge, TLS termination, L7 WAF, OWASP rule set. |
+| **Azure DDoS Protection Standard** | L3/L4 protection on every VNet that fronts a public IP — defence-in-depth complement to Front Door, expected by NIS2. *(Post-audit addition.)* Bicep at [`infra/security/ddos/`](../../infra/security/ddos/). |
 | **Azure Static Web Apps** | Hosting for citizen web portals. |
 | **Azure Container Apps** | Domain microservices. |
+| **Azure Confidential Container Apps** | TEE-attested runtime (SEV-SNP) for the Eligibility Pre-Assessor (AI Act high-risk). *(Post-audit addition.)* Bicep at [`infra/security/confidential-compute/`](../../infra/security/confidential-compute/). |
 | **Azure Functions** | Event-driven glue and lightweight integrations. |
-| **Azure Cosmos DB** | Operational, low-latency document store for **draft applications, slot-filling cache and ephemeral session state**, 3 accounts (one per country) pinned to North Europe / Sweden Central / Norway East with `enableMultipleWriteLocations=false`, AAD-only auth, CMK from the country Key Vault, private endpoint, TTL-based auto-purge. Bicep at [`infra/data/cosmos/cosmos-account.bicep`](../../infra/data/cosmos/cosmos-account.bicep). |
-| **Azure SQL Database** | Reference data, business rules. |
+| **Azure Database for PostgreSQL — Flexible Server** | Operational OLTP store; replaces both the original Azure SQL Database and Azure Cosmos DB workloads (relational data + JSONB documents in a single engine; one OLTP engine instead of two; CMK, private endpoint, geo-zone redundant backup). *(Post-audit replacement.)* Bicep at [`infra/data/postgresql/`](../../infra/data/postgresql/). |
+| **Azure Cache for Redis** | Conversational session state for the topic-router (slot-filling), short-lived caches for draft applications and rate-limit counters. *(Post-audit addition; replaces Cosmos DB ephemeral workloads.)* Bicep at [`infra/data/redis/`](../../infra/data/redis/). |
 | **Azure Storage / ADLS Gen2** | Three per-country Storage accounts: citizen-uploads/ (documents), voice-recordings/ (PSTN audio + STT transcripts, WORM 90 days), email-attachments/ (email binaries). All CMK-encrypted. See data.md § 3.2. |
+| **Azure Backup + Azure Site Recovery** | BCDR for Postgres + Redis + critical Storage + agent VMs / Container App environments; per-country vaults; RPO ≤ 15 min / RTO ≤ 4 h. *(Post-audit addition; previously absent.)* Bicep at [`infra/security/backup-asr/`](../../infra/security/backup-asr/). |
+| **Azure Confidential Ledger** | Tamper-evident, CCF-backed log of every high-risk AI decision (AI Act Art. 26(6)) and every Foundry lineage event that needs cryptographic integrity beyond what App Insights / Fabric can offer. *(Post-audit addition.)* Bicep at [`infra/security/confidential-ledger/`](../../infra/security/confidential-ledger/). |
+| **Azure Chaos Studio** | Resilience experiments (region failover, NSG isolation, Postgres failover) that empirically validate the 99.9 % citizen-channel SLO. *(Post-audit addition.)* Bicep at [`infra/security/chaos-studio/`](../../infra/security/chaos-studio/). |
+| **Azure Bastion (Standard)** | Sole admin shell-access path for SREs and caseworker support — no jump boxes, no public RDP/SSH. *(Post-audit addition.)* Bicep at [`infra/identity/bastion/`](../../infra/identity/bastion/). |
+| **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant entitlement audit + drift detection across the 3 sovereign tenants. *(Post-audit addition.)* Onboarding model at [`infra/identity/ciem/`](../../infra/identity/ciem/). |
+| **Microsoft Entra Verified ID** | Issuer + verifier surface for the EUDI Wallet bridge (eIDAS 2.0). OpenID4VP / OpenID4VCI flows in [`infra/identity/verified-id/`](../../infra/identity/verified-id/). *(Post-audit addition — moves the platform from "EUDI readiness" to active VC issuance/verification.)* |
+| **Microsoft Priva** | System-of-record for GDPR Data Subject Rights (access, erasure, portability, rectification) — SLA tracking + DPA evidence. The legacy `gdpr-data-erase` / `gdpr-data-export` Logic Apps still execute the work; Priva orchestrates and proves it. *(Post-audit addition.)* See [`governance/priva/`](../../governance/priva/). |
 | **Azure Service Bus** | Reliable command messaging. |
 | **Azure Event Grid** | Domain eventing. |
 | **Azure Communication Services** | Voice, SMS, email channels. |
@@ -1045,15 +1122,21 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure AI Translator** | High-quality translation across the 12 languages. |
 | **Azure AI Document Intelligence** | OCR and structured extraction from citizen documents. |
 | **Azure AI Content Safety** | Input/output safety filtering for every agent. |
-| **Microsoft Copilot Studio** | Conversational orchestration and channel embedding. |
 | **Azure Key Vault** | Secrets, keys, certificates with private endpoints. |
 | **Microsoft Defender for Cloud** | CSPM and workload protection. |
+| **Microsoft Defender for APIs** | Runtime protection on APIM (the only ingress point of the 47 consolidated portals) — shadow-API discovery, sensitive-data leakage, abnormal token use. *(Post-audit addition.)* Bicep at [`infra/security/defender/`](../../infra/security/defender/). |
 | **Microsoft Sentinel** | SIEM / SOAR. |
 | **Azure Monitor + Log Analytics + Application Insights** | Observability. Also serves as Foundry AI trace store — see data.md § 3.3. |
 | **Azure Container Registry** | Container image registry with content trust. |
 | **Azure Policy + Blueprints** | Guardrails, compliance enforcement. |
 | **Azure DevOps / GitHub Actions** | CI/CD. |
 | **Azure Bicep / Terraform** | Infrastructure as Code. |
+
+> **Removed in the post-audit refactor** (rationale in [`plan_post_audit.md`](./plan_post_audit.md)):
+> - **Azure SQL Database** — fused into Postgres (no justification to run two OLTP engines).
+> - **Azure Cosmos DB** — fused into Postgres (JSONB) + Redis (ephemeral cache / session).
+> - **Microsoft Copilot Studio** — folded into Foundry as the `topic-router` agent (one brain, one API surface).
+> - **Power BI Embedded** for the citizen-facing portal — replaced by lightweight HTML/JS Chart.js components in `apps/web/src/components/insights/`. Power BI **Premium** is **kept** for internal users (operational, executive, auditor dashboards).
 
 ---
 
@@ -1068,7 +1151,7 @@ graph TB
     PRE["🔍 Pre-flight Checks<br/>CLIs · subs · quotas · regions"]:::step
     INFRA["🏛️ Bicep Modules<br/>landing zone · identity · security · data · obs · APIM"]:::step
     AI["🧠 Foundry & AI<br/>hubs · projects · agents · evals · AI Act registry"]:::step
-    APPS["💻 Apps & Channels<br/>SWA · mobile · ACS · Copilot Studio · D365 solutions"]:::step
+    APPS["💻 Apps & Channels<br/>SWA · mobile · ACS · Foundry topic-router · D365 solutions"]:::step
     GOV["🛡️ Governance<br/>Purview accounts · scans · policy packs"]:::step
     SEED["🎲 Synthetic Data Seed (A15)<br/>DK · SE · NO · 12 languages"]:::seed
     SMOKE["✅ Smoke Tests (A14)<br/>+ Deployment Report"]:::smoke

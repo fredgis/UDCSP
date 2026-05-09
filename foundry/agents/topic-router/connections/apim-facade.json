@@ -1,0 +1,8 @@
+{
+  "name": "apim-facade",
+  "type": "entryPoint",
+  "endpoint": "${APIM_BASE_URL}/agents/topic-router",
+  "auth": "managedIdentityOrUserDelegatedToken",
+  "status": "placeholder",
+  "note": "Replaces DirectLine token broker/webchat entry point."
+}

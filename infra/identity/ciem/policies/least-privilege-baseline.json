@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schemas.udcsp.example/ciem/policy-template.schema.json",
+  "id": "least-privilege-baseline",
+  "name": "Least privilege baseline",
+  "version": "1.0.0",
+  "description": "Alert when an identity has permissions that have not been used for more than 30 days.",
+  "severity": "medium",
+  "scope": {
+    "clouds": [
+      "azure"
+    ],
+    "tenants": [
+      "dk-sovereign",
+      "se-sovereign",
+      "no-sovereign",
+      "workforce"
+    ]
+  },
+  "condition": {
+    "resourceType": "identityPermissionGrant",
+    "operator": "greaterThan",
+    "metric": "unusedPermissionDays",
+    "threshold": 30
+  },
+  "actions": [
+    "alert",
+    "createAccessReview",
+    "recommendRoleReduction"
+  ],
+  "evidence": [
+    "assignedPermissions",
+    "lastUsedTimestamp",
+    "effectiveRoleDefinition"
+  ]
+}

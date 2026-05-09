@@ -59,4 +59,60 @@
     }
 
     Languages = @('da','sv','nb','nn','se','en','de','fr','pl','ar','uk','fi')
+
+    # ----------------------------------------------------------------------
+    # Post-audit refactor 2026-05-09 — new resources
+    # ----------------------------------------------------------------------
+    Postgres = @{
+        SkuDev    = 'Standard_B2s'
+        SkuProd   = 'Standard_D4ds_v5'
+        Version   = '16'
+        HaProd    = 'ZoneRedundant'
+        HaDev     = 'Disabled'
+    }
+
+    Redis = @{
+        SkuDev  = 'Balanced_B5'
+        SkuProd = 'Enterprise_E10'
+        Tls     = '1.2'
+    }
+
+    VerifiedId = @{
+        DidMethod   = 'web'  # 'web' for dev, 'ion' for prod
+        IssuerName  = 'udcsp-issuer'
+    }
+
+    Priva = @{
+        DsrSlaDays            = 30
+        DsrComplexExtensionDays = 60
+        AuditLogRetentionYears  = 7
+    }
+
+    ConfidentialLedger = @{
+        Sku    = 'Public'
+        Region = 'westeurope'
+    }
+
+    ConfidentialCompute = @{
+        WorkloadProfile = 'Confidential-Standard-NC8as-T4-v5'
+        FallbackProfile = 'D4as_v5'
+    }
+
+    Ddos = @{
+        PlanLocation = 'westeurope'
+    }
+
+    BackupAsr = @{
+        VaultStorageType = 'GeoRedundant'  # 'ZoneRedundant' for dev
+        SoftDeleteDays   = 14
+    }
+
+    ChaosStudio = @{
+        WeeklyExperimentEnabled = $true
+        ExperimentScope         = 'preprod'  # never 'prod'
+    }
+
+    Bastion = @{
+        Sku = 'Standard'
+    }
 }

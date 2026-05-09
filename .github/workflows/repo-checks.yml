@@ -20,7 +20,7 @@ jobs:
       - name: YAML lint
         uses: ibiqlik/action-yamllint@v3
         with:
-          file_or_dir: 'foundry/ tests/eval/ apps/copilot-studio/ governance/ai-act/'
+          file_or_dir: 'foundry/ tests/eval/ governance/ai-act/ governance/priva/'
           config_data: |
             extends: default
             rules:

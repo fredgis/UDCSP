@@ -1,7 +1,7 @@
 # UDCSP Web Citizen Portal
 
 ## Purpose
-Accessible React citizen portal for Denmark, Sweden, and Norway. It provides the single front door for residency, tax-certificate, child-benefit, case-status, consent, and Copilot Studio chat journeys.
+Accessible React citizen portal for Denmark, Sweden, and Norway. It provides the single front door for residency, tax-certificate, child-benefit, case-status, consent, and AI assistant chat journeys (multi-turn, 12 languages — backed by the Foundry **topic-router** agent through APIM, post-audit refactor).
 
 ## Dev setup
 Prerequisites: Node.js 20 LTS. This scaffold intentionally does not install packages. Run `npm install` when package feeds and agent-owned i18n catalogues are available.

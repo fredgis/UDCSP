@@ -110,7 +110,7 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 | Layer | How the 12 languages are handled |
 |---|---|
 | 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice IVR with **Azure AI Speech** STT/TTS in all 12 languages. |
-| 🤖 **Conversational AI** | Microsoft **Copilot Studio** topics authored in 12 languages with native review per locale; fall-through to multilingual Foundry agents. |
+| 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). *(Post-audit refactor: Copilot Studio folded into Foundry — single brain, single API surface.)* |
 | 🧠 **AI Brain (Foundry)** | The **Translator agent** chains Azure OpenAI with **Azure AI Translator** to preserve administrative terminology; the **Classifier** and **Citizen Assistant** are evaluated per language with golden datasets. |
 | 📄 **Documents** | **Azure AI Document Intelligence** + LLM verification handle multilingual passports, payslips, leases, and forms. |
 | 📋 **Case management** | **D365 Customer Service** multilingual knowledge base; outbound communications translated and edited by a caseworker before sending. |
@@ -141,7 +141,7 @@ All nine services from the case study are first-class citizens of the platform �
 
 > ¹ **Substitution note** — the case study lists *Azure AD B2C* as the citizen-identity service. **Azure AD B2C is no longer available to new customers as of 1 May 2025**; Microsoft's official successor is **Microsoft Entra External ID**, which UDCSP adopts. Full rationale and feature-by-feature mapping in [`docs/tech/architecture.md` § 14.0 — Identity deviation](./docs/tech/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
 
-> 🧰 Additional Azure services (Foundry, Container Apps, Static Web Apps, Functions, Cosmos DB, Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, Defender for Cloud, Sentinel, Front Door, Service Bus, Event Grid, Monitor, Copilot Studio, etc.) complete the picture and are detailed in [`architecture.md`](./docs/tech/architecture.md).
+> 🧰 **Additional Azure services included in the platform.** The 9 mandatory services above are paired with: Microsoft Foundry (incl. the `topic-router` agent), Azure Container Apps, Static Web Apps, Functions, **Azure Database for PostgreSQL — Flexible Server** (replaces Azure SQL + Cosmos DB workloads), **Azure Cache for Redis** (slot-filling + ephemeral state), Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, AI Search, AI Content Safety, Defender for Cloud + Sentinel, Front Door + WAF, Service Bus, Event Grid, Monitor + Log Analytics + App Insights, ACR, Bicep, Azure Policy. A second wave added by the post-audit refactor: **Microsoft Entra Verified ID** (EUDI Wallet bridge), **Microsoft Priva** (GDPR DSR system of record), **Azure Confidential Ledger** (AI Act Art. 26(6) tamper-evident logging), **Azure Confidential Compute** (TEE for high-risk AI inference), **Microsoft Defender for APIs**, **Azure DDoS Protection Standard**, **Azure Backup + Site Recovery**, **Azure Chaos Studio**, **Azure Bastion** and **Microsoft Entra Permissions Management (CIEM)**. Every addition is detailed in [`architecture.md` § 14.2](./docs/tech/architecture.md#142-additional-azure-services-included-in-the-platform).
 
 ---
 
@@ -173,13 +173,13 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
 | 📚 `case-study-11.md` | Original case study extracted from the source brief. |
 | 🏛️ `infra/` | Bicep landing zone, Microsoft Entra External ID + Microsoft Entra ID + custom user flows, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
-| 💻 `apps/` | React web portal, Expo mobile shell, ACS + AI Speech voice bot (6 languages), Copilot Studio bot, D365 model-driven apps + Power Platform solutions. |
+| 💻 `apps/` | React web portal (incl. the new HTML/JS Chart.js insights components — post-audit replacement for Power BI Embedded), Expo mobile shell, ACS + AI Speech voice bot (6 languages), D365 model-driven apps + Power Platform solutions. *(The conversational orchestration that lived in `apps/copilot-studio/` is now in `foundry/agents/topic-router/`.)* |
 | 🔌 `services/` | API Management (8 OpenAPI APIs), Logic Apps (6 workflows), Functions / Container Apps, Power Automate flows. |
-| 🧠 `foundry/` | 6 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper), prompts, evaluations, datasets. |
+| 🧠 `foundry/` | 7 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper, **topic-router** *(post-audit)*), prompts, evaluations, datasets. |
 | 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO), each holding 1 Lakehouse with 3 medallion layers (Bronze · Silver · Gold) — i.e. 3 Lakehouses × 3 layers = **9 logical zones**. Notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
-| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) + 15 phase modules + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |
+| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) with **24 phase modules** *(post-audit: +Postgres, +Redis, +VerifiedId, +Bastion, +Ciem, +Ddos, +BackupAsr, +ConfidentialLedger, +ConfidentialCompute, +ChaosStudio, +Priva; −CopilotStudio)* + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |
 | ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
 | 📑 `agents.md` · `installation.md` · `recipe.md` | Build execution log · install procedure · acceptance walk-through. |
 
@@ -196,21 +196,21 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🟦 | 1 | Consolidate **47 legacy portals** into a unified front door | Static Web Apps + design system + API Management aggregation layer | Inventory mapping in `architecture.md`; portal-decommission tracker |
 | 🟦 | 2 | **Cross-border identity federation** for 2.1 M citizens | Microsoft Entra External ID (per country) + Microsoft Entra ID + eIDAS bridge | Federation conformance test against eIDAS sandbox; SSO load test |
 | 🟩 | 3 | Reduce processing time **28 d → 4 d** | Logic Apps end-to-end orchestration + Foundry eligibility pre-assessment + D365 queues | Process-mining KPI in Fabric; Power BI SLA dashboard |
-| 🟩 | 4 | **+38 % citizen satisfaction** | GenAI assistant (Copilot Studio + Foundry) + omnichannel + WCAG-compliant UI | CSAT survey pipeline → Fabric → Power BI trend |
+| 🟩 | 4 | **+38 % citizen satisfaction** | GenAI assistant (Foundry **`topic-router`** + downstream agents) + omnichannel + WCAG-compliant UI | CSAT survey pipeline → Fabric → Power BI trend |
 | 🟧 | 5 | AI **classification & routing in 12 languages** | Foundry classifier agent + AI Translator + Azure OpenAI | Foundry evaluations (accuracy, BLEU, language coverage); golden dataset per language |
-| 🟧 | 6 | **GenAI citizen assistant** across web / mobile / phone | Copilot Studio + Foundry agents + AI Speech + Azure Communication Services | Foundry evals + content-safety scorecards + per-channel UAT |
+| 🟧 | 6 | **GenAI citizen assistant** across web / mobile / phone | Foundry `topic-router` + downstream Foundry agents + AI Speech + Azure Communication Services | Foundry evals + content-safety scorecards + per-channel UAT |
 | 🟥 | 7 | **Automated eligibility pre-assessment** before human review | Foundry eligibility model (high-risk under EU AI Act) + business rules in Logic Apps + D365 review queue | Shadow-mode evaluation (model vs. caseworker), bias audit, EU AI Act conformity |
 | 🟥 | 8 | **WCAG 2.1 AA** accessibility | Accessible design system + automated axe scans in CI/CD + manual annual audit | axe-core CI gate; third-party accessibility audit report |
 | 🟥 | 9 | **GDPR + EU AI Act + sector directives** compliance | Purview classification & policies + AI Act registry + DPIA per use case + Sentinel + Defender for Cloud | DPIA checklist; AI Act high-risk system documentation; Purview compliance report |
 | 🟦 | 10 | **National data sovereignty** preserved per country | Three sovereign Azure regions (DK / SE / NO) + per-country Fabric workspaces + per-country External ID tenants + cross-border data-sharing policies in Purview | Network topology review; data-residency tests; Purview policy diff |
 | 🟥 | 11 | Different **DPA interpretations** of data-sharing rules | Per-tenant policy packs in Purview + per-country Logic Apps connectors + DPIA per data-flow | Policy unit-tests; legal sign-off per country |
 | 🟨 | 12 | **Web, mobile, telephone** channels | Static Web Apps + native mobile shell + AI Speech + Azure Communication Services | Channel UAT scripts; voice bot transcription accuracy |
-| 🟦 | 13 | **Multilingual support across all 12 languages** | ICU i18n in UI; Translator agent in Foundry; Speech STT/TTS in 12 languages; multilingual Copilot Studio topics; per-language KPIs | Per-language Foundry eval suites; per-language CSAT slicing in Power BI |
+| 🟦 | 13 | **Multilingual support across all 12 languages** | ICU i18n in UI; Translator agent in Foundry; Speech STT/TTS in 12 languages; Foundry `topic-router` per-locale topic logic; per-language KPIs | Per-language Foundry eval suites; per-language CSAT slicing in Power BI |
 | 🟫 | 14 | Use of **all 9 mandatory Azure services** | See *Mandatory Azure Services* table above | Architecture review; service-inventory CI check |
 | 🟧 | 15 | **Auditability** of every AI decision | Foundry tracing + Application Insights + Fabric audit lakehouse + Power BI audit dashboard | Trace replay test; auditor walkthrough |
 | 🟪 | 16 | **Caseworker productivity** | D365 Customer Service + Copilot for Service + multilingual knowledge base | D365 KPIs (AHT, FCR); caseworker satisfaction survey |
 | 🟦 | 17 | **Synthetic but realistic data** for the three countries (demos, training, evals, audits) | Dedicated synthetic-data agent (A15) producing 12-language personas, applications, documents, conversations and golden eval datasets — GDPR-safe, regenerable | Dataset coverage report; eval baselines green; auditor-ready persona book |
-| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry, D365, Power Platform and Copilot Studio assets across the 3 sovereign zones | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
+| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry (incl. the `topic-router` agent), D365 and Power Platform assets across the 3 sovereign zones — **24 phases** post-audit | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
 
 ---
 
@@ -220,11 +220,11 @@ The table below maps every requirement and outcome stated in the case study to t
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
-| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — why Foundry **and** Copilot Studio, the agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
+| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — Foundry as the single AI brain (with the `topic-router` agent absorbing what was Copilot Studio), the 7-agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
 | 🔀 **Channel designers / demo team** | One deep-dive per channel under [`docs/biz/`](./docs/biz/) — 📞 [`voice`](./docs/biz/voice.md) · 🌐 [`web`](./docs/biz/web.md) · 📱 [`mobile`](./docs/biz/mobile.md) · 💬 [`chat`](./docs/biz/chat.md) · 📲 [`sms`](./docs/biz/sms.md) · 📧 [`email`](./docs/biz/email.md) · 🧑‍💼 [`caseworker`](./docs/biz/caseworker.md). |
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with 15 phase modules. |
+| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with **24 phase modules** *(post-audit refactor)*. |
 | 🛡️ **Auditors / DPOs** | [`datacompliance.md`](./docs/biz/datacompliance.md) — every regulation we answer to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses + evidence pack. |
 | 📚 **Original case study** | [`case-study-11.md`](./docs/biz/case-study-11.md). |
 
@@ -241,7 +241,7 @@ For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
 | 📄 File | 🎯 Purpose | 👤 Best for |
 |---|---|---|
 | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
-| [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — why **both** Microsoft Foundry and Copilot Studio, the 6-agent catalogue, RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
+| [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — single brain in **Microsoft Foundry**, the 7-agent catalogue (incl. the post-audit `topic-router`), RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
 | [`docs/biz/datacompliance.md`](./docs/biz/datacompliance.md) | **Data compliance — the executive answer.** Every regulation UDCSP responds to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses, citizen-rights operational SLAs, and the evidence pack a regulator can demand. | DPOs, legal, auditors, citizen advocates. |
 | [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
 
@@ -254,7 +254,7 @@ Same hero / badges / mermaid lifecycle / sovereignty / activation runbook layout
 | [`docs/biz/voice.md`](./docs/biz/voice.md) | 📞 The **telephone** channel — call lifecycle, neural voices in 12 languages, DTMF + slow-speech, per-country sovereignty, **how to procure a real Nordic toll-free number**. | Voice designers · demo team. |
 | [`docs/biz/web.md`](./docs/biz/web.md) | 🌐 The **web portal** channel — Static Web App, React 18 + TS, External ID per country, ICU MessageFormat, WCAG 2.1 AA, embedded chat widget. | Web teams · accessibility leads. |
 | [`docs/biz/mobile.md`](./docs/biz/mobile.md) | 📱 The **mobile app** channel — Expo + React Native, MSAL biometrics, native camera capture, push notifications, VoiceOver / TalkBack, *one binary · three OIDC authorities*. | Mobile teams · push-notification ops. |
-| [`docs/biz/chat.md`](./docs/biz/chat.md) | 💬 The **chat widget** channel — Copilot Studio web embed, DirectLine token broker, shared topics + escalation rules with the voice channel, **one bot two channels one brain**. | Conversation designers · Copilot Studio admins. |
+| [`docs/biz/chat.md`](./docs/biz/chat.md) | 💬 The **chat widget** channel — APIM `/agents/topic-router` web embed (post-audit refactor), shared topics + escalation rules with the voice channel, **one bot, two channels, one brain in Foundry**. | Conversation designers · Foundry admins. |
 | [`docs/biz/sms.md`](./docs/biz/sms.md) | 📲 The **SMS** channel — ACS SMS, 12-language templates, STOP keyword + GDPR consent, per-country sender IDs, sender-ID procurement (alphanumeric · short code · long code). | Notification ops · compliance. |
 | [`docs/biz/email.md`](./docs/biz/email.md) | 📧 The **email** channel — bidirectional ACS Email, per-country sender domain + DKIM/SPF/DMARC, D365 email-to-case with Foundry classifier auto-routing, GDPR S/MIME exports. | Email ops · DPO. |
 | [`docs/biz/caseworker.md`](./docs/biz/caseworker.md) | 🧑‍💼 The **caseworker** channel — D365 Customer Service + Copilot for Service, where every escalation lands and the eligibility AI is human-supervised (EU AI Act Art. 14). | Caseworker leads · D365 specialists · DPO. |
@@ -273,6 +273,49 @@ For architects, builders, operators, and reviewers of the implementation itself.
 | [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
 
 > All sixteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
+
+---
+
+## 🔁 Post-Audit Refactor Summary (May 2026)
+
+This repository was refactored after an internal architecture audit to consolidate the stack and fill compliance gaps. The full diff lives in [`docs/tech/plan_post_audit.md`](./docs/tech/plan_post_audit.md); the headline changes are:
+
+**➖ Removed**
+
+| Service | Replacement | Why |
+|---|---|---|
+| Azure SQL Database | Azure Database for PostgreSQL — Flexible Server (relational + JSONB) | Two OLTP engines (SQL + Cosmos) is never justified; Postgres covers both shapes. |
+| Azure Cosmos DB | PostgreSQL JSONB (durable docs) + Azure Cache for Redis (ephemeral / TTL) | Same: collapses to one OLTP engine + a true low-latency cache. |
+| Microsoft Copilot Studio | Foundry agent **`topic-router`** | Single AI brain (Foundry) instead of two; one API surface, one eval surface, one AI Act registry surface. |
+| Power BI **Embedded** for the citizen-facing portal | Lightweight HTML/JS Chart.js components (`apps/web/src/components/insights/`) | Reduce the dependency surface for citizen-facing pages. **Power BI Premium is kept** for internal users (operational, executive, auditor dashboards). |
+
+**➕ Added**
+
+| Service | Purpose |
+|---|---|
+| **Microsoft Entra Verified ID** | EUDI Wallet bridge (eIDAS 2.0) — moves the platform from "EUDI readiness" to active VC issuance/verification. |
+| **Microsoft Priva** | GDPR DSR system of record (access · erasure · portability · rectification) with SLA tracking + DPA evidence. |
+| **Azure Confidential Ledger** | Tamper-evident, CCF-backed log of every high-risk AI decision (AI Act Art. 26(6) cryptographic proof). |
+| **Azure Confidential Compute (Container Apps)** | TEE (SEV-SNP) host for the Eligibility Pre-Assessor inference — citizen PII encrypted in memory cross-border. |
+| **Microsoft Defender for APIs** | Runtime protection on APIM (sole ingress for the 47 consolidated portals) — shadow-API discovery, sensitive-data leakage detection. |
+| **Azure DDoS Protection Standard** | L3/L4 protection on every public-facing VNet (NIS2 expectation) — defence in depth alongside Front Door's L7. |
+| **Azure Backup + Azure Site Recovery** | Per-country BCDR, geo-paired in-EU; RPO ≤ 15 min, RTO ≤ 4 h (ISO 27001 + NIS2 baseline). |
+| **Azure Chaos Studio** | Monthly resilience experiments empirically validating the 99.9 % citizen-channel SLO. |
+| **Azure Bastion (Standard)** | Sole admin shell-access path — no jump boxes, no public RDP/SSH. |
+| **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant entitlement audit + drift detection across the 3 sovereign tenants. |
+
+The installer DAG grew from 15 to **24 phases** and has been smoke-tested end-to-end (`pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly`).
+
+### 🚧 Future Recommendations (not implemented in this repository)
+
+The audit also surfaced two larger replacements that would meaningfully reduce vendor lock-in but were **deliberately not implemented** in this case-study scaffolding (the case study mandates D365 and Logic Apps as part of the 9 Microsoft services). They are documented here as a forward-looking note for any team taking UDCSP into production:
+
+| Current | Proposed replacement | Why it would be considered |
+|---|---|---|
+| Dynamics 365 Customer Service | Camunda 8 (BPMN/DMN) + a custom caseworker UI on Container Apps + Dataverse-free Power Apps **or** ServiceNow GovCloud | D365 is the platform's largest single vendor lock-in and is priced per-seat. The Nordic public sector is actively standardising on **BPMN 2.0** for case lifecycles. Camunda handles long-running stateful workflows and exposes **DMN** decision tables that are first-class auditable artefacts — exactly what the high-risk Eligibility Pre-Assessor (AI Act) demands. |
+| Azure Logic Apps | Camunda 8 / Zeebe (chosen consistently with the D365 → Camunda move) | The headline "28 d → 4 d" SLO is a textbook BPMN case. Logic Apps remains a JSON black box; **BPMN diagrams are directly readable by lawyers and Data Protection Authorities** — a meaningful audit advantage at every renewal. |
+
+These are forward-looking recommendations only; the implemented platform keeps Dynamics 365 Customer Service and Azure Logic Apps exactly as the case study requires.
 
 ---
 

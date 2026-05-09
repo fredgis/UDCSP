@@ -14,7 +14,7 @@ The 17 agents declared in [plan.md §2](./plan.md#2-agent-roster--responsibiliti
 |---|---|---|
 | `agent-platform` | A1, A2, A3, A5 | `infra/` |
 | `agent-data-gov` | A4, A13 | `data/fabric/`, `governance/purview/`, `governance/ai-act/` |
-| `agent-foundry` | A6, A11, A12, A15 | `foundry/`, `apps/copilot-studio/`, `apps/web/i18n/`, `data/synthetic/` |
+| `agent-foundry` | A6, A11, A12, A15 | `foundry/`, `apps/web/i18n/`, `data/synthetic/` *(was also `apps/copilot-studio/` before the post-audit refactor folded it into `foundry/agents/topic-router/`)* |
 | `agent-services` | A7, A8 | `services/`, `apps/d365/` |
 | `agent-frontend` | A9, A10 | `apps/web/` (excl. i18n), `apps/mobile/`, `apps/voice/` |
 | `agent-qa` | A14 | `tests/` |
@@ -97,9 +97,82 @@ Model used: **Claude Opus 4.7 (xhigh reasoning)** for the orchestrator.
 | `agent-platform`     |  64 | ~3 200 | ~28 000 | ~95 |
 | **subtotal sub-agents** | **564** | **~19 700** | **~210 000** | **~740** |
 | Orchestrator (this session) |  39 | ~28 000 | ~42 000 | ~80 |
-| **TOTAL**            | **603** | **~47 700** | **~252 000** | **~820** |
+| **TOTAL initial build**            | **603** | **~47 700** | **~252 000** | **~820** |
 
 The orchestrator carries the **largest prompt budget** (full plan / architecture / case study + every sub-agent result + every checkpoint) but a moderate output volume (installer, master docs, status updates).
+
+---
+
+## 4-bis. Post-audit refactor run (May 2026)
+
+A second multi-agent run was launched on top of the initial scaffold to apply the architectural audit recommendations: **suppress** Azure SQL DB, Cosmos DB, Microsoft Copilot Studio and citizen-facing Power BI Embedded; **add** Microsoft Entra Verified ID, Microsoft Priva, Azure Confidential Ledger, Azure Confidential Compute, Microsoft Defender for APIs, Azure DDoS Protection Standard, Azure Backup + Site Recovery, Azure Chaos Studio, Azure Bastion (Standard) and Microsoft Entra Permissions Management (CIEM). The full diff and rationale are in [`plan_post_audit.md`](./plan_post_audit.md).
+
+### 4-bis.1 Sub-agent execution (background, parallel)
+
+| ID | Owned scope | Model | Duration | Files | Status |
+|---|---|---|---:|---:|---|
+| `sa1-data-refactor` | `infra/data/postgresql/`, `infra/data/redis/`; deletes `infra/data/cosmos/` | Claude Sonnet 4.6 | 7 m 36 s | 12 created · 1 folder deleted | ✅ |
+| `sa2-security-additions` | `infra/security/{confidential-ledger,confidential-compute,ddos,backup-asr,chaos-studio,defender}/` | Claude Sonnet 4.6 | 8 m 36 s | 24 | ✅ |
+| `sa3-identity-additions` | `infra/identity/{verified-id,bastion,ciem}/` + `governance/identity/eudi-wallet-readiness.md` | Claude Sonnet 4.6 | 4 m 31 s | 19 created · 1 modified | ✅ |
+| `sa4-copilot-into-foundry` | `foundry/agents/topic-router/`, updates `foundry/agents/citizen-assistant/`; deletes `apps/copilot-studio/` | Claude Sonnet 4.6 | 4 m 54 s | ~22 created · 4 modified · 1 folder deleted | ✅ |
+| `sa5-pbi-embedded-to-html` | `apps/web/src/components/insights/`, `apps/web/src/api/insights.ts` | Claude Sonnet 4.6 | 3 m 50 s | 4 (Chart.js + tests + API client) | ✅ |
+| `sa6-priva-gdpr` | `governance/priva/`, updates the two `gdpr-data-*` Logic Apps + `governance/gdpr/ropa.md` | Claude Sonnet 4.6 | 9 m 0 s | 31 created · 3 modified | ✅ |
+| `sa7-docs-biz` | All 10 `docs/biz/*.md` (except `case-study-11.md` which is verbatim) | Claude Sonnet 4.6 | 8 m 1 s | 10 modified | ✅ |
+
+### 4-bis.2 Orchestrator work (foreground, this CLI session, in parallel with sub-agents)
+
+| Phase | Output | Files |
+|---|---|---:|
+| `plan_post_audit.md` | source-of-truth plan with diff matrix, sub-agent isolation, new DAG, risks | 1 |
+| `Install-UDCSP.ps1` | new ValidateSet (24 phases), DAG rewritten, examples added | 1 |
+| 11 new install modules (Postgres, Redis, VerifiedId, Bastion, Ciem, Ddos, BackupAsr, ConfidentialLedger, ConfidentialCompute, ChaosStudio, Priva); `Install-CopilotStudio.psm1` deleted | scripts | 12 |
+| `udcsp.config.template.psd1` | 10 new resource config blocks | 1 |
+| `Install-LandingZone.psm1` | drop Cosmos asset prerequisites | 1 |
+| `apps/web/src/components/ChatWidget.tsx` | rewired from DirectLine to APIM `/agents/topic-router` | 1 |
+| `apps/web/README.md` | updated chat narrative | 1 |
+| `architecture.md` | §2.1 + §2.2 (mermaid), §5 (mermaid + agent catalogue + operating model), §6 (mermaid), §8 (mermaid + highlights), §10 (security & network), §12 (multilingual), §13.2 + §13.3 (mermaid sequences), §14.2 (service inventory + post-audit removed list), §15 (deployment mermaid) | 1 |
+| `data.md` | zone diagram, all 5 zone tables, storage map matrix, retention matrix, compliance map, encryption table, BCDR table, anti-patterns, §9 erasure sequence | 1 |
+| `installation.md` | new 24-phase table, conversational data layer, prerequisites | 1 |
+| `agents.md` (this section) | post-audit run timings, parallelism factor | 1 |
+| `.github/workflows/repo-checks.yml` | drop `apps/copilot-studio/` from yamllint scope; add `governance/priva/` | 1 |
+| `README.md` | full rewrite + Camunda future-recommendation footer | 1 |
+
+Model used: **Claude Opus 4.7 (xhigh reasoning)** for the orchestrator (same as initial build).
+
+### 4-bis.3 Wall-clock vs sequential — post-audit refactor
+
+```mermaid
+gantt
+  title UDCSP post-audit refactor — wall-clock vs sequential
+  dateFormat HH:mm:ss
+  axisFormat %M:%S
+  section Sub-agents (parallel)
+  sa1-data-refactor          :s1, 00:00:00, 7m36s
+  sa2-security-additions     :s2, 00:00:00, 8m36s
+  sa3-identity-additions     :s3, 00:00:00, 4m31s
+  sa4-copilot-into-foundry   :s4, 00:00:00, 4m54s
+  sa5-pbi-embedded-to-html   :s5, 00:00:00, 3m50s
+  sa6-priva-gdpr             :s6, 00:00:00, 9m
+  sa7-docs-biz               :s7, 00:00:00, 8m1s
+  section Orchestrator
+  plan + DAG + installer     :o1, 00:00:00, 5m
+  docs + ChatWidget rewrite  :o2, 00:05:00, 7m
+  smoke test + README + commit :o3, 00:12:00, 5m
+```
+
+- **Wall-clock for the post-audit refactor**: ≈ 17 minutes (longest sub-agent `sa6-priva-gdpr` at 9 min, fully overlapped with orchestrator's installer/docs work, plus the orchestrator's post-merge finalization).
+- **Sequential equivalent for the post-audit refactor**: 46 min 28 s (sub-agents only) + ≈ 17 min orchestrator = **≈ 63 min 28 s**.
+- **Parallelism factor (post-audit only)**: ≈ **3.7×**.
+
+### 4-bis.4 Cumulative — initial build + post-audit refactor
+
+| Run | Wall-clock | Sequential equivalent | Parallelism factor |
+|---|---:|---:|---:|
+| Initial build (multi-agent scaffolding, May 2026) | **≈ 12 min** | **≈ 45 min 47 s** | **~5×** end-to-end |
+| Post-audit refactor (May 2026) | **≈ 17 min** | **≈ 63 min 28 s** | **~3.7×** end-to-end |
+| **Cumulative (sum of wall-clock)** | **≈ 29 min** | **≈ 109 min 15 s** | **~3.8×** weighted average |
+
+> **Reading note.** The "cumulative wall-clock" is the developer's lived clock-on-the-wall: how long the human was waiting on the multi-agent system to deliver. The "sequential equivalent" is what an unparallelised run of the same work would have cost. The platform — IaC, apps, foundry, governance, security, BCDR, post-audit refactor, all docs in 12 sections each — is therefore delivered in **under 30 wall-clock minutes** of agent compute, against a ≈ 1 h 50 min sequential baseline.
 
 ---
 
@@ -117,7 +190,7 @@ The orchestrator carries the **largest prompt budget** (full plan / architecture
 | **A8** D365 Case Mgmt | `apps/d365/` | services | ✅ | `apps/d365/scripts/Test-D365.ps1` |
 | **A9** Web/Mobile | `apps/web/`, `apps/mobile/` | frontend | ✅ | `npm run test` in each app |
 | **A10** Voice & Channels | `apps/voice/` | frontend | ✅ | `apps/voice/scripts/Test-Voice.ps1` |
-| **A11** Conversational AI | `apps/copilot-studio/` | foundry | ✅ | `apps/copilot-studio/scripts/Import-CopilotStudio.ps1 -DryRun` |
+| **A11** Conversational AI | `foundry/agents/topic-router/`, `foundry/agents/citizen-assistant/` *(post-audit: Copilot Studio folded into Foundry)* | foundry | ✅ | `foundry/evaluations/scripts/Run-Evaluation.ps1 -Agent topic-router` |
 | **A12** A11y & i18n | `apps/web/i18n/`, `tests/accessibility/` | foundry + qa | ✅ | `apps/web/i18n/scripts/Validate-Translations.ps1` + `tests/accessibility/scripts/Run-Accessibility.ps1` |
 | **A13** Data Governance | `governance/purview/`, `governance/ai-act/` | data-gov | ✅ | `governance/purview/scripts/Test-Purview.ps1 -Offline` + `governance/ai-act/scripts/Validate-AIRegistry.ps1` |
 | **A14** QA & Evaluation | `tests/` | qa | ✅ | `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly` |
@@ -136,7 +209,7 @@ Recorded by the sub-agents themselves at hand-off; resolved during orchestrator 
 | `agent-data-gov` (`governance/ai-act/registry/*.yaml`) | `agent-foundry` (`foundry/agents/*/agent.yaml > registryEntryRef`) | Stable registry entry IDs | IDs fixed: `eligibility-model`, `classifier-model`, `citizen-assistant`, `translator`, `doc-extractor`, plus `caseworker-helper` (added in finalisation) |
 | `agent-foundry` (`apps/web/i18n/messages/{lang}.json`) | `agent-frontend` (`apps/web/src/main.tsx`) | 12-language ICU catalogue with stable keys | Frontend imports from `apps/web/i18n/messages/` directly |
 | `agent-services` (`services/apim/apis/*/openapi.yaml`) | `agent-frontend` (`apps/{web,mobile}/src/api/*.ts`) | OpenAPI 3 contracts | Web/mobile clients written against the contract; can be regenerated from spec |
-| `agent-services` (D365 case-create connector) | `agent-foundry` (Copilot Studio `connections/d365-case-create.json`) | Dataverse Web API schema for `udcsp_application` | Connector JSON references the table; D365 solution declares it |
+| `agent-services` (D365 case-create connector) | `agent-foundry` (`foundry/agents/topic-router/connections/d365-escalation.json`) *(post-audit: previously `apps/copilot-studio/connections/d365-case-create.json`)* | Dataverse Web API schema for `udcsp_application` | Connector JSON references the table; D365 solution declares it |
 | `agent-data-gov` (Fabric mirroring sink) | `agent-services` (Dataverse → Fabric mirroring) | Mirror config destination workspace per country | `data/fabric/workspaces/workspace-config.json` × `apps/d365/dataverse-to-fabric-mirroring/mirror-config.json` |
 | `agent-platform` (External ID URLs, Key Vault names) | All agents that call External ID / read secrets | Per-country External ID authority URLs + bootstrap KV name | Centralised in `scripts/install/config/udcsp.config.template.psd1` |
 

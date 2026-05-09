@@ -1,0 +1,13 @@
+{
+  "agent": "topic-router",
+  "tools": [
+    { "name": "invoke_classifier", "type": "foundryAgent", "target": "classifier", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "invoke_citizen_assistant", "type": "foundryAgent", "target": "citizen-assistant", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "invoke_doc_extractor", "type": "foundryAgent", "target": "doc-extractor", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "invoke_translator", "type": "foundryAgent", "target": "translator", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "escalate_to_d365", "type": "connector", "target": "d365-escalation", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "read_session_redis", "type": "connector", "target": "redis-session", "auth": "managedIdentity", "network": "privateEndpoint" },
+    { "name": "write_session_redis", "type": "connector", "target": "redis-session", "auth": "managedIdentity", "network": "privateEndpoint" }
+  ],
+  "notes": "Scaffold only; configure real endpoints through APIM and Foundry tenant settings."
+}

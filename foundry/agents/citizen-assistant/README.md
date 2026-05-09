@@ -1,7 +1,7 @@
 # Multilingual Citizen Assistant
 
 ## Purpose
-Plain-language citizen assistant exposed through Copilot Studio, web, mobile and voice.
+Focused plain-language KB Q&A skill. It is invoked by `foundry/agents/topic-router` and no longer acts as the conversational orchestrator.
 
 ## How to regenerate
 Edit agent.yaml, tools.json, and system-prompt.md; register through Foundry import once tenant endpoints exist.

@@ -2,13 +2,13 @@
 
 # 🧠 UDCSP — The AI Architecture
 
-### Microsoft Foundry · Microsoft Copilot Studio · Azure OpenAI · 6 agents · 12 languages
+### Microsoft Foundry · topic-router · Azure OpenAI · 7 agents · 12 languages
 
-*One brain (Foundry), many faces (Copilot Studio). Why both products are mandatory, how they cooperate, and what every Foundry agent does.*
+*One brain: Microsoft Foundry. The new `topic-router` agent absorbs the previous Copilot Studio façade and routes web chat, mobile chat, and voice through APIM.*
 
 [![AI Brain](https://img.shields.io/badge/🧠_Brain-Microsoft_Foundry-FF6F00?style=for-the-badge)](#)
-[![Façade](https://img.shields.io/badge/🗣️_Façade-Copilot_Studio-0078D4?style=for-the-badge)](#)
-[![Agents](https://img.shields.io/badge/🤖_Agents-6-2E7D32?style=for-the-badge)](#)
+[![Router](https://img.shields.io/badge/🗣️_Router-topic--router-0078D4?style=for-the-badge)](#)
+[![Agents](https://img.shields.io/badge/🤖_Agents-7-2E7D32?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12-AD1457?style=for-the-badge)](#)
 
 [![Compliance](https://img.shields.io/badge/🛡️_EU_AI_Act-Registered-C62828?style=flat-square)](#)
@@ -21,13 +21,11 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP runs **two** AI products side-by-side, by design.
-> **Microsoft Foundry** is the AI **control plane** — every model call, every agent, every evaluation, every trace, and every EU AI Act registration lives there.
-> **Microsoft Copilot Studio** is the conversational **façade** — it owns dialog state, channel adapters (Web, Teams, Voice, M365 Copilot, WhatsApp) and topic-based intent routing, and it *delegates* its hard reasoning to Foundry agents through APIM.
+> **TL;DR.** UDCSP now has **one AI brain: Microsoft Foundry**. The previous version used Microsoft Copilot Studio as a conversational façade; this refactor removes that dual-brain story. Web chat, mobile chat, and voice IVR now call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to `citizen-assistant`, `classifier`, `translator`, `document-extractor`, and `eligibility` as needed.
 >
-> One brain (Foundry), many faces (Copilot Studio). Mandatory because the case study lists both — and architecturally correct because each does what the other should not.
+> This was Copilot Studio in the previous version; it is now the Foundry `topic-router` agent. The EU AI Act registry, evaluations, traces, and content-safety controls stay in Foundry and are backed by Azure Confidential Ledger.
 >
-> 📡 *For a **per-channel breakdown** — what AI fires on voice vs web vs mobile vs chat vs SMS vs email vs caseworker, with one consolidated matrix — see [§ 7. AI per communication channel](#7-ai-per-communication-channel). That is the heart of this document.*
+> 📡 *For a **per-channel breakdown** — what AI fires on voice vs web vs mobile vs chat vs SMS vs email vs caseworker, with one consolidated matrix — see [§ 7. AI per communication channel](#7-ai-per-communication-channel).*
 >
 > 📞 *For the deep-dive on the **telephone channel** specifically — call lifecycle, neural voices, accessibility, per-country sovereignty, and how to procure a real Nordic toll-free number — see [`voice.md`](./voice.md).*
 
@@ -40,8 +38,8 @@
 1. [Why this document exists](#1-why-this-document-exists)
 2. [The mental model in one picture](#2-the-mental-model-in-one-picture)
 3. [Microsoft Foundry — the AI control plane](#3-microsoft-foundry--the-ai-control-plane)
-4. [Microsoft Copilot Studio — the conversational façade](#4-microsoft-copilot-studio--the-conversational-façade)
-5. [Why both? The architectural rationale](#5-why-both-the-architectural-rationale)
+4. [Foundry topic-router — the conversational orchestrator](#4-foundry-topic-router--the-conversational-orchestrator)
+5. [Why one brain? The architectural rationale](#5-why-one-brain-the-architectural-rationale)
 6. [The agent catalogue](#6-the-agent-catalogue)
 
 **The heart of this document** (the AI stack, viewed by *channel*)
@@ -72,9 +70,9 @@
 
 ## 1. Why this document exists
 
-The case study hands us a tricky-looking pair: **Azure OpenAI** *and* **Microsoft Copilot Studio**, both flagged as mandatory, plus a strong implicit demand for governance (EU AI Act, GDPR, Purview lineage) and for multi-channel reach (citizens on voice, web, mobile, chat, SMS, email — plus caseworkers in D365 — see § 7 for the channel-by-channel breakdown). A naïve reading is "two AI products doing the same thing — pick one and hide the other." That is **wrong**.
+The case study hands us Azure OpenAI plus a strong implicit demand for governance (EU AI Act, GDPR, Purview lineage) and for multi-channel reach (citizens on voice, web, mobile, chat, SMS, email — plus caseworkers in D365 — see § 7 for the channel-by-channel breakdown). A naïve reading is "two AI products doing the same thing — pick one and hide the other." That is **wrong**.
 
-This document explains, in one place, what each product does in UDCSP, why both are needed, and how they cooperate. Read it once and the rest of the AI surface (`docs/tech/architecture.md` § 5, the Foundry assets under `foundry/`, the Copilot Studio assets under `copilot-studio/`, the eval pipelines under `tests/eval/`) becomes self-evident.
+This document explains, in one place, how Foundry centralises every model call, every route, and every audit trail. Read it once and the rest of the AI surface (`docs/tech/architecture.md` § 5, the Foundry assets under `foundry/`, the Foundry `topic-router` assets under `foundry/agents/topic-router/`, the eval pipelines under `tests/eval/`) becomes self-evident.
 
 ---
 
@@ -98,7 +96,7 @@ flowchart TB
         D365COP["🤖 D365 Copilot for Service"]
     end
 
-    subgraph FACADE["🗣️ Conversational façade · Microsoft Copilot Studio"]
+    subgraph FACADE["🗣️ Conversational façade · Foundry `topic-router` agent"]
         TOPICS["📚 Topics &amp; dialogs<br/><i>Intent routing, slot filling,<br/>multi-turn state</i>"]
         CHAN["🔌 Channel adapters<br/><i>Web · Teams · WhatsApp · Voice</i>"]
         ACT["⚡ Actions<br/><i>HTTP calls to APIM</i>"]
@@ -198,7 +196,7 @@ flowchart TB
 | Layer | Owns | Does NOT own |
 |---|---|---|
 | 👥 **Citizen channels** | The user's surface (browser, app, phone call, Teams chat, WhatsApp). | Anything AI; they only render. |
-| 🗣️ **Copilot Studio façade** | Conversation state, intent topics, channel plumbing, language detection, escalation rules. | Reasoning, eligibility scoring, document extraction, model choice. |
+| 🗣️ **Foundry `topic-router` façade** | Conversation state, intent topics, channel plumbing, language detection, escalation rules. | Reasoning, eligibility scoring, document extraction, model choice. |
 | 🚪 **APIM** | Authentication, throttling, audit, version pinning, response shaping. | Anything AI-specific; it is a generic gateway. |
 | 🧠 **Foundry control plane** | Models, agents, prompts, evaluations, traces, safety, AI Act registry, prompt optimization. | The user-facing dialog or the channel mix. |
 | 📚 **Knowledge & data** | The grounding corpus, lineage, classifications. | Reasoning. |
@@ -250,151 +248,70 @@ Each `agent.yaml` is the source of truth — installer + CI deploy from it, eval
 
 ---
 
-## 4. Microsoft Copilot Studio — the conversational façade
+## 4. Foundry topic-router — the conversational orchestrator
 
-> **One-liner.** Copilot Studio is where the **conversation lives**: which topic was triggered, what slots are filled, what to say next, on which channel, and when to escalate. It does **not** reason about eligibility, it does **not** call models directly — it asks a Foundry agent (through APIM) and renders the result.
+> **One-liner.** The `topic-router` is a Foundry agent that owns conversational routing for citizen channels. It replaces the previous Microsoft Copilot Studio façade: same citizen journeys, fewer moving parts, one trace plane.
 
-### 4.1 Why Copilot Studio is essential — even with Foundry
+### 4.1 What the topic-router owns
 
-| Capability | Without Copilot Studio you would have to… | What it costs us out-of-the-box |
-|---|---|---|
-| 🔌 **Channel adapters** | Build and maintain 5 separate clients (Teams, WhatsApp, Web embed, Voice via ACS, Microsoft 365 Copilot embed). | One bot wired into all five with checkboxes. |
-| 🧵 **Multi-turn dialog state** | Re-invent slot filling, interruption, "back", "start over", confirmation patterns in code for every client. | Built-in topic engine with no-code authoring. |
-| 🌍 **Per-channel localisation** | Maintain language packs and per-channel formatting rules manually. | Native language variants per topic. |
-| 👤 **Authoring by non-engineers** | Every wording change becomes a code PR. | Caseworker advisors and content designers can co-author topics. |
-| 📞 **Escalation to human** | Build queue/handoff manually. | Out-of-the-box D365 Omnichannel handoff. |
-| 🏁 **Time to first useful demo** | Weeks. | Hours. |
+| Capability | How it works now |
+|---|---|
+| 🧭 **Intent routing** | Web chat, mobile chat, and voice IVR post to APIM `/agents/topic-router`; the router selects the right downstream Foundry agent. |
+| 🧵 **Slot state** | Short-lived slot-filling state lives in Azure Cache for Redis Enterprise; drafts lasting more than 24 h are persisted in PostgreSQL JSONB. |
+| 🌍 **Language routing** | The first utterance locks locale, calls Translator only when required, and preserves civic terminology. |
+| 🤝 **Escalation** | The router calls D365 through APIM to create a warm case with transcript, trace ID, and evidence. |
+| 📜 **Traceability** | Every route decision, downstream agent call, and safety verdict is a Foundry trace and an AI Act evidence event. |
 
-### 4.2 The strict Copilot Studio contract in UDCSP
+### 4.2 Explicit migration note
 
-Copilot Studio in UDCSP is **deliberately small**. We treat it like a thin shell:
-
-- ✅ It owns: greeting, intent detection (top-level), slot collection, language switch UI, escalation routing, channel-specific rendering.
-- ✅ Every "real" answer is produced by a **Foundry agent** invoked through an APIM action.
-- ❌ It must **not** call Azure OpenAI on its own (Copilot Studio's "Generative answers" feature against a model is **disabled** in UDCSP — all generative answers are funneled through Foundry agents so they inherit safety / tracing / evals).
-- ❌ It must **not** hold authoritative business logic (no eligibility math in topic expressions; no document parsing).
-
-This contract is enforced by:
-1. APIM policy: refuses requests from Copilot Studio that are not for an *allow-listed* Foundry agent endpoint.
-2. Foundry guardrails: high-risk agents require an `actor=copilot-studio|d365|web|mobile|voice` claim and reject undocumented callers.
-3. Eval pipelines that diff Copilot Studio "Generative answers" usage and fail the build if any creep in.
-
-### 4.3 What lives in `copilot-studio/` in this repo
-
-```
-copilot-studio/
-├── bot/                       # exported solution package
-├── topics/
-│   ├── greeting/
-│   ├── application-status/
-│   ├── eligibility-precheck/  # → calls Eligibility agent in Foundry
-│   ├── translate-document/    # → calls Translator + Doc Extractor agents
-│   ├── escalate-to-human/
-│   └── language-switch/
-├── actions/                   # HTTP/Power Automate action specs against APIM
-├── knowledge/                 # SharePoint and website connectors (link only — never raw copies)
-├── channels/                  # Teams / Web / WhatsApp / Voice (ACS) / M365 Copilot
-└── tests/                     # conversation transcripts that gate releases
-```
+This was Copilot Studio in the previous version; it is now the Foundry `topic-router` agent. Voice IVR, the web chat widget, and mobile chat no longer use previous channel tokens or Copilot Studio channel adapters. They call APIM directly and receive a Foundry-mediated response shaped for their channel.
 
 ---
 
-## 5. Why both? The architectural rationale
+## 5. Why one brain? The architectural rationale
 
-This is the question evaluators will ask first. The short answer: **they solve different problems, and combining them is cheaper and safer than overloading either**.
-
-### 5.1 Side-by-side comparison
-
-| Concern | 🗣️ Copilot Studio | 🧠 Microsoft Foundry |
-|---|---|---|
-| Primary purpose | **Conversational orchestration** | **AI runtime &amp; governance** |
-| Audience | Content designers, business analysts, channel operators | ML engineers, prompt engineers, compliance officers |
-| Authoring style | Low-code / no-code, WYSIWYG | Code-first (Python / C# / YAML), CI/CD |
-| Channels | First-class: Web, Teams, WhatsApp, Voice (ACS), M365 Copilot, custom | None — exposes HTTPS endpoints |
-| Dialog state | Built-in (topics, slots, interruption, fallback) | None |
-| Reasoning | Light (rules, expressions, generative answers) | Heavy (multi-step agents, tools, RAG, fine-tuning) |
-| Model governance | Limited (uses platform-provided models) | Full (catalog, version pinning, region pinning, RAI policies) |
-| Evaluation suite | Topic-level conversation tests | Quantitative evals: groundedness, relevance, F1, bias, jailbreak |
-| Tracing & telemetry | Conversation analytics | Per-call OTEL traces with full lineage |
-| EU AI Act registration | Not the right artifact | First-class registry per agent |
-| Content Safety | Inherited via the Foundry calls it makes | Native, configurable per agent |
-| Skill ceiling for novel use cases | Stops at the limits of topic + generative answers | Arbitrary code, arbitrary tools |
-
-### 5.2 The decision tree we apply
-
-```mermaid
-flowchart TD
-    START(["A new requirement arrives"])
-    START --> Q1{Is it a citizen<br/>conversation?}
-    Q1 -- No --> Q3{Is it a model<br/>or LLM call?}
-    Q1 -- Yes --> Q2{Does the topic exist<br/>in Copilot Studio?}
-    Q2 -- Yes --> CS1["Extend the topic.<br/>Add a Foundry call if reasoning is needed."]
-    Q2 -- No --> CS2["Author a new topic in Copilot Studio.<br/>Wire it to a Foundry agent through APIM."]
-    Q3 -- Yes --> Q4{Does an agent<br/>cover it?}
-    Q4 -- Yes --> F1["Reuse the Foundry agent.<br/>Add a new prompt variant + eval if needed."]
-    Q4 -- No --> F2["Create a new Foundry project + agent.<br/>Define eval suite + AI Act class first."]
-    Q3 -- No --> OTHER["Not an AI requirement —<br/>route to Logic Apps / Functions / D365."]
-
-    classDef cs fill:#E0F2F1,stroke:#00796B,color:#004D40
-    classDef fnd fill:#FFF3E0,stroke:#E65100,color:#BF360C
-    classDef other fill:#ECEFF1,stroke:#546E7A,color:#263238
-    class CS1,CS2 cs
-    class F1,F2 fnd
-    class OTHER other
-```
-
-### 5.3 The "single brain, many faces" pattern
+The post-audit decision removes the redundant conversational façade. Foundry already owns model governance, traces, evals, AI Act registration, and content safety; putting routing into a Foundry agent gives UDCSP a single control plane instead of stitching two AI products together.
 
 ```mermaid
 flowchart LR
-    subgraph FACES["FACES — channels"]
-        F1["💻 Web chat"]
-        F2["📱 Mobile chat"]
-        F3["📞 Voice / IVR"]
-        F4["👥 Teams / M365"]
-        F5["💬 WhatsApp"]
-        F6["🤖 D365 Copilot<br/>(caseworker)"]
-    end
-    subgraph SHELL["Copilot Studio"]
-        S["Topics + slots +<br/>channel adapters"]
-    end
-    subgraph BRAIN["Microsoft Foundry agents"]
-        B1["Classifier"]
-        B2["Translator"]
-        B3["Eligibility"]
-        B4["Citizen Assistant"]
-        B5["Doc Extractor"]
-        B6["Caseworker Helper"]
-    end
-
-    F1 & F2 & F3 & F4 & F5 --> S
-    F6 --> B6
-    S --> B1 & B2 & B3 & B4 & B5
-
-    classDef face fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
-    classDef shell fill:#E0F2F1,stroke:#00796B,color:#004D40
-    classDef brain fill:#FFF3E0,stroke:#E65100,color:#BF360C
-    class F1,F2,F3,F4,F5,F6 face
-    class S shell
-    class B1,B2,B3,B4,B5,B6 brain
+    WEB["💻 Web chat"] --> APIM["APIM<br/>/agents/topic-router"]
+    MOB["📱 Mobile chat"] --> APIM
+    VOX["📞 Voice IVR<br/>ACS + AI Speech"] --> APIM
+    APIM --> ROUTER["Foundry topic-router"]
+    ROUTER --> CLS["Classifier"]
+    ROUTER --> AST["Citizen Assistant"]
+    ROUTER --> ELI["Eligibility<br/><b>HIGH-RISK</b>"]
+    ROUTER --> DOC["Document Extractor"]
+    ROUTER --> TRA["Translator"]
+    ELI --> TEE["Confidential Computing TEE"]
+    ROUTER -. evidence .-> LEDGER["Azure Confidential Ledger"]
 ```
 
-The diagonal observation: **the caseworker channel skips Copilot Studio**. The D365 Copilot for Service is itself a conversational shell, so it calls Foundry agents directly through APIM — exactly the same agents the citizen-side Copilot Studio bot calls. This guarantees that a caseworker reviewing a citizen request sees the same eligibility recommendation, with the same evidence, that the citizen self-service flow saw — *because both are powered by the same Foundry agent and the same trace*.
+The caseworker channel remains different: **Dynamics 365 Customer Service + Copilot for Service is unchanged** and calls Foundry through APIM as the workforce shell.
 
 ---
 
 ## 6. The agent catalogue
 
-Six Foundry agents, deliberately small. Every one is registered, evaluated, traceable, and content-safety-filtered.
+Seven Foundry agents, deliberately small. Every one is registered, evaluated, traceable, and content-safety-filtered.
 
 | # | Agent | Mission | Inputs | Outputs | Models | EU AI Act class | Human-in-the-loop |
 |---|---|---|---|---|---|---|---|
-| 1 | **Classifier** | Detect intent, target agency, language, urgency. | Citizen utterance + channel | `{intent, agency, language, urgency, confidence}` | `gpt-4o-mini` (low latency) + periodic LoRA fine-tune on labelled traces | Limited risk | Caseworker can re-route. |
-| 2 | **Translator orchestrator** | Translate citizen content + outbound communications across the 12 languages, preserving administrative terminology. | Source text + source/target lang + domain glossary | Translated text + per-segment confidence + glossary hits | Azure AI Translator (mass) + `gpt-4o` (admin terminology) hybrid | Limited risk | Caseworker can edit translation before sending. |
-| 3 | **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a **recommendation**, never a decision. | Application form + extracted document fields + citizen profile claims | `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` | Tool-using `gpt-4o` + deterministic Python rule engine plug-in | **HIGH RISK** | **Always** reviewed by a caseworker; never auto-approves. |
-| 4 | **Citizen Assistant** | Answer citizen questions in natural language, perform safe actions on behalf of the citizen, escalate when in doubt. | Citizen question + persona + locale + retrieved chunks | Grounded answer + citations + suggested next action | `gpt-4o` with strict RAG over public knowledge + Fabric anonymised case history | Limited risk | Escalation to human caseworker on demand. |
-| 5 | **Document Extractor** | Extract structured data from uploaded documents (passport, payslip, lease, ID card). | Document binary + expected schema | `{fields, confidences, redaction map, raw OCR}` | Azure AI Document Intelligence (custom + prebuilt) + `gpt-4o-mini` for cross-field validation | Limited risk | Caseworker validates extraction. |
-| 6 | **Caseworker Copilot Helper** | Summarise cases, draft replies, suggest knowledge articles, propose next-best-action. | D365 case record + thread + KB retrieval set | Summary + draft reply + cited sources + next-best-actions | `gpt-4o` grounded on the case record + KB | Limited risk | Caseworker is the operator and signs every action. |
+| 1 | **topic-router** | Route web chat, mobile chat, and voice IVR turns to the correct Foundry agent; manage slot state and escalation. | Channel payload + locale + traceparent | `{route, slots, downstreamAgent, escalationAction}` | `gpt-4o-mini` + deterministic routing tools | Limited risk | Caseworker receives escalations; DPO audits route traces. |
+| 2 | **Classifier** | Detect intent, target agency, language, urgency. | Citizen utterance + channel | `{intent, agency, language, urgency, confidence}` | `gpt-4o-mini` (low latency) + periodic LoRA fine-tune on labelled traces | Limited risk | Caseworker can re-route. |
+| 3 | **Translator orchestrator** | Translate citizen content + outbound communications across the 12 languages, preserving administrative terminology. | Source text + source/target lang + domain glossary | Translated text + per-segment confidence + glossary hits | Azure AI Translator (mass) + `gpt-4o` (admin terminology) hybrid | Limited risk | Caseworker can edit translation before sending. |
+| 4 | **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a **recommendation**, never a decision. | Application form + extracted document fields + citizen profile claims | `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` | Tool-using `gpt-4o` + deterministic Python rule engine plug-in | **HIGH RISK** | **Always** reviewed by a caseworker; never auto-approves. |
+| 5 | **Citizen Assistant** | Answer citizen questions in natural language, perform safe actions on behalf of the citizen, escalate when in doubt. | Citizen question + persona + locale + retrieved chunks | Grounded answer + citations + suggested next action | `gpt-4o` with strict RAG over public knowledge + Fabric anonymised case history | Limited risk | Escalation to human caseworker on demand. |
+| 6 | **Document Extractor** | Extract structured data from uploaded documents (passport, payslip, lease, ID card). | Document binary + expected schema | `{fields, confidences, redaction map, raw OCR}` | Azure AI Document Intelligence (custom + prebuilt) + `gpt-4o-mini` for cross-field validation | Limited risk | Caseworker validates extraction. |
+| 7 | **Caseworker Copilot Helper** | Summarise cases, draft replies, suggest knowledge articles, propose next-best-action. | D365 case record + thread + KB retrieval set | Summary + draft reply + cited sources + next-best-actions | `gpt-4o` grounded on the case record + KB | Limited risk | Caseworker is the operator and signs every action. |
+
+### 6.1 Confidential Computing for the Eligibility Pre-Assessor
+
+The Eligibility Pre-Assessor is the only high-risk AI Act system in UDCSP. It runs inside an **Azure Confidential Computing** trusted execution environment (`infra/security/confidential-compute/`) so cross-border prompts, retrieved evidence, model-tool inputs, and intermediate scores are protected while in use. The TEE attestation is attached to each eligibility trace before a caseworker sees the recommendation.
+
+### 6.2 Confidential Ledger for AI decision audit trail
+
+Every AI Act-relevant event — route decision, eligibility recommendation, human override, model version, eval gate, and post-market monitoring checkpoint — is anchored in **Azure Confidential Ledger** (`infra/security/confidential-ledger/`). The ledger provides the tamper-evident backing for Art. 26(6) log retention; Foundry remains the operational trace viewer, while the ledger proves the trace has not been rewritten.
 
 > **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `foundry/ai-act-registry/eligibility.json` is the most complete: intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration, contact for the AI Act competent authority in each of DK/SE/NO. *No autonomous decision is ever taken by this agent — the recommendation goes to a caseworker queue in D365 with full evidence.*
 
@@ -402,7 +319,7 @@ Six Foundry agents, deliberately small. Every one is registered, evaluated, trac
 
 ## 7. AI per communication channel
 
-> **Why this section exists.** Sections 3 to 6 explained the AI **stack**. This section flips the axis: for **each of the seven UDCSP channels**, what AI fires, where Copilot Studio sits in the picture, which Foundry agents are reached, and what the multilingual + safety stories look like for that surface. It is the per-channel cheat sheet that complements the channel deep-dives in `docs/biz/{channel}.md`.
+> **Why this section exists.** Sections 3 to 6 explained the AI **stack**. This section flips the axis: for **each of the seven UDCSP channels**, what AI fires, where Foundry `topic-router` sits in the picture, which Foundry agents are reached, and what the multilingual + safety stories look like for that surface. It is the per-channel cheat sheet that complements the channel deep-dives in `docs/biz/{channel}.md`.
 
 ### 7.1 At-a-glance matrix
 
@@ -410,18 +327,18 @@ The seven channels split cleanly into **three patterns** based on what conversat
 
 | Pattern | Channels | Façade |
 |---|---|---|
-| **Conversational** (real-time, two-way) | 📞 Voice · 🌐 Web · 📱 Mobile · 💬 Chat | Copilot Studio (mandatory) |
+| **Conversational** (real-time, two-way) | 📞 Voice · 🌐 Web · 📱 Mobile · 💬 Chat | Foundry `topic-router` (mandatory) |
 | **Notification + light inbound** | 📲 SMS · 📧 Email | None — direct ACS calls + Foundry agents inside Logic Apps / D365 workflows |
 | **Workforce** (back-office) | 🧑‍💼 Caseworker | D365 Customer Service + Copilot for Service (its own conversational shell) |
 
 Per-channel AI footprint, in one row each:
 
-| Channel | Sync? | Copilot Studio role | Foundry agents | Azure AI primitives | EU AI Act trigger | Channel doc |
+| Channel | Sync? | Foundry `topic-router` role | Foundry agents | Azure AI primitives | EU AI Act trigger | Channel doc |
 |---|---|---|---|---|---|---|
 | 📞 **Voice** | Real-time (≤ 2 s p95) | Voice channel adapter + voice topics | Classifier · Citizen Assistant · Eligibility · Translator | Speech STT · Speech TTS · Content Safety | Eligibility (HR) when invoked | [`voice.md`](./voice.md) |
 | 🌐 **Web** | Real-time | Hosts the chat widget; portal forms call Foundry directly | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety · Document Intelligence (uploads) | Eligibility (HR) on form submission | [`web.md`](./web.md) |
 | 📱 **Mobile** | Real-time | Same widget bundle as web, embedded in `WebView` | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety · Document Intelligence (camera capture) | Eligibility (HR) on form submission | [`mobile.md`](./mobile.md) |
-| 💬 **Chat** (widget) | Real-time | DirectLine `iframe` embed; topics + slot filling | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety | Eligibility (HR) when "run pre-check" topic fires | [`chat.md`](./chat.md) |
+| 💬 **Chat** (widget) | Real-time | Direct APIM `/agents/topic-router` call; topics + slot filling in Foundry | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety | Eligibility (HR) when "run pre-check" topic fires | [`chat.md`](./chat.md) |
 | 📲 **SMS** | Async (mostly outbound) | None | Translator (template render) · Classifier (STOP / unknown inbound) | Content Safety (template QA) | None directly — downstream of decisions | [`sms.md`](./sms.md) |
 | 📧 **Email** | Async (bi-directional) | None | Classifier (inbound auto-route) · Caseworker Helper (draft) · Document Extractor (attachments) · Translator (template render) | Content Safety · Document Intelligence | None directly — drafts go through eval suite | [`email.md`](./email.md) |
 | 🧑‍💼 **Caseworker** | Real-time (workforce) | None — D365 Copilot for Service is the shell | Caseworker Helper · Translator · Eligibility (read-only review) | Content Safety | Eligibility (HR) reviewed here under Art. 14 oversight | [`caseworker.md`](./caseworker.md) |
@@ -441,7 +358,7 @@ flowchart LR
     end
 
     subgraph FACADE["🗣️ Conversational façades"]
-        CS["Copilot Studio<br/>(citizen-side)"]
+        CS["Foundry `topic-router`<br/>(citizen-side)"]
         D365CS["D365 Copilot<br/>for Service<br/>(workforce-side)"]
     end
 
@@ -509,7 +426,7 @@ flowchart LR
 
 | | |
 |---|---|
-| 🗣️ **Façade** | Copilot Studio voice channel + per-locale voice topics |
+| 🗣️ **Façade** | Foundry `topic-router` voice channel + per-locale voice topics |
 | 🤖 **Foundry agents** | Classifier (intent + locale lock-in) → Citizen Assistant (RAG answer) → optional Eligibility (HIGH-RISK) → optional Translator (out-of-locale escalation summary) |
 | 🎤 **Azure AI primitives** | Speech STT (per locale), Speech TTS (neural voices: `da-DK-ChristelNeural`, `sv-SE-SofieNeural`, `nb-NO-PernilleNeural`), Content Safety (input + output) |
 | ⏱️ **Latency budget** | ≤ 2 s p95 from end-of-utterance to start-of-TTS |
@@ -532,7 +449,7 @@ flowchart LR
 
 | | |
 |---|---|
-| 🗣️ **Façade** | The portal **hosts** the chat widget (Copilot Studio DirectLine `iframe`) but the page itself is **not** a conversational surface |
+| 🗣️ **Router** | The portal **hosts** the chat widget, which posts to APIM `/agents/topic-router`; the page itself is **not** a conversational brain |
 | 🤖 **Foundry agents** | Through the embedded widget: same five agents as Chat (§ 7.5). Through portal forms (no widget): Document Extractor (uploads), Eligibility (form submission) |
 | 🎤 **Azure AI primitives** | Document Intelligence (PDF / image uploads), Content Safety (chat path) |
 | ⏱️ **Latency budget** | Async UX (form submit shows a "we're processing" state; eligibility callback in ≤ 5 s) |
@@ -571,12 +488,12 @@ flowchart LR
 
 ### 7.5 💬 Chat widget channel
 
-> *The Copilot Studio shop window.*  
+> *The Foundry `topic-router` shop window.*
 > 📖 *Architecture deep-dive: [`chat.md`](./chat.md).*
 
 | | |
 |---|---|
-| 🗣️ **Façade** | Copilot Studio web channel; DirectLine token broker hands a short-lived secret to the page |
+| 🗣️ **Router** | Foundry `topic-router` web channel; APIM validates the citizen token and forwards the turn |
 | 🤖 **Foundry agents** | Classifier → Citizen Assistant → optional Eligibility → optional Document Extractor → optional Translator |
 | 🎤 **Azure AI primitives** | Content Safety on every turn |
 | ⏱️ **Latency budget** | First token in ≤ 1.2 s; full answer in ≤ 4 s p95 |
@@ -586,8 +503,8 @@ flowchart LR
 
 **What's special on this channel.**
 
-- The widget is the **single source of truth** for all four conversational channels (Voice, Web, Mobile, Chat). Voice reuses the same `bot.yaml`, the same topics, the same authoring history (see [`chat.md`](./chat.md) — "one bot, two channels, one brain").
-- This is the channel where the **DirectLine token broker** lives — never hard-code the secret; the page calls a Function App that mints a short-lived token bound to the citizen's session.
+- The widget is the **single source of truth** for all four conversational channels (Voice, Web, Mobile, Chat). Voice reuses the same `bot.yaml`, the same topics, the same authoring history (see [`chat.md`](./chat.md) — "one brain: Foundry topic-router").
+- This is the channel where the **APIM `/agents/topic-router` endpoint** lives — never hard-code the secret; the page sends its Entra token and `traceparent` to APIM.
 
 ---
 
@@ -609,7 +526,7 @@ flowchart LR
 **What's special on this channel.**
 
 - SMS is a **deliberately AI-light surface**: the content is composed offline, reviewed by a content designer, and only **translated** by the AI. Runtime AI is limited to the STOP-keyword classifier and template variable substitution. This is the right amount of AI for a non-rich channel.
-- It **bypasses Copilot Studio entirely** — the conversational façade is unnecessary and would add latency for a one-liner.
+- It **bypasses Foundry `topic-router` entirely** — the conversational façade is unnecessary and would add latency for a one-liner.
 
 ---
 
@@ -631,7 +548,7 @@ flowchart LR
 **What's special on this channel.**
 
 - The **inbound classifier auto-routes a citizen reply onto the correct case** — even if they reply to a six-month-old thread on a different mailbox. This is where the AI does the heavy lifting that humans hate (case-routing tedium).
-- It **bypasses Copilot Studio** because email is not a "real-time conversation" — D365 email-to-case is the canonical façade, and Copilot Studio would only duplicate it.
+- It **bypasses Foundry `topic-router`** because email is not a "real-time conversation" — D365 email-to-case is the canonical façade, and Foundry `topic-router` would only duplicate it.
 
 ---
 
@@ -642,7 +559,7 @@ flowchart LR
 
 | | |
 |---|---|
-| 🗣️ **Façade** | D365 Customer Service + **Copilot for Service** (its own conversational shell, **not** Copilot Studio) |
+| 🗣️ **Façade** | D365 Customer Service + **Copilot for Service** (its own conversational shell, **not** Foundry `topic-router`) |
 | 🤖 **Foundry agents** | Caseworker Helper (summary + draft + next-best-action) · Translator (per-citizen language) · Eligibility (read-only review with Art. 14 oversight) |
 | 🎤 **Azure AI primitives** | Content Safety on every Copilot-for-Service answer |
 | ⏱️ **Latency budget** | ≤ 3 s p95 for a case summary on case-open; draft reply ≤ 5 s |
@@ -652,7 +569,7 @@ flowchart LR
 
 **What's special on this channel.**
 
-- It's the **only channel where AI serves the workforce, not the citizen**. The Copilot for Service shell is the workforce-side equivalent of Copilot Studio's citizen-side shell — both delegate hard reasoning to Foundry agents through APIM.
+- It's the **only channel where AI serves the workforce, not the citizen**. The Copilot for Service shell is the workforce-side equivalent of Foundry `topic-router`'s citizen-side shell — both delegate hard reasoning to Foundry agents through APIM.
 - It's the **one place where the high-risk Eligibility decision is finalised**: the agent computes a recommendation, the caseworker disposes. No autonomous decision ever leaves this channel.
 
 ---
@@ -662,9 +579,9 @@ flowchart LR
 | Observation | Why it matters | Where to verify |
 |---|---|---|
 | **Same 6 agents, 7 channels** | Eval-once parity: a Foundry eval pass on `citizen-assistant` covers Voice + Web + Mobile + Chat at once. | `foundry/projects/*/datasets/` |
-| **Conversational channels (Voice, Web, Mobile, Chat) all share Copilot Studio** | One bot, one topic library, one place to author dialogue. | [`chat.md`](./chat.md) — "one bot, two channels, one brain" |
-| **Notification channels (SMS, Email) bypass Copilot Studio** | No conversation = no need for a façade. AI lives in the workflow (Logic Apps + Translator agent), not in a chat. | [`sms.md`](./sms.md) · [`email.md`](./email.md) |
-| **The workforce channel has its own Copilot** | Copilot for Service is to the caseworker what Copilot Studio is to the citizen. | [`caseworker.md`](./caseworker.md) |
+| **Conversational channels (Voice, Web, Mobile, Chat) all share Foundry `topic-router`** | One bot, one topic library, one place to author dialogue. | [`chat.md`](./chat.md) — "one brain: Foundry topic-router" |
+| **Notification channels (SMS, Email) bypass Foundry `topic-router`** | No conversation = no need for a façade. AI lives in the workflow (Logic Apps + Translator agent), not in a chat. | [`sms.md`](./sms.md) · [`email.md`](./email.md) |
+| **The workforce channel has its own Copilot** | Copilot for Service is to the caseworker what Foundry `topic-router` is to the citizen. | [`caseworker.md`](./caseworker.md) |
 | **Eligibility is invoked from 5 channels** (Voice, Web, Mobile, Chat, Caseworker) but **finalised in 1** (Caseworker) | EU AI Act Art. 14 — the recommendation can be computed anywhere; the decision lives with the human. | [`caseworker.md`](./caseworker.md) — § "Eligibility AI" |
 | **Document Extractor fires on 3 channels** (Web upload, Mobile camera, Email attachment) but **with the same prompt** | One prompt, three capture devices = one truth, three convenient inputs. | `foundry/projects/document-extractor/prompts/` |
 | **Translator orchestrator is the cross-channel localiser** | It writes outbound SMS / email / push in 12 languages and harmonises admin terminology against per-country glossaries. | `foundry/projects/translator/` |
@@ -756,7 +673,7 @@ All evals live under `tests/eval/` and are driven by the YAML pipelines in `test
 ### 10.3 Tracing &amp; lineage
 
 Every Foundry call emits an OTEL trace with:
-- `request_id` (correlated end-to-end through Copilot Studio → APIM → Foundry → tools)
+- `request_id` (correlated end-to-end through Foundry `topic-router` → APIM → Foundry → tools)
 - `agent_id`, `agent_version`, `prompt_version`, `model_id`, `model_version`
 - `safety_verdict` (input + output)
 - `tokens_in`, `tokens_out`, `latency_ms`
@@ -780,7 +697,7 @@ Traces are stored in App Insights, exported nightly to a Fabric lakehouse for an
 | **Technical documentation** (Annex IV) | Same file + linked specs in `docs/` | Agent owner |
 | **Data governance** (training data summary, GDPR DPIA) | Purview catalog + `governance/dpia/` | DPO |
 | **Logging &amp; traceability** | App Insights traces (≥ 6 months hot per EU AI Act Art. 26(6) — see [`datacompliance.md`](./datacompliance.md) § 5) | Platform team |
-| **Human oversight** | D365 caseworker queue for high-risk; escalation topics in Copilot Studio | Service owner |
+| **Human oversight** | D365 caseworker queue for high-risk; escalation topics in Foundry `topic-router` | Service owner |
 | **Accuracy &amp; robustness metrics** | Foundry eval reports, exported nightly | Agent owner |
 | **Cybersecurity** | Defender for Cloud, Sentinel, content-safety verdicts, jailbreak monitoring | SOC |
 | **Post-market monitoring plan** | `foundry/ai-act-registry/<agent>.json` | Compliance |
@@ -800,7 +717,7 @@ sequenceDiagram
     autonumber
     participant Anna as 👤 Anna (DK→SE)
     participant Web as 💻 SE Web Portal
-    participant CS as 🗣️ Copilot Studio bot (SE)
+    participant CS as 🗣️ Foundry `topic-router` bot (SE)
     participant APIM as 🚪 APIM
     participant Cls as 🤖 Classifier (Foundry)
     participant Tra as 🤖 Translator (Foundry)
@@ -864,9 +781,9 @@ sequenceDiagram
 | ❌ Anti-pattern | Why it's wrong | What we do instead |
 |---|---|---|
 | Calling Azure OpenAI directly from a service. | No safety, no tracing, no eval, no AI Act registration. Audit nightmare. | Always go through a Foundry agent via APIM. |
-| Putting eligibility math inside Copilot Studio expressions. | Untestable, unversioned, invisible to evals, can't be registered as high-risk. | Eligibility is a Foundry agent + deterministic rule plug-in. |
-| Using Copilot Studio "Generative answers" with a model directly. | Bypasses Foundry safety and trace; produces unaudited answers. | Disabled at the Copilot Studio policy level; all generative answers go through the Citizen Assistant agent. |
-| Building a 7th channel adapter ourselves. | Re-invents what Copilot Studio gives free. | Add the channel in Copilot Studio. |
+| Putting eligibility math inside Foundry `topic-router` expressions. | Untestable, unversioned, invisible to evals, can't be registered as high-risk. | Eligibility is a Foundry agent + deterministic rule plug-in. |
+| Using Foundry `topic-router` "Generative answers" with a model directly. | Bypasses Foundry safety and trace; produces unaudited answers. | Disabled at the Foundry `topic-router` policy level; all generative answers go through the Citizen Assistant agent. |
+| Building a 7th channel adapter ourselves. | Re-invents what Foundry `topic-router` gives free. | Add the channel in Foundry `topic-router`. |
 | Letting a Foundry agent write to a domain database. | Foundry agents have **no** data-modifying side effects; they recommend, they do not commit. | Mutations go through APIM → domain microservice or Logic App, with caseworker approval where required. |
 | Hand-editing prompts in PROD. | Bypasses eval gating, no rollback. | Prompts versioned in `foundry/projects/*/prompts/`; CI deploys them. |
 | Sharing one Foundry project across all six agents. | Loses per-agent RBAC, eval suite, registry entry. | One project per agent, by policy. |
@@ -878,10 +795,10 @@ sequenceDiagram
 
 | Scenario | Impact |
 |---|---|
-| **Add a new language (e.g. Lithuanian)** | Add a Speech locale, extend the language detector dataset, add per-language gold eval set in each agent, extend the Translator glossary. No code change in Copilot Studio outside topic translation strings. |
-| **Add a new channel (e.g. Apple Messages for Business)** | Add a channel in Copilot Studio. No Foundry change. |
+| **Add a new language (e.g. Lithuanian)** | Add a Speech locale, extend the language detector dataset, add per-language gold eval set in each agent, extend the Translator glossary. No code change in Foundry `topic-router` outside topic translation strings. |
+| **Add a new channel (e.g. Apple Messages for Business)** | Add a channel in Foundry `topic-router`. No Foundry change. |
 | **Swap the underlying model** | Change `model_id` in the relevant `agent.yaml`. CI runs golden + bias + jailbreak evals; promotion blocks on regression. No client-side change. |
-| **Add a new high-risk use case** | Create a new Foundry project, declare AI Act class, build eval suite + AI Act dossier, register in `foundry/ai-act-registry/`, then expose through APIM. Only then plug it into Copilot Studio (or D365 Copilot, or both). |
+| **Add a new high-risk use case** | Create a new Foundry project, declare AI Act class, build eval suite + AI Act dossier, register in `foundry/ai-act-registry/`, then expose through APIM. Only then plug it into Foundry `topic-router` (or D365 Copilot, or both). |
 | **Disconnect a knowledge source** | Remove the connector, re-run RAG evals, tag the agent's risk register entry. Foundry tracing makes the retrieval-set delta visible immediately. |
 | **EU AI Act amendment changes a duty** | Update the dossier template under `foundry/ai-act-registry/`; CI re-validates every dossier; agents missing the new field are blocked from PROD until updated. |
 
@@ -889,6 +806,6 @@ sequenceDiagram
 
 ## ✅ One-line recap for the evaluator
 
-> *Microsoft Foundry is the brain — it runs every model call, evaluates every output, traces every step, classifies every agent under the EU AI Act, and centralises Content Safety. Microsoft Copilot Studio is the citizen-side face — it owns the conversation, the channels, and the dialog state, and it delegates every reasoning step to a Foundry agent through APIM. D365 Copilot for Service is the workforce-side face — same delegation pattern, same six agents. Together they let UDCSP serve 2.1 M citizens in 12 languages on 7 channels (voice, web, mobile, chat, SMS, email, caseworker), with a single auditable AI control plane.*
+> *Microsoft Foundry is the brain — it runs every model call, evaluates every output, traces every step, classifies every agent under the EU AI Act, and centralises Content Safety. Foundry `topic-router` agent is the citizen-side face — it owns the conversation, the channels, and the dialog state, and it delegates every reasoning step to a Foundry agent through APIM. D365 Copilot for Service is the workforce-side face — same delegation pattern, same six agents. Together they let UDCSP serve 2.1 M citizens in 12 languages on 7 channels (voice, web, mobile, chat, SMS, email, caseworker), with a single auditable AI control plane.*
 
 — Companion docs: [`architecture.md`](../tech/architecture.md) (full platform), [`agents.md`](../tech/agents.md) (build agents), [`uses.md`](./uses.md) (demo scenarios).

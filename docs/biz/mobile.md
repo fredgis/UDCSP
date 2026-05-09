@@ -25,9 +25,12 @@
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Same as web: `bot_session`, Cosmos drafts, ADLS `citizen-uploads/`, AI Search memory, App Insights traces; push receipts in Cosmos DB (TTL 30 days). |
+> | 🗄️ **Where stored** | Same as web: `bot_session`, Redis ephemeral drafts plus PostgreSQL JSONB persisted drafts, ADLS `citizen-uploads/`, AI Search memory, App Insights traces; push receipts in Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) (TTL 30 days). |
 
 ---
+
+> [!NOTE]
+> The mobile app participates in **Microsoft Entra Verified ID** flows: it can present and receive cross-border residency credentials and eligibility receipts through the EUDI Wallet bridge (`infra/identity/verified-id/`).
 
 ## 📑 Table of contents
 
@@ -511,9 +514,9 @@ Mobile intentionally shares the web channel's storage pattern because the app em
 
 | What | Where | Retention |
 |---|---|---|
-| Bot transcript | Copilot Studio Dataverse `bot_session` | 6 months hot; 6 years OneLake |
+| Bot transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
 | Camera-captured documents | ADLS Gen2 `citizen-uploads/` (same as web) | While case open + lifecycle tiers |
-| Drafts + push receipts | Cosmos DB | Draft TTL 30 days; receipts TTL 30 days |
+| Drafts + push receipts | Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) | Draft TTL 30 days; receipts TTL 30 days |
 | Memory + traces | Azure AI Search; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schemas.udcsp.example/verified-id/credential-contract.schema.json",
+  "id": "udcsp-eligibility-receipt",
+  "type": [
+    "VerifiableCredential",
+    "UdcspEligibilityReceipt"
+  ],
+  "name": "UDCSP Eligibility Pre-Assessment Receipt",
+  "version": "1.0.0",
+  "issuer": {
+    "authority": "UDCSP Verified ID Issuer",
+    "didMethods": [
+      "ion",
+      "web"
+    ]
+  },
+  "claimFormat": "vc+sd-jwt",
+  "credentialSubject": {
+    "subjectId": {
+      "type": "string",
+      "description": "Pseudonymous subject identifier used by the Eligibility Pre-Assessor."
+    },
+    "assessmentId": {
+      "type": "string",
+      "description": "Opaque pre-assessment correlation identifier."
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": [
+        "eligible",
+        "likely-eligible",
+        "manual-review",
+        "not-eligible"
+      ]
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "assuranceLevel": {
+      "type": "string",
+      "enum": [
+        "substantial",
+        "high"
+      ]
+    }
+  },
+  "required": [
+    "subjectId",
+    "assessmentId",
+    "recommendation",
+    "issuedAt",
+    "validUntil",
+    "assuranceLevel"
+  ],
+  "selectiveDisclosure": [
+    "recommendation",
+    "validUntil",
+    "assuranceLevel"
+  ],
+  "signaturePurpose": "signed-proof-of-pre-assessment"
+}

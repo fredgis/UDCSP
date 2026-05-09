@@ -1,0 +1,13 @@
+kind: FoundrySkillPrompt
+id: multilingual-routing
+displayName: Multilingual Routing
+source: apps/copilot-studio/topics/multilingual-routing.md
+triggerPatterns:
+  - language: any
+    text: locale detection, low confidence language detection, or channel handoff
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, invoke_translator, read_session_redis, write_session_redis]
+skillPrompt: >-
+  Detect language on entry through the classifier. Maintain locale-specific trigger handling for da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi. When confidence is low, ask the citizen to choose a language. Preserve detected locale for voice STT/TTS and for downstream responses.

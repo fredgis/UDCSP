@@ -25,9 +25,12 @@
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | SMS bypasses Copilot Studio: message bodies live in Dataverse `sms_activity`; ACS events in `acs-events/`; AI traces in App Insights → OneLake; no vector memory. |
+> | 🗄️ **Where stored** | SMS bypasses Foundry `topic-router`: message bodies live in Dataverse `sms_activity`; ACS events in `acs-events/`; AI traces in App Insights → OneLake; no vector memory. |
 
 ---
+
+> [!NOTE]
+> GDPR opt-out, access, restriction, and erasure requests raised from this channel are handed to **Microsoft Priva** as the primary DSR orchestrator (`governance/priva/`), with channel evidence attached.
 
 ## 📑 Table of contents
 
@@ -431,7 +434,7 @@ The ACS SMS echo endpoint (available in ACS development mode) allows unlimited s
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
-| 1 | Lars's voice call just ended (Demo 2 complete) | Copilot Studio shows "post-call SMS triggered"; Power Automate run history shows a green send | #12 (channels) · #13 (multilingual) |
+| 1 | Lars's voice call just ended (Demo 2 complete) | Foundry `topic-router` shows "post-call SMS triggered"; Power Automate run history shows a green send | #12 (channels) · #13 (multilingual) |
 | 2 | Pick up the demo phone — the SMS has arrived in NB | `UDCSP-NO: Sak 2025-NO-4421 er nå Under behandling. Se: udcsp.no/c/x7k2` | #5 (AI 12 lang) · #12 (channels) |
 | 3 | Trigger a synthetic case-status change in D365 for Anna's DK case (Demo 1 residency move) | Second SMS arrives in DA from `UDCSP-DK` — different sender ID, different language | #13 (multilingual) · #10 (sovereignty — two countries, two senders) |
 | 4 | Reply `STOP` from the demo phone | Within seconds, D365 consent record shows `smsOptOut=true` with ISO-8601 timestamp | #9 (GDPR) · #15 (auditability) |
@@ -463,7 +466,7 @@ This demo closes the omnichannel loop documented in `docs/biz/case-study-11.md` 
 
 ## 14. Where the conversation is stored
 
-SMS is not a Copilot Studio channel, so it never creates a `bot_session` row. The canonical conversation log is the Dataverse `sms_activity` table; ACS delivery/inbound events and occasional AI traces sit beside it in Zone 3 for audit correlation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+SMS is not a Foundry `topic-router` channel, so it never creates a `bot_session` row. The canonical conversation log is the Dataverse `sms_activity` table; ACS delivery/inbound events and occasional AI traces sit beside it in Zone 3 for audit correlation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|

@@ -7,7 +7,7 @@
 *How a citizen dials a Nordic toll-free number, talks to the same Foundry brain that powers the web, and gets a spoken answer in their own language — with full GDPR + EU AI Act compliance.*
 
 [![Channel](https://img.shields.io/badge/📞_Channel-Telephone_PSTN-1565C0?style=for-the-badge)](#)
-[![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_Copilot_Studio-FF6F00?style=for-the-badge)](#)
+[![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_topic--router-FF6F00?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12_·_neural_voices-AD1457?style=for-the-badge)](#)
 [![Latency](https://img.shields.io/badge/⚡_p95-≤_2_s_round_trip-2E7D32?style=for-the-badge)](#)
 
@@ -21,10 +21,13 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services** answers → **Azure AI Speech** transcribes in streaming → **Microsoft Copilot Studio** voice channel routes the intent → **APIM** validates & audits → the **same Foundry agents** that power the web do the reasoning → **Speech TTS** speaks the answer back in a per-locale neural voice → an **SMS récap** is sent through ACS. **One brain, many faces** — the voice channel re-uses the entire AI control plane, with zero duplication.
+> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services** answers → **Azure AI Speech** transcribes in streaming → **APIM** validates & audits → the Foundry **`topic-router`** routes the intent to the same Foundry agents that power web/mobile → **Speech TTS** speaks the answer back → an **SMS récap** is sent through ACS. **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
 >
 > | Field | Value |
 > |---|---|
+> | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake with Confidential Ledger anchors. |
+
+---|---|
 > | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake Bronze. |
 
 ---
@@ -69,98 +72,50 @@ The design principle, codified in `docs/biz/uses.md` § Demo 2:
 ## 2. The mental model in one picture
 
 ```mermaid
-%%{ init: { 'flowchart': { 'nodeSpacing': 30, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '13px' } } }%%
 flowchart TB
-    subgraph CITIZEN["📞 Citizen"]
-        PHONE["☎️ Any phone<br/><i>landline · mobile · feature phone</i>"]
-    end
-
-    subgraph EDGE["🛰️ Edge — per country (DK · SE · NO)"]
-        ACS["Azure Communication<br/>Services<br/><i>PSTN entry · media stream</i>"]
-        SPEECH["Azure AI Speech<br/><i>STT + TTS · streaming</i>"]
-    end
-
-    subgraph FACADE["🗣️ Conversational façade"]
-        CS["Microsoft Copilot Studio<br/>voice channel<br/><i>topics · slot fill · barge-in · DTMF</i>"]
-    end
-
-    subgraph CORE["🚪 Edge → 🧠 Brain (shared with web/mobile)"]
-        APIM["APIM<br/><i>JWT · audit · rate-limit</i>"]
-        FOUNDRY["Microsoft Foundry<br/><i>classifier · citizen-assistant ·<br/>translator · eligibility</i>"]
-    end
-
-    subgraph BACK["📋 Back-office"]
-        D365["Dynamics 365<br/><i>case spine</i>"]
-        FABRIC["Microsoft Fabric<br/><i>transcripts + traces</i>"]
-        ACSOUT["ACS SMS / email<br/><i>récap to citizen</i>"]
-    end
-
-    PHONE -->|PSTN dial| ACS
-    ACS <-->|audio frames| SPEECH
-    SPEECH -->|text| CS
-    CS -->|HTTPS + JWT| APIM
-    APIM --> FOUNDRY
-    FOUNDRY --> CS
-    CS --> D365
-    CS --> FABRIC
-    D365 --> ACSOUT
-    ACSOUT -.->|SMS récap| PHONE
-
-    classDef edge fill:#e36209,stroke:#c24e00,color:#fff
-    classDef facade fill:#0078d4,stroke:#004578,color:#fff
-    classDef brain fill:#8957e5,stroke:#6e40c9,color:#fff
-    classDef back fill:#1565c0,stroke:#0d47a1,color:#fff
-    classDef cit fill:#2ea44f,stroke:#238636,color:#fff
-
-    class PHONE cit
-    class ACS,SPEECH edge
-    class CS facade
-    class APIM,FOUNDRY brain
-    class D365,FABRIC,ACSOUT back
+    PHONE["☎️ Citizen phone"] -->|PSTN| ACS["Azure Communication Services"]
+    ACS <-->|audio frames| SPEECH["Azure AI Speech<br/>STT + TTS"]
+    SPEECH -->|text + locale| APIM["APIM<br/>/agents/topic-router"]
+    APIM --> ROUTER["Foundry topic-router"]
+    ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility"]
+    ROUTER --> D365["Dynamics 365<br/>warm transfer"]
+    ROUTER --> FABRIC["Fabric + App Insights<br/>transcripts + traces"]
+    D365 --> ACSOUT["ACS SMS récap"]
+    ACSOUT -.-> PHONE
 ```
 
-> 📖 **Reading the picture.** Green = citizen. Orange = edge (per-country, region-pinned). Blue (light) = the conversational façade (Copilot Studio). Purple = the shared AI brain (the *same* Foundry that powers the web). Dark blue = back-office. **The brain is shared; everything else is voice-specific.**
+> 📖 **Reading the picture.** Voice keeps ACS and AI Speech for telephony and speech, and APIM invokes Foundry `topic-router`, the same brain used by web chat.
 
 ---
 
 ## 3. The call lifecycle, step by step
 
 ```mermaid
-%%{ init: { 'sequence': { 'mirrorActors': false, 'actorMargin': 35 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 sequenceDiagram
     autonumber
     actor C as 📞 Citizen
     participant ACS as 🛰️ ACS (PSTN)
     participant STT as 🎙️ AI Speech STT
-    participant CS as 🗣️ Copilot Studio
     participant API as 🚪 APIM
-    participant F as 🧠 Foundry
+    participant R as 🧠 Foundry topic-router
+    participant F as 🤖 Foundry agents
     participant D as 📋 D365
     participant TTS as 🔊 AI Speech TTS
-
-    C->>ACS: dial +47 800 12 345
-    ACS->>C: greeting + recording disclosure (NB)
-    C->>ACS: "1" (consent)
+    C->>ACS: dial country toll-free number
+    ACS->>C: greeting + recording disclosure
+    C->>ACS: consent / utterance
     ACS->>STT: stream audio frames
-    STT-->>CS: text + locale (nb-NO)
-    CS->>CS: detect intent (slot fill)
-    CS->>API: POST /agents/citizen-assistant
-    API->>API: validate JWT · audit · rate-limit
-    API->>F: invoke citizen-assistant
-    F->>F: content safety in
-    F->>F: RAG against KB (NO)
-    F->>F: content safety out
-    F-->>API: answer (NB)
-    API-->>CS: response
-    CS->>TTS: synthesize (nb-NO-PernilleNeural)
+    STT-->>API: text + locale
+    API->>API: validate voice channel token · audit
+    API->>R: POST /agents/topic-router
+    R->>F: delegate answer / eligibility / translation
+    F-->>R: answer + evidence + safety verdict
+    R-->>API: channel-shaped response
+    API->>TTS: synthesize response
     TTS-->>ACS: audio stream
     ACS-->>C: spoken answer
-    Note over CS,D: if escalation triggered →
-    CS->>D: warm-transfer with full context
-    D-->>C: human caseworker picks up
-    Note over D,ACSOUT: post-call →
-    D->>ACS: SMS récap (case ID + next step, in NB)
-    ACS-->>C: 📱 SMS
+    R->>D: warm-transfer when required
+    D->>ACS: post-call SMS récap
 ```
 
 **Latency budget** (target: end-to-end p95 ≤ 2 s round-trip):
@@ -169,7 +124,7 @@ sequenceDiagram
 |---|---|---|
 | PSTN → ACS → STT first partial | ~150 ms | ACS edge region in the same country |
 | STT streaming | ~200 ms / phrase | Streaming STT (no batch wait) |
-| Copilot Studio routing | ~50 ms | Topic decision is local |
+| Foundry `topic-router` routing | ~50 ms | Topic decision is local |
 | APIM | ~30 ms | Cached JWKS, no cold start |
 | Foundry classifier (small) | ~120 ms | Small low-latency model in front of the citizen-assistant |
 | Foundry citizen-assistant | ~600 ms | Streaming responses, partial TTS playback |
@@ -184,7 +139,7 @@ sequenceDiagram
 |:-:|---|---|---|
 | **1** | **Azure Communication Services (PSTN)** | Decrochés des appels entrants, gestion des numéros toll-free, pont avec le RTC. **One ACS resource per country**, region-pinned for sovereignty. | `apps/voice/acs/acs-resource.bicep`, `apps/voice/acs/phone-numbers.bicep` |
 | **2** | **Azure AI Speech (STT + TTS)** | Streaming speech-to-text **and** text-to-speech, per-locale neural voices, civic-term lexicons. | `apps/voice/speech/speech-config.bicep`, `apps/voice/speech/voice-fonts.json` |
-| **3** | **Microsoft Copilot Studio · voice channel** | Owns dialog state, slot filling, barge-in, DTMF fallback, escalation rules. Talks **to** Foundry but is **not** Foundry. | `apps/voice/ivr/{da,sv,nb,en,de,ar}/*.yaml`, `apps/copilot-studio/agents/citizen-assistant-bot/topics/voice-fallback.yaml` |
+| **3** | **Foundry `topic-router` agent · voice channel** | Owns dialog state, slot filling, barge-in, DTMF fallback, escalation rules. Talks **to** Foundry but is **not** Foundry. | `apps/voice/ivr/{da,sv,nb,en,de,ar}/*.yaml`, `foundry/agents/topic-router/agents/citizen-assistant-bot/topics/voice-fallback.yaml` |
 | **4** | **APIM gateway** | JWT validation, audit log, rate-limit, `actor=voice` claim enforcement. The **only** legal entry point to Foundry from any channel. | `services/apim/policies/citizen-assistant.xml` |
 | **5** | **Foundry agents (shared)** | Citizen-assistant, classifier, translator, eligibility — the **same** agents that power the web and mobile. **Voice does not get its own agents.** | `foundry/agents/*` |
 | **6** | **Outbound notifications** | SMS / email récap post-call via ACS. Localised templates per language. | `apps/voice/notifications/{sms,email}-templates.json` |
@@ -356,7 +311,7 @@ flowchart LR
    - 🇳🇴 **Norway** — toll-free: 1–3 weeks (Nkom review) · local: a few business days.
    - 🇩🇰 **Denmark** — toll-free: 1–3 weeks (ERST review) · local: a few business days.
 
-The number then appears under your ACS resource and can be assigned to the Copilot Studio voice channel (Direct Line Speech connector) by name — **no code change is needed**.
+The number then appears under your ACS resource and can be assigned to the Foundry `topic-router` voice channel (APIM `/agents/topic-router` Speech connector) by name — **no code change is needed**.
 
 ### 9.3 The fast lane — what to do *today* for a demo
 
@@ -378,7 +333,7 @@ Microsoft documentation we anchor to:
 > [!TIP]
 > **For the case-study jury, our recommended sequence is:**
 >
-> 1. **Live in the room** — open the ACS Web SDK demo client in a browser and call the Foundry-backed Copilot Studio agent. **Zero phone-number dependency**, full audio + transcript + Foundry trace shown side-by-side.
+> 1. **Live in the room** — open the ACS Web SDK demo client in a browser and call the Foundry-backed Foundry `topic-router` agent. **Zero phone-number dependency**, full audio + transcript + Foundry trace shown side-by-side.
 > 2. **Then prove the PSTN path** — dial a temporary US toll-free (provisioned in minutes) on the room speakerphone. Same backend, different ingress.
 > 3. **Then commit to a real Nordic number for production** — submit the KYC pack on the day of the kick-off; the Norwegian / Swedish / Danish toll-free arrives well before any actual citizen traffic.
 
@@ -386,7 +341,7 @@ This is exactly what `apps/voice/acs/phone-numbers.bicep` is designed for: it is
 
 ### 9.4 Once the number is active — wiring it in
 
-The activation is a **one-line config change** in the Copilot Studio voice channel:
+The activation is a **one-line config change** in the Foundry `topic-router` voice channel:
 
 ```yaml
 # apps/voice/acs/phone-number-bindings.yaml  (created at activation time)
@@ -400,7 +355,7 @@ bindings:
 
 `scripts/install/modules/Install-Voice.psm1` reads this file at install time and:
 
-1. Registers the number with the Copilot Studio voice channel via the Direct Line Speech connector.
+1. Registers the number with the Foundry `topic-router` voice channel via the APIM `/agents/topic-router` Speech connector.
 2. Updates the SMS-récap "from" number for outbound notifications.
 3. Adds the number to the synthetic-call probe list (App Insights availability test every 5 min).
 
@@ -413,12 +368,12 @@ bindings:
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart TB
-    P0["✅ Pre-reqs<br/><i>Foundry + APIM + Copilot Studio bot live</i>"]
+    P0["✅ Pre-reqs<br/><i>Foundry + APIM + Foundry `topic-router` bot live</i>"]
     P1["1️⃣ Deploy ACS<br/><i>acs-resource.bicep × 3 countries</i>"]
     P2["2️⃣ Procure number<br/><i>see § 9</i>"]
     P3["3️⃣ Deploy AI Speech<br/><i>speech-config.bicep + voice-fonts.json</i>"]
     P4["4️⃣ Import 24 IVR YAMLs<br/><i>4 dialogs × 6 languages</i>"]
-    P5["5️⃣ Wire ACS → Copilot Studio<br/><i>Direct Line Speech connector</i>"]
+    P5["5️⃣ Wire ACS → Foundry `topic-router`<br/><i>APIM `/agents/topic-router` Speech connector</i>"]
     P6["6️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric per country</i>"]
     P7["7️⃣ Activate SMS templates<br/><i>12 languages</i>"]
     P8["8️⃣ Self-test<br/><i>pwsh apps/voice/scripts/Test-Voice.ps1</i>"]
@@ -481,7 +436,7 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 
 ## 14. Where the conversation is stored
 
-Voice writes both media and dialog records: raw `.wav` plus STT JSON go to the per-country `voice-recordings/` store, while the Copilot Studio conversation is retained as the canonical dialog transcript in Dataverse. ACS lifecycle events and Foundry traces stay in Zone 3 so audits can correlate call, transcript, and AI invocation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+Voice writes both media and dialog records: raw `.wav` plus STT JSON go to the per-country `voice-recordings/` store, while the Foundry `topic-router` conversation is retained as the canonical dialog transcript in Dataverse. ACS lifecycle events and Foundry traces stay in Zone 3 so audits can correlate call, transcript, and AI invocation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
