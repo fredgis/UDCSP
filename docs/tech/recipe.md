@@ -13,7 +13,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | # | Action | Command / file | Expected | Evidence |
 |---|---|---|---|---|
 | 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase | JSON file |
-| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 24 phases report healthy | Console summary |
+| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 25 phases report healthy | Console summary |
 | 0.3 | Open Power BI Cockpit | URL printed by step 0.2 | KPI tiles render with synthetic data baseline | Screenshot |
 
 ---

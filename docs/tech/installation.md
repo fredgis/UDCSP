@@ -177,38 +177,50 @@ The installer respects the wave dependencies declared in `plan.md`:
 ```mermaid
 graph LR
   W0[W0 LandingZone]:::p --> W1
-  subgraph W1[W1 Platform Horizontals]
+  subgraph W1[W1 Platform Horizontals - 14 phases]
     direction TB
     Identity:::p
+    VerifiedId:::n
+    Bastion:::n
+    Ciem:::n
     Security:::p
+    Ddos:::n
+    BackupAsr:::n
+    ConfidentialLedger:::n
+    ChaosStudio:::n
     Observability:::p
     Fabric:::p
+    Postgres:::n
+    Redis:::n
     SyntheticData:::p
   end
   W1 --> W2
-  subgraph W2[W2 Service Backbone]
+  subgraph W2[W2 Service Backbone - 5 phases]
     direction TB
     Foundry:::p
+    ConfidentialCompute:::n
     Apim:::p
     LogicApps:::p
     D365:::p
   end
   W2 --> W3
-  subgraph W3[W3 Channels & Conversational]
+  subgraph W3[W3 Channels - 2 phases]
     direction TB
     Apps:::p
     Voice:::p
-    CopilotStudio:::p
   end
   W3 --> W4
-  subgraph W4[W4 Governance & Acceptance]
+  subgraph W4[W4 Governance and Acceptance - 3 phases]
     direction TB
     Purview:::p
-    AIAct:::p
+    Priva:::n
     QA:::p
   end
   classDef p fill:#1565c0,stroke:#0d47a1,color:#fff
+  classDef n fill:#2ea44f,stroke:#238636,color:#fff
 ```
+
+> Blue nodes are the original 14 phases; green nodes are the 11 phases added by the post-audit refactor (`plan_post_audit.md`). **Total: 25 phases.** The legacy `CopilotStudio` phase was removed (its functionality was folded into `Foundry` via the `topic-router` agent).
 
 Phase names accepted by `-Phase`:
 
@@ -344,9 +356,9 @@ For any clarification on what a phase deploys and why, consult the corresponding
 - §6 Integration & workflow → Apim, LogicApps phases
 - §7 Case management → D365 phase
 - §8 Data & analytics → Fabric phase
-- §9 Governance → Purview, AIAct phases
+- §9 Governance → Purview, Priva phases
 - §11 Observability → Observability phase
-- §12 Multilingual & inclusivity → Apps, Voice, CopilotStudio phases
+- §12 Multilingual & inclusivity → Apps, Voice phases *(post-audit: the conversational AI is now in the Foundry phase via the `topic-router` agent — there is no longer a CopilotStudio phase)*
 
 The installer is the executable expression of [`plan.md`](./plan.md). When a work-package owner changes their deliverables, they MUST update both the work package row in `plan.md` and the corresponding module in `scripts/install/modules/`.
 

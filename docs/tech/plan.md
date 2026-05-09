@@ -4,7 +4,7 @@
 
 > **Build status (as of last commit): all 17 work packages delivered.** See [`agents.md`](./agents.md) for the execution log (durations, models, file counts, parallelism factor). Component scaffolds live under `infra/`, `apps/`, `services/`, `foundry/`, `data/`, `governance/`, `tests/`. The orchestrator-owned installer lives under `scripts/install/`. Every component ships its own `Test-*` script — see [`installation.md`](./installation.md) §5.
 
-> **🔁 Post-audit refactor (May 2026).** This plan describes the original 17-WP build. The platform was subsequently refactored — see [`plan_post_audit.md`](./plan_post_audit.md) for the full diff. Headline changes touched **A11** (Copilot Studio is now the **Foundry `topic-router` agent** owned by A6, files moved from `apps/copilot-studio/` to `foundry/agents/topic-router/`) and added new infra under A1/A2/A3 (Postgres + Redis, Verified ID, Bastion, CIEM, Confidential Ledger, Confidential Compute, Defender for APIs, DDoS Std, Backup+ASR, Chaos Studio, Priva). The installer (A16) now runs **24 phases** instead of 15.
+> **🔁 Post-audit refactor (May 2026).** This plan describes the original 17-WP build. The platform was subsequently refactored — see [`plan_post_audit.md`](./plan_post_audit.md) for the full diff. Headline changes touched **A11** (Copilot Studio is now the **Foundry `topic-router` agent** owned by A6, files moved from `apps/copilot-studio/` to `foundry/agents/topic-router/`) and added new infra under A1/A2/A3 (Postgres + Redis, Verified ID, Bastion, CIEM, Confidential Ledger, Confidential Compute, Defender for APIs, DDoS Std, Backup+ASR, Chaos Studio, Priva). The installer (A16) now runs **25 phases** instead of 15.
 
 ---
 
