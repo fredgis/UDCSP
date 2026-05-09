@@ -348,12 +348,12 @@ Every storage decision in §§ 3-5 is anchored on one or more of the regulations
 | **GDPR** | Art. 30 — records of processing activities (RoPA) | Document every processing | Purview catalog IS the RoPA — auto-populated by scans (§ 11) |
 | **GDPR** | Art. 32 — security of processing | Encryption + pseudonymisation + resilience | CMK + per-citizen pseudonymisation in OneLake Silver + GZRS replication (§ 10) |
 | **GDPR** | Art. 33-34 — breach notification | Notify within 72 h. | Sentinel detection rules + automated notification workflow |
-| **GDPR** | Art. 35 — DPIA | DPIA for high-risk processing | Documented per agent in `foundry/ai-act-registry/` (see [`ai.md`](../biz/ai.md) § 11) |
+| **GDPR** | Art. 35 — DPIA | DPIA for high-risk processing | Documented per agent in `governance/ai-act/registry/` (see [`ai.md`](../biz/ai.md) § 11) |
 | **EU AI Act** | Art. 12 — record-keeping (capability) | Logging capability over the lifetime | Foundry traces (App Insights) — § 3.3 Zone 3 |
 | **EU AI Act** | Art. 13 — transparency | Inform users of AI use | Citizen-facing notices + caseworker badges in D365 |
 | **EU AI Act** | Art. 14 — human oversight | Caseworker can override, with reason captured | `eligibility_override` table in Dataverse + mirrored to Foundry trace as `human-override` |
 | **EU AI Act** | **Art. 26(6) — log retention (deployer)** | **Logs kept ≥ 6 months from creation** | **Foundry traces 180 days App Insights + indefinite OneLake Bronze + Confidential Ledger immutable proof for high-risk decisions** |
-| **EU AI Act** | Art. 71-72 — registration & post-market monitoring | Registry of high-risk systems + monitoring plan | `foundry/ai-act-registry/eligibility.json` + Power BI auditor dashboard |
+| **EU AI Act** | Art. 71-72 — registration & post-market monitoring | Registry of high-risk systems + monitoring plan | `governance/ai-act/registry/eligibility-model.yaml` + Power BI auditor dashboard |
 | **ePrivacy** | Art. 5(1) — confidentiality of communications | No interception/recording without consent or legal basis | Voice IVR opening notice + email banner; lawful basis = "obligation légale" (public-service mission) |
 | **ePrivacy** | Art. 5(3) — terminal storage (cookies) | Consent for non-essential storage | Cookie banner on web portal; only essential session cookie pre-consent |
 | **WCAG 2.1 AA** | (per principle) | Accessibility | Every channel has accessibility tests (see [`uses.md`](../biz/uses.md)) |

@@ -13,7 +13,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | # | Action | Command / file | Expected | Evidence |
 |---|---|---|---|---|
 | 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase | JSON file |
-| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Test-Inventory.ps1` | All 13 components healthy | Console table |
+| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 24 phases report healthy | Console summary |
 | 0.3 | Open Power BI Cockpit | URL printed by step 0.2 | KPI tiles render with synthetic data baseline | Screenshot |
 
 ---
@@ -45,12 +45,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 2.1 | Call Norwegian helpline | Number printed in `apps/voice/acs/phone-numbers.bicep` (placeholder for case study: simulate via `tests/e2e/scenario-02-lars-no-voice.spec.ts`) | IVR greeting in Norwegian Bokmål, slow-speech mode offered |
+| 2.1 | Call Norwegian helpline | Number printed in `apps/voice/acs/phone-numbers.bicep` (placeholder for case study: simulate via `tests/e2e/tests/scenario-02-lars-no-voice.spec.ts`) | IVR greeting in Norwegian Bokmål, slow-speech mode offered |
 | 2.2 | Press 1 for "Status sak" | DTMF | IVR routes to `application-status.yaml` |
 | 2.3 | Speak case number | Voice | AI Speech → Foundry classifier resolves intent + retrieves case |
 | 2.4 | IVR reads back status in Bokmål | Voice | Status spoken with neural voice `nb-NO-FinnNeural` |
 | 2.5 | Request a human agent | "Snakk med saksbehandler" | Escalation routes to D365 omnichannel queue |
-| 2.6 | Hang up — verify recording-consent disclosure was played | Logs | `recording-consent/recording-disclosure.md` line for `nb` was emitted at call open |
+| 2.6 | Hang up — verify recording-consent disclosure was played | Logs | `apps/voice/recording-consent/recording-disclosure.md` line for `nb` was emitted at call open |
 
 **Exit gate:** voice path works without touching a screen; full transcript captured in observability with masked PII.
 
@@ -114,7 +114,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
 | 6.1 | Hans opens the SAR API | APIM dev portal "data-export" API | OpenAPI shows GDPR scopes |
-| 6.2 | POST a SAR for `anna@SYNTH-PERSONAS-DK` | `tests/e2e/scenario-06-hans-dpo.spec.ts` request fixture | Logic App `gdpr-data-export` triggered, ID returned |
+| 6.2 | POST a SAR for `anna@SYNTH-PERSONAS-DK` | `tests/e2e/tests/scenario-06-hans-dpo.spec.ts` request fixture | Logic App `gdpr-data-export` triggered, ID returned |
 | 6.3 | Track progress | GET status endpoint | Pulls personal data from D365, Fabric, Foundry traces, ACS recordings |
 | 6.4 | Download bundle | Signed URL returned in 30 s for synthetic data | Encrypted ZIP with audit trail |
 | 6.5 | Verify Purview lineage | Purview Studio > Data lineage | Bundle export visible as a lineage edge |
@@ -172,7 +172,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 > Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
 
-A single Playwright test (`tests/e2e/scenario-10-evaluator-cross-cutting.spec.ts`) chains the previous 9 scenarios in the order an evaluator would explore the platform. Run with:
+A single Playwright test (`tests/e2e/tests/scenario-10-evaluator-cross-cutting.spec.ts`) chains the previous 9 scenarios in the order an evaluator would explore the platform. Run with:
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
