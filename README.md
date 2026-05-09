@@ -64,7 +64,7 @@ graph TB
     Citizens["👥 Citizens — 🇩🇰 🇸🇪 🇳🇴<br/>2.1 M · 12 languages"]
     Channels["🌐 Web · 📱 Mobile · ☎️ Voice"]
     Edge["🔐 Identity Federation + 🚪 API Gateway<br/>Entra ID · External ID · eIDAS · APIM"]
-    Foundry["🧠 Microsoft AI Foundry<br/>classifier · translator · eligibility ·<br/>citizen assistant · doc extractor · Azure OpenAI"]
+    Foundry["🧠 Microsoft AI Foundry — single AI brain<br/>topic-router · classifier · translator · eligibility ·<br/>citizen assistant · doc extractor · caseworker helper · Azure OpenAI"]
     Process["⚙️ Logic Apps  ➜  📋 Dynamics 365"]
     Data["📊 Microsoft Fabric  ➜  📈 Power BI"]
     Governance["🛡️ Trust &amp; Governance<br/>Purview · GDPR · EU AI Act · WCAG 2.1 AA"]
@@ -166,12 +166,12 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | Path | Purpose |
 |---|---|
 | 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
-| 🏗️ `architecture.md` | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
-| 🗄️ `data.md` | Storage architecture: 5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping, right-to-erasure playbook. |
-| 🛡️ `datacompliance.md` | Data compliance — every regulation responded to (GDPR, EU AI Act, ePrivacy, eIDAS, NIS2, WCAG, DK·SE·NO national law) with article-by-article responses, citizen rights SLAs, and evidence pack. |
-| 🤖 `plan.md` | Multi-agent development plan — work packages, agent profiles, parallel waves. |
-| 🎬 `uses.md` | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
-| 📚 `case-study-11.md` | Original case study extracted from the source brief. |
+| 🏗️ [`docs/tech/architecture.md`](./docs/tech/architecture.md) | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
+| 🗄️ [`docs/tech/data.md`](./docs/tech/data.md) | Storage architecture: 5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping, right-to-erasure playbook. |
+| 🛡️ [`docs/biz/datacompliance.md`](./docs/biz/datacompliance.md) | Data compliance — every regulation responded to (GDPR, EU AI Act, ePrivacy, eIDAS, NIS2, WCAG, DK·SE·NO national law) with article-by-article responses, citizen rights SLAs, and evidence pack. |
+| 🤖 [`docs/tech/plan.md`](./docs/tech/plan.md) | Multi-agent development plan — work packages, agent profiles, parallel waves. |
+| 🎬 [`docs/biz/uses.md`](./docs/biz/uses.md) | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
+| 📚 [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | Original case study extracted from the source brief. |
 | 🏛️ `infra/` | Bicep landing zone, Microsoft Entra External ID + Microsoft Entra ID + custom user flows, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
 | 💻 `apps/` | React web portal (incl. the new HTML/JS Chart.js insights components — post-audit replacement for Power BI Embedded), Expo mobile shell, ACS + AI Speech voice bot (6 languages), D365 model-driven apps + Power Platform solutions. *(The conversational orchestration that lived in `apps/copilot-studio/` is now in `foundry/agents/topic-router/`.)* |
 | 🔌 `services/` | API Management (8 OpenAPI APIs), Logic Apps (6 workflows), Functions / Container Apps, Power Automate flows. |
@@ -179,9 +179,9 @@ The full agent catalogue, dependency graph, per-wave sub-diagrams and risk regis
 | 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO), each holding 1 Lakehouse with 3 medallion layers (Bronze · Silver · Gold) — i.e. 3 Lakehouses × 3 layers = **9 logical zones**. Notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
 | 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
-| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) with **24 phase modules** *(post-audit: +Postgres, +Redis, +VerifiedId, +Bastion, +Ciem, +Ddos, +BackupAsr, +ConfidentialLedger, +ConfidentialCompute, +ChaosStudio, +Priva; −CopilotStudio)* + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |
+| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) with **25 phase modules** *(post-audit: +Postgres, +Redis, +VerifiedId, +Bastion, +Ciem, +Ddos, +BackupAsr, +ConfidentialLedger, +ConfidentialCompute, +ChaosStudio, +Priva; −CopilotStudio)* + `Remove-UDCSP.ps1` tear-down + `Bootstrap-DevEnv.ps1`. See [`installation.md`](./docs/tech/installation.md). |
 | ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
-| 📑 `agents.md` · `installation.md` · `recipe.md` | Build execution log · install procedure · acceptance walk-through. |
+| 📑 [`docs/tech/agents.md`](./docs/tech/agents.md) · [`docs/tech/installation.md`](./docs/tech/installation.md) · [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Build execution log · install procedure · acceptance walk-through. |
 
 ---
 
@@ -210,7 +210,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🟧 | 15 | **Auditability** of every AI decision | Foundry tracing + Application Insights + Fabric audit lakehouse + Power BI audit dashboard | Trace replay test; auditor walkthrough |
 | 🟪 | 16 | **Caseworker productivity** | D365 Customer Service + Copilot for Service + multilingual knowledge base | D365 KPIs (AHT, FCR); caseworker satisfaction survey |
 | 🟦 | 17 | **Synthetic but realistic data** for the three countries (demos, training, evals, audits) | Dedicated synthetic-data agent (A15) producing 12-language personas, applications, documents, conversations and golden eval datasets — GDPR-safe, regenerable | Dataset coverage report; eval baselines green; auditor-ready persona book |
-| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry (incl. the `topic-router` agent), D365 and Power Platform assets across the 3 sovereign zones — **24 phases** post-audit | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
+| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry (incl. the `topic-router` agent), D365 and Power Platform assets across the 3 sovereign zones — **25 phases** post-audit | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
 
 ---
 
@@ -224,7 +224,7 @@ The table below maps every requirement and outcome stated in the case study to t
 | 🔀 **Channel designers / demo team** | One deep-dive per channel under [`docs/biz/`](./docs/biz/) — 📞 [`voice`](./docs/biz/voice.md) · 🌐 [`web`](./docs/biz/web.md) · 📱 [`mobile`](./docs/biz/mobile.md) · 💬 [`chat`](./docs/biz/chat.md) · 📲 [`sms`](./docs/biz/sms.md) · 📧 [`email`](./docs/biz/email.md) · 🧑‍💼 [`caseworker`](./docs/biz/caseworker.md). |
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with **24 phase modules** *(post-audit refactor)*. |
+| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with **25 phase modules** *(post-audit refactor)*. |
 | 🛡️ **Auditors / DPOs** | [`datacompliance.md`](./docs/biz/datacompliance.md) — every regulation we answer to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses + evidence pack. |
 | 📚 **Original case study** | [`case-study-11.md`](./docs/biz/case-study-11.md). |
 
@@ -269,10 +269,12 @@ For architects, builders, operators, and reviewers of the implementation itself.
 | [`docs/tech/data.md`](./docs/tech/data.md) | **The storage truth** — five storage zones (Operational · Documents · Conversations · Knowledge & Memory · Analytics), per-data-category storage map, retention matrix anchored on EU AI Act Art. 26(6) + GDPR Art. 5/17 + ePrivacy Art. 5, right-to-erasure operational playbook, sovereignty & federation rules. | DPOs, architects, compliance. |
 | [`docs/tech/plan.md`](./docs/tech/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
 | [`docs/tech/agents.md`](./docs/tech/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
-| [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 15 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
+| [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 25 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
 | [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
+| [`docs/tech/plan_post_audit.md`](./docs/tech/plan_post_audit.md) | The post-audit refactor diff — every removal, every addition, every renamed module, with the wave-aligned migration plan. | Architects, reviewers comparing pre/post-audit. |
+| [`docs/tech/runbook-dr.md`](./docs/tech/runbook-dr.md) | Disaster-recovery runbook — RPO/RTO matrix, twice-yearly full-failover drill (pre-checks → trigger → caseworker simulation → cut-over → rollback), real-incident escalation order. | SRE on-call, country business-continuity officers. |
 
-> All sixteen files are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
+> All twenty files (this README + 11 under `docs/biz/` + 8 under `docs/tech/`) are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
 
 ---
 
@@ -304,7 +306,7 @@ This repository was refactored after an internal architecture audit to consolida
 | **Azure Bastion (Standard)** | Sole admin shell-access path — no jump boxes, no public RDP/SSH. |
 | **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant entitlement audit + drift detection across the 3 sovereign tenants. |
 
-The installer DAG grew from 15 to **24 phases** and has been smoke-tested end-to-end (`pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly`).
+The installer DAG grew from 15 to **25 phases** and has been smoke-tested end-to-end (`pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly`).
 
 ### 🚧 Future Recommendations (not implemented in this repository)
 

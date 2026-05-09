@@ -124,7 +124,7 @@ A second multi-agent run was launched on top of the initial scaffold to apply th
 | Phase | Output | Files |
 |---|---|---:|
 | `plan_post_audit.md` | source-of-truth plan with diff matrix, sub-agent isolation, new DAG, risks | 1 |
-| `Install-UDCSP.ps1` | new ValidateSet (24 phases), DAG rewritten, examples added | 1 |
+| `Install-UDCSP.ps1` | new ValidateSet (25 phases), DAG rewritten, examples added | 1 |
 | 11 new install modules (Postgres, Redis, VerifiedId, Bastion, Ciem, Ddos, BackupAsr, ConfidentialLedger, ConfidentialCompute, ChaosStudio, Priva); `Install-CopilotStudio.psm1` deleted | scripts | 12 |
 | `udcsp.config.template.psd1` | 10 new resource config blocks | 1 |
 | `Install-LandingZone.psm1` | drop Cosmos asset prerequisites | 1 |
@@ -132,7 +132,7 @@ A second multi-agent run was launched on top of the initial scaffold to apply th
 | `apps/web/README.md` | updated chat narrative | 1 |
 | `architecture.md` | §2.1 + §2.2 (mermaid), §5 (mermaid + agent catalogue + operating model), §6 (mermaid), §8 (mermaid + highlights), §10 (security & network), §12 (multilingual), §13.2 + §13.3 (mermaid sequences), §14.2 (service inventory + post-audit removed list), §15 (deployment mermaid) | 1 |
 | `data.md` | zone diagram, all 5 zone tables, storage map matrix, retention matrix, compliance map, encryption table, BCDR table, anti-patterns, §9 erasure sequence | 1 |
-| `installation.md` | new 24-phase table, conversational data layer, prerequisites | 1 |
+| `installation.md` | new 25-phase table, conversational data layer, prerequisites | 1 |
 | `agents.md` (this section) | post-audit run timings, parallelism factor | 1 |
 | `.github/workflows/repo-checks.yml` | drop `apps/copilot-studio/` from yamllint scope; add `governance/priva/` | 1 |
 | `README.md` | full rewrite + Camunda future-recommendation footer | 1 |
