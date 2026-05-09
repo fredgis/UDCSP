@@ -179,7 +179,7 @@ GDPR governs **every operation on personal data** of any EU/EEA resident. UDCSP 
 | GDPR article | What it demands | UDCSP's response | Evidence |
 |---|---|---|---|
 | **Art. 5(1)(a)** Lawfulness, fairness, transparency | Process lawfully, fairly, transparently | Privacy notice at every channel entry; published in 12 languages; explains lawful basis, retention, rights | Per-country privacy notice (web portal footer + IVR opening + email signature) |
-| **Art. 5(1)(b)** Purpose limitation | Collect for specified, explicit, legitimate purposes | Each Foundry agent has a documented "intended purpose" in its AI Act registry; secondary use forbidden by Purview policy | `foundry/ai-act-registry/{agent}.json` |
+| **Art. 5(1)(b)** Purpose limitation | Collect for specified, explicit, legitimate purposes | Each Foundry agent has a documented "intended purpose" in its AI Act registry; secondary use forbidden by Purview policy | `governance/ai-act/registry/{agent}.yaml` |
 | **Art. 5(1)(c)** Data minimisation | Adequate, relevant, limited | Redis Enterprise holds ephemeral state; PostgreSQL JSONB persists drafts older than 24 h with retention jobs; voice audio 90-day WORM purge; AI memory 12-month rolling TTL; no PII in logs | data.md § 5 retention matrix |
 | **Art. 5(1)(d)** Accuracy | Keep accurate, up to date | Citizen self-service correction in portal; caseworker correction in D365; rectification request workflow Art. 16 | D365 `case_audit` table |
 | **Art. 5(1)(e)** Storage limitation | Kept no longer than necessary | Lifecycle rules on every storage account; Purview retention policy enforces national-law extensions | data.md § 5 + Purview policy export |
@@ -202,7 +202,7 @@ GDPR governs **every operation on personal data** of any EU/EEA resident. UDCSP 
 | **Art. 30** Records of Processing Activities (RoPA) | Maintain a register | **Microsoft Purview IS the RoPA** — auto-populated by daily scans + sensitivity classification + lineage; quarterly export delivered to DPO | Purview portal |
 | **Art. 32** Security of processing | Appropriate technical measures | CMK per country, pseudonymisation in OneLake Silver, GZRS replication, encrypted backups, tested DR drills | data.md § 8 + § 10 |
 | **Art. 33-34** Breach notification | Notify supervisory authority within 72 h.; data subjects without undue delay if high risk | Sentinel detection rules + automated incident workflow that pages the DPO; 72-hour timer in the workflow | Sentinel runbook |
-| **Art. 35** DPIA | Data Protection Impact Assessment for high-risk processing | DPIA per Foundry agent; the **eligibility** agent has the most complete one; reviewed on every model upgrade | `foundry/ai-act-registry/{agent}-dpia.pdf` |
+| **Art. 35** DPIA | Data Protection Impact Assessment for high-risk processing | DPIA per Foundry agent; the **eligibility** agent has the most complete one; reviewed on every model upgrade | `governance/ai-act/registry/{agent}-model.yaml` + `governance/dpia/` |
 | **Art. 44-49** International transfers | Adequacy or appropriate safeguards | All citizen data **stays in EU/EEA regions** by Azure Policy; Microsoft EU Data Boundary applies; no transfers to third countries by design | Azure Policy "deny" rule on non-EU regions |
 
 ### What this looks like in practice
@@ -270,12 +270,12 @@ UDCSP runs six AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies ea
 | **Art. 13** Transparency to deployers / users | Clear, accurate, complete information | Caseworker UI in D365 surfaces "AI suggested · click to see evidence" badge on every recommendation; explainability report per decision | D365 Copilot for Service UI |
 | **Art. 14** Human oversight | Effective human oversight; ability to override; awareness of automation bias | **Every Eligibility recommendation lands in a caseworker queue with full evidence; the caseworker decides; overrides are captured with reason text in `eligibility_override`** | Demo 6 in [`uses.md`](./uses.md) |
 | **Art. 15** Accuracy, robustness, cybersecurity | Performance levels declared; resilience tested | Eval suite gates every release: groundedness ≥ 0.85, jailbreak resistance, F1 by language; Content Safety always-on | Foundry eval reports |
-| **Art. 16** Provider obligations | Providers must implement Articles 8-15 | Microsoft + UDCSP team are joint providers; obligations split per ownership chart | `foundry/ai-act-registry/provider-chart.md` |
+| **Art. 16** Provider obligations | Providers must implement Articles 8-15 | Microsoft + UDCSP team are joint providers; obligations split per ownership chart | `governance/ai-act/registry/_provider-chart.md` |
 | **Art. 17** Quality management system | Documented QMS | UDCSP QMS spans ML lifecycle (data governance, eval, deployment, monitoring); aligned with ISO 42001 | QMS doc in repo |
 | **Art. 18** Documentation retention | 10 years after placing on market | Foundry registry + DPIA stored in immutable storage with 10-year retention | Storage immutability policy |
 | **Art. 19** Logs retention (provider) | Logs kept appropriately | (See Art. 26(6) — deployer obligation is the binding floor) | — |
 | **Art. 26(6)** **Deployer log retention** | **Logs kept ≥ 6 months from creation** | **Foundry traces 180 days hot in App Insights + anonymised OneLake Bronze + tamper-evident Azure Confidential Ledger anchors** | `infra/security/confidential-ledger/` |
-| **Art. 27** Fundamental rights impact assessment (FRIA) | Public-sector deployers must assess impact on fundamental rights | FRIA per agent in `foundry/ai-act-registry/`; reviewed on substantial modification | FRIA PDF |
+| **Art. 27** Fundamental rights impact assessment (FRIA) | Public-sector deployers must assess impact on fundamental rights | FRIA per agent in `governance/ai-act/registry/`; reviewed on substantial modification | FRIA PDF in `governance/dpia/` |
 | **Art. 50** Transparency obligations for AI systems | Inform users they are interacting with AI | Citizen-facing notice on every channel: "You are being assisted by an AI; a human caseworker reviews any decision that affects you" | Channel docs (every channel has a notice) |
 | **Art. 71** EU database registration | High-risk system registered in EU DB | Eligibility agent registered; registration ID stored in registry JSON | EU AI Database confirmation |
 | **Art. 72** Post-market monitoring | Plan + execution | Monthly monitoring report compiled from Foundry evals + production traces; reviewed by AI Office | Monitoring report PDF |
@@ -285,7 +285,7 @@ UDCSP runs six AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies ea
 ### Where to read more
 
 - [`ai.md`](./ai.md) § 11 (Governance, lineage, EU AI Act) — the technical view of how the registry works.
-- `foundry/ai-act-registry/eligibility.json` — the canonical conformity dossier for the high-risk agent.
+- `governance/ai-act/registry/eligibility-model.yaml` — the canonical conformity dossier for the high-risk agent.
 - Demo 6 in [`uses.md`](./uses.md) — the human-oversight workflow in action.
 - Demo 7 in [`uses.md`](./uses.md) — DPO Hans audits a six-month-old AI decision (proves Art. 26(6) traceability).
 
@@ -561,7 +561,7 @@ Submit through the citizen portal, the DPO email, or in writing. **Acknowledged 
 
 ### "How do you know your AI is not biased?"
 
-Every AI agent has a **DPIA + FRIA** that includes bias evaluation per language, per protected category, per Member State. Evals run **per pull request and per release**, gated against documented thresholds. Failures block deploys. Reports are in `foundry/ai-act-registry/{agent}-eval/`. Demo 9 in [`uses.md`](./uses.md) shows the cross-language outcome dashboard.
+Every AI agent has a **DPIA + FRIA** that includes bias evaluation per language, per protected category, per Member State. Evals run **per pull request and per release**, gated against documented thresholds. Failures block deploys. Reports are in `governance/ai-act/registry/{agent}.yaml` (`evalDataset` field) and the Foundry eval suites under `tests/eval/`. Demo 9 in [`uses.md`](./uses.md) shows the cross-language outcome dashboard.
 
 ### "What if there's a breach?"
 

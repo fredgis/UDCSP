@@ -63,7 +63,7 @@ That human review is not a checkbox — it is a structural requirement enforced 
 
 - ⚖️ **Regulatory.** EU AI Act Art. 14 mandates meaningful human oversight for high-risk AI systems that produce or influence decisions on citizens' welfare, residency, and social benefits. An automated AI verdict without a human caseworker validating it is a conformity violation. Every `udcsp_eligibility_assessment` row must have a corresponding caseworker approval or override action before it becomes a citizen-facing decision.
 - 🤝 **Trust.** Citizens whose residency permit or income-supplement benefit is being assessed want a human to make that call. AI speeds the preparation; the caseworker holds the pen. Casework-study satisfaction target: **+38 % CSAT** — not achievable if citizens distrust the channel that closes their case.
-- 🔄 **Resolution.** Voice, web, mobile, chat, SMS-reply, and email-reply are all *front-stage* channels. They are optimised for speed and self-service. But every one of them has an "escape to human" hatch (`foundry/agents/topic-router/escalation/escalation-rules.yaml`), and all those hatches lead **here**. Without the caseworker channel, every complex or sensitive case becomes a dead end.
+- 🔄 **Resolution.** Voice, web, mobile, chat, SMS-reply, and email-reply are all *front-stage* channels. They are optimised for speed and self-service. But every one of them has an "escape to human" hatch (`foundry/agents/topic-router/escalation-rules.json`), and all those hatches lead **here**. Without the caseworker channel, every complex or sensitive case becomes a dead end.
 - 🔐 **Accountability.** Public sector decisions carry legal weight. A citizen denied a benefit can appeal. The caseworker channel is where the legally accountable record is created, stored, and made auditable — not the bot, not the model, but the caseworker's explicit action in D365.
 
 The design principle, visible in the BPF (`apps/d365/solutions/UDCSP_Core/customizations/businessprocessflows/application-intake-bpf.xml`):
@@ -75,9 +75,9 @@ The `Caseworker review` stage is not optional and cannot be skipped by configura
 > [!NOTE]
 > **AI-first, but supervised.** This is the phrase the case study team coined in the planning sessions. The AI does the preparation work — classification, pre-assessment, KB lookup, draft replies — so the caseworker can focus entirely on the judgment call. The caseworker is not a rubber stamp; they are the decision maker. The AI is the analyst. This distinction is the foundation of UDCSP's EU AI Act conformity argument.
 
-The escalation rules (`foundry/agents/topic-router/escalation/escalation-rules.yaml`) define four paths that reach the caseworker channel: low-confidence classifier output (`classifierConfidence < 0.70`), high-risk topics requiring a formal decision (`social-benefit`, `residency-application`), explicit citizen request (`userIntent == 'escalate-to-human'`), and accessibility-flagged cases routed to the `accessibility-help` priority queue. All four paths converge on D365.
+The escalation rules (`foundry/agents/topic-router/escalation-rules.json`) define four paths that reach the caseworker channel: low-confidence classifier output (`classifierConfidence < 0.70`), high-risk topics requiring a formal decision (`social-benefit`, `residency-application`), explicit citizen request (`userIntent == 'escalate-to-human'`), and accessibility-flagged cases routed to the `accessibility-help` priority queue. All four paths converge on D365.
 
-The `escalate-to-human` Foundry `topic-router` topic (`foundry/agents/topic-router/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) is localised across all 12 languages — a citizen can trigger the escalation in any supported language and the handover context is preserved verbatim in that language inside the D365 case.
+The `escalate-to-human` Foundry `topic-router` topic (`foundry/agents/topic-router/topics/escalate-to-human.yaml`) is localised across all 12 languages — a citizen can trigger the escalation in any supported language and the handover context is preserved verbatim in that language inside the D365 case.
 
 ---
 
@@ -96,7 +96,7 @@ flowchart TB
     end
 
     subgraph ESC["⚡ Escalation layer"]
-        RULES["Escalation rules<br/><i>foundry/agents/topic-router/escalation/</i>"]
+        RULES["Escalation rules<br/><i>foundry/agents/topic-router/<br/>escalation-rules.json</i>"]
         FLOW["Power Automate<br/><i>escalation-to-human.json</i>"]
     end
 
@@ -135,7 +135,7 @@ flowchart TB
 
 The voice channel (`docs/biz/voice.md`) ends with a warm transfer: *"D365 warm-transfer with full context"*. This is where that transfer arrives. The case is pre-populated with the full Foundry `topic-router` conversation transcript, the detected locale, the citizen's intent, and any slot-fill data collected during the conversation. The caseworker does not start from a blank case.
 
-The Foundry `topic-router` `escalate-to-human` topic (`foundry/agents/topic-router/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) invokes the `d365-case-create` connector (`foundry/agents/topic-router/agents/citizen-assistant-bot/connections/d365-case-create.json`) to create the case before the agent hands off. By the time a caseworker picks up the case, the AI context is already there.
+The Foundry `topic-router` `escalate-to-human` topic (`foundry/agents/topic-router/topics/escalate-to-human.yaml`) invokes the `d365-escalation` connector (`foundry/agents/topic-router/connections/d365-escalation.json`) to create the case before the agent hands off. By the time a caseworker picks up the case, the AI context is already there.
 
 ---
 

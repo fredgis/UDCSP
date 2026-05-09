@@ -6,15 +6,15 @@
 
 *How a citizen opens a corner panel, types a question in any of 12 languages, and gets a grounded answer — complete with cited adaptive cards, suggested actions, and a one-click escalation to a human caseworker — powered by the same Foundry brain that also answers the phone.*
 
-[![Channel](https://img.shields.io/badge/💬_Channel-Web_Chat_·_APIM `/agents/topic-router`-1565C0?style=for-the-badge)](#)
-[![Stack](https://img.shields.io/badge/🛰️_Stack-Copilot_Studio_·_APIM `/agents/topic-router`-FF6F00?style=for-the-badge)](#)
+[![Channel](https://img.shields.io/badge/💬_Channel-Web_Chat_·_APIM_/agents/topic--router-1565C0?style=for-the-badge)](#)
+[![Stack](https://img.shields.io/badge/🛰️_Stack-Foundry_topic--router_·_APIM-FF6F00?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12_·_multilingual_routing-AD1457?style=for-the-badge)](#)
 [![Brain](https://img.shields.io/badge/🧠_Brain-shared_with_voice-2E7D32?style=for-the-badge)](#)
 
 [![Sovereignty](https://img.shields.io/badge/🛡️_Per_country-DK_·_SE_·_NO-00796B?style=flat-square)](#)
 [![Escalation](https://img.shields.io/badge/🤝_Escalation-D365_caseworker-5E35B1?style=flat-square)](#)
 [![Compliance](https://img.shields.io/badge/⚖️_GDPR_·_Audit-trail_always_on-C62828?style=flat-square)](#)
-[![Status](https://img.shields.io/badge/🧱_Scaffold-26_files_under_apps/copilot--studio-E65100?style=flat-square)](#)
+[![Status](https://img.shields.io/badge/🧱_Scaffold-foundry/agents/topic--router-E65100?style=flat-square)](#)
 
 </div>
 
@@ -26,10 +26,7 @@
 > | Field | Value |
 > |---|---|
 > | 🗄️ **Where stored** | Canonical dialog transcript in Dataverse `bot_session`; slot state in Redis Enterprise; drafts over 24 h in PostgreSQL JSONB; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake and Confidential Ledger anchors. |
-> | 🧱 **Implementation note** | `ChatWidget.tsx` will be updated by the orchestrator separately; this document describes the target contract. |
-
----|---|
-> | 🗄️ **Where stored** | Canonical dialog store is Foundry `topic-router` Dataverse `bot_session`; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
+> | 🧱 **Implementation note** | The React `ChatWidget.tsx` posts `JSON` to `${VITE_APIM_BASE_URL}/agents/topic-router/messages`; **no DirectLine, no Copilot Studio web embed, no iframe**. |
 
 ---
 
@@ -169,38 +166,35 @@ A DPO or caseworker can use this single `traceparent` to reconstruct the entire 
 
 | # | Block | What it does | Where it lives |
 |:-:|---|---|---|
-| **1** | **Foundry `topic-router` bot** | Owns the dialog state machine, topic routing, slot filling, and adaptive-card rendering for **both** web and voice channels. One bot definition (`bot.yaml`), multiple channel publishings. Supports 12 languages out of the box. | `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml` |
-| **2** | **Topics** | Each `.yaml` topic file is a dialog node: `OnRecognizedIntent` with 12-language trigger phrases, slot-fill actions, and connector invocations. Topics are **shared between web and voice** — a change to `child-benefit.yaml` affects both channels simultaneously. | `foundry/agents/topic-router/agents/citizen-assistant-bot/topics/*.yaml` |
-| **3** | **Entities** | Five closed-list entities used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). | `foundry/agents/topic-router/agents/citizen-assistant-bot/entities/*.json` |
+| **1** | **Foundry `topic-router` agent** | Owns the dialog state machine, topic routing, slot filling, and adaptive-card rendering for **both** web and voice channels. One agent definition (`agent.yaml`), invoked by every channel through APIM. Supports 12 languages out of the box. | `foundry/agents/topic-router/agent.yaml` |
+| **2** | **Topics** | Each `.yaml` topic file is a dialog node: trigger phrases in 12 languages, slot-fill steps and downstream agent calls. Topics are **shared between web and voice** — a change to `child-benefit.yaml` affects both channels simultaneously. | `foundry/agents/topic-router/topics/*.yaml` |
+| **3** | **Slot definitions** | Five closed-list slots used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). *(Post-audit: the 5 closed-list `entities/*.json` files from Copilot Studio have been folded into a single `topics/slot-definitions.yaml`.)* | `foundry/agents/topic-router/topics/slot-definitions.yaml` |
 | **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `foundry/agents/topic-router/knowledge-sources/*.json` |
-| **5** | **Connections** | Three custom connector definitions: `foundry-classifier.json` routes to the Foundry classifier endpoint, `foundry-citizen-assistant.json` routes to the grounding + answer agent, `d365-case-create.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/agents/citizen-assistant-bot/connections/*.json` |
-| **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation/escalation-rules.yaml` |
-| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS. Policy applies: correlation-id injection, Entra JWT validation, rate-limit (120 calls/min), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
+| **5** | **Connections** | Four connection definitions: `apim-facade.json` is the public ingress, `foundry-skills.json` invokes the downstream Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator), `redis-session.json` holds the slot-fill state, `d365-escalation.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/connections/*.json` |
+| **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation-rules.json` |
+| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS as JSON. Policy applies: correlation-id injection, Entra JWT validation, rate-limit (120 calls/min), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
 
-The five entities used for slot filling — shown verbatim from source:
+The five slots used for structured slot filling — shown verbatim from `topics/slot-definitions.yaml`:
 
-```json
-// entities/channel.json
-{ "name": "channel", "kind": "closedList",
-  "values": ["web", "mobile", "voice", "chat"] }
-
-// entities/country.json
-{ "name": "country", "kind": "closedList",
-  "values": ["DK", "SE", "NO"] }
-
-// entities/serviceType.json
-{ "name": "serviceType", "kind": "closedList",
-  "values": ["residency", "tax-cert", "child-allowance",
-             "social-benefit", "business-registration"] }
-
-// entities/language.json — all 12 router locales
-{ "name": "language", "kind": "closedList",
-  "values": ["da","sv","nb","nn","se","en","de","fr","pl","ar","uk","fi"] }
-
-// entities/accessibilityNeed.json
-{ "name": "accessibilityNeed", "kind": "closedList",
-  "values": ["screen-reader","voice-only","cognitive-support",
-             "mobility-support","none"] }
+```yaml
+# topics/slot-definitions.yaml
+kind: FoundrySlotDefinitions
+slots:
+  channel:
+    kind: closedList
+    values: [web, mobile, voice, chat]
+  country:
+    kind: closedList
+    values: [DK, SE, NO]
+  language:
+    kind: closedList
+    values: [da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi]
+  serviceType:
+    kind: closedList
+    values: [residency, tax-cert, child-allowance, social-benefit, business-registration]
+  accessibilityNeed:
+    kind: closedList
+    values: [screen-reader, voice-only, cognitive-support, mobility-support, none]
 ```
 
 Two cross-cutting concerns shared with voice:
@@ -208,35 +202,28 @@ Two cross-cutting concerns shared with voice:
 | | Concern | Where |
 |:-:|---|---|
 | 📜 | **Transcript pipeline** — Logic App pushes every chat transcript to the **per-country** Fabric workspace, pseudonymised via Purview DLP, correlated with Foundry traces by `correlation-id`. | Same Logic App pattern as the voice transcript pipeline |
-| ⚖️ | **Content safety** — Foundry Azure AI Content Safety Standard checks both user input and bot output. Any triggered verdict blocks the message and logs the event to the audit trail. | `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml` `contentSafety` field |
+| ⚖️ | **Content safety** — Foundry Azure AI Content Safety Standard checks both user input and bot output. Any triggered verdict blocks the message and logs the event to the audit trail. | `foundry/agents/topic-router/agent.yaml` `contentSafety` field |
 
-### The Export / Import workflow for bot lifecycle management
+### The Test / Import workflow for agent lifecycle management
 
-The `foundry/agents/topic-router/scripts/` directory contains two scripts for bot CI/CD:
+The `foundry/agents/topic-router/scripts/` directory contains two scripts for agent CI/CD:
 
 ```powershell
-# Export-TopicRouter.ps1 — snapshot the bot from a running tenant
-# (placeholder: exports the Foundry topic-router package)
-param(
-  [string]$EnvironmentId = $env:POWER_PLATFORM_ENVIRONMENT_ID,
-  [string]$OutputPath = "..\exports"
-)
-
-# Import-TopicRouter.ps1 — push bot.yaml into a target tenant
-# (placeholder: imports the Foundry topic-router package)
-param(
-  [string]$EnvironmentId = $env:POWER_PLATFORM_ENVIRONMENT_ID,
-  [string]$BotPath = "..\agents\citizen-assistant-bot"
-)
+# Test-TopicRouter.ps1 — offline structure validator (no network)
+pwsh foundry/agents/topic-router/scripts/Test-TopicRouter.ps1
+# Import-TopicRouter.ps1 — push agent.yaml into a target Foundry workspace
+pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 -DryRun
+pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 `
+     -FoundryWorkspace udcsp-foundry-dk
 ```
 
-The pattern: every change to `agent.yaml`, topics, or entities is committed to the repository. The CI pipeline publishes the `foundry/agents/topic-router` package to the non-production Foundry environment. After automated topic tests in 12 languages, a release pipeline pushes to production. **The router state in production is always reproducible from the repository.**
+The pattern: every change to `agent.yaml`, topics, or slot definitions is committed to the repository. The CI pipeline invokes `Test-TopicRouter.ps1` (offline validation) and then `Import-TopicRouter.ps1` to publish the package to the non-production Foundry environment. After automated topic tests in 12 languages, a release pipeline pushes to production. **The router state in production is always reproducible from the repository.**
 
 ---
 
 ## 5. Topics — what the bot can do
 
-Every topic is a `.yaml` file under `foundry/agents/topic-router/agents/citizen-assistant-bot/topics/`. Each carries trigger phrases in all 12 bot languages (`da`, `sv`, `nb`, `nn`, `se`, `en`, `de`, `fr`, `pl`, `ar`, `uk`, `fi`). Topics are **shared between the web chat channel and the voice channel** — the same YAML is loaded by both publishing targets.
+Every topic is a `.yaml` file under `foundry/agents/topic-router/topics/`. Each carries trigger phrases in all 12 router languages (`da`, `sv`, `nb`, `nn`, `se`, `en`, `de`, `fr`, `pl`, `ar`, `uk`, `fi`). Topics are **shared between the web chat channel and the voice channel** — the same YAML is loaded by both publishing targets.
 
 | Topic file | Display name | One-line summary | Example trigger phrases |
 |---|---|---|---|
@@ -258,10 +245,10 @@ Every topic is a `.yaml` file under `foundry/agents/topic-router/agents/citizen-
 
 ## 6. Multilingual — language switch + per-locale routing
 
-The router is defined with **12 supported languages** in `foundry/agents/topic-router/agents/citizen-assistant-bot/bot.yaml`:
+The router is defined with **12 supported languages** in `foundry/agents/topic-router/agent.yaml`:
 
-```json
-"languages": ["da","sv","nb","nn","se","en","de","fr","pl","ar","uk","fi"]
+```yaml
+languages: [da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi]
 ```
 
 | 🏴 | Language | Bot locale | Knowledge sources available |
@@ -279,7 +266,7 @@ The router is defined with **12 supported languages** in `foundry/agents/topic-r
 | 🇺🇦 | Ukrainian | `uk` | citizens-faq (uk), sharepoint-policies (uk) |
 | 🇫🇮 | Finnish | `fi` | citizens-faq (fi), sharepoint-policies (fi) |
 
-**How language routing works** (`foundry/agents/topic-router/topics/multilingual-routing.md`):
+**How language routing works** (`foundry/agents/topic-router/topics/multilingual-routing.yaml`):
 
 1. **Auto-detect on first message.** The Foundry classifier reads the citizen's opening message and returns the detected `locale` with a confidence score. No language-picker screen, no pre-amble, no page reload. A Norwegian citizen writing *"Hva er status på søknaden min?"* is immediately understood and answered in Norwegian Bokmål.
 
@@ -329,7 +316,7 @@ The chat widget is the **typed-conversation inclusivity layer** of UDCSP — the
 **🧯 Always-available human escape — typing "agent" = pressing 0 on the voice channel.** At any point in the conversation, typing `agent`, `human`, `caseworker`, or the locale-equivalent term triggers the `escalate-to-human.yaml` topic:
 
 ```yaml
-# escalation-rules.yaml — the human-request rule
+# escalation-rules.json — the human-request rule
 - name: citizen-asks-human
   when: userIntent == 'escalate-to-human'
   action: createD365Case
@@ -351,27 +338,27 @@ This is the **exact same topic and escalation rule** used by the voice channel w
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart LR
-    BOT["🤖 One Foundry `topic-router`<br/>bot definition<br/><i>bot.yaml — shared</i>"]
+    BOT["🤖 One Foundry `topic-router`<br/>agent definition<br/><i>agent.yaml — shared</i>"]
 
     subgraph DK["🇩🇰 Denmark"]
-        PUB_DK["Web channel publishing DK<br/><i>udcsp-dk brand · da-DK locale default</i>"]
-        DL_DK["APIM `/agents/topic-router` secret DK<br/><i>Key Vault: udcsp-dk-kv</i>"]
+        PUB_DK["APIM facade DK<br/><i>udcsp-dk brand · da-DK locale default</i>"]
+        DL_DK["APIM subscription key DK<br/><i>Key Vault: udcsp-dk-kv</i>"]
         FAB_DK["Fabric workspace DK<br/><i>transcripts — DK data region</i>"]
-        D365_DK["D365 DK org<br/><i>d365-case-create connector DK</i>"]
+        D365_DK["D365 DK org<br/><i>d365-escalation connector DK</i>"]
     end
 
     subgraph SE["🇸🇪 Sweden"]
-        PUB_SE["Web channel publishing SE<br/><i>udcsp-se brand · sv-SE locale default</i>"]
-        DL_SE["APIM `/agents/topic-router` secret SE<br/><i>Key Vault: udcsp-se-kv</i>"]
+        PUB_SE["APIM facade SE<br/><i>udcsp-se brand · sv-SE locale default</i>"]
+        DL_SE["APIM subscription key SE<br/><i>Key Vault: udcsp-se-kv</i>"]
         FAB_SE["Fabric workspace SE<br/><i>transcripts — SE data region</i>"]
-        D365_SE["D365 SE org<br/><i>d365-case-create connector SE</i>"]
+        D365_SE["D365 SE org<br/><i>d365-escalation connector SE</i>"]
     end
 
     subgraph NO["🇳🇴 Norway"]
-        PUB_NO["Web channel publishing NO<br/><i>udcsp-no brand · nb-NO locale default</i>"]
-        DL_NO["APIM `/agents/topic-router` secret NO<br/><i>Key Vault: udcsp-no-kv</i>"]
+        PUB_NO["APIM facade NO<br/><i>udcsp-no brand · nb-NO locale default</i>"]
+        DL_NO["APIM subscription key NO<br/><i>Key Vault: udcsp-no-kv</i>"]
         FAB_NO["Fabric workspace NO<br/><i>transcripts — NO data region</i>"]
-        D365_NO["D365 NO org<br/><i>d365-case-create connector NO</i>"]
+        D365_NO["D365 NO org<br/><i>d365-escalation connector NO</i>"]
     end
 
     BOT --> PUB_DK & PUB_SE & PUB_NO
@@ -396,19 +383,19 @@ flowchart LR
     class BOT shared
 ```
 
-**Design decision: one bot, three channel publishings.** Rather than building three separate Foundry `topic-router` bots (one per country), UDCSP uses a **single bot definition** and publishes it three times — once per country web channel. This mirrors the voice channel design (one set of topics, per-country ACS resource). Each publishing gets:
+**Design decision: one agent, three APIM subscriptions.** Rather than building three separate Foundry `topic-router` agents (one per country), UDCSP uses a **single agent definition** and exposes it through one APIM facade per country (DK / SE / NO). This mirrors the voice channel design (one set of topics, per-country ACS resource). Each country gets:
 
 | Country-specific element | What differs | What is shared |
 |---|---|---|
-| Brand persona | Greeting name, primary colour, logo in the widget header | All topic logic, entities, escalation rules |
+| Brand persona | Greeting name, primary colour, logo in the widget header | All topic logic, slot definitions, escalation rules |
 | Disclaimer footer | Per-DPA legally-required GDPR notice for DK / SE / NO | Knowledge source language routing |
-| APIM `/agents/topic-router` secret | Separate credential per country, in per-country Key Vault | APIM token-broker policy template |
+| APIM subscription key | Separate credential per country, in per-country Key Vault | APIM token-broker policy template |
 | Default locale | `da` for DK portal, `sv` for SE, `nb` for NO (citizen still auto-detected) | All 12 languages available in every publishing |
 | D365 case connector | Points to the per-country D365 org | Escalation rules and connector interface |
 | Fabric workspace | Transcripts written to the per-country region | Foundry brain and agent definitions |
 
-**What stays in-country:** conversation transcripts, case metadata, APIM `/agents/topic-router` session tokens, GDPR consent records, content-safety audit logs.
-**What is shared cross-country:** the bot definition (`bot.yaml`), all 10 topic files, all 5 entity files, both knowledge-source registrations, the Foundry agent definitions, and anonymised aggregate metrics in the Power BI dashboard.
+**What stays in-country:** conversation transcripts, case metadata, APIM subscription keys, GDPR consent records, content-safety audit logs.
+**What is shared cross-country:** the agent definition (`agent.yaml`), all 12 topic files (incl. `slot-definitions.yaml` and `multilingual-routing.yaml`), both knowledge-source registrations, the four connection definitions, the Foundry agent definitions, and anonymised aggregate metrics in the Power BI dashboard.
 
 ---
 
@@ -438,32 +425,60 @@ The voice channel targets **≤ 2 s end-to-end** (STT + routing + Foundry + TTS)
 
 The chat widget is embedded as a **React component** in the portal shell. The canonical implementation is `apps/web/src/components/ChatWidget.tsx`, rendered on the home page via `apps/web/src/pages/HomePage.tsx`.
 
-### The React component (from source)
+### The React component (from source — `apps/web/src/components/ChatWidget.tsx`)
 
 ```tsx
-// apps/web/src/components/ChatWidget.tsx
+import { useCallback, useRef, useState } from 'react';
 import { generateTraceparent } from '../utils/traceparent';
 
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
+type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
 export function ChatWidget({ channel = 'web', locale }: Props) {
-  const src = import.meta.env.VITE_TOPIC_ROUTER_APIM_URL || 'about:blank';
-  const trace = generateTraceparent();
+  const apimBase = import.meta.env.VITE_APIM_BASE_URL || '';
+  const sessionId = useRef<string>(crypto.randomUUID());
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [draft, setDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const send = useCallback(async () => {
+    const text = draft.trim();
+    if (!text || busy) return;
+    setBusy(true); setDraft('');
+    setMessages((p) => [...p, { id: crypto.randomUUID(), role: 'user', text }]);
+    try {
+      const trace = generateTraceparent();
+      const res = await fetch(`${apimBase}/agents/topic-router/messages`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', traceparent: trace },
+        body: JSON.stringify({ sessionId: sessionId.current, channel, locale, text }),
+      });
+      const data = await res.json();
+      setMessages((p) => [...p, { id: crypto.randomUUID(), role: 'assistant', text: data?.reply ?? '' }]);
+    } finally { setBusy(false); }
+  }, [apimBase, busy, channel, draft, locale]);
+
   return (
-    <section aria-labelledby="chat-title">
+    <section aria-labelledby="chat-title" className="chat-widget">
       <h2 id="chat-title">Citizen assistant</h2>
-      <section
-        aria-label="Foundry topic-router citizen assistant"
-        data-endpoint={`${src}/agents/topic-router`}
-        className="chat-panel"
-        loading="lazy"
-      />
+      <ul role="log" aria-live="polite" aria-relevant="additions" className="chat-log">
+        {messages.map((m) => (
+          <li key={m.id} className={`chat-msg chat-msg--${m.role}`}>
+            <strong>{m.role === 'user' ? 'You' : 'Assistant'}:</strong> {m.text}
+          </li>
+        ))}
+      </ul>
+      <form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+        <label htmlFor="chat-draft" className="visually-hidden">Your message</label>
+        <input id="chat-draft" value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
+        <button type="submit" disabled={busy || !draft.trim()}>Send</button>
+      </form>
     </section>
   );
 }
 ```
 
-The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to the Foundry `topic-router` embed URL as a query parameter, pre-seeding the bot with the correct default language before the citizen types the first message.
+The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to APIM together with a stable per-session UUID and a W3C `traceparent` header. **No iframe, no DirectLine, no Copilot Studio web embed** — the widget is plain React posting JSON to APIM.
 
 ### How it is embedded on the home page
 
@@ -482,23 +497,25 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
 }
 ```
 
-### The APIM `/agents/topic-router` pattern
+### The APIM ingress pattern
 
 > [!WARNING]
-> **Never hard-code the APIM `/agents/topic-router` secret in the page, an environment variable, or a client-side bundle.** The secret grants full bot access to any holder. ALWAYS broker the token via APIM. The issued token is short-lived (5 minutes), scoped to a single conversation, and the raw APIM `/agents/topic-router` secret never leaves the per-country Key Vault.
+> **Never hard-code the APIM subscription key in the page, an environment variable, or a client-side bundle.** The key grants full agent access to any holder. ALWAYS keep it server-side: the SWA `/api` function (or the APIM token-exchange policy) attaches it on egress, the browser only sends the citizen's Entra access token. The raw APIM key never leaves the per-country Key Vault.
 
-```javascript
-// Token broker pattern — run before posting to APIM
+```typescript
+// apps/web/src/api/topicRouter.ts — typed wrapper around the POST above
 const msalToken = await msalInstance.acquireTokenSilent({ scopes: [...] });
 
-const tokenResponse = await fetch('/api/directline/token', {
-  headers: { Authorization: `Bearer ${msalToken.accessToken}` }
+const res = await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agents/topic-router/messages`, {
+  method: 'POST',
+  headers: {
+    'content-type': 'application/json',
+    'authorization': `Bearer ${msalToken.accessToken}`,
+    'traceparent': generateTraceparent(),
+  },
+  body: JSON.stringify({ sessionId, channel: 'web', locale, text }),
 });
-const { token } = await tokenResponse.json();
-
-// Use the short-lived per-conversation token (NOT the secret)
-const directLine = window.WebChat.createAPIM `/agents/topic-router`({ token });
-window.WebChat.renderWebChat({ directLine }, document.getElementById('webchat'));
+const { reply, traceId } = await res.json();
 ```
 
 The APIM policy that issues the token (`services/apim/apis/agent-citizen-assistant/policy.xml`) enforces:
@@ -527,14 +544,14 @@ The `traceparent` header is propagated all the way through to the Foundry agent,
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart TB
     P0["✅ Pre-reqs<br/><i>Foundry agents live · APIM deployed<br/>Key Vault per country provisioned<br/>D365 org per country live</i>"]
-    P1["1️⃣ Import bot<br/><i>pac copilot import --file bot.yaml<br/>→ foundry/agents/topic-router/scripts/<br/>Import-TopicRouter.ps1</i>"]
-    P2["2️⃣ Wire connections<br/><i>set APIM endpoint in<br/>foundry-classifier.json<br/>foundry-citizen-assistant.json<br/>d365-case-create.json</i>"]
-    P3["3️⃣ Publish web channel × 3<br/><i>one publishing per country<br/>brand · disclaimer · locale default</i>"]
-    P4["4️⃣ Register APIM `/agents/topic-router` secrets<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
+    P1["1️⃣ Import topic-router<br/><i>foundry/agents/topic-router/scripts/<br/>Import-TopicRouter.ps1</i>"]
+    P2["2️⃣ Wire connections<br/><i>set APIM endpoint in<br/>foundry-skills.json<br/>d365-escalation.json<br/>redis-session.json</i>"]
+    P3["3️⃣ Publish APIM facade × 3<br/><i>one APIM subscription per country<br/>brand · disclaimer · locale default</i>"]
+    P4["4️⃣ Register APIM subscription keys<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
     P5["5️⃣ Deploy APIM token-broker<br/><i>agent-citizen-assistant/policy.xml<br/>per country APIM instance</i>"]
-    P6["6️⃣ Set SWA env var<br/><i>VITE_TOPIC_ROUTER_APIM_URL<br/>→ Azure Static Web App app settings</i>"]
+    P6["6️⃣ Set SWA env var<br/><i>VITE_APIM_BASE_URL<br/>→ Azure Static Web App app settings</i>"]
     P7["7️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric workspace<br/>per country · pseudonymise PII</i>"]
-    P8["8️⃣ Smoke test<br/><i>Import-TopicRouter.ps1 -DryRun<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
+    P8["8️⃣ Smoke test<br/><i>Test-TopicRouter.ps1<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
     P9["✅ Phase complete<br/><i>chat widget live in all three portals</i>"]
 
     P0 --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8 --> P9
@@ -544,9 +561,9 @@ flowchart TB
     style P4 fill:#e36209,stroke:#c24e00,color:#fff
 ```
 
-All steps are automated by `scripts/install/modules/Install-CopilotStudio.psm1` (A11 install module), with one exception: step 4 (Key Vault secret registration) requires an operator with Key Vault Secrets Officer permissions. The installer logs a `[scaffold]` marker for this step.
+All steps are automated by the `Foundry` install phase (`scripts/install/modules/Install-Foundry.psm1`), which deploys every Foundry agent (incl. `topic-router`). Step 4 (Key Vault subscription-key registration) requires an operator with Key Vault Secrets Officer permissions — the installer logs a `[scaffold]` marker for this step.
 
-The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exists, all topic files are present, and connection endpoint environment variables are set.
+The `Test-Foundry` function (in `Install-Foundry.psm1`) calls `foundry/agents/topic-router/scripts/Test-TopicRouter.ps1` to assert that `agent.yaml`, the 12 topic files, the 4 connection files, the 2 knowledge sources, and `escalation-rules.json` are all present and parseable.
 
 ---
 
@@ -554,7 +571,7 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 
 | Level | Command / action | What it proves | Lead time |
 |---|---|---|---|
-| **🚦 Smoke (isolated)** | `pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 -DryRun` + `pwsh -Command "Import-Module scripts/install/modules/Install-CopilotStudio.psm1; Test-CopilotStudio -Config @{} -ReportDir ."` | `bot.yaml` present and parseable; all 10 topic files resolvable; all 5 entity files resolvable; all 3 connection files present; escalation rules parseable. **No network call, no Foundry `topic-router` tenant, no billing.** | < 10 s |
+| **🚦 Smoke (isolated)** | `pwsh foundry/agents/topic-router/scripts/Test-TopicRouter.ps1` *(or:* `pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 -DryRun`*)* | `agent.yaml` present and parseable; all 12 topic files resolvable; all 4 connection files parseable; `escalation-rules.json` parseable; both knowledge sources parseable. **No network call, no Foundry tenant, no billing.** | < 10 s |
 | **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's flagship journey exercises the chat widget end-to-end: the portal loads, the `ChatWidget` panel is rendered with its ARIA label, a scenario intent is submitted, the Foundry agent responds, and the `traceId` is captured and asserted as visible in the audit trail. | ~2 min |
 | **🌐 Live (browser)** | Open the SWA portal URL in a browser; click into the chat widget; type *"What documents do I need for a residency application?"*; verify the adaptive-card response and suggested-action buttons; type "agent" and verify the D365 case-creation confirmation card. | The full stack — APIM `/agents/topic-router` endpoint, Foundry `topic-router` route, APIM, Foundry RAG, D365 case-create, Fabric transcript — works end-to-end with a real citizen-facing URL. | Manual |
 
@@ -584,21 +601,21 @@ The `Test-CopilotStudio` function in the same module checks that `bot.yaml` exis
 
 | ❌ Anti-pattern | ✅ What we do instead |
 |---|---|
-| Build a separate "chat bot" with its own topics, its own KB, and its own escalation logic — separate from the voice bot | One Foundry `topic-router` agent definition (`bot.yaml`), one set of 10 topics, one escalation-rules file; the web channel and voice channel are **publishings** of the same definition. A bug fix applies to both channels automatically. |
-| Embed the APIM `/agents/topic-router` secret directly in the HTML page, a `.env` file, or a client-side React environment variable | APIM validates Entra tokens and keeps backend credentials in per-country Key Vault. No agent secret appears in any client-visible artifact. |
-| Build per-language bots (one bot for EN, one for PL, one for NB, …) | One multilingual bot with 12-language trigger phrases per topic and language-aware RAG retrieval per knowledge source. The `language` entity and `language-switch` topic handle everything in a single bot. |
-| Hard transfer to a human (abruptly terminate the bot session and put the citizen in a phone queue) | Warm transfer via `escalate-to-human.yaml` and `d365-case-create.json`: full conversation transcript and Foundry `traceId` are attached to the D365 case before the caseworker receives it. Context is never dropped. |
+| Build a separate "chat bot" with its own topics, its own KB, and its own escalation logic — separate from the voice bot | One Foundry `topic-router` agent definition (`agent.yaml`), one set of 12 topics, one escalation-rules file; the web channel and voice channel are **clients** of the same agent. A bug fix applies to both channels automatically. |
+| Embed the APIM subscription key directly in the HTML page, a `.env` file, or a client-side React environment variable | APIM validates Entra tokens and keeps backend credentials in per-country Key Vault. No agent secret appears in any client-visible artifact. |
+| Build per-language bots (one bot for EN, one for PL, one for NB, …) | One multilingual agent with 12-language trigger phrases per topic and language-aware RAG retrieval per knowledge source. The `language` slot and `language-switch` topic handle everything in a single agent. |
+| Hard transfer to a human (abruptly terminate the bot session and put the citizen in a phone queue) | Warm transfer via `escalate-to-human.yaml` and the `d365-escalation.json` connector: full conversation transcript and Foundry `traceId` are attached to the D365 case before the caseworker receives it. Context is never dropped. |
 | Let the chat collect PII (CPR number, fødselsnummer, personnummer, name) in plaintext in the transcript | Content Safety + Purview DLP strip or pseudonymise PII fields before the transcript lands in the Fabric workspace. A GDPR consent banner is shown on first widget open, before any message is sent. |
-| No rate limit on the APIM `/agents/topic-router` agent endpoint | APIM policy: 120 calls/min per subscription key or IP address, applied at the agent endpoint and the agent endpoint independently. Burst spikes are absorbed by APIM before they reach Foundry. |
+| No rate limit on the topic-router endpoint | APIM policy: 120 calls/min per subscription key or IP address, applied at the agent endpoint. Burst spikes are absorbed by APIM before they reach Foundry. |
 | No audit trail for chat sessions | Every session writes a pseudonymised transcript to the per-country Fabric workspace via Logic App. The `traceparent` header correlates the chat transcript with the Foundry distributed trace, making every AI decision auditable end-to-end. |
-| Assume citizens will always type; ignore that the same bot answers the phone | The **same bot** publishes a voice channel (one `bot.yaml`, two channel publishings). If a citizen needs to speak instead of type, [`voice.md`](./voice.md) documents the voice-specific stack (ACS, AI Speech STT/TTS, DTMF fallback). The two documents are companion pieces. |
+| Assume citizens will always type; ignore that the same agent answers the phone | The **same agent** is invoked from both the web POST and the ACS voice channel (one `agent.yaml`, two clients). If a citizen needs to speak instead of type, [`voice.md`](./voice.md) documents the voice-specific stack (ACS, AI Speech STT/TTS, DTMF fallback). The two documents are companion pieces. |
 | Ignore the mobile use case — build the widget only for desktop browsers | The `ChatWidget` component accepts a `channel='mobile-handoff'` prop. The mobile app renders the widget inside a WebView with the same `locale` forwarded, and the `voice-fallback.yaml` topic handles mid-session handoffs from the voice channel to the typed widget. |
 
 ---
 
 ## 15. Where the conversation is stored
 
-Chat is the reference storage pattern for UDCSP dialog: every APIM `/agents/topic-router` session is written to Foundry `topic-router`'s Dataverse-backed `bot_session` table and mirrored for analytics. Voice, web, and mobile inherit this pattern; uploaded files, per-citizen memory, and Foundry traces stay in their specialised stores. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+Chat is the reference storage pattern for UDCSP dialog: every topic-router session is written to Foundry's Dataverse-backed `bot_session` table and mirrored for analytics. Voice, web, and mobile inherit this pattern; uploaded files, per-citizen memory, and Foundry traces stay in their specialised stores. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
@@ -618,7 +635,7 @@ For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 *The chat widget is the typed front door of UDCSP — always open, always multilingual, always one message away from a human.*  🇩🇰 🇸🇪 🇳🇴
 
 [![Demo](https://img.shields.io/badge/▶_Live_demo-Demo_1_+_Demo_3_in_uses.md-1565C0?style=for-the-badge)](./uses.md)
-[![Build agent](https://img.shields.io/badge/🤖_Build-A11_·_apps/copilot--studio/-FF6F00?style=for-the-badge)](../tech/agents.md)
-[![Install phase](https://img.shields.io/badge/⚙️_Install-Install--CopilotStudio.psm1-2E7D32?style=for-the-badge)](../tech/installation.md)
+[![Build agent](https://img.shields.io/badge/🤖_Build-A11_·_foundry/agents/topic--router-FF6F00?style=for-the-badge)](../tech/agents.md)
+[![Install phase](https://img.shields.io/badge/⚙️_Install-Install--Foundry.psm1-2E7D32?style=for-the-badge)](../tech/installation.md)
 
 </div>

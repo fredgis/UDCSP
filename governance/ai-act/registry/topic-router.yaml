@@ -1,0 +1,20 @@
+id: topic-router
+name: "Foundry Topic Router (multilingual conversational orchestrator)"
+riskLevel: limited
+purpose: "Owns multi-turn conversational state and intent routing for the citizen-facing channels (web, mobile, voice). Replaces the previous Microsoft Copilot Studio surface (post-audit refactor); does not produce decisions on welfare/residency claims — defers to the eligibility (high-risk) agent for any pre-assessment."
+dataSources:
+  - utterance from APIM `/agents/topic-router/messages`
+  - approved Foundry knowledge sources (`citizens-faq`, `sharepoint-policies`)
+  - slot-fill state in Azure Cache for Redis (per session)
+trainingDataset: "No fine-tuning; topic YAML + prompt configuration only"
+evalDataset: "foundry/evaluations/eval-suites/topic-router.yaml + golden-questions per language"
+fairnessMetrics:
+  - intent recognition >= 0.88 per locale
+  - safe completion parity by language >= 0.95
+  - no high-risk decision performed by this agent (audit invariant)
+humanOversight: "Explicit `escalate-to-human` topic available in all 12 languages; escalation rules defined in `foundry/agents/topic-router/escalation-rules.json`; warm transfer to D365 caseworker preserves the full transcript and `traceparent`."
+postMarketMonitoring: "Per-language intent recognition tracked weekly via Foundry eval pipeline; containment vs. escalation rate monitored in Power BI per country."
+owner: "A6/A11"
+lastReview: 2026-05-09
+nextReview: 2026-08-09
+notes: "Limited-risk classification per EU AI Act Art. 50 (transparency obligations). Citizens are informed they are interacting with an AI system on first widget open."

@@ -22,13 +22,17 @@ function Install-Foundry {
 function Test-Foundry {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $expected = 'classifier','translator','eligibility','citizen-assistant','doc-extractor','caseworker-helper'
+    $expected = 'classifier','translator','eligibility','citizen-assistant','doc-extractor','caseworker-helper','topic-router'
     $missing = @()
     foreach ($a in $expected) {
         $p = Join-Path $repo "foundry\agents\$a\agent.yaml"
         if (-not (Test-Path $p)) { $missing += $a }
     }
     if ($missing) { throw "Missing Foundry agents: $($missing -join ', ')" }
+    $tr = Join-Path $repo 'foundry\agents\topic-router\scripts\Test-TopicRouter.ps1'
+    if (Test-Path $tr) {
+        & $tr -Quiet
+    }
     "{`"phase`":`"Foundry`",`"agents`":$($expected.Count)}" | Set-Content (Join-Path $ReportDir 'test-foundry.json')
 }
 

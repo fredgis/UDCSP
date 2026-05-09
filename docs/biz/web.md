@@ -433,7 +433,7 @@ flowchart TB
     P2["2️⃣ swa deploy ./dist<br/><i>upload to Azure Static Web Apps × 3 countries</i>"]
     P3["3️⃣ Wire External ID<br/><i>OIDC redirect URIs + client ID per country</i>"]
     P4["4️⃣ Deploy APIM client config<br/><i>VITE_APIM_BASE_URL + VITE_APIM_SCOPE injected into SWA env</i>"]
-    P5["5️⃣ Set VITE_TOPIC_ROUTER_APIM_URL<br/><i>point ChatWidget at the Foundry `topic-router` APIM `/agents/topic-router` endpoint</i>"]
+    P5["5️⃣ Set VITE_APIM_BASE_URL<br/><i>point ChatWidget at the Foundry `topic-router` APIM `/agents/topic-router` endpoint</i>"]
     P6["6️⃣ Validate i18n catalogues<br/><i>pwsh apps/web/i18n/scripts/Validate-Translations.ps1</i>"]
     P7["7️⃣ Smoke test<br/><i>npm test + npm run test:a11y in apps/web</i>"]
     P8["✅ Phase complete — web portal live"]

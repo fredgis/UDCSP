@@ -1,5 +1,7 @@
 kind: FoundrySlotDefinitions
-source: apps/copilot-studio/agents/citizen-assistant-bot/entities
+# Post-audit refactor: slot definitions previously lived in
+# apps/copilot-studio/agents/citizen-assistant-bot/entities/*.json
+# and are now co-located with the Foundry topic-router topics.
 slots:
   accessibilityNeed:
     kind: closedList
