@@ -1,17 +1,61 @@
 <#
 .SYNOPSIS
-    Install-LogicApps (A7) — Standard workspaces, workflows, connections,
-    Service Bus, Event Grid.
+    Install-LogicApps — Standard workspaces, workflows, connections,
+    Service Bus, Event Grid. Real Bicep deploy + workflow publish per
+    workflow folder via Azure Functions Core Tools.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-LogicApps {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $workflows = Get-ChildItem (Join-Path $repo 'services\logic-apps\workflows') -Directory -ErrorAction SilentlyContinue
-    foreach ($w in $workflows) {
-        if ($PSCmdlet.ShouldProcess($w.Name, 'Logic Apps Standard deploy')) {
-            "[scaffold] func azure logicapp publish --workflow $($w.FullName)" |
-                Add-Content (Join-Path $ReportDir 'install-logic-apps.log')
+    $logFile = Join-Path $ReportDir 'install-logic-apps.log'
+    $whatIf = [bool]$WhatIfPreference
+    $workspaceBicep = Join-Path $repo 'services\logic-apps\workspace.bicep'
+    $sbBicep = Join-Path $repo 'services\logic-apps\servicebus\servicebus.bicep'
+
+    foreach ($country in 'DK','SE','NO') {
+        $sub = $Config.Subscriptions[$country]
+        $region = $Config.Regions[$country]
+        $rg = "udcsp-$($country.ToLower())-logicapps-rg"
+        if (Test-Path $workspaceBicep) {
+            if ($PSCmdlet.ShouldProcess("logicapps-workspace-$country", 'az deployment group create')) {
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $workspaceBicep `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-logicapps-ws-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
+            }
+        }
+        if (Test-Path $sbBicep) {
+            if ($PSCmdlet.ShouldProcess("logicapps-servicebus-$country", 'az deployment group create')) {
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $sbBicep `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-logicapps-sb-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
+            }
+        }
+
+        # Publish each workflow folder via func core tools (idempotent).
+        $workflows = Get-ChildItem (Join-Path $repo 'services\logic-apps\workflows') -Directory -ErrorAction SilentlyContinue
+        foreach ($w in $workflows) {
+            $appName = "udcsp-$($country.ToLower())-logicapps"
+            if ($PSCmdlet.ShouldProcess("$($w.Name)@$appName", 'func azure logicapp publish')) {
+                Push-Location $w.FullName
+                try {
+                    Invoke-NativeCommand `
+                        -Command @('func','azure','logicapp','publish',$appName,'--subscription',$sub) `
+                        -LogFile $logFile `
+                        -WhatIfFlag $whatIf `
+                        -ContinueOnError
+                } finally { Pop-Location }
+            }
         }
     }
 }

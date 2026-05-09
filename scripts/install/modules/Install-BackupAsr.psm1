@@ -1,31 +1,48 @@
 <#
 .SYNOPSIS
-    Install-BackupAsr — Azure Backup + Azure Site Recovery per sovereign zone.
-    Same-country failover only (DK never paired with SE/NO and vice versa).
-    Closes the BCDR audit gap (ISO 27001, NIS2). Post-audit refactor 2026-05-09.
+    Install-BackupAsr — Recovery Services Vault + backup policies + Site
+    Recovery, one per sovereign country zone. Real Bicep deployments.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-BackupAsr {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    foreach ($country in 'dk','se','no') {
-        $vault = Join-Path $repo 'infra\security\backup-asr\recovery-services-vault.bicep'
-        $pol   = Join-Path $repo 'infra\security\backup-asr\backup-policies.bicep'
-        $asr   = Join-Path $repo 'infra\security\backup-asr\site-recovery.bicep'
-        foreach ($f in @($vault, $pol, $asr)) {
-            if (-not (Test-Path $f)) { Write-Warning "Missing $f"; continue }
-            if ($PSCmdlet.ShouldProcess("$($f | Split-Path -Leaf)-$country", 'Deploy')) {
-                "[scaffold] az deployment group create --resource-group udcsp-$country-rg --template-file $f" |
-                    Add-Content (Join-Path $ReportDir "install-backup-asr-$country.log")
+    $vault = Join-Path $repo 'infra\security\backup-asr\recovery-services-vault.bicep'
+    $pol   = Join-Path $repo 'infra\security\backup-asr\backup-policies.bicep'
+    $asr   = Join-Path $repo 'infra\security\backup-asr\site-recovery.bicep'
+    $logFile = Join-Path $ReportDir 'install-backup-asr.log'
+    $whatIf = [bool]$WhatIfPreference
+    foreach ($f in @($vault,$pol,$asr)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+
+    foreach ($country in 'DK','SE','NO') {
+        $sub = $Config.Subscriptions[$country]
+        $region = $Config.Regions[$country]
+        $rg = "udcsp-$($country.ToLower())-rg"
+        foreach ($pair in @(@{name='vault';file=$vault}, @{name='policies';file=$pol}, @{name='site-recovery';file=$asr})) {
+            if ($PSCmdlet.ShouldProcess("$($pair.name)-$country", 'az deployment group create')) {
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $pair.file `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-backupasr-$($pair.name)-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
             }
         }
     }
 }
+
 function Test-BackupAsr {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $script = Join-Path $repo 'infra\security\backup-asr\scripts\Test-BackupAsr.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script -Offline" } else { Write-Warning "Missing $script" }
+    foreach ($f in @('infra\security\backup-asr\recovery-services-vault.bicep',
+                     'infra\security\backup-asr\backup-policies.bicep',
+                     'infra\security\backup-asr\site-recovery.bicep')) {
+        if (-not (Test-Path (Join-Path $repo $f))) { throw "Missing $f" }
+    }
     "{`"phase`":`"BackupAsr`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-backup-asr.json')
 }
+
 Export-ModuleMember -Function Install-BackupAsr, Test-BackupAsr

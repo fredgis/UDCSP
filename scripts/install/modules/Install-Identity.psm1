@@ -1,24 +1,61 @@
 <#
 .SYNOPSIS
-    Install-Identity (A2) — Microsoft Entra External ID (CIAM) tenants per country,
-    user flows, custom authentication extensions, Entra ID (workforce) Conditional Access,
-    PIM eligibility.
-    NOTE: Substitutes the legacy Microsoft Entra External ID product, which is unavailable to new customers
-    as of 1 May 2025. See docs/tech/architecture.md.
+    Install-Identity — Microsoft Entra External ID (CIAM) tenants per
+    country, user flows, custom authentication extensions, Conditional
+    Access, PIM eligibility. Real MS Graph apply.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Identity {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
-
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+    $logFile = Join-Path $ReportDir 'install-identity.log'
+    $whatIf = [bool]$WhatIfPreference
+    $flowsDir = Join-Path $repo 'infra\identity\external-id\user-flows'
+    $extDir   = Join-Path $repo 'infra\identity\external-id\custom-extensions'
+    $caDir    = Join-Path $repo 'infra\identity\conditional-access'
+    $pimDir   = Join-Path $repo 'infra\identity\pim'
+
     foreach ($country in 'DK','SE','NO') {
         $tenant = $Config.ExternalIdTenants[$country]
-        Write-Host "  → External ID tenant $tenant"
-        if ($PSCmdlet.ShouldProcess($tenant, 'Apply user flows + custom auth extensions + CA + PIM')) {
-            $flows = Get-ChildItem (Join-Path $repo "infra\identity\external-id\user-flows") -Filter '*.json' -ErrorAction SilentlyContinue
-            foreach ($f in $flows) {
-                "[scaffold] msgraph apply user-flow / extension $tenant <- $($f.Name)" |
-                    Add-Content (Join-Path $ReportDir 'install-identity.log')
+        Write-Log -LogFile $logFile -Message "[tenant $country] $tenant"
+
+        foreach ($pair in @(@{dir=$flowsDir; uri='https://graph.microsoft.com/beta/identity/userFlows'},
+                            @{dir=$extDir;   uri='https://graph.microsoft.com/beta/identity/customAuthenticationExtensions'},
+                            @{dir=$caDir;    uri='https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies'},
+                            @{dir=$pimDir;   uri='https://graph.microsoft.com/beta/policies/roleManagementPolicies'})) {
+            if (-not (Test-Path $pair.dir)) { continue }
+            $files = Get-ChildItem -Path $pair.dir -Filter '*.json' -File -ErrorAction SilentlyContinue
+            foreach ($f in $files) {
+                if ($PSCmdlet.ShouldProcess("$tenant ← $($f.Name)", "POST $($pair.uri)")) {
+                    $body = Get-Content $f.FullName -Raw | ConvertFrom-Json -AsHashtable
+                    Invoke-MgGraphIfReady `
+                        -Method POST `
+                        -Uri $pair.uri `
+                        -Body $body `
+                        -LogFile $logFile `
+                        -WhatIfFlag $whatIf
+                }
+            }
+        }
+    }
+
+    # Country bicep templates (User-Assigned Managed Identity, Conditional Access bicep, etc.)
+    $bicepFiles = Get-ChildItem -Path (Join-Path $repo 'infra\identity') -Filter '*.bicep' -File -ErrorAction SilentlyContinue
+    foreach ($f in $bicepFiles) {
+        foreach ($country in 'DK','SE','NO') {
+            $sub = $Config.Subscriptions[$country]
+            $region = $Config.Regions[$country]
+            $rg = "udcsp-$($country.ToLower())-identity-rg"
+            if ($PSCmdlet.ShouldProcess("$($f.BaseName)-$country", 'az deployment group create')) {
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $f.FullName `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-identity-$($f.BaseName)-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
             }
         }
     }
@@ -27,13 +64,10 @@ function Install-Identity {
 function Test-Identity {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    foreach ($country in 'DK','SE','NO') {
-        $tenant = $Config.ExternalIdTenants[$country]
-        $url = "https://$($tenant.Split('.')[0]).ciamlogin.com/$tenant/.well-known/openid-configuration"
-        Write-Host "  → discover $url (offline-skipped in scaffold)"
-    }
     $script = Join-Path $repo 'infra\identity\scripts\Test-IdentityFederation.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script" }
+    if (-not (Test-Path (Join-Path $repo 'infra\identity\external-id\user-flows'))) {
+        throw "Missing infra\identity\external-id\user-flows"
+    }
     "{`"phase`":`"Identity`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-identity.json')
 }
 

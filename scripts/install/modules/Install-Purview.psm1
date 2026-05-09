@@ -1,19 +1,41 @@
 <#
 .SYNOPSIS
-    Install-Purview (A13) — Account, sources, classifications, sensitivity labels,
-    DLP, sharing policies.
+    Install-Purview — Account, sources, classifications, sensitivity
+    labels, DLP, sharing policies. Real Bicep deploy + register sources
+    via Atlas API.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Purview {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    if ($PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, 'Bicep deploy + register sources')) {
-        "[scaffold] az deployment group create -g $($Config.PurviewAccount.ResourceGroup) --template-file $repo\governance\purview\account\purview-account.bicep" |
-            Add-Content (Join-Path $ReportDir 'install-purview.log')
-        $register = Join-Path $repo 'governance\purview\scripts\Register-PurviewSources.ps1'
-        "[scaffold] & $register" | Add-Content (Join-Path $ReportDir 'install-purview.log')
+    $bicep = Join-Path $repo 'governance\purview\account\purview-account.bicep'
+    $logFile = Join-Path $ReportDir 'install-purview.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
+
+    if ($PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, 'az deployment group create')) {
+        Invoke-AzGroupDeployment `
+            -Subscription $Config.PurviewAccount.Subscription `
+            -ResourceGroup $Config.PurviewAccount.ResourceGroup `
+            -Location $Config.Regions.Shared `
+            -TemplateFile $bicep `
+            -LogFile $logFile `
+            -DeploymentName "udcsp-purview" `
+            -Tags $Config.Tags `
+            -WhatIfFlag $whatIf
     }
-    # AI Act registry validation runs as part of governance install
+
+    $register = Join-Path $repo 'governance\purview\scripts\Register-PurviewSources.ps1'
+    if ((Test-Path $register) -and $PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, 'Register-PurviewSources.ps1')) {
+        Invoke-NativeCommand `
+            -Command @('pwsh','-File',$register,'-PurviewAccountName',$Config.PurviewAccount.Name) `
+            -LogFile $logFile `
+            -WhatIfFlag $whatIf `
+            -ContinueOnError
+    }
+
     $validate = Join-Path $repo 'governance\ai-act\scripts\Validate-AIRegistry.ps1'
     if (Test-Path $validate) { & $validate | Out-Null }
 }
