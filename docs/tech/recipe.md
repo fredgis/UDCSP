@@ -10,12 +10,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 ## 0. Pre-flight (5 minutes)
 
-| # | Action | Command / file | Expected | Evidence |
-|---|---|---|---|---|
-| 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase | JSON file |
-| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 25 phases report healthy | Console summary |
-| 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | `https://app.powerbi.com/groups/<udcsp-shared-fabric-workspace-id>` — workspace ID printed in `scripts/install/reports/<runStamp>/install-report.json` under `phases.Fabric.outputs.workspaceUrl` | Workspace lists the 3 reports defined in `data/fabric/power-bi/report-pages.md` (Citizen Journey · AI Decision Trace · Executive Cockpit); KPI tiles render with the A15 synthetic data baseline | Screenshot |
-| 0.3b | Open the **citizen-facing** insights cockpit | Any country portal home page (e.g. `https://udcsp-dk.swa.azurestaticapps.net/`) — the dashboard tiles are rendered by the post-audit Chart.js components in `apps/web/src/components/insights/` (`ApplicationStatusChart.tsx`, `LanguageSatisfactionWidget.tsx`, `ProcessingTimeIndicator.tsx`, `EligibilityReceiptCard.tsx`) | Each tile shows a small inline chart sourced from the citizen's own application(s) — no Power BI Embedded JS SDK is loaded (replaced by HTML/Chart.js post-audit) | Screenshot |
+| # | Action | Command / file | Expected |
+|---|---|---|---|
+| 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase |
+| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 25 phases healthy |
+| 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | URL = `phases.Fabric.outputs.workspaceUrl` from the install report | Workspace lists the 3 reports (Citizen Journey · AI Decision Trace · Executive Cockpit); KPI tiles render |
+| 0.3b | Open the **citizen-facing** insights cockpit | Any country portal home page (e.g. `https://udcsp-dk.swa.azurestaticapps.net/`) | Per-citizen tiles render (no Power BI Embedded JS SDK loaded) |
 
 ---
 
@@ -34,7 +34,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | 1.7 | Switch to caseworker view (D365) | `https://udcspse.crm4.dynamics.com/main.aspx?appid=UDCSP_CaseWorker` | Case appears in queue with AI pre-assessment, BPF at stage "Caseworker review" |
 | 1.8 | Open AI pre-assessment trace | "Show AI reasoning" tab | Eligibility agent's grounding, model version, AI Act registry ID, prompts shown |
 | 1.9 | Caseworker approves | "Approve" button | Decision logged, citizen notified in Swedish, case closed |
-| 1.10 | Verify trace in Fabric | Open the **Caseworker Operations** workspace in Power BI Premium (Fabric-backed; URL = `phases.Fabric.outputs.workspaceUrl/reports/citizen-journey` from the install report), or run the equivalent KQL on App Insights: `union requests, dependencies, traces \| where customDimensions["traceparent"] contains "<id>"` | The traceparent ID found end-to-end across APIM, Logic App, Foundry, D365, Fabric |
+| 1.10 | Verify trace propagation | App Insights end-to-end transaction view, filtered by the case `traceparent` | One transaction across APIM → Logic App → Foundry → D365 → Fabric |
 
 **Exit gate:** all 10 steps green; trace ID propagated; AI Act disclosure visible to citizen.
 
@@ -46,16 +46,16 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no`. **If the entry still has `placeholder: true`, the number is not yet regulator-issued** — bind a real one with `pwsh apps/voice/scripts/Bind-AcsNumber.ps1 -Country no -Env dev -PhoneNumber +47XXXXXXXX -AcsResourceName udcsp-no-acs -ResourceGroup udcsp-no-voice -OrchestratorFqdn voice-no.udcsp.no -NumberType tollFree` (script overwrites the placeholder line in-place) | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid` |
-| 2.2 | Verify orchestrator + Event Grid wiring (smoke, no PSTN required) | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev -OrchestratorBaseUrl https://voice-no.udcsp.no` | `healthz` returns `ok=true country=no liveMode=true`; the synthetic Event Grid `SubscriptionValidationEvent` handshake succeeds (the script echoes back the validation code) |
-| 2.3 | **Real-call path** — dial the NO number from 2.1 from any phone, ask in plain Bokmål: « Hva er statusen på sak NO-2026-0117? » | Voice (PSTN) | ACS routes the call to the orchestrator's `/api/acs/eventgrid` endpoint with `Microsoft.Communication.IncomingCall`; orchestrator answers in Norwegian Bokmål, plays the `nb` recording-consent disclosure, opens a GPT-4o Realtime websocket, transcribes streaming, and calls the `lookup_topic_router` function tool defined in `apps/voice/call-automation/src/foundry-tool.ts:48-83` which POSTs to `https://api.udcsp.no/agents/topic-router/messages` with `x-channel-actor: voice` |
-| 2.4 | Verify the APIM hop happened (works for the real-call path) | App Insights query: `requests \| where url contains "/agents/topic-router/messages" and customDimensions["x-channel-actor"] == "voice" \| where timestamp > ago(2m)` (workspace ID printed under `phases.Observability.outputs.appInsightsId` in the install report) | Exactly one request with HTTP 200 and `traceparent` linking back to the ACS call leg |
-| 2.5 | Listen to the spoken status answer | Voice playback | Status read with neural voice `nb-NO-FinnNeural` from `apps/voice/speech/voice-fonts.json:1-26` |
-| 2.6 | Say « Snakk med saksbehandler » | Voice | Orchestrator's `escalate_to_d365` path (`apps/voice/call-automation/src/d365-handoff.ts:19-56`) issues a warm transfer to the D365 voice queue (`Voice.no.d365VoiceQueueId`) |
-| 2.7 | Hang up and inspect the trace | App Insights end-to-end transaction view, filtered by the `traceparent` from 2.4 | One transaction spanning ACS → Voice Orchestrator → APIM → Foundry topic-router → D365 transfer; PII fields are redacted by the orchestrator's pre-log scrubber |
-| 2.8 | (Optional, CI) Re-run the function-tool unit suite | `cd apps/voice/call-automation && npm test` | `tests/foundry-tool.test.ts` and `tests/ivr-loader.test.ts` both pass — proves the GPT Realtime → APIM contract & the IVR DTMF routing without needing a real PSTN call |
+| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no` | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid`. If still `placeholder: true`, bind a real one per [`installation.md` § 8](./installation.md#8-optional--bind-a-real-pstn-number) |
+| 2.2 | Smoke the orchestrator (no PSTN required) | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev -OrchestratorBaseUrl https://voice-no.udcsp.no` | `healthz` returns `ok=true country=no liveMode=true`; the synthetic Event Grid handshake succeeds |
+| 2.3 | **Real-call path** — dial the NO number, ask in Bokmål: « Hva er statusen på sak NO-2026-0117? » | Voice (PSTN) | Orchestrator answers in Norwegian, plays the recording-consent disclosure, opens GPT-4o Realtime, and routes through APIM to the Foundry topic-router |
+| 2.4 | Verify the APIM hop happened | App Insights query: `requests \| where url contains "/agents/topic-router/messages" and customDimensions["x-channel-actor"] == "voice" \| where timestamp > ago(2m)` | Exactly one HTTP 200 with `traceparent` linking back to the ACS call leg |
+| 2.5 | Listen to the spoken status answer | Voice playback | Status read with the `nb-NO-FinnNeural` neural voice |
+| 2.6 | Say « Snakk med saksbehandler » | Voice | Warm transfer to the D365 voice queue (`Voice.no.d365VoiceQueueId`) |
+| 2.7 | Hang up and inspect the trace | App Insights end-to-end transaction view, filtered by the `traceparent` from 2.4 | One transaction spanning ACS → Voice Orchestrator → APIM → Foundry → D365 transfer; PII redacted |
+| 2.8 | (Optional, CI) Re-run the function-tool unit suite | `cd apps/voice/call-automation && npm test` | All tests pass — proves GPT Realtime → APIM contract & IVR DTMF routing without a PSTN call |
 
-**Exit gate:** voice path works without touching a screen; the operator can prove the GPT Realtime tool-call hit APIM (step 2.4) and that the D365 warm transfer fired (step 2.6); full transcript captured in observability with masked PII. If no real PSTN number is yet bound, steps 2.1–2.2 + 2.8 still demonstrate the orchestrator+APIM+Foundry chain is wired correctly.
+**Exit gate:** voice path works without touching a screen; APIM hop proven (step 2.4); D365 warm transfer fires (step 2.6); transcript captured in observability with masked PII. Without a real PSTN number, steps 2.1–2.2 + 2.8 still demonstrate the chain is wired correctly.
 
 ---
 
@@ -104,7 +104,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | 5.3 | Click "Show AI reasoning" | Side panel | Sources, prompt, model version, registry ID, fairness slice info |
 | 5.4 | Disagree with AI assessment | "Override" button | Form requests reason → captured in Dataverse → mirrored to Fabric for shadow-mode metrics |
 | 5.5 | Decision published | "Approve" | Logic App `caseworker-decision-publish` notifies citizen, archives event |
-| 5.6 | Open Foundry shadow-mode dashboard | **AI Decision Trace** report inside the Power BI Premium workspace (Fabric-backed; not Power BI Embedded — see `data/fabric/power-bi/report-pages.md`) | Astrid's override is added to the human-AI agreement metric |
+| 5.6 | Open Foundry shadow-mode dashboard | **AI Decision Trace** report in the Power BI Premium workspace | Astrid's override is added to the human-AI agreement metric |
 
 **Exit gate:** caseworker can override every AI decision; overrides feed back into model improvement.
 
@@ -134,7 +134,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 |---|---|---|---|
 | 7.1 | Ingrid opens Sentinel | Sentinel Workbook in shared sub | "Impossible travel — caseworker" rule has fired (synthetic) |
 | 7.2 | Pivot to user investigation | Sentinel investigation graph | Sign-ins, External ID events, role activations stitched |
-| 7.3 | Run containment playbook | `respond-to-impossible-travel` Logic App | User session revoked, PIM eligibility removed, ticket opened in D365 |
+| 7.3 | Run containment playbook | Sentinel automation `respond-to-impossible-travel` (`infra/security/sentinel/playbooks/`) | User session revoked, PIM eligibility removed, ticket opened in D365 |
 | 7.4 | Verify trace | Log Analytics KQL `union ... | where TraceId == 'X'` | Single trace ID shows all SOC actions |
 
 **Exit gate:** AI-specific risks (prompt injection, model misuse) and identity risks both covered.
@@ -147,7 +147,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 8.1 | Henrik opens the executive dashboard | **Executive Cockpit** report inside the Power BI Premium workspace (Fabric-backed; the in-portal citizen tiles use HTML/Chart.js, this exec view stays in Power BI service) — URL printed under `phases.Fabric.outputs.workspaceUrl/reports/executive-cockpit` | KPI: average processing days = 4.0, satisfaction = 4.5/5, AI accuracy = 92 % |
+| 8.1 | Henrik opens the executive dashboard | **Executive Cockpit** report in the Power BI Premium workspace (URL = `phases.Fabric.outputs.workspaceUrl/reports/executive-cockpit` from the install report) | KPIs: avg processing days = 4.0, satisfaction = 4.5/5, AI accuracy = 92 % |
 | 8.2 | Drill into "AI accuracy by language" | Visual | All 12 languages shown; minority languages within tolerance |
 | 8.3 | Drill into "Per-country trends" | Visual | DK / SE / NO compared, no regressions |
 | 8.4 | Validate KPI matches Fabric gold | KQL via Real-Time Intelligence | KPI numbers reconcile with `gold.applications_decisions` |
@@ -187,7 +187,7 @@ The HTML report it produces is the **single artefact** to attach to the case-stu
 
 ## 11. Eval-matrix coverage map
 
-This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#evaluation-criteria-matrix-coverage):
+This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#-evaluation-criteria--case-study-coverage-matrix):
 
 | Row | Criterion | Covered by recipe step |
 |---|---|---|
