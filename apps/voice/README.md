@@ -3,47 +3,82 @@
 ## Purpose
 Azure Communication Services, IVR, Azure AI Speech, transcription, escalation, and SMS/email notification scaffold for A10.
 
-## ⚠️ Voice runtime readiness
+## ✅ Voice runtime (Phase A — implemented)
 
-**This tree is design content + IaC scaffolding for the voice channel. The runtime that handles a real PSTN call is provided by Dynamics 365 Customer Service voice channel** (which is built on Azure Communication Services under the hood) — not by code in this directory. Today, neither the D365 voice trial nor a real bot adapter is yet wired in this repo, so a real human dialling a real phone number does not yet reach the Foundry agent. The gap is small and Microsoft-productized; see [`docs/biz/voice.md` § 11](../../docs/biz/voice.md#11--voice-runtime--readiness-vs-scaffold-whats-actually-runnable-today) for the canonical readiness analysis.
+A real human dialling a real PSTN number bound to the country ACS resource will reach a low-latency conversational agent. The runtime that bridges ACS Call Automation to the Foundry brain lives in [`apps/voice/call-automation/`](./call-automation/README.md):
 
-**What this tree gives you:**
-- Deployable Bicep for the ACS resource (per country, sovereignty-pinned via `dataLocation`) and the AI Speech account
-- Procurement-intent Bicep for the PSTN number (real Nordic numbers are issued by the regulator — DK ERST, SE PTS, NO Nkom — not by IaC; for demo, use the D365 trial US toll-free, see voice.md § 11.2)
-- 24 IVR dialog YAMLs in 6 languages (`kind: UDCSP.Voice.Dialog`) — design source for the D365 voice workstream IVR menu; not consumed at runtime
-- The 12-language recording-disclosure script — played at call-pickup once configured in the D365 workstream
-- The escalation policy YAML — design source for the D365 voice workstream queue routing
-- A blueprint of the transcript pipeline (`transcript-pipeline/logic-app-transcription.json`) — *spec*, not workflow; **superseded** by D365's native transcription
-- SMS / email récap templates
+```
+PSTN caller ─► ACS Call Automation ─► apps/voice/call-automation ─► GPT-4o Realtime
+                                              │                          (function tool)
+                                              ├──► APIM /agents/topic-router/messages
+                                              │       (services/apim/apis/agent-topic-router)
+                                              │
+                                              └──► D365 voice workstream (warm transfer
+                                                   via transferCallToParticipant +
+                                                   udcspEscalation operationContext)
+```
 
-**What is missing for a real call to reach the agent (Phase A, ~½ day):**
-- Enable the D365 Customer Service voice trial (1 click in Copilot Service admin center → free 60 min US toll-free)
-- A small Bot Framework SDK bot (~150 lines) that proxies each turn to APIM `/agents/topic-router/messages` (same backend as `ChatWidget.tsx`)
-- Register the bot in the D365 voice workstream and assign it as the IVR handler
-- Configure the workstream IVR menu in the D365 admin UI using the YAMLs in `apps/voice/ivr/` as the design spec
+See [`docs/biz/voice.md` § 11](../../docs/biz/voice.md#11--voice-runtime--implemented-phase-a-complete) for the canonical readiness analysis and architecture rationale (why orchestrator + GPT Realtime instead of Bot Framework / MAF in the audio path).
 
-**What is missing for production Nordic numbers (Phase B, 1–3 weeks regulator + ½ day code):**
-- Submit the ACS regulatory pack per country (procedure documented in `docs/biz/voice.md` § 9)
-- Sync the procured numbers into D365
-- Add the 6 missing Speech voice fonts (NN, SE-Sami, FR, PL, UK, FI)
+## Component map
 
-**What is NOT needed (despite earlier scaffolding suggesting otherwise):**
-- ❌ A custom Azure Function App with the Call Automation SDK — D365 voice channel IS that runtime
-- ❌ A Logic App for transcription — D365 records and transcribes natively
-- ❌ Event Grid `IncomingCall` wiring — D365 owns the call leg
-- ❌ A custom APIM voice route — the bot adapter calls the same `/agents/topic-router/messages` endpoint as the chat widget
+| Path | Role |
+|---|---|
+| `call-automation/` | **Voice orchestrator Container App** — the runtime. Node.js + TS, ACS Call Automation SDK, Azure OpenAI Realtime WebSocket, Foundry topic-router as a function tool, D365 warm transfer. |
+| `acs/acs-resource.bicep` | Per-country ACS resource (sovereignty-pinned via `dataLocation`). |
+| `acs/phone-numbers.bicep` | Procurement intent + regulator checklist for PSTN numbers. |
+| `acs/phone-number-bindings.yaml` | Binding ledger written by `scripts/Bind-AcsNumber.ps1`. |
+| `speech/speech-config.bicep` + `voice-fonts.json` | Azure AI Speech voices and lexicons used by D365 pre-orchestrator menus / post-call analytics. GPT Realtime brings its own TTS, so this scope is now narrower than before. |
+| `ivr/{lang}/*.yaml` | 24 IVR dialog files (`kind: UDCSP.Voice.Dialog`) — loaded at runtime by `ivr-loader.ts`. |
+| `recording-consent/recording-disclosure.md` | 12-language disclosure script played at call-pickup. |
+| `escalation/escalation-config.yaml` | Routing rules consumed by the orchestrator's `escalate_to_human` tool. |
+| `transcript-pipeline/logic-app-transcription.json` | Blueprint for post-call enrichment (Dataverse → Fabric + Confidential Ledger). Pending promotion to a real workflow. |
+| `notifications/{sms,email}-templates.json` | ACS SMS / email récap templates. |
+| `scripts/Deploy-Voice.ps1` | Real `az deployment group create` for the 3 Bicep files in `call-automation/infra/`. |
+| `scripts/Test-Voice.ps1` | Real smoke test — `/healthz` + Event Grid SubscriptionValidationEvent handshake. |
+| `scripts/Bind-AcsNumber.ps1` | Verifies number ownership and persists the binding to `phone-number-bindings.yaml`. |
 
 ## Dev setup
-Install Azure PowerShell/Bicep in the deployment environment only. Placeholder numbers, resource names, and endpoints must be supplied by platform teams before execution.
 
-## Build
-Bicep files are deployable modules. No local build is required for YAML/JSON templates.
+Install Node 22, the Azure CLI and (optionally) Bicep. The orchestrator's own dev workflow:
 
-## Test
-`scripts/Test-Voice.ps1` is a string-comparison stub against a hard-coded transcript — it asserts the prompts file is well-formed but does not exercise ACS, Speech, or the agent. Replace with the ACS test-call API once the Call Automation handler is provisioned.
+```pwsh
+cd apps/voice/call-automation
+npm install
+npm run lint
+npm test
+npm run dev
+```
 
 ## Deploy
-`scripts/Deploy-Voice.ps1` validates parameters and prints the Azure deployment command without executing it; replace placeholders with environment values in CI.
+
+```pwsh
+./scripts/Deploy-Voice.ps1 -Country no -Env dev `
+    -ResourceGroup udcsp-no-rg -Location norwayeast `
+    -ContainerAppsEnvironmentId <id> -UserAssignedIdentityId <id> `
+    -Image <acr>/udcsp-voice-orch:<tag> `
+    -AzureOpenAiAccountName udcsp-no-aoai -AzureOpenAiEndpoint https://udcsp-no-aoai.openai.azure.com/ `
+    -ApimBaseUrl https://udcsp-apim-no.azure-api.net `
+    -CognitiveServicesEndpoint https://udcsp-no-cog.cognitiveservices.azure.com/ `
+    -AcsConnectionStringSecretUri https://udcsp-no-kv.vault.azure.net/secrets/acs-cs `
+    -VoiceClientSecretUri https://udcsp-no-kv.vault.azure.net/secrets/voice-sp-secret `
+    -VoiceClientId <client-id> `
+    -AppInsightsConnectionString '<conn>' `
+    -PublicHostname udcsp-no-dev-voice-orch.norwayeast.azurecontainerapps.io `
+    -D365TransferTargetId 8:acs:... -D365VoiceQueueId <guid> `
+    -DeadLetterStorageAccountId <id> -AcsResourceName udcsp-no-acs
+
+./scripts/Bind-AcsNumber.ps1 -Country no -Env dev -PhoneNumber +47XXXXXXXX `
+    -AcsResourceName udcsp-no-acs -ResourceGroup udcsp-no-rg `
+    -OrchestratorFqdn udcsp-no-dev-voice-orch.norwayeast.azurecontainerapps.io
+```
+
+Both scripts are idempotent (`-WhatIf` supported on Deploy / Bind). `Test-Voice.ps1` then exercises the live endpoint.
+
+## Test
+
+`scripts/Test-Voice.ps1` posts an Event Grid `SubscriptionValidationEvent` to the orchestrator and asserts the validation code is echoed back, then probes `/healthz`. The vitest suite under `call-automation/tests/` covers the IVR loader and the function-tool contract.
 
 ## Owner
 Frontend & Channels build agent — work package A10.
+
