@@ -57,7 +57,7 @@ The orchestrator (this CLI session) writes the installer, master docs and CI plu
 | ID | Plan WPs | Model | Started | Duration | Status | Files | Notes |
 |---|---|---|---|---|---|---|---|
 | `agent-data-gov` | A4, A13 | Claude Sonnet 4.6 (default) | T+0 | 3 m 58 s | ✅ | 64 | Fabric capacities · 3×3 lakehouses · 4 notebooks · Purview classifications · AI Act registry |
-| `agent-foundry` | A6, A11, A12, A15 | Claude Sonnet 4.6 | T+0 | 6 m 1 s | ✅ | 142 | 6 Foundry agents · Copilot Studio bot · 12-language i18n · synthetic data set DK/SE/NO |
+| `agent-foundry` | A6, A11, A12, A15 | Claude Sonnet 4.6 | T+0 | 6 m 1 s | ✅ | 142 | 6 Foundry agents · Copilot Studio bot (initial scaffold — later absorbed into the Foundry `topic-router` agent by `sa4-copilot-into-foundry` in § 4-bis) · 12-language i18n · synthetic data set DK/SE/NO |
 | `agent-frontend` | A9, A10 | Claude Sonnet 4.6 | T+0 | 7 m 15 s | ✅ | 103 | React 18 + TS · Expo mobile · ACS + AI Speech IVR (6 languages) |
 | `agent-qa` | A14 | Claude Sonnet 4.6 | T+0 | 7 m 26 s | ✅ | 89 | Playwright (10 scenarios) · 8 eval pipelines · WCAG · k6 · OWASP ZAP · eIDAS/GDPR/AI Act conformance |
 | `agent-services` | A7, A8 | Claude Sonnet 4.6 | T+0 | 10 m 2 s | ✅ | 102 | APIM (8 APIs) · Logic Apps (6 workflows) · D365 solutions × 4 · 5 Power Automate flows · 3 Functions/ACA |
@@ -179,7 +179,7 @@ gantt
 
 | Sub-task | Output | Files | Tools used |
 |---|---|---:|---|
-| Architecture decision | MAF vs Bot Framework vs direct ACS+Realtime; justified in §11.2 of `docs/biz/voice.md` | 0 (decision) | web search, github search |
+| Architecture decision | Microsoft Agent Framework (MAF) vs Bot Framework SDK (rejected — deprecated end-2025) vs direct ACS Call Automation + GPT-4o Realtime as a Foundry function tool (chosen); justified in §11.2 of `docs/biz/voice.md` | 0 (decision) | web search, github search |
 | Source files | `src/{config,logger,ivr-loader,foundry-tool,d365-handoff,realtime-bridge,call-handler,index}.ts` | 8 | create |
 | Bicep | `infra/{voice-orchestrator,event-grid-incoming-call,gpt-realtime-deployment}.bicep` | 3 | create + `az bicep build` |
 | PS scripts | `scripts/{Deploy-Voice,Test-Voice,Bind-AcsNumber}.ps1` (real, not stubs) | 3 | create |
