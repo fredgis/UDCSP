@@ -313,7 +313,7 @@ The Eligibility Pre-Assessor is the only high-risk AI Act system in UDCSP. It ru
 
 Every AI Act-relevant event — route decision, eligibility recommendation, human override, model version, eval gate, and post-market monitoring checkpoint — is anchored in **Azure Confidential Ledger** (`infra/security/confidential-ledger/`). The ledger provides the tamper-evident backing for Art. 26(6) log retention; Foundry remains the operational trace viewer, while the ledger proves the trace has not been rewritten.
 
-> **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `foundry/ai-act-registry/eligibility.json` is the most complete: intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration, contact for the AI Act competent authority in each of DK/SE/NO. *No autonomous decision is ever taken by this agent — the recommendation goes to a caseworker queue in D365 with full evidence.*
+> **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `governance/ai-act/registry/eligibility-model.yaml` is the most complete: intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration, contact for the AI Act competent authority in each of DK/SE/NO. *No autonomous decision is ever taken by this agent — the recommendation goes to a caseworker queue in D365 with full evidence.*
 
 ---
 
@@ -503,7 +503,7 @@ flowchart LR
 
 **What's special on this channel.**
 
-- The widget is the **single source of truth** for all four conversational channels (Voice, Web, Mobile, Chat). Voice reuses the same `bot.yaml`, the same topics, the same authoring history (see [`chat.md`](./chat.md) — "one brain: Foundry topic-router").
+- The widget is the **single source of truth** for all four conversational channels (Voice, Web, Mobile, Chat). Voice reuses the same `agent.yaml`, the same topics, the same authoring history (see [`chat.md`](./chat.md) — "one brain: Foundry topic-router").
 - This is the channel where the **APIM `/agents/topic-router` endpoint** lives — never hard-code the secret; the page sends its Entra token and `traceparent` to APIM.
 
 ---
@@ -693,14 +693,14 @@ Traces are stored in App Insights, exported nightly to a Fabric lakehouse for an
 
 | Concern | Where it lives | Owner |
 |---|---|---|
-| **Risk classification** per agent (minimal / limited / high) | `foundry/ai-act-registry/<agent>.json` | Compliance + agent owner |
+| **Risk classification** per agent (minimal / limited / high) | `governance/ai-act/registry/<agent>.yaml` | Compliance + agent owner |
 | **Technical documentation** (Annex IV) | Same file + linked specs in `docs/` | Agent owner |
 | **Data governance** (training data summary, GDPR DPIA) | Purview catalog + `governance/dpia/` | DPO |
 | **Logging &amp; traceability** | App Insights traces (≥ 6 months hot per EU AI Act Art. 26(6) — see [`datacompliance.md`](./datacompliance.md) § 5) | Platform team |
 | **Human oversight** | D365 caseworker queue for high-risk; escalation topics in Foundry `topic-router` | Service owner |
 | **Accuracy &amp; robustness metrics** | Foundry eval reports, exported nightly | Agent owner |
 | **Cybersecurity** | Defender for Cloud, Sentinel, content-safety verdicts, jailbreak monitoring | SOC |
-| **Post-market monitoring plan** | `foundry/ai-act-registry/<agent>.json` | Compliance |
+| **Post-market monitoring plan** | `governance/ai-act/registry/<agent>.yaml` | Compliance |
 | **Conformity declaration** | Same file, signed before release | Compliance + product owner |
 | **Authority contact** (DK / SE / NO) | Same file | Compliance |
 
@@ -798,9 +798,9 @@ sequenceDiagram
 | **Add a new language (e.g. Lithuanian)** | Add a Speech locale, extend the language detector dataset, add per-language gold eval set in each agent, extend the Translator glossary. No code change in Foundry `topic-router` outside topic translation strings. |
 | **Add a new channel (e.g. Apple Messages for Business)** | Add a channel in Foundry `topic-router`. No Foundry change. |
 | **Swap the underlying model** | Change `model_id` in the relevant `agent.yaml`. CI runs golden + bias + jailbreak evals; promotion blocks on regression. No client-side change. |
-| **Add a new high-risk use case** | Create a new Foundry project, declare AI Act class, build eval suite + AI Act dossier, register in `foundry/ai-act-registry/`, then expose through APIM. Only then plug it into Foundry `topic-router` (or D365 Copilot, or both). |
+| **Add a new high-risk use case** | Create a new Foundry project, declare AI Act class, build eval suite + AI Act dossier, register in `governance/ai-act/registry/`, then expose through APIM. Only then plug it into Foundry `topic-router` (or D365 Copilot, or both). |
 | **Disconnect a knowledge source** | Remove the connector, re-run RAG evals, tag the agent's risk register entry. Foundry tracing makes the retrieval-set delta visible immediately. |
-| **EU AI Act amendment changes a duty** | Update the dossier template under `foundry/ai-act-registry/`; CI re-validates every dossier; agents missing the new field are blocked from PROD until updated. |
+| **EU AI Act amendment changes a duty** | Update the dossier template under `governance/ai-act/registry/`; CI re-validates every dossier; agents missing the new field are blocked from PROD until updated. |
 
 ---
 
