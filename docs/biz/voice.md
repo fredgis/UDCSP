@@ -27,9 +27,6 @@
 > |---|---|
 > | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake with Confidential Ledger anchors. |
 
----|---|
-> | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake Bronze. |
-
 ---
 
 ## 📑 Table of contents
@@ -141,7 +138,7 @@ sequenceDiagram
 | **1** | **Azure Communication Services (PSTN)** | Decrochés des appels entrants, gestion des numéros toll-free, pont avec le RTC. **One ACS resource per country**, region-pinned for sovereignty. | `apps/voice/acs/acs-resource.bicep`, `apps/voice/acs/phone-numbers.bicep` |
 | **2** | **Azure AI Speech (STT + TTS)** | Streaming speech-to-text **and** text-to-speech, per-locale neural voices, civic-term lexicons. | `apps/voice/speech/speech-config.bicep`, `apps/voice/speech/voice-fonts.json` |
 | **3** | **Foundry `topic-router` agent · voice channel** | Owns dialog state, slot filling, barge-in, DTMF fallback, escalation rules. Talks **to** Foundry but is **not** Foundry. | `apps/voice/ivr/{da,sv,nb,en,de,ar}/*.yaml`, `foundry/agents/topic-router/topics/voice-fallback.yaml` |
-| **4** | **APIM gateway** | JWT validation, audit log, rate-limit, `actor=voice` claim enforcement. The **only** legal entry point to Foundry from any channel. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
+| **4** | **APIM gateway** | JWT validation, audit log, rate-limit (600 calls/min for voice vs 120 elsewhere), `x-channel-actor: voice` enforcement. The **only** legal entry point to Foundry from any channel. | `services/apim/apis/agent-topic-router/policy.xml`, `services/apim/apis/agent-topic-router/openapi.yaml` |
 | **5** | **Foundry agents (shared)** | Citizen-assistant, classifier, translator, eligibility — the **same** agents that power the web and mobile. **Voice does not get its own agents.** | `foundry/agents/*` |
 | **6** | **Outbound notifications** | SMS / email récap post-call via ACS. Localised templates per language. | `apps/voice/notifications/{sms,email}-templates.json` |
 

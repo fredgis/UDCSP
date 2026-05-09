@@ -172,7 +172,7 @@ A DPO or caseworker can use this single `traceparent` to reconstruct the entire 
 | **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `foundry/agents/topic-router/knowledge-sources/*.json` |
 | **5** | **Connections** | Four connection definitions: `apim-facade.json` is the public ingress, `foundry-skills.json` invokes the downstream Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator), `redis-session.json` holds the slot-fill state, `d365-escalation.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/connections/*.json` |
 | **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation-rules.json` |
-| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS as JSON. Policy applies: correlation-id injection, Entra JWT validation, rate-limit (120 calls/min), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-citizen-assistant/policy.xml` |
+| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS as JSON. Policy applies: correlation-id injection, Entra JWT validation, `x-channel-actor` enforcement, rate-limit (120 calls/min for chat/web/mobile, 600 for voice), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-topic-router/policy.xml`, `services/apim/apis/agent-topic-router/openapi.yaml` |
 
 The five slots used for structured slot filling — shown verbatim from `topics/slot-definitions.yaml`:
 
@@ -518,19 +518,31 @@ const res = await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agents/topic-rout
 const { reply, traceId } = await res.json();
 ```
 
-The APIM policy that issues the token (`services/apim/apis/agent-citizen-assistant/policy.xml`) enforces:
+The APIM policy that fronts the topic-router (`services/apim/apis/agent-topic-router/policy.xml`) enforces:
 
 ```xml
 <inbound>
   <include-fragment fragment-id="correlation-id" />
   <include-fragment fragment-id="jwt-validate-entra" />
-  <rate-limit-by-key calls="120" renewal-period="60"
-    counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+  <set-variable name="channelActor" value="@(context.Request.Headers.GetValueOrDefault(&quot;x-channel-actor&quot;, &quot;web&quot;))" />
+  <choose>
+    <when condition="@((string)context.Variables[&quot;channelActor&quot;] == &quot;voice&quot;)">
+      <rate-limit-by-key calls="600" renewal-period="60"
+        counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+    </when>
+    <otherwise>
+      <rate-limit-by-key calls="120" renewal-period="60"
+        counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+    </otherwise>
+  </choose>
   <set-header name="traceparent" exists-action="skip">
     <value>@(context.Request.Headers.GetValueOrDefault(
       "traceparent", Guid.NewGuid().ToString()))</value>
   </set-header>
-  <set-backend-service base-url="{{foundry-citizen-assistant-agent-endpoint}}" />
+  <set-header name="x-channel-actor" exists-action="override">
+    <value>@((string)context.Variables["channelActor"])</value>
+  </set-header>
+  <set-backend-service base-url="{{foundry-topic-router-agent-endpoint}}" />
 </inbound>
 ```
 
@@ -548,7 +560,7 @@ flowchart TB
     P2["2️⃣ Wire connections<br/><i>set APIM endpoint in<br/>foundry-skills.json<br/>d365-escalation.json<br/>redis-session.json</i>"]
     P3["3️⃣ Publish APIM facade × 3<br/><i>one APIM subscription per country<br/>brand · disclaimer · locale default</i>"]
     P4["4️⃣ Register APIM subscription keys<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
-    P5["5️⃣ Deploy APIM token-broker<br/><i>agent-citizen-assistant/policy.xml<br/>per country APIM instance</i>"]
+    P5["5️⃣ Deploy APIM topic-router policy<br/><i>agent-topic-router/policy.xml<br/>per country APIM instance<br/>(x-channel-actor + 600 vs 120 rate-limit)</i>"]
     P6["6️⃣ Set SWA env var<br/><i>VITE_APIM_BASE_URL<br/>→ Azure Static Web App app settings</i>"]
     P7["7️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric workspace<br/>per country · pseudonymise PII</i>"]
     P8["8️⃣ Smoke test<br/><i>Test-TopicRouter.ps1<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
