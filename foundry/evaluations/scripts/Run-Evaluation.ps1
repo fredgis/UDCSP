@@ -1,11 +1,12 @@
 param(
   [string]$FoundryEndpoint = $env:UDCSP_FOUNDRY_ENDPOINT,
-  [string]$OutputPath = "..\results"
+  [string]$OutputPath = (Join-Path $PSScriptRoot "..\results")
 )
 $ErrorActionPreference = "Stop"
+$evalSuitesPath = Join-Path $PSScriptRoot "..\eval-suites"
 New-Item -ItemType Directory -Force -Path $OutputPath | Out-Null
 if (-not $FoundryEndpoint) { Write-Warning "No Foundry endpoint configured. Writing dry-run result only." }
-$suites = Get-ChildItem -Path "..\eval-suites" -Filter "*.yaml"
+$suites = Get-ChildItem -Path $evalSuitesPath -Filter "*.yaml"
 $results = foreach ($suite in $suites) {
   [pscustomobject]@{ suite=$suite.BaseName; mode= if($FoundryEndpoint){"placeholder-rest-call"}else{"dry-run"}; status="not-run"; timestamp=(Get-Date).ToString("o") }
 }

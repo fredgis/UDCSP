@@ -293,7 +293,7 @@ code ./recipe.md
 
 The QA phase smoke kicks off:
 
-1. `tests/e2e/scenario-09-devops-installer.spec.ts` — installer reproducibility check.
+1. `tests/e2e/tests/scenario-09-devops-installer.spec.ts` — installer reproducibility check.
 2. `tests/eval/pipelines/nightly-classifier.yaml` — reduced sample.
 3. `tests/accessibility/automated/axe-runner.spec.ts` — homepage axe scan.
 4. `tests/load/k6/citizen-application-submit.k6.js` — short ramp.
@@ -328,7 +328,7 @@ Removes every resource group tagged `costCenter=UDCSP` across all configured sub
 | `Install-Fabric` returns `403 CapacityNotFound` | Fabric F-SKU not provisioned in the country region | Provision the capacity in Azure Portal → re-run with `-Phase Fabric` |
 | `Install-Foundry` fails on model deployment | Quota exhausted in the Foundry region | Request quota in Foundry portal or change region in config |
 | `Install-Apim` slow on first run | Premium APIM cold start ≈ 45 minutes | This is expected. The installer streams progress every 60 s. |
-| Cross-border test fails (DK→SE) | Identity bridge claim mapping wrong | Re-deploy `infra/identity/external-id/custom-policies/eidas-bridge-claims.xml` and re-run scenario 01 |
+| Cross-border test fails (DK→SE) | Identity bridge claim mapping wrong | Re-deploy `infra/identity/external-id/user-flows/eidas-claims-extension.json` (External ID custom-authentication extension) and re-run scenario 01 |
 | `Test-Observability` reports broken trace | Correlation header dropped at APIM | Verify `services/apim/policies/correlation-id.xml` is attached to all APIs |
 
 Reports for every run are written under `scripts/install/reports/<timestamp>/install-report.json` and include the exact phase, status, duration, error stack and remediation hint.

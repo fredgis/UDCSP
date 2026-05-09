@@ -431,7 +431,7 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
   - **T7 — Foundry golden eval datasets** — per agent (Classifier, Translator, Eligibility, Citizen Assistant, Document Extractor) with adversarial / safety / bias / language-coverage subsets.
   - **T8 — Streaming event data** — synthetic event flow into Fabric Real-Time Intelligence to demo and load-test live KPIs.
   - **T9 — Persona book** — human-readable catalog of personas and journeys for demos, audits and evaluator walkthroughs.
-- **Outputs:** `data/synthetic/personas/`, `data/synthetic/applications/`, `data/synthetic/documents/`, `data/synthetic/conversations/`, `data/synthetic/cases/`, `data/synthetic/eval-datasets/`, `data/synthetic/streams/`, `data/synthetic/persona-book.md`, plus **regeneration pipelines** (notebooks + Functions + Bicep) so any dataset can be rebuilt at scale.
+- **Outputs:** `data/synthetic/personas/`, `data/synthetic/applications/`, `data/synthetic/documents/`, `data/synthetic/conversations/`, `data/synthetic/cases/`, `data/synthetic/eval-datasets/`, `data/synthetic/streams/`, `data/synthetic/persona-book/persona-book.md`, plus **regeneration pipelines** (notebooks + Functions + Bicep) so any dataset can be rebuilt at scale.
 - **Exit criteria:** Each downstream agent has a seed dataset matching its schema; Foundry evaluations have green baselines on synthetic data; **no real PII anywhere**; auditor walkthrough on the persona book passes.
 
 ### A16 · Installer & Developer Experience

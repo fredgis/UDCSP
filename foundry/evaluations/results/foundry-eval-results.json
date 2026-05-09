@@ -3,36 +3,42 @@
     "suite": "caseworker-helper",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7503189+02:00"
+    "timestamp": "2026-05-09T22:27:49.5855497+02:00"
   },
   {
     "suite": "citizen-assistant",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7550911+02:00"
+    "timestamp": "2026-05-09T22:27:49.5881873+02:00"
   },
   {
     "suite": "classifier",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7552993+02:00"
+    "timestamp": "2026-05-09T22:27:49.5882549+02:00"
   },
   {
     "suite": "doc-extractor",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7554537+02:00"
+    "timestamp": "2026-05-09T22:27:49.5882939+02:00"
   },
   {
     "suite": "eligibility",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7555908+02:00"
+    "timestamp": "2026-05-09T22:27:49.5883387+02:00"
+  },
+  {
+    "suite": "topic-router",
+    "mode": "dry-run",
+    "status": "not-run",
+    "timestamp": "2026-05-09T22:27:49.5883744+02:00"
   },
   {
     "suite": "translator",
     "mode": "dry-run",
     "status": "not-run",
-    "timestamp": "2026-05-07T21:00:41.7557415+02:00"
+    "timestamp": "2026-05-09T22:27:49.5884059+02:00"
   }
 ]
