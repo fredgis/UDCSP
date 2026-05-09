@@ -1,7 +1,7 @@
 {
-  "$comment": "Descriptive specification — NOT a deployable Logic App workflow. The runtime that consumes ACS Event Grid IncomingCall events, drives Call Automation, and brokers STT↔topic-router↔TTS does not yet exist in this repo (see apps/voice/README.md § Voice runtime readiness and docs/biz/voice.md § 11.5). This file is the blueprint that the future Function App / Logic App must implement.",
+  "$comment": "Descriptive specification — NOT a deployable Logic App workflow. Note: with the D365 Customer Service voice channel as the runtime (see docs/biz/voice.md § 11), recording, real-time transcription, and IVR are all provided natively by D365 over ACS. This file is therefore largely SUPERSEDED for ingest; it is retained as the design source for a future post-transcription enrichment Logic App that would push redacted transcript metadata from Dataverse to Fabric (OneLake) and anchor a hash in Azure Confidential Ledger for AI Act Art. 26(6).",
   "name": "udcsp-live-transcription-route",
-  "trigger": "ACS call connected event (Microsoft.Communication.IncomingCall via Event Grid)",
+  "trigger": "ACS call connected event (Microsoft.Communication.IncomingCall via Event Grid) — superseded by D365 voice channel native ingest",
   "steps": [
     "Stream call audio to Azure AI Speech STT",
     "Attach traceparent/callCorrelationId",
