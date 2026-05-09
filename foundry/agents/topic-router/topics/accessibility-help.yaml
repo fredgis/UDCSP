@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: accessibility-help
+displayName: Accessibility Help
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/accessibility-help.yaml
+triggerPatterns:
+    - language: da
+      text: "accessibility help (da)"
+    - language: sv
+      text: "accessibility help (sv)"
+    - language: nb
+      text: "accessibility help (nb)"
+    - language: nn
+      text: "accessibility help (nn)"
+    - language: se
+      text: "accessibility help (se)"
+    - language: en
+      text: "accessibility help (en)"
+    - language: de
+      text: "accessibility help (de)"
+    - language: fr
+      text: "accessibility help (fr)"
+    - language: pl
+      text: "accessibility help (pl)"
+    - language: ar
+      text: "accessibility help (ar)"
+    - language: uk
+      text: "accessibility help (uk)"
+    - language: fi
+      text: "accessibility help (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, escalate_to_d365]
+skillPrompt: >-
+  Collect accessibilityNeed and channel, adapt the turn format, and create a priority accessibility case unless the need is none.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

@@ -29,6 +29,9 @@
 
 ---
 
+> [!NOTE]
+> D365 Customer Service and **Copilot for Service are unchanged**. Caseworker administration uses **Azure Bastion** per country (no public IPs), **Microsoft Entra Permissions Management** (CIEM) continuously checks cross-tenant permissions, and auditors can view Confidential Ledger-backed AI Act decision evidence.
+
 ## 📑 Table of contents
 
 1. [Why a caseworker channel at all](#1-why-a-caseworker-channel-at-all)
@@ -60,7 +63,7 @@ That human review is not a checkbox — it is a structural requirement enforced 
 
 - ⚖️ **Regulatory.** EU AI Act Art. 14 mandates meaningful human oversight for high-risk AI systems that produce or influence decisions on citizens' welfare, residency, and social benefits. An automated AI verdict without a human caseworker validating it is a conformity violation. Every `udcsp_eligibility_assessment` row must have a corresponding caseworker approval or override action before it becomes a citizen-facing decision.
 - 🤝 **Trust.** Citizens whose residency permit or income-supplement benefit is being assessed want a human to make that call. AI speeds the preparation; the caseworker holds the pen. Casework-study satisfaction target: **+38 % CSAT** — not achievable if citizens distrust the channel that closes their case.
-- 🔄 **Resolution.** Voice, web, mobile, chat, SMS-reply, and email-reply are all *front-stage* channels. They are optimised for speed and self-service. But every one of them has an "escape to human" hatch (`apps/copilot-studio/escalation/escalation-rules.yaml`), and all those hatches lead **here**. Without the caseworker channel, every complex or sensitive case becomes a dead end.
+- 🔄 **Resolution.** Voice, web, mobile, chat, SMS-reply, and email-reply are all *front-stage* channels. They are optimised for speed and self-service. But every one of them has an "escape to human" hatch (`foundry/agents/topic-router/escalation/escalation-rules.yaml`), and all those hatches lead **here**. Without the caseworker channel, every complex or sensitive case becomes a dead end.
 - 🔐 **Accountability.** Public sector decisions carry legal weight. A citizen denied a benefit can appeal. The caseworker channel is where the legally accountable record is created, stored, and made auditable — not the bot, not the model, but the caseworker's explicit action in D365.
 
 The design principle, visible in the BPF (`apps/d365/solutions/UDCSP_Core/customizations/businessprocessflows/application-intake-bpf.xml`):
@@ -72,9 +75,9 @@ The `Caseworker review` stage is not optional and cannot be skipped by configura
 > [!NOTE]
 > **AI-first, but supervised.** This is the phrase the case study team coined in the planning sessions. The AI does the preparation work — classification, pre-assessment, KB lookup, draft replies — so the caseworker can focus entirely on the judgment call. The caseworker is not a rubber stamp; they are the decision maker. The AI is the analyst. This distinction is the foundation of UDCSP's EU AI Act conformity argument.
 
-The escalation rules (`apps/copilot-studio/escalation/escalation-rules.yaml`) define four paths that reach the caseworker channel: low-confidence classifier output (`classifierConfidence < 0.70`), high-risk topics requiring a formal decision (`social-benefit`, `residency-application`), explicit citizen request (`userIntent == 'escalate-to-human'`), and accessibility-flagged cases routed to the `accessibility-help` priority queue. All four paths converge on D365.
+The escalation rules (`foundry/agents/topic-router/escalation/escalation-rules.yaml`) define four paths that reach the caseworker channel: low-confidence classifier output (`classifierConfidence < 0.70`), high-risk topics requiring a formal decision (`social-benefit`, `residency-application`), explicit citizen request (`userIntent == 'escalate-to-human'`), and accessibility-flagged cases routed to the `accessibility-help` priority queue. All four paths converge on D365.
 
-The `escalate-to-human` Copilot Studio topic (`apps/copilot-studio/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) is localised across all 12 languages — a citizen can trigger the escalation in any supported language and the handover context is preserved verbatim in that language inside the D365 case.
+The `escalate-to-human` Foundry `topic-router` topic (`foundry/agents/topic-router/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) is localised across all 12 languages — a citizen can trigger the escalation in any supported language and the handover context is preserved verbatim in that language inside the D365 case.
 
 ---
 
@@ -84,16 +87,16 @@ The `escalate-to-human` Copilot Studio topic (`apps/copilot-studio/agents/citize
 %%{ init: { 'flowchart': { 'nodeSpacing': 28, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '13px' } } }%%
 flowchart TB
     subgraph FRONT["📡 Front-stage channels"]
-        VOICE["📞 Voice<br/><i>ACS + Copilot Studio</i>"]
+        VOICE["📞 Voice<br/><i>ACS + Foundry `topic-router`</i>"]
         WEB["🌐 Web<br/><i>Static Web App</i>"]
         MOBILE["📱 Mobile<br/><i>iOS · Android</i>"]
-        CHAT["💬 Chat<br/><i>Copilot Studio chat</i>"]
+        CHAT["💬 Chat<br/><i>Foundry `topic-router` chat</i>"]
         SMS["📩 SMS-reply"]
         EMAIL["📧 Email-reply"]
     end
 
     subgraph ESC["⚡ Escalation layer"]
-        RULES["Escalation rules<br/><i>apps/copilot-studio/escalation/</i>"]
+        RULES["Escalation rules<br/><i>foundry/agents/topic-router/escalation/</i>"]
         FLOW["Power Automate<br/><i>escalation-to-human.json</i>"]
     end
 
@@ -130,9 +133,9 @@ flowchart TB
 
 > 📖 **Reading the picture.** Blue = front-stage channels. Orange = escalation layer (the bridge). Purple = D365 caseworker stack. Dark blue = back-office outcomes. **The caseworker channel is the convergence point — every escalation path leads here.**
 
-The voice channel (`docs/biz/voice.md`) ends with a warm transfer: *"D365 warm-transfer with full context"*. This is where that transfer arrives. The case is pre-populated with the full Copilot Studio conversation transcript, the detected locale, the citizen's intent, and any slot-fill data collected during the conversation. The caseworker does not start from a blank case.
+The voice channel (`docs/biz/voice.md`) ends with a warm transfer: *"D365 warm-transfer with full context"*. This is where that transfer arrives. The case is pre-populated with the full Foundry `topic-router` conversation transcript, the detected locale, the citizen's intent, and any slot-fill data collected during the conversation. The caseworker does not start from a blank case.
 
-The Copilot Studio `escalate-to-human` topic (`apps/copilot-studio/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) invokes the `d365-case-create` connector (`apps/copilot-studio/agents/citizen-assistant-bot/connections/d365-case-create.json`) to create the case before the agent hands off. By the time a caseworker picks up the case, the AI context is already there.
+The Foundry `topic-router` `escalate-to-human` topic (`foundry/agents/topic-router/agents/citizen-assistant-bot/topics/escalate-to-human.yaml`) invokes the `d365-case-create` connector (`foundry/agents/topic-router/agents/citizen-assistant-bot/connections/d365-case-create.json`) to create the case before the agent hands off. By the time a caseworker picks up the case, the AI context is already there.
 
 ---
 
@@ -142,7 +145,7 @@ The Copilot Studio `escalate-to-human` topic (`apps/copilot-studio/agents/citize
 %%{ init: { 'sequence': { 'mirrorActors': false, 'actorMargin': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 sequenceDiagram
     autonumber
-    actor BOT as 🤖 Copilot Studio bot
+    actor BOT as 🤖 Foundry `topic-router` bot
     participant PA as ⚡ Power Automate
     participant D365 as 🏢 D365 Case
     participant ELI as 🧠 Eligibility model
@@ -205,7 +208,7 @@ Two cross-cutting concerns:
 
 | | Concern | Where |
 |:-:|---|---|
-| 📜 | **Correlation thread** — every case carries a `udcsp_traceparent` (W3C trace context) that links the Copilot Studio conversation, the Power Automate flows, the Foundry eligibility trace, and the Fabric mirror row into a single observable request chain. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml` |
+| 📜 | **Correlation thread** — every case carries a `udcsp_traceparent` (W3C trace context) that links the Foundry `topic-router` conversation, the Power Automate flows, the Foundry eligibility trace, and the Fabric mirror row into a single observable request chain. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml` |
 | 🔐 | **Consent gating** — citizen consent for data processing is modelled in `udcsp_consent_record` and checked by `citizen-status-notify` before any outbound communication. Notifications are suppressed if consent has expired or been withdrawn. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_consent_record.xml` |
 
 Every caseworker has a persistent **Copilot for Service panel** docked inside the D365 case form. It is powered by the `udcsp-caseworker-helper` Foundry agent (`foundry/agents/caseworker-helper/agent.yaml`) — model `gpt-5.5`, temperature `0.2`, `p95 ≤ 2 s` inside the D365 panel.
@@ -262,7 +265,7 @@ An override record in Dataverse looks like this (simplified):
 }
 ```
 
-The `udcsp_lineageId` is the W3C `traceparent` carried from the original Copilot Studio conversation — it is the thread that makes every AI decision replay-able by an auditor a year later (see Demo 7 in [`uses.md`](./uses.md#️-demo-7--hans-the-dpo-audits-a-six-month-old-ai-decision)).
+The `udcsp_lineageId` is the W3C `traceparent` carried from the original Foundry `topic-router` conversation — it is the thread that makes every AI decision replay-able by an auditor a year later (see Demo 7 in [`uses.md`](./uses.md#️-demo-7--hans-the-dpo-audits-a-six-month-old-ai-decision)).
 
 > [!IMPORTANT]
 > **Override = training data.** Caseworker overrides are not exceptions — they are the most valuable signal in the system. Override rate by case type is a live KPI on the executive dashboard, not a hidden metric.
@@ -271,7 +274,7 @@ The `udcsp_lineageId` is the W3C `traceparent` carried from the original Copilot
 
 ## 7. Multilingual — caseworker and citizen can speak different languages
 
-The case carries two language fields: `citizenLanguage` (set at escalation time from the Copilot Studio conversation locale) and `caseworkerLanguage` (set from the caseworker's Entra ID profile locale). These can differ — and often do.
+The case carries two language fields: `citizenLanguage` (set at escalation time from the Foundry `topic-router` conversation locale) and `caseworkerLanguage` (set from the caseworker's Entra ID profile locale). These can differ — and often do.
 
 | Scenario | What happens |
 |---|---|
@@ -400,7 +403,7 @@ The ramp schedule is tracked in the per-country Dataverse environment. A supervi
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart TB
-    P0["✅ Pre-reqs<br/><i>Foundry + APIM + Copilot Studio bot live</i>"]
+    P0["✅ Pre-reqs<br/><i>Foundry + APIM + Foundry `topic-router` bot live</i>"]
     P1["1️⃣ Deploy UDCSP_Core<br/><i>pac solution import × 3 countries</i>"]
     P2["2️⃣ Deploy per-country solutions<br/><i>UDCSP_DK · UDCSP_SE · UDCSP_NO</i>"]
     P3["3️⃣ Import Power Automate flows × 5<br/><i>wire dataverseConnection + fabricWorkspaceId</i>"]
@@ -496,7 +499,7 @@ This corresponds to **Demo 5** and **Demo 6** in [`uses.md`](./uses.md#️-demo-
 
 ## 16. Where the caseworker activity is stored
 
-The caseworker channel is the legally accountable system of record: case state, human actions, and override decisions live in Dataverse, while every AI suggestion is correlated to a Foundry trace. Copilot for Service conversations use the same Microsoft conversational store as Copilot Studio, and precedent knowledge is read from anonymised OneLake Gold only. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+The caseworker channel is the legally accountable system of record: case state, human actions, and override decisions live in Dataverse, while every AI suggestion is correlated to a Foundry trace. Copilot for Service conversations use the same Microsoft conversational store as Foundry `topic-router`, and precedent knowledge is read from anonymised OneLake Gold only. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|

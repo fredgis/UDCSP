@@ -1,0 +1,17 @@
+{
+  "name": "foundry-skills",
+  "type": "foundryAgentSet",
+  "sourceMappings": [
+    "apps/copilot-studio/agents/citizen-assistant-bot/connections/foundry-classifier.json",
+    "apps/copilot-studio/agents/citizen-assistant-bot/connections/foundry-citizen-assistant.json"
+  ],
+  "targets": [
+    { "name": "classifier", "endpoint": "${FOUNDRY_CLASSIFIER_ENDPOINT}" },
+    { "name": "citizen-assistant", "endpoint": "${FOUNDRY_CITIZEN_ASSISTANT_ENDPOINT}" },
+    { "name": "doc-extractor", "endpoint": "${FOUNDRY_DOC_EXTRACTOR_ENDPOINT}" },
+    { "name": "translator", "endpoint": "${FOUNDRY_TRANSLATOR_ENDPOINT}" },
+    { "name": "eligibility", "endpoint": "${FOUNDRY_ELIGIBILITY_ENDPOINT}", "note": "Pre-assess route only; high-risk Eligibility agent remains unchanged." }
+  ],
+  "auth": "managedIdentity",
+  "status": "placeholder"
+}

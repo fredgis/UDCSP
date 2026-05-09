@@ -16,9 +16,13 @@
 
 .PARAMETER Phase
     One or more phases to run. If omitted, runs the full DAG in dependency order.
-    Valid phases: LandingZone, Identity, Security, Observability, Fabric,
-    Purview, Foundry, Apim, LogicApps, D365, Apps, Voice, CopilotStudio,
-    SyntheticData, QA.
+    Valid phases: LandingZone, Identity, VerifiedId, Bastion, Ciem, Security,
+    Ddos, BackupAsr, ConfidentialLedger, ChaosStudio, Observability, Fabric,
+    Postgres, Redis, SyntheticData, Foundry, ConfidentialCompute, Apim,
+    LogicApps, D365, Apps, Voice, Purview, Priva, QA.
+
+    Removed (post-audit refactor 2026-05-09): CopilotStudio (absorbed into
+    Foundry topic-router agent).
 
 .PARAMETER WhatIf
     Plans every Bicep/REST deployment without applying changes.
@@ -44,6 +48,10 @@
 
 .EXAMPLE
     pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
+
+.EXAMPLE
+    pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Postgres,Redis,Priva -WhatIf
+    # Post-audit refactor — deploy only the new data layer + Priva DSR orchestrator.
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -51,9 +59,11 @@ param(
     [ValidateSet('dev','test','preprod','prod')]
     [string]$Environment = 'dev',
 
-    [ValidateSet('LandingZone','Identity','Security','Observability','Fabric',
-                 'Purview','Foundry','Apim','LogicApps','D365','Apps','Voice',
-                 'CopilotStudio','SyntheticData','QA')]
+    [ValidateSet('LandingZone','Identity','VerifiedId','Bastion','Ciem',
+                 'Security','Ddos','BackupAsr','ConfidentialLedger','ChaosStudio',
+                 'Observability','Fabric','Postgres','Redis','SyntheticData',
+                 'Foundry','ConfidentialCompute','Apim','LogicApps','D365',
+                 'Apps','Voice','Purview','Priva','QA')]
     [string[]]$Phase,
 
     [switch]$TestOnly,
@@ -87,22 +97,33 @@ $Script:Report         = [ordered]@{
 # DAG (matches docs/tech/plan.md §4)
 # ---------------------------------------------------------------------------
 $Script:Dag = [ordered]@{
-    LandingZone    = @{ Wave = 0; DependsOn = @();                                    Module = 'Install-LandingZone.psm1' }
-    Identity       = @{ Wave = 1; DependsOn = @('LandingZone');                       Module = 'Install-Identity.psm1' }
-    Security       = @{ Wave = 1; DependsOn = @('LandingZone');                       Module = 'Install-Security.psm1' }
-    Observability  = @{ Wave = 1; DependsOn = @('LandingZone');                       Module = 'Install-Observability.psm1' }
-    Fabric         = @{ Wave = 1; DependsOn = @('LandingZone');                       Module = 'Install-Fabric.psm1' }
-    SyntheticData  = @{ Wave = 1; DependsOn = @('Fabric');                            Module = 'Install-SyntheticData.psm1' }
-    Foundry        = @{ Wave = 2; DependsOn = @('Identity','Security','Fabric');      Module = 'Install-Foundry.psm1' }
-    Apim           = @{ Wave = 2; DependsOn = @('Identity','LandingZone');            Module = 'Install-Apim.psm1' }
-    LogicApps      = @{ Wave = 2; DependsOn = @('Apim','Foundry');                    Module = 'Install-LogicApps.psm1' }
-    D365           = @{ Wave = 2; DependsOn = @('Identity','LogicApps');              Module = 'Install-D365.psm1' }
-    Apps           = @{ Wave = 3; DependsOn = @('Identity','Apim');                   Module = 'Install-Apps.psm1' }
-    Voice          = @{ Wave = 3; DependsOn = @('LogicApps');                         Module = 'Install-Voice.psm1' }
-    CopilotStudio  = @{ Wave = 3; DependsOn = @('Foundry','D365');                    Module = 'Install-CopilotStudio.psm1' }
-    Purview        = @{ Wave = 4; DependsOn = @('Fabric','D365','Foundry');           Module = 'Install-Purview.psm1' }
-    QA             = @{ Wave = 4; DependsOn = @('Apps','Voice','CopilotStudio','Purview'); Module = 'Install-QA.psm1' }
+    LandingZone         = @{ Wave = 0; DependsOn = @();                                              Module = 'Install-LandingZone.psm1' }
+    Identity            = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Identity.psm1' }
+    VerifiedId          = @{ Wave = 1; DependsOn = @('Identity');                                    Module = 'Install-VerifiedId.psm1' }
+    Bastion             = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Bastion.psm1' }
+    Ciem                = @{ Wave = 1; DependsOn = @('Identity');                                    Module = 'Install-Ciem.psm1' }
+    Security            = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Security.psm1' }
+    Ddos                = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Ddos.psm1' }
+    BackupAsr           = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-BackupAsr.psm1' }
+    ConfidentialLedger  = @{ Wave = 1; DependsOn = @('Security');                                    Module = 'Install-ConfidentialLedger.psm1' }
+    ChaosStudio         = @{ Wave = 1; DependsOn = @('Security');                                    Module = 'Install-ChaosStudio.psm1' }
+    Observability       = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Observability.psm1' }
+    Fabric              = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Fabric.psm1' }
+    Postgres            = @{ Wave = 1; DependsOn = @('LandingZone','Security');                      Module = 'Install-Postgres.psm1' }
+    Redis               = @{ Wave = 1; DependsOn = @('LandingZone','Security');                      Module = 'Install-Redis.psm1' }
+    SyntheticData       = @{ Wave = 1; DependsOn = @('Fabric');                                      Module = 'Install-SyntheticData.psm1' }
+    Foundry             = @{ Wave = 2; DependsOn = @('Identity','Security','Fabric');                Module = 'Install-Foundry.psm1' }
+    ConfidentialCompute = @{ Wave = 2; DependsOn = @('Foundry','ConfidentialLedger');                Module = 'Install-ConfidentialCompute.psm1' }
+    Apim                = @{ Wave = 2; DependsOn = @('Identity','LandingZone');                      Module = 'Install-Apim.psm1' }
+    LogicApps           = @{ Wave = 2; DependsOn = @('Apim','Foundry');                              Module = 'Install-LogicApps.psm1' }
+    D365                = @{ Wave = 2; DependsOn = @('Identity','LogicApps');                        Module = 'Install-D365.psm1' }
+    Apps                = @{ Wave = 3; DependsOn = @('Identity','Apim','Postgres','Redis');          Module = 'Install-Apps.psm1' }
+    Voice               = @{ Wave = 3; DependsOn = @('LogicApps','Foundry');                         Module = 'Install-Voice.psm1' }
+    Purview             = @{ Wave = 4; DependsOn = @('Fabric','D365','Foundry');                     Module = 'Install-Purview.psm1' }
+    Priva               = @{ Wave = 4; DependsOn = @('Purview');                                     Module = 'Install-Priva.psm1' }
+    QA                  = @{ Wave = 4; DependsOn = @('Apps','Voice','Purview','Priva','ConfidentialCompute'); Module = 'Install-QA.psm1' }
 }
+# Removed (post-audit refactor 2026-05-09): CopilotStudio (absorbed into Foundry topic-router).
 
 # ---------------------------------------------------------------------------
 # Helpers

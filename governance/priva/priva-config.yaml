@@ -1,0 +1,103 @@
+tenant:
+  id: "00000000-0000-0000-0000-000000000000"
+  name: "udcsp-eu-sovereign-placeholder"
+  privaEnvironmentId: "11111111-1111-1111-1111-111111111111"
+  purviewAccountId: "22222222-2222-2222-2222-222222222222"
+  euDataBoundary: true
+
+subjectRightsRequests:
+  enabledTypes:
+    - access
+    - erasure
+    - rectification
+    - restriction
+    - portability
+    - objection
+    - automated-decision-making
+  sla:
+    standardDays: 30
+    legalBasis: "GDPR Article 12(3)"
+    complexRequestExtension:
+      months: 2
+      requiresDpoApproval: true
+      notifyCitizenBeforeStandardDeadline: true
+  evidenceRetention:
+    dsrAuditLogs: "P7Y"
+    rationale: "NIS2 evidence baseline and regulator-ready DSR audit history"
+
+dataSources:
+  postgresql:
+    description: "Primary draft and transactional store replacing Cosmos DB"
+    connectionId: "33333333-3333-3333-3333-333333333333"
+    classifications:
+      - UDCSP.SubjectId
+      - UDCSP.ApplicationDraft
+      - UDCSP.CaseMetadata
+  redis:
+    description: "Short-lived session and conversation cache included for technical cleanup"
+    connectionId: "44444444-4444-4444-4444-444444444444"
+  adlsGen2:
+    description: "Three storage accounts per country; citizen documents and evidence bundles"
+    countries:
+      dk:
+        accounts:
+          - udcspdkraw001
+          - udcspdkcurated001
+          - udcspdkarchive001
+      se:
+        accounts:
+          - udcspseraw001
+          - udcspsecurated001
+          - udcspsearchive001
+      no:
+        accounts:
+          - udcspnoraw001
+          - udcspnocurated001
+          - udcspnoarchive001
+  dataverse:
+    description: "Dynamics 365 case-management records"
+    environments:
+      - name: d365-dk
+        id: "55555555-5555-5555-5555-555555555555"
+      - name: d365-se
+        id: "66666666-6666-6666-6666-666666666666"
+      - name: d365-no
+        id: "77777777-7777-7777-7777-777777777777"
+  fabricLakehouses:
+    description: "Per-country Fabric Lakehouses; gold layer only. Bronze is excluded as ephemeral processing data."
+    includeLayers:
+      - gold
+    excludeLayers:
+      - bronze
+    lakehouses:
+      - country: dk
+        workspaceId: "88888888-8888-8888-8888-888888888888"
+        lakehouseId: "99999999-9999-9999-9999-999999999999"
+      - country: se
+        workspaceId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        lakehouseId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+      - country: no
+        workspaceId: "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        lakehouseId: "dddddddd-dddd-dddd-dddd-dddddddddddd"
+
+routing:
+  countryClaim: "citizen.country"
+  dpaEscalation:
+    dk:
+      dpoQueue: "dpo-dk@udcsp.eu"
+      supervisoryAuthority: "Datatilsynet"
+      escalationMailbox: "datatilsynet-escalation-dk@udcsp.eu"
+    se:
+      dpoQueue: "dpo-se@udcsp.eu"
+      supervisoryAuthority: "IMY"
+      escalationMailbox: "imy-escalation-se@udcsp.eu"
+    no:
+      dpoQueue: "dpo-no@udcsp.eu"
+      supervisoryAuthority: "Datatilsynet Norway"
+      escalationMailbox: "datatilsynet-escalation-no@udcsp.eu"
+
+logicAppDelegation:
+  transitionMode: side-by-side
+  privaHeader: "priva-request-id"
+  erasureWorkflow: "services/logic-apps/workflows/gdpr-data-erase/workflow.json"
+  exportWorkflow: "services/logic-apps/workflows/gdpr-data-export/workflow.json"

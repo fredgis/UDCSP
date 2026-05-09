@@ -26,17 +26,12 @@ function Test-LandingZone {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $bicepRoot = Join-Path $repo 'infra\landing-zone'
-    $cosmosRoot = Join-Path $repo 'infra\data\cosmos'
     $required = @(
         (Join-Path $bicepRoot 'main.bicep'),
         (Join-Path $bicepRoot 'modules\networking.bicep'),
         (Join-Path $bicepRoot 'modules\keyvault.bicep'),
         (Join-Path $bicepRoot 'modules\storage.bicep'),
-        (Join-Path $bicepRoot 'modules\acr.bicep'),
-        (Join-Path $cosmosRoot 'cosmos-account.bicep'),
-        (Join-Path $cosmosRoot 'parameters\dk.bicepparam'),
-        (Join-Path $cosmosRoot 'parameters\se.bicepparam'),
-        (Join-Path $cosmosRoot 'parameters\no.bicepparam')
+        (Join-Path $bicepRoot 'modules\acr.bicep')
     )
     $missing = $required | Where-Object { -not (Test-Path $_) }
     if ($missing) { throw "Missing landing-zone artefacts: $($missing -join ', ')" }

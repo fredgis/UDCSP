@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schemas.udcsp.example/verified-id/presentation-policy.schema.json",
+  "id": "udcsp-eudi-wallet-bridge-policy",
+  "name": "Verify EUDI Wallet OpenID4VP Bridge",
+  "version": "1.0.0",
+  "purpose": "Accept an EUDI Wallet vp_token through an OpenID4VP presentation and map it to UDCSP routing claims.",
+  "inputDescriptors": [
+    {
+      "id": "udcsp-eudi-wallet-bridge",
+      "schema": "udcsp-eudi-wallet-bridge",
+      "constraints": {
+        "fields": [
+          {
+            "path": [
+              "$.credentialSubject.subjectId"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.walletIssuer"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.vpTokenHash"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.presentationDefinitionId"
+            ],
+            "required": true
+          },
+          {
+            "path": [
+              "$.credentialSubject.assuranceLevel"
+            ],
+            "filter": {
+              "type": "string",
+              "pattern": "^(substantial|high)$"
+            },
+            "required": true
+          }
+        ]
+      }
+    }
+  ],
+  "trustedIssuers": [
+    "did:ion:udcsp-federation-hub",
+    "did:web:identity.udcsp.example"
+  ],
+  "openid4vp": {
+    "responseType": "vp_token",
+    "responseMode": "direct_post.jwt",
+    "presentationExchange": "2.0",
+    "limitDisclosure": "required"
+  }
+}

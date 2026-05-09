@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: complaint
+displayName: Complaint
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/complaint.yaml
+triggerPatterns:
+    - language: da
+      text: "complaint (da)"
+    - language: sv
+      text: "complaint (sv)"
+    - language: nb
+      text: "complaint (nb)"
+    - language: nn
+      text: "complaint (nn)"
+    - language: se
+      text: "complaint (se)"
+    - language: en
+      text: "complaint (en)"
+    - language: de
+      text: "complaint (de)"
+    - language: fr
+      text: "complaint (fr)"
+    - language: pl
+      text: "complaint (pl)"
+    - language: ar
+      text: "complaint (ar)"
+    - language: uk
+      text: "complaint (uk)"
+    - language: fi
+      text: "complaint (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, escalate_to_d365]
+skillPrompt: >-
+  Acknowledge the complaint, summarize neutrally, collect contact/case slots if offered, and create a D365 case.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

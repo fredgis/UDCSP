@@ -12,7 +12,7 @@
 [![Accessibility](https://img.shields.io/badge/♿_Accessibility-WCAG_2.1_AA-2E7D32?style=for-the-badge)](#)
 
 [![Sovereignty](https://img.shields.io/badge/🛡️_Sovereignty-DK_·_SE_·_NO-00796B?style=flat-square)](#)
-[![Identity](https://img.shields.io/badge/🔑_Identity-External_ID_per_country-5E35B1?style=flat-square)](#)
+[![Identity](https://img.shields.io/badge/🔑_Identity-External_ID_·_Verified_ID-5E35B1?style=flat-square)](#)
 [![Compliance](https://img.shields.io/badge/⚖️_Compliance-GDPR_·_WCAG-C62828?style=flat-square)](#)
 [![Status](https://img.shields.io/badge/🧱_Scaffold-65_files_under_apps/web-E65100?style=flat-square)](#)
 
@@ -25,7 +25,7 @@
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Chat transcript in Dataverse `bot_session`; form drafts in Cosmos DB; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
+> | 🗄️ **Where stored** | Chat transcript in Dataverse `bot_session`; form drafts in Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h); uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
 
 ---
 
@@ -85,7 +85,7 @@ flowchart TB
     end
 
     subgraph AUTH["🔑 Identity — per country"]
-        EXTID["Microsoft Entra External ID<br/><i>OIDC · national eID · MSAL.js</i>"]
+        EXTID["Microsoft Entra External ID + Verified ID<br/><i>OIDC · national eID · VC issuance</i>"]
     end
 
     subgraph GATEWAY["🚪 Integration layer"]
@@ -102,7 +102,7 @@ flowchart TB
     end
 
     subgraph CHAT["💬 Peer channel (cross-reference)"]
-        CS["Copilot Studio<br/>chat widget<br/><i>see § 9</i>"]
+        CS["Foundry `topic-router`<br/>chat widget<br/><i>see § 9</i>"]
     end
 
     BROWSER -->|HTTPS| AFD
@@ -114,7 +114,7 @@ flowchart TB
     FOUNDRY --> APIM
     APIM --> D365
     D365 --> FABRIC
-    SWA -.->|iframe embed| CS
+    SWA -.->|HTTPS chat call| CS
 
     classDef edge fill:#e36209,stroke:#c24e00,color:#fff
     classDef auth fill:#8957e5,stroke:#6e40c9,color:#fff
@@ -133,7 +133,7 @@ flowchart TB
     class CS chat
 ```
 
-> 📖 **Reading the picture.** Green = citizen. Orange = edge (Static Web App + Front Door, per-country hosted). Purple = External ID auth. Blue = the APIM gateway (the only legal entry point to Foundry from any channel). Dark blue = back-office. Grey = the Copilot Studio chat widget, which is a **peer** channel embedded in the web shell — it shares the same Foundry brain. The brain is shared; per-country data is not.
+> 📖 **Reading the picture.** Green = citizen. Orange = edge (Static Web App + Front Door, per-country hosted). Purple = External ID auth. Blue = the APIM gateway (the only legal entry point to Foundry from any channel). Dark blue = back-office. Grey = the Foundry `topic-router` chat widget, which is a **peer** channel embedded in the web shell — it shares the same Foundry brain. The brain is shared; per-country data is not.
 
 ---
 
@@ -199,11 +199,12 @@ sequenceDiagram
 |:-:|---|---|---|
 | **1** | **Azure Static Web App** | Hosts the pre-built Vite/React bundle at the edge; SPA fallback (`index.html` for all routes); `/api/*` routes require `authenticated` role; CSP headers enforced globally. | `apps/web/staticwebapp.config.json`, `infra/landing-zone/modules/networking.bicep` |
 | **2** | **Vite + React 18 + TypeScript** | Single-page application shell; React Router for client-side routing (10 pages: Home, Apply Residency, Apply Tax Cert, Apply Child Benefit, My Cases, Case Detail, Consent, Accessibility, Login, Logout Callback); Fluent UI v9 design system; hot module replacement in dev, optimised bundle in prod. | `apps/web/vite.config.ts`, `apps/web/src/App.tsx`, `apps/web/src/pages/` |
-| **3** | **MSAL.js + External ID per country** | `@azure/msal-browser` + `@azure/msal-react` pick the per-country OIDC authority (`udcspdk/se/no.ciamlogin.com`) from `localStorage` country preference; tokens cached in `sessionStorage` (never `localStorage`); `loginRequest` includes the APIM scope; post-logout redirect to `/logout-callback`. | `apps/web/src/auth/msalConfig.ts` |
+| **3** | **MSAL.js + External ID + Verified ID per country** | `@azure/msal-browser` + `@azure/msal-react` pick the per-country OIDC authority (`udcspdk/se/no.ciamlogin.com`) from `localStorage` country preference; tokens cached in `sessionStorage` (never `localStorage`); `loginRequest` includes the APIM scope; post-logout redirect to `/logout-callback`; Verified ID issues cross-border residency and eligibility receipt credentials via `infra/identity/verified-id/`. | `apps/web/src/auth/msalConfig.ts` |
 | **4** | **ICU MessageFormat i18n bundles** | `react-intl` (ICU MessageFormat) loads the locale catalogue from `/i18n/messages/{lang}.json` at runtime; 12 locale files produced by the A12 / agent-foundry translation pipeline; RTL direction toggled on `<html>` for `ar`; locale-aware date/number/currency formatting via `Intl` API. | `apps/web/i18n/messages/*.json`, `apps/web/src/utils/language.ts` |
 | **5** | **APIM contract clients** | Five typed fetch wrappers mirror the APIM OpenAPI contracts — `applications.ts`, `cases.ts`, `documents.ts`, `eligibility.ts`, `client.ts` (base, with exponential-backoff retry and W3C `traceparent` header on every request). | `apps/web/src/api/` |
-| **6** | **Embedded Copilot Studio chat widget** | `ChatWidget.tsx` renders an `<iframe>` against `VITE_COPILOT_STUDIO_WEBCHAT_URL`; passes `channel=web`, `locale`, and `traceparent` as query params; lazy-loaded; backed by the same Foundry agents as the rest of the portal. See **§ 9** for the full embed story. | `apps/web/src/components/ChatWidget.tsx` |
+| **6** | **Foundry topic-router chat widget** | `ChatWidget.tsx` posts directly to APIM `/agents/topic-router`; passes `channel=web`, `locale`, and `traceparent`; lazy-loaded; backed by the same Foundry agents as voice/mobile. This replaces the previous iframe/channel-adapter approach. See **§ 9**. | `apps/web/src/components/ChatWidget.tsx` |
 | **7** | **WCAG 2.1 AA assistive layer** | `SkipNav` → `#main-content`; `AccessibilityMenu` (font scale, high-contrast, reduce-motion, dyslexic font); `BreadcrumbsAccessible`; `LoadingSpinnerAccessible`; CSS tokens (`tokens.css`, `accessibility.css`, `dyslexic-font.css`); `AccessibilityStatementPage`; axe-core in CI. | `apps/web/src/components/`, `apps/web/src/styles/`, `apps/web/i18n/accessibility/` |
+| **8** | **Citizen insights components** | Lightweight HTML/JS dashboards replace citizen-facing embedded BI: Chart.js + React wrappers render SLA, CSAT, and case progress without embedded BI licensing. Power BI Premium remains for internal ops, exec, and auditor users. | `apps/web/src/components/insights/` |
 
 > [!NOTE]
 > **Playwright is also in `apps/web`** (`playwright.config.ts`) but the E2E suite itself lives in `tests/e2e/` — owned by A14. The `apps/web` config is the configuration; the specs are in `tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` et al.
@@ -285,7 +286,7 @@ The `.reduce-motion` class on `<html>` activates `@media (prefers-reduced-motion
 
 ### 6.7 Keyboard-only navigation
 
-Fluent UI v9 components are keyboard-accessible by default. The language switcher (`LanguageSwitcher.tsx`), breadcrumbs (`BreadcrumbsAccessible.tsx`), and loading spinner (`LoadingSpinnerAccessible.tsx`) are all wrapped with explicit ARIA roles and keyboard handlers. The chat widget iframe is given `title="Copilot Studio citizen assistant"` for assistive technology identification.
+Fluent UI v9 components are keyboard-accessible by default. The language switcher (`LanguageSwitcher.tsx`), breadcrumbs (`BreadcrumbsAccessible.tsx`), and loading spinner (`LoadingSpinnerAccessible.tsx`) are all wrapped with explicit ARIA roles and keyboard handlers. The chat widget panel is given `aria-label="Foundry topic-router citizen assistant"` for assistive technology identification.
 
 ### 6.8 Automated axe-core scanning
 
@@ -402,47 +403,23 @@ Risks tracked in `docs/tech/plan.md` § Risk Register that affect the web portal
 
 ## 9. 🌐 Embedding the AI assistant in the page
 
-> **Scope:** This section describes only how the **web channel hosts** the Copilot Studio chat widget. The full chat-widget channel — topics, slot filling, escalation, knowledge sources — is documented separately under the Copilot Studio agent scope.
+> **Scope:** The web channel hosts the chat surface, but intelligence is in Foundry. This replaces the previous channel-adapter approach; it is now APIM `/agents/topic-router`.
 
-### 9.1 The one-line embed
+### 9.1 The direct APIM call
 
-The citizen-assistant chat widget is embedded in the portal via a React component (`apps/web/src/components/ChatWidget.tsx`) that renders an `<iframe>`:
-
-```tsx
-// apps/web/src/components/ChatWidget.tsx
-export function ChatWidget({ channel = 'web', locale }: Props) {
-  const src = import.meta.env.VITE_COPILOT_STUDIO_WEBCHAT_URL || 'about:blank';
-  const trace = generateTraceparent();
-  return (
-    <section aria-labelledby="chat-title">
-      <h2 id="chat-title">Citizen assistant</h2>
-      <iframe
-        title="Copilot Studio citizen assistant"
-        src={`${src}?channel=${channel}&locale=${locale}&traceparent=${encodeURIComponent(trace)}`}
-        className="chat-frame"
-        loading="lazy"
-      />
-    </section>
-  );
-}
+```ts
+await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agents/topic-router`, {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}`, traceparent },
+  body: JSON.stringify({ channel: 'web', locale, text })
+});
 ```
 
-The `VITE_COPILOT_STUDIO_WEBCHAT_URL` environment variable points to the Copilot Studio Direct Line web client URL, injected at SWA deploy time.
+`ChatWidget.tsx` remains the host component, but it no longer renders an embedded assistant frame or requests a channel token. It sends the citizen utterance to APIM, receives a channel-shaped response from Foundry `topic-router`, and renders citations/actions as React components.
 
-### 9.2 Where it lives in the React shell
+### 9.2 Citizen-facing insights without embedded BI
 
-`ChatWidget` is **not** mounted on every page — it is mounted only on pages where an in-context assistant adds value (e.g., `HomePage`, `ApplyResidencyPage`). The widget is `loading="lazy"` so it does not block the critical rendering path. The `staticwebapp.config.json` CSP allows `frame-src https://*.botframework.com https://*.copilotstudio.microsoft.com` for this purpose.
-
-### 9.3 How Foundry powers it
-
-The iframe points to the Copilot Studio web client, which communicates with the **same citizen-assistant Foundry agent** (`apps/copilot-studio/agents/citizen-assistant-bot/`) that backs the voice channel. No duplication of AI logic: one brain, multiple channel surfaces.
-
-### 9.4 Correlation across channels
-
-The `traceparent` query parameter passes the current page's W3C trace context into the iframe, so Foundry traces from the chat widget and the form submission are **correlated under the same top-level trace ID** (`src/utils/traceparent.ts`). A caseworker opening the D365 case can see both the form-fill trace and the chat conversation trace linked together.
-
-> [!NOTE]
-> For the full architecture of the chat widget — Copilot Studio topics, slot filling, language routing, escalation to D365, knowledge sources — see `apps/copilot-studio/agents/citizen-assistant-bot/` and `docs/tech/agents.md` § A11. The web portal's role is to **host** the widget; the intelligence is in the agent.
+Citizen status and outcome tiles are HTML/JS components in `apps/web/src/components/insights/` using Chart.js + React wrappers. They show case progress, expected SLA, and accessibility-friendly charts. **Power BI Premium is kept for internal users** — operations, executives, and auditors — but citizen pages do not embed Power BI.
 
 ---
 
@@ -456,7 +433,7 @@ flowchart TB
     P2["2️⃣ swa deploy ./dist<br/><i>upload to Azure Static Web Apps × 3 countries</i>"]
     P3["3️⃣ Wire External ID<br/><i>OIDC redirect URIs + client ID per country</i>"]
     P4["4️⃣ Deploy APIM client config<br/><i>VITE_APIM_BASE_URL + VITE_APIM_SCOPE injected into SWA env</i>"]
-    P5["5️⃣ Set VITE_COPILOT_STUDIO_WEBCHAT_URL<br/><i>point ChatWidget at the Copilot Studio Direct Line endpoint</i>"]
+    P5["5️⃣ Set VITE_TOPIC_ROUTER_APIM_URL<br/><i>point ChatWidget at the Foundry `topic-router` APIM `/agents/topic-router` endpoint</i>"]
     P6["6️⃣ Validate i18n catalogues<br/><i>pwsh apps/web/i18n/scripts/Validate-Translations.ps1</i>"]
     P7["7️⃣ Smoke test<br/><i>npm test + npm run test:a11y in apps/web</i>"]
     P8["✅ Phase complete — web portal live"]
@@ -521,7 +498,7 @@ This corresponds to **Demo 1** in [`uses.md`](./uses.md#-demo-1--anna-moves-from
 | **Per-country code forks** — three separate React repositories, one per country | One codebase; country resolved at runtime from `udcsp.country` preference; CSS custom properties for theming |
 | **Hard-coded strings** in JSX or TypeScript | Every citizen-visible string is an ICU key in `apps/web/i18n/messages/{lang}.json`; `banner.aiDisclosure` is localised in all 12 languages |
 | **Server-side render of citizen data** — pre-rendering PII into the HTML | React SPA; no SSR; all citizen data is fetched client-side after OIDC authentication, never embedded in static HTML |
-| **"One giant SPA"** — all routes loaded eagerly | React Router with lazy-loaded routes; Vite code splitting; the ChatWidget iframe is `loading="lazy"` |
+| **"One giant SPA"** — all routes loaded eagerly | React Router with lazy-loaded routes; Vite code splitting; the ChatWidget panel is lazy-loaded` |
 | **Auth state in localStorage** | `sessionStorage` only (`msalConfig.ts`: `cacheLocation: 'sessionStorage'`); tokens are cleared on tab close; no cross-tab token sharing |
 | **Ignoring WCAG until the end** | WCAG 2.1 AA is a platform invariant from the first commit (P3); axe-core runs in CI from W2; design system components (Fluent UI v9) are keyboard-accessible by default |
 | **One External ID tenant for all three countries** | One External ID tenant **per** country, enforced by Bicep; per-country national eID connections; no cross-country token acceptance |
@@ -533,12 +510,12 @@ This corresponds to **Demo 1** in [`uses.md`](./uses.md#-demo-1--anna-moves-from
 
 ## 14. Where the conversation is stored
 
-The web portal separates typed dialog from portal transactions: the embedded Copilot Studio widget writes its transcript to the shared `bot_session` store, while form drafts, submitted cases, uploads, and per-citizen memory use their own stores. This follows Zone 3 for conversations and keeps binary uploads out of Dataverse. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+The web portal separates typed dialog from portal transactions: the embedded Foundry `topic-router` widget writes its transcript to the shared `bot_session` store, while form drafts, submitted cases, uploads, and per-citizen memory use their own stores. This follows Zone 3 for conversations and keeps binary uploads out of Dataverse. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
-| Chat widget transcript | Copilot Studio Dataverse `bot_session` | 6 months hot; 6 years OneLake |
-| Portal form drafts | Cosmos DB drafts → Dataverse case on submit | TTL 30 days before submit |
+| Chat widget transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
+| Portal form drafts | Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) drafts → Dataverse case on submit | TTL 30 days before submit |
 | Uploaded documents | ADLS Gen2 `citizen-uploads/` (per country, CMK) | While case open + lifecycle tiers |
 | Memory + traces | Azure AI Search vector store; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |
 

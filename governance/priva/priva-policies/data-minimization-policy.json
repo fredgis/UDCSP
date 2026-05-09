@@ -1,0 +1,28 @@
+{
+  "$schema": "https://udcsp.example/schemas/priva-policy.json",
+  "name": "UDCSP data minimization",
+  "description": "Auto-detects personal data retained longer than the declared RoPA and Purview retention labels allow.",
+  "mode": "audit",
+  "signals": [
+    "purview-retention-label",
+    "last-accessed-age",
+    "ropa-retention-window"
+  ],
+  "conditions": [
+    {
+      "field": "retention.ageDays",
+      "operator": "greaterThan",
+      "valueFrom": "ropa.retention.maxDays"
+    }
+  ],
+  "actions": [
+    {
+      "type": "createFinding",
+      "severity": "high"
+    },
+    {
+      "type": "routeTo",
+      "queue": "country-dpo"
+    }
+  ]
+}

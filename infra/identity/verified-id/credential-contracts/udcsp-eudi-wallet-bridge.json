@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schemas.udcsp.example/verified-id/credential-contract.schema.json",
+  "id": "udcsp-eudi-wallet-bridge",
+  "type": [
+    "VerifiableCredential",
+    "UdcspEudiWalletBridge"
+  ],
+  "name": "UDCSP EUDI Wallet OpenID4VP Bridge Credential",
+  "version": "1.0.0",
+  "issuer": {
+    "authority": "UDCSP Verified ID Issuer",
+    "didMethods": [
+      "ion",
+      "web"
+    ]
+  },
+  "claimFormat": "vc+sd-jwt",
+  "credentialSubject": {
+    "subjectId": {
+      "type": "string",
+      "description": "Pseudonymous holder subject accepted by UDCSP."
+    },
+    "walletIssuer": {
+      "type": "string",
+      "description": "EUDI Wallet issuer URI from the OpenID4VP response."
+    },
+    "vpTokenHash": {
+      "type": "string",
+      "description": "Hash of the transient vp_token; the token itself is not stored."
+    },
+    "presentationDefinitionId": {
+      "type": "string",
+      "description": "OpenID4VP presentation definition used for verification."
+    },
+    "assuranceLevel": {
+      "type": "string",
+      "enum": [
+        "substantial",
+        "high"
+      ]
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "subjectId",
+    "walletIssuer",
+    "vpTokenHash",
+    "presentationDefinitionId",
+    "assuranceLevel",
+    "issuedAt",
+    "validUntil"
+  ],
+  "openid4vp": {
+    "responseMode": "direct_post.jwt",
+    "responseType": "vp_token",
+    "presentationExchange": "2.0",
+    "holderBinding": "required"
+  },
+  "eidas2": {
+    "arfProfile": "EUDI Wallet ARF",
+    "purpose": "wallet-interoperability-bridge"
+  }
+}

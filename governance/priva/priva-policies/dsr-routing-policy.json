@@ -1,0 +1,22 @@
+{
+  "$schema": "https://udcsp.example/schemas/priva-policy.json",
+  "name": "UDCSP country DPO DSR routing",
+  "description": "Routes DSRs to the country DPO based on the citizen's country claim.",
+  "mode": "route",
+  "claim": "citizen.country",
+  "routes": {
+    "dk": "dpo-dk@udcsp.eu",
+    "se": "dpo-se@udcsp.eu",
+    "no": "dpo-no@udcsp.eu"
+  },
+  "fallback": "dpo@udcsp.eu",
+  "actions": [
+    {
+      "type": "assignOwner"
+    },
+    {
+      "type": "startSlaClock",
+      "days": 30
+    }
+  ]
+}

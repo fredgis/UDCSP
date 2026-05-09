@@ -37,9 +37,11 @@ Country-scoped provisioning also includes the conversational data layer introduc
 - `udcspeml{country}{env}` — Storage account for `email-attachments/` (same StorageV2/ADLS Gen2/GZRS/CMK/immutability baseline; lifecycle retention is driven by the `case-closed + 90 days` event).
 - `udcspsearch{country}{env}` — Azure AI Search Standard S1 service with 3 replicas, 1 partition, semantic ranker enabled and CMK from the country Key Vault; used as the per-citizen conversational memory vector store.
 - `udcspevh{country}{env}` — Azure Event Hubs Standard namespace with 4 throughput units and capture enabled to existing `udcspadls{country}{env}` storage in the `acs-events/` container for ACS SMS, Email and Voice events.
-- Copilot Studio transcript persistence — enable **Store transcripts in Dataverse** for each country bot. In Power Platform admin center, open **Environments** > `<country environment>` > **Settings** > **Product** > **Features** > **Copilot Studio** and turn on **Store transcripts in Dataverse**; the bound Dataverse environment auto-creates the `bot_session` table.
+- `udcsppg{country}{env}` — Azure Database for PostgreSQL Flexible Server (post-audit refactor) with CMK + private endpoint + zone-redundant HA + GZRS backups.
+- `udcspredis{country}{env}` — Azure Cache for Redis (Enterprise SKU, post-audit refactor) with CMK + private endpoint, holding the topic-router slot-filling state and ephemeral autosaves.
+- Foundry topic-router transcript persistence — the post-audit refactor folds the conversational orchestration into the **Foundry `topic-router` agent**; transcripts are emitted by Foundry tracing into Application Insights and mirrored to a Dataverse `bot_session` table by the `Install-Foundry` phase. No Power Platform admin action is required (Copilot Studio has been removed).
 
-Required Bicep module coverage: add country-looped modules for `voice-recordings` storage, `email-attachments` storage, AI Search memory, Event Hubs capture, and the new `acs-events/` container on the existing ADLS account. The Copilot Studio transcript setting remains a post-deploy Power Platform admin action, not a Bicep resource.
+Required Bicep module coverage: country-looped modules for `voice-recordings` storage, `email-attachments` storage, AI Search memory, Event Hubs capture, the `acs-events/` container on the existing ADLS account, **PostgreSQL Flexible Server** (`infra/data/postgresql/`), **Azure Cache for Redis** (`infra/data/redis/`), **Confidential Ledger** (`infra/security/confidential-ledger/`), **Confidential Container Apps** (`infra/security/confidential-compute/`), **DDoS Protection plans** (`infra/security/ddos/`), **Backup vaults + Site Recovery** (`infra/security/backup-asr/`), **Chaos Studio** (`infra/security/chaos-studio/`), **Defender for APIs** (`infra/security/defender/`), **Verified ID** (`infra/identity/verified-id/`), **Bastion** (`infra/identity/bastion/`) and **CIEM onboarding** (`infra/identity/ciem/`). The post-audit refactor removes the Cosmos DB and Azure SQL modules entirely, plus the standalone Copilot Studio admin step.
 
 ---
 
@@ -85,7 +87,7 @@ Additional quota and permission checks for the conversational data layer:
 | Quota: 3 Azure AI Search services per environment | Azure subscription | One S1 service per country for per-citizen conversational memory |
 | Quota: 3 Event Hubs namespaces per environment | Azure subscription | One Standard namespace per country for ACS event capture |
 | Permission: Owner on the country resource group | Azure RBAC | Required for CMK linkage between the new resources and the country Key Vault |
-| Permission: Power Platform admin on each Dataverse environment | Power Platform | Required to enable Copilot Studio Dataverse-backed transcript storage |
+| Permission: Power Platform admin on each Dataverse environment | Power Platform | Required to install D365 solutions and enable the Foundry → Dataverse `bot_session` mirror table |
 
 > **EU residency note:** every workload region MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`). The installer refuses to deploy to non-EU regions.
 
@@ -216,15 +218,25 @@ Phase names accepted by `-Phase`:
 | `Identity` | `Install-Identity.psm1` | A2 | External ID tenants, custom user flows, Microsoft Entra ID, CA, PIM |
 | `Security` | `Install-Security.psm1` | A3 | Defender for Cloud, Sentinel, Azure Policy, DPIA artefacts |
 | `Observability` | `Install-Observability.psm1` | A5 | Log Analytics, App Insights, workbooks, alerts |
+| `Postgres` *(post-audit)* | `Install-Postgres.psm1` | A4 | PostgreSQL Flexible Server (per country) — replaces Azure SQL + Cosmos persistent workloads |
+| `Redis` *(post-audit)* | `Install-Redis.psm1` | A4 | Azure Cache for Redis (per country) — replaces Cosmos ephemeral workloads |
 | `Fabric` | `Install-Fabric.psm1` | A4 | Capacities, workspaces, lakehouses, notebooks, semantic models |
 | `Purview` | `Install-Purview.psm1` | A13 | Account, sources, classifications, labels, DLP, sharing policies |
-| `Foundry` | `Install-Foundry.psm1` | A6 | Hub & projects, agents, prompts, eval suites, Content Safety, AI Act registry |
+| `Priva` *(post-audit)* | `Install-Priva.psm1` | A13 | Microsoft Priva Privacy Management — DSR system of record + Risk Management policies |
+| `ConfidentialLedger` *(post-audit)* | `Install-ConfidentialLedger.psm1` | A3 | Tamper-evident ledger for AI Act high-risk decisions |
+| `Foundry` | `Install-Foundry.psm1` | A6 | Hub & projects, agents (incl. **`topic-router`** which absorbs Copilot Studio), prompts, eval suites, Content Safety, AI Act registry |
+| `ConfidentialCompute` *(post-audit)* | `Install-ConfidentialCompute.psm1` | A3, A6 | Confidential Container Apps (TEE) for Eligibility Pre-Assessor inference |
 | `Apim` | `Install-Apim.psm1` | A7 | APIM instance(s), products, APIs, policies, named values |
 | `LogicApps` | `Install-LogicApps.psm1` | A7 | Standard workspaces, workflows, connections, Service Bus, Event Grid |
 | `D365` | `Install-D365.psm1` | A8 | Solutions, BPFs, queues, SLAs, Copilot for Service, Power Automate |
-| `Apps` | `Install-Apps.psm1` | A9, A12 | Static Web Apps deployment, mobile builds, i18n catalogues |
+| `Apps` | `Install-Apps.psm1` | A9, A12 | Static Web Apps deployment (citizen insights now via Chart.js, post-audit), mobile builds, i18n catalogues |
 | `Voice` | `Install-Voice.psm1` | A10 | ACS, AI Speech, IVR dialogs, transcript pipeline, SMS/email templates |
-| `CopilotStudio` | `Install-CopilotStudio.psm1` | A11 | Copilot Studio bot, topics, knowledge sources, channels |
+| `VerifiedId` *(post-audit)* | `Install-VerifiedId.psm1` | A2 | Microsoft Entra Verified ID issuer + verifier (EUDI Wallet bridge) |
+| `Bastion` *(post-audit)* | `Install-Bastion.psm1` | A2, A3 | Azure Bastion Standard (per country) — sole admin shell ingress |
+| `Ciem` *(post-audit)* | `Install-Ciem.psm1` | A2, A3 | Microsoft Entra Permissions Management (CIEM) onboarding for the 3 sovereign tenants |
+| `Ddos` *(post-audit)* | `Install-Ddos.psm1` | A1, A3 | Azure DDoS Protection Standard plans + VNet associations |
+| `BackupAsr` *(post-audit)* | `Install-BackupAsr.psm1` | A3 | Azure Backup vaults + policies + Azure Site Recovery (per country, geo-paired) |
+| `ChaosStudio` *(post-audit)* | `Install-ChaosStudio.psm1` | A3, A14 | Azure Chaos Studio targets + monthly experiments validating the 99.9 % SLO |
 | `SyntheticData` | `Install-SyntheticData.psm1` | A15 | Generates and seeds personas, applications, conversations, eval datasets |
 | `QA` | `Install-QA.psm1` | A14 | Wires CI eval/E2E/security/conformance pipelines to GitHub Actions |
 
@@ -243,10 +255,10 @@ Per-country resources provisioned:
 
 The Bicep deployment creates the storage accounts, AI Search service, Event Hubs namespace, capture destination, `acs-events/` container and CMK bindings. After Bicep deploys these resources:
 
-1. Run [Set-CopilotStudioTranscriptBacking.ps1](#) for each environment to enable Dataverse-backed transcript persistence. Power Platform admin center path: **Environments** > `<country environment>` > **Settings** > **Product** > **Features** > **Copilot Studio** > **Store transcripts in Dataverse**.
+1. The Foundry `topic-router` agent transcript schema is created automatically by `Install-Foundry`; it writes to App Insights and mirrors to a Dataverse `bot_session` table provisioned by `Install-D365`. *(Copilot Studio admin step removed in the post-audit refactor.)*
 2. Run [Set-AISearchIndex.ps1](#) to create the per-citizen memory index schema with row-level ACL by `citizen_id`.
 3. Run [Set-EventHubCapture.ps1](#) to wire ACS Event Grid -> Event Hubs -> ADLS capture path.
-4. Verify retention: [Test-RetentionPolicies.ps1](#) checks that lifecycle rules, immutability policies and Cosmos TTLs are set per [`data.md`](./data.md) §5.
+4. Verify retention: [Test-RetentionPolicies.ps1](#) checks that lifecycle rules, immutability policies, Postgres lifecycle jobs and Redis TTLs are set per [`data.md`](./data.md) §5.
 
 ---
 
@@ -291,7 +303,7 @@ A **green** smoke gate produces `scripts/install/reports/<timestamp>/install-rep
 Conversational data smoke tests to add to the post-install checklist:
 
 - Send a test SMS via the platform; verify it lands in the `sms_activity` Dataverse table and in the `acs-events/` ADLS container.
-- Make a test voice call; verify the `.wav` lands in the `voice-recordings/` ADLS account, the STT transcript is stored alongside it, and the dialog turn is in Copilot Studio's `bot_session` table.
+- Make a test voice call; verify the `.wav` lands in the `voice-recordings/` ADLS account, the STT transcript is stored alongside it, and the dialog turn is emitted by the Foundry `topic-router` into the App Insights traces (mirrored nightly to the Dataverse `bot_session` table).
 - Send a test email with attachment; verify the body is in the `email_activity` Dataverse table and the attachment is in the `email-attachments/` ADLS account, not in Dataverse.
 - Trigger a Foundry agent invocation; verify the trace is in App Insights and mirrored to OneLake Bronze.
 - Run an erasure simulation: `POST /privacy/erase/{test_citizen_id}`; verify deletion cascades across all 5 zones within 30 minutes in test mode.

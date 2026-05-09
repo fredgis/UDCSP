@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: tax-certificate-request
+displayName: Tax Certificate Request
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/tax-certificate-request.yaml
+triggerPatterns:
+    - language: da
+      text: "tax certificate request (da)"
+    - language: sv
+      text: "tax certificate request (sv)"
+    - language: nb
+      text: "tax certificate request (nb)"
+    - language: nn
+      text: "tax certificate request (nn)"
+    - language: se
+      text: "tax certificate request (se)"
+    - language: en
+      text: "tax certificate request (en)"
+    - language: de
+      text: "tax certificate request (de)"
+    - language: fr
+      text: "tax certificate request (fr)"
+    - language: pl
+      text: "tax certificate request (pl)"
+    - language: ar
+      text: "tax certificate request (ar)"
+    - language: uk
+      text: "tax certificate request (uk)"
+    - language: fi
+      text: "tax certificate request (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, invoke_citizen_assistant]
+skillPrompt: >-
+  Collect country and tax-cert serviceType, then route to citizen-assistant for procedure and APIM routing hints.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

@@ -1,20 +1,45 @@
 {
-  "_comment": "GDPR right-to-erasure (Art. 17) workflow. Operationally undertakes within 30 days (vs the 1-month legal SLA in Art. 12(3)). Symmetric to gdpr-data-export but performs deletes instead of reads, runs the AI-Act-aware retention check first, then publishes an erasure-completion event for Purview lineage. The flow stops short of physically deleting records that the per-country administrative law mandates be retained (e.g. case files under DK/SE/NO archive law) - those records are tagged 'pending-archive-release' and the citizen is informed.",
+  "_comment": "Priva is the primary DSR orchestrator. This Logic App is now a secondary technical erasure processor when a priva-request-id header is present; without that header it runs the legacy transition flow. PostgreSQL + Redis cleanup placeholders are used for subject draft/session data.",
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "aiActRegistryId": { "type": "String" },
-      "purviewLineageTopicEndpoint": { "type": "String" },
-      "country": { "type": "String" },
-      "auditEndpoint": { "type": "String" },
-      "retentionCheckEndpoint": { "type": "String" },
-      "d365EraseEndpoint": { "type": "String" },
-      "fabricEraseEndpoint": { "type": "String" },
-      "blobEraseEndpoint": { "type": "String" },
-      "cosmosConversationEraseEndpoint": { "type": "String" },
-      "appInsightsTraceEraseEndpoint": { "type": "String" },
-      "citizenNotificationEndpoint": { "type": "String" }
+      "aiActRegistryId": {
+        "type": "String"
+      },
+      "purviewLineageTopicEndpoint": {
+        "type": "String"
+      },
+      "country": {
+        "type": "String"
+      },
+      "auditEndpoint": {
+        "type": "String"
+      },
+      "retentionCheckEndpoint": {
+        "type": "String"
+      },
+      "d365EraseEndpoint": {
+        "type": "String"
+      },
+      "fabricEraseEndpoint": {
+        "type": "String"
+      },
+      "blobEraseEndpoint": {
+        "type": "String"
+      },
+      "appInsightsTraceEraseEndpoint": {
+        "type": "String"
+      },
+      "citizenNotificationEndpoint": {
+        "type": "String"
+      },
+      "postgresDraftEraseEndpoint": {
+        "type": "String"
+      },
+      "redisSessionFlushEndpoint": {
+        "type": "String"
+      }
     },
     "triggers": {
       "When_request_received": {
@@ -25,25 +50,62 @@
           "schema": {
             "type": "object",
             "properties": {
-              "subjectId": { "type": "string", "description": "Pseudonymous subject ID (never the raw national ID)." },
-              "requestedBy": { "type": "string", "description": "Citizen self-service portal id, or caseworker id when raised on behalf of citizen." },
+              "subjectId": {
+                "type": "string",
+                "description": "Pseudonymous subject ID (never the raw national ID)."
+              },
+              "requestedBy": {
+                "type": "string",
+                "description": "Citizen self-service portal id, or caseworker id when raised on behalf of citizen."
+              },
               "scope": {
                 "type": "array",
                 "description": "Optional sub-scope; defaults to all systems.",
-                "items": { "type": "string", "enum": ["dataverse", "fabric", "blob", "cosmos", "appinsights"] }
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "dataverse",
+                    "fabric",
+                    "blob",
+                    "postgres",
+                    "redis",
+                    "appinsights"
+                  ]
+                }
               },
-              "evidenceOfIdentity": { "type": "string", "description": "Reference to the identity-assurance event that authorised the request." }
+              "evidenceOfIdentity": {
+                "type": "string",
+                "description": "Reference to the identity-assurance event that authorised the request."
+              }
             },
-            "required": ["subjectId", "requestedBy", "evidenceOfIdentity"]
+            "required": [
+              "subjectId",
+              "requestedBy",
+              "evidenceOfIdentity"
+            ]
           }
         }
       }
     },
     "actions": {
+      "Check-Priva-Owns-Request": {
+        "_comment": "Initial delegation check. When priva-request-id is present, Priva owns DPA reporting, SLA evidence and citizen communications; this workflow performs only technical erasure sub-processing.",
+        "type": "Compose",
+        "inputs": {
+          "isPrivaDelegated": "@not(empty(triggerOutputs()?['headers']?['priva-request-id']))",
+          "privaRequestId": "@triggerOutputs()?['headers']?['priva-request-id']",
+          "processingRole": "@if(empty(triggerOutputs()?['headers']?['priva-request-id']), 'legacy-primary-transition', 'priva-technical-sub-processor')"
+        },
+        "runAfter": {}
+      },
       "Ensure_traceparent": {
         "type": "Compose",
         "inputs": "@coalesce(triggerOutputs()?['headers']?['traceparent'], guid())",
-        "runAfter": {}
+        "runAfter": {
+          "Check-Priva-Owns-Request": [
+            "Succeeded"
+          ]
+        }
       },
       "AppInsights_dimension": {
         "type": "Compose",
@@ -55,7 +117,11 @@
             "country": "@parameters('country')"
           }
         },
-        "runAfter": { "Ensure_traceparent": ["Succeeded"] }
+        "runAfter": {
+          "Ensure_traceparent": [
+            "Succeeded"
+          ]
+        }
       },
       "Create_audit_record": {
         "type": "Http",
@@ -65,11 +131,17 @@
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
             "x-workflow": "gdpr-data-erase",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": "@triggerBody()"
         },
-        "runAfter": { "AppInsights_dimension": ["Succeeded"] }
+        "runAfter": {
+          "AppInsights_dimension": [
+            "Succeeded"
+          ]
+        }
       },
       "Check_retention_holds": {
         "_comment": "National administrative law (DK Arkivloven, SE Arkivlagen, NO Arkivlova) can mandate retention of public-service case files for 5-10 years. This call returns the list of records that must be tagged 'pending-archive-release' instead of physically deleted.",
@@ -79,14 +151,20 @@
           "uri": "@parameters('retentionCheckEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-country": "@parameters('country')"
+            "x-country": "@parameters('country')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
             "subjectId": "@triggerBody()?['subjectId']",
             "country": "@parameters('country')"
           }
         },
-        "runAfter": { "Create_audit_record": ["Succeeded"] }
+        "runAfter": {
+          "Create_audit_record": [
+            "Succeeded"
+          ]
+        }
       },
       "Erase_Dataverse_records": {
         "type": "Http",
@@ -95,7 +173,9 @@
           "uri": "@parameters('d365EraseEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
             "subjectId": "@triggerBody()?['subjectId']",
@@ -103,7 +183,11 @@
             "mode": "tombstone-pseudonymise"
           }
         },
-        "runAfter": { "Check_retention_holds": ["Succeeded"] }
+        "runAfter": {
+          "Check_retention_holds": [
+            "Succeeded"
+          ]
+        }
       },
       "Erase_Fabric_records": {
         "type": "Http",
@@ -112,14 +196,20 @@
           "uri": "@parameters('fabricEraseEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
             "subjectId": "@triggerBody()?['subjectId']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
-        "runAfter": { "Erase_Dataverse_records": ["Succeeded"] }
+        "runAfter": {
+          "Erase_Dataverse_records": [
+            "Succeeded"
+          ]
+        }
       },
       "Erase_Blob_documents": {
         "type": "Http",
@@ -128,29 +218,66 @@
           "uri": "@parameters('blobEraseEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
             "subjectId": "@triggerBody()?['subjectId']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
-        "runAfter": { "Erase_Fabric_records": ["Succeeded"] }
+        "runAfter": {
+          "Erase_Fabric_records": [
+            "Succeeded"
+          ]
+        }
       },
-      "Erase_Cosmos_conversations": {
+      "delete-from-postgres-drafts": {
+        "_comment": "Placeholder technical erasure for subject draft/session data. Deletes PostgreSQL draft/application rows unless blocked by statutory archive holds.",
         "type": "Http",
         "inputs": {
           "method": "POST",
-          "uri": "@parameters('cosmosConversationEraseEndpoint')",
+          "uri": "@parameters('postgresDraftEraseEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']"
+            "subjectId": "@triggerBody()?['subjectId']",
+            "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
-        "runAfter": { "Erase_Blob_documents": ["Succeeded"] }
+        "runAfter": {
+          "Erase_Blob_documents": [
+            "Succeeded"
+          ]
+        }
+      },
+      "flush-redis-session": {
+        "_comment": "Placeholder technical erasure for Redis session/conversation cache associated with the DSR subject.",
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('redisSessionFlushEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
+          },
+          "body": {
+            "subjectId": "@triggerBody()?['subjectId']",
+            "mode": "flush-subject-session"
+          }
+        },
+        "runAfter": {
+          "delete-from-postgres-drafts": [
+            "Succeeded"
+          ]
+        }
       },
       "Pseudonymise_AppInsights_traces": {
         "_comment": "AI Act Art. 26(6) requires logs >= 6 months. We do not delete AI traces; we pseudonymise the subject id inside them so the citizen is no longer identifiable while the log retention obligation continues to be met.",
@@ -160,30 +287,58 @@
           "uri": "@parameters('appInsightsTraceEraseEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
             "subjectId": "@triggerBody()?['subjectId']",
             "mode": "pseudonymise-only"
           }
         },
-        "runAfter": { "Erase_Cosmos_conversations": ["Succeeded"] }
+        "runAfter": {
+          "flush-redis-session": [
+            "Succeeded"
+          ]
+        }
       },
-      "Notify_citizen": {
-        "type": "Http",
-        "inputs": {
-          "method": "POST",
-          "uri": "@parameters('citizenNotificationEndpoint')",
-          "headers": {
-            "traceparent": "@outputs('Ensure_traceparent')"
-          },
-          "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
-            "outcome": "@if(empty(body('Check_retention_holds')?['holds']), 'completed', 'completed-with-archive-holds')",
-            "retentionHolds": "@body('Check_retention_holds')?['holds']"
+      "Legacy_notify_citizen_if_needed": {
+        "_comment": "Legacy citizen notifications run only when Priva did not delegate the request. Priva-owned requests use Priva communications and evidence packs.",
+        "type": "If",
+        "expression": {
+          "equals": [
+            "@outputs('Check-Priva-Owns-Request')?['isPrivaDelegated']",
+            false
+          ]
+        },
+        "actions": {
+          "Notify_citizen": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('citizenNotificationEndpoint')",
+              "headers": {
+                "traceparent": "@outputs('Ensure_traceparent')",
+                "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+                "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
+              },
+              "body": {
+                "subjectId": "@triggerBody()?['subjectId']",
+                "outcome": "@if(empty(body('Check_retention_holds')?['holds']), 'completed', 'completed-with-archive-holds')",
+                "retentionHolds": "@body('Check_retention_holds')?['holds']"
+              }
+            },
+            "runAfter": {}
           }
         },
-        "runAfter": { "Pseudonymise_AppInsights_traces": ["Succeeded"] }
+        "else": {
+          "actions": {}
+        },
+        "runAfter": {
+          "Pseudonymise_AppInsights_traces": [
+            "Succeeded"
+          ]
+        }
       },
       "Publish_erasure_completed": {
         "type": "Http",
@@ -192,7 +347,9 @@
           "uri": "@parameters('purviewLineageTopicEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "aeg-event-type": "Notification"
+            "aeg-event-type": "Notification",
+            "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+            "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": [
             {
@@ -201,16 +358,30 @@
               "data": {
                 "traceparent": "@outputs('Ensure_traceparent')",
                 "subjectId": "@triggerBody()?['subjectId']",
-                "scopesErased": ["dataverse", "fabric", "blob", "cosmos"],
-                "scopesPseudonymised": ["appinsights"],
+                "scopesErased": [
+                  "dataverse",
+                  "fabric",
+                  "blob",
+                  "postgres",
+                  "redis"
+                ],
+                "scopesPseudonymised": [
+                  "appinsights"
+                ],
                 "retentionHoldsApplied": "@body('Check_retention_holds')?['holds']",
-                "purviewLineage": true
+                "purviewLineage": true,
+                "privaRequestId": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
+                "processingRole": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
               },
               "dataVersion": "1.0"
             }
           ]
         },
-        "runAfter": { "Notify_citizen": ["Succeeded"] }
+        "runAfter": {
+          "Legacy_notify_citizen_if_needed": [
+            "Succeeded"
+          ]
+        }
       }
     },
     "outputs": {}

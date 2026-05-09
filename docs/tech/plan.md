@@ -4,6 +4,8 @@
 
 > **Build status (as of last commit): all 17 work packages delivered.** See [`agents.md`](./agents.md) for the execution log (durations, models, file counts, parallelism factor). Component scaffolds live under `infra/`, `apps/`, `services/`, `foundry/`, `data/`, `governance/`, `tests/`. The orchestrator-owned installer lives under `scripts/install/`. Every component ships its own `Test-*` script — see [`installation.md`](./installation.md) §5.
 
+> **🔁 Post-audit refactor (May 2026).** This plan describes the original 17-WP build. The platform was subsequently refactored — see [`plan_post_audit.md`](./plan_post_audit.md) for the full diff. Headline changes touched **A11** (Copilot Studio is now the **Foundry `topic-router` agent** owned by A6, files moved from `apps/copilot-studio/` to `foundry/agents/topic-router/`) and added new infra under A1/A2/A3 (Postgres + Redis, Verified ID, Bastion, CIEM, Confidential Ledger, Confidential Compute, Defender for APIs, DDoS Std, Backup+ASR, Chaos Studio, Priva). The installer (A16) now runs **24 phases** instead of 15.
+
 ---
 
 ## Table of Contents
@@ -50,8 +52,8 @@ Each profile defines **role, skills, owned areas, primary outputs, and PR review
 | **A7** | **Integration & Workflow** | API Management gateway + products + policies, Logic Apps Standard workspaces, Service Bus, Event Grid, partner connectors. | `services/apim/*`, `services/logic-apps/*`, contract registry. |
 | **A8** | **Case Management (D365)** | D365 Customer Service environments per country, BPF, queues, SLAs, Copilot for Service config, Dataverse-to-Fabric mirroring, Power Automate flows. | `apps/d365/*` (solutions), Power Automate flows. |
 | **A9** | **Web & Mobile Frontend** | Citizen web portals (Static Web Apps), accessible design system, mobile shell, embedded chat widget, OIDC client integration. | `apps/web/*`, `apps/mobile/*`, design system package. |
-| **A10** | **Voice & Channels** | Azure Communication Services telephony, IVR flow, AI Speech (STT/TTS), SMS/email transactional, Copilot Studio voice channel. | `apps/voice/*`, ACS resources, IVR dialogs. |
-| **A11** | **Conversational AI (Copilot Studio)** | Copilot Studio agents, topics in 12 languages, Foundry agent invocation, knowledge sources, escalation to D365. | `apps/copilot-studio/*`, topic packs. |
+| **A10** | **Voice & Channels** | Azure Communication Services telephony, IVR flow, AI Speech (STT/TTS), SMS/email transactional, voice channel routed to the Foundry `topic-router`. *(Post-audit: voice no longer terminates in Copilot Studio.)* | `apps/voice/*`, ACS resources, IVR dialogs. |
+| **A11** | **Conversational AI (Foundry `topic-router`)** *(post-audit refactor)* | The single multilingual conversational agent: 12-language topics, slot-filling state in Redis, downstream Foundry-agent invocation, knowledge sources, escalation to D365. *(Originally Copilot Studio under `apps/copilot-studio/` — now folded into Foundry under `foundry/agents/topic-router/`.)* | `foundry/agents/topic-router/*`, topic packs. |
 | **A12** | **Accessibility & Localization** | WCAG 2.1 AA tooling (axe in CI, manual audits), 12-language translation pipeline, ICU message format, accessibility statements. | `apps/web/i18n/*`, accessibility audit reports, CI gates. |
 | **A13** | **Data Governance (Purview)** | Unified Catalog, sensitivity labels, classifications, lineage, DLP, data-sharing policies per country, AI asset registry. | `governance/purview/*`, policy packs. |
 | **A14** | **QA & Evaluation** | E2E test suites, performance/load tests, Foundry eval pipelines, accessibility audits, security scans, conformance tests. | `tests/*`, evaluation datasets, audit reports. |
@@ -250,7 +252,7 @@ graph LR
     classDef gate fill:#ECEFF1,stroke:#455A64,color:#263238
 ```
 
-**Exit gate (W2 → W3):** Foundry agents callable through APIM, D365 environments accept cases, web portal authenticates and submits to APIM, voice channel reaches Copilot Studio.
+**Exit gate (W2 → W3):** Foundry agents callable through APIM, D365 environments accept cases, web portal authenticates and submits to APIM, voice channel reaches the Foundry `topic-router` *(post-audit; previously Copilot Studio)*.
 
 ### Wave 3 — Intelligence & Inclusivity (parallel)
 
@@ -318,7 +320,7 @@ Each work package below is sized to be implemented by **one agent in one or a fe
 | A8  | `agent-services`           | ✅ scaffolded |  26 | `pwsh apps/d365/scripts/Test-D365.ps1` |
 | A9  | `agent-frontend`           | ✅ scaffolded |  ~75 | `npm run test --prefix apps/web` |
 | A10 | `agent-frontend`           | ✅ scaffolded |  ~33 | `pwsh apps/voice/scripts/Test-Voice.ps1` |
-| A11 | `agent-foundry`            | ✅ scaffolded |  ~13 | `pwsh apps/copilot-studio/scripts/Import-CopilotStudio.ps1` |
+| A11 | `agent-foundry`            | ✅ scaffolded |  ~13 | `pwsh foundry/agents/topic-router/scripts/Test-TopicRouter.ps1` *(post-audit; previously `apps/copilot-studio/scripts/Import-CopilotStudio.ps1`)* |
 | A12 | `agent-foundry` + `agent-qa` | ✅ scaffolded |  ~25 | `pwsh apps/web/i18n/scripts/Validate-Translations.ps1` + `pwsh tests/accessibility/scripts/Run-Accessibility.ps1` |
 | A13 | `agent-data-gov`           | ✅ scaffolded |  35 | `pwsh governance/purview/scripts/Test-Purview.ps1 -Offline` + `pwsh governance/ai-act/scripts/Validate-AIRegistry.ps1` |
 | A14 | `agent-qa`                 | ✅ scaffolded |  89 | `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly` |
@@ -389,14 +391,14 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
 
 ### A10 · Voice & Channels
 - **Inputs:** A2, A7.
-- **Tasks:** Azure Communication Services resources per country; toll-free numbers; PSTN connectivity; AI Speech custom voice/lexicon if needed; IVR baseline; ACS-to-Copilot Studio voice channel; SMS / email transactional templates.
+- **Tasks:** Azure Communication Services resources per country; toll-free numbers; PSTN connectivity; AI Speech custom voice/lexicon if needed; IVR baseline; ACS-to-Foundry-`topic-router` voice channel *(post-audit; replaced Copilot Studio)*; SMS / email transactional templates.
 - **Outputs:** `apps/voice/*`, ACS IaC.
-- **Exit criteria:** A test call reaches the IVR, plays a greeting, and routes to the Copilot Studio agent placeholder.
+- **Exit criteria:** A test call reaches the IVR, plays a greeting, and routes to the Foundry `topic-router` agent placeholder.
 
-### A11 · Conversational AI (Copilot Studio)
+### A11 · Conversational AI (Foundry `topic-router`) *(post-audit refactor)*
 - **Inputs:** A6 (Foundry agents), A9 (web embed), A10 (voice channel), A8 (D365 escalation).
-- **Tasks:** Copilot Studio agent(s); topics in 12 languages; knowledge sources (SharePoint, Fabric KB shortcut, public sites); actions wired to Foundry agents; escalation hand-off to D365 Customer Service queues; consent banners.
-- **Outputs:** `apps/copilot-studio/*`.
+- **Tasks:** A single Foundry agent (`topic-router`) hosting all 12-language topics; slot-filling state in Azure Cache for Redis; knowledge sources (SharePoint, Fabric KB shortcut, public sites); actions wired to downstream Foundry agents (eligibility, doc-extractor, citizen-assistant, translator); escalation hand-off to D365 Customer Service queues; consent banners.
+- **Outputs:** `foundry/agents/topic-router/*` *(post-audit; previously `apps/copilot-studio/*`)*.
 - **Exit criteria:** End-to-end conversation works on web, mobile, and voice in all 12 languages with safe-completion guarantees from Content Safety.
 
 ### A12 · Accessibility & Localization
@@ -440,7 +442,7 @@ The full per-vertical breakdown of files and durations is in [`agents.md`](./age
   - **T3 — Bicep deployment orchestration** — sequenced `New-AzDeployment` / `New-AzResourceGroupDeployment` calls invoking the modules from A1–A5 and A7 in dependency order with idempotent retries and per-step diagnostics.
   - **T4 — Identity bootstrap** — invoke A2's External ID / Entra setup; register OIDC clients for A9 / A10 / A11; create service principals and managed identities for CI/CD and runtime.
   - **T5 — Data & AI provisioning** — Fabric workspaces, capacities and lakehouses (A4); Microsoft Foundry hubs / projects / agent imports / evaluations (A6); Purview accounts and scans (A13).
-  - **T6 — Application deployment** — Static Web Apps + mobile build artefacts + ACS resources + Copilot Studio solution import + D365 managed solutions import (A8 / A9 / A10 / A11) + accessibility & i18n bundles (A12).
+  - **T6 — Application deployment** — Static Web Apps + mobile build artefacts + ACS resources + Foundry `topic-router` solution import *(post-audit; replaced Copilot Studio import)* + D365 managed solutions import (A8 / A9 / A10 / A11) + accessibility & i18n bundles (A12).
   - **T7 — Synthetic data seeding** — optional `-SeedSyntheticData` flag invokes A15's regeneration pipelines to populate DEV with the DK / SE / NO persona library, applications, conversations and golden eval datasets.
   - **T8 — Validation & smoke tests** — post-deploy health checks per zone; trigger A14's smoke suite; emit a deployment report (HTML + JSON) into `scripts/install/reports/`.
   - **T9 — Tear-down counterpart** — `scripts/cleanup/Remove-UDCSP.ps1` reverses every step safely, including soft-delete-aware Key Vault / Purview / Foundry cleanup.

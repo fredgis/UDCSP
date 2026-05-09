@@ -1,12 +1,12 @@
 name: udcsp-citizen-assistant
-description: Plain-language citizen assistant exposed through Copilot Studio, web, mobile and voice.
+description: Focused plain-language KB Q&A skill invoked by the topic-router for citizen-facing answers.
 model: gpt-5.4
 systemPromptFile: system-prompt.md
 tools:
   - knowledge-search
-  - foundry-classifier
   - content-safety
-  - handoff-to-copilot-studio
+dependencies:
+  - topic-router
 temperature: 0.3
 maxTokens: 2400
 contentSafety:

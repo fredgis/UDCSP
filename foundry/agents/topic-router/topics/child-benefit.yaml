@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: child-benefit
+displayName: Child Benefit
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/child-benefit.yaml
+triggerPatterns:
+    - language: da
+      text: "child benefit (da)"
+    - language: sv
+      text: "child benefit (sv)"
+    - language: nb
+      text: "child benefit (nb)"
+    - language: nn
+      text: "child benefit (nn)"
+    - language: se
+      text: "child benefit (se)"
+    - language: en
+      text: "child benefit (en)"
+    - language: de
+      text: "child benefit (de)"
+    - language: fr
+      text: "child benefit (fr)"
+    - language: pl
+      text: "child benefit (pl)"
+    - language: ar
+      text: "child benefit (ar)"
+    - language: uk
+      text: "child benefit (uk)"
+    - language: fi
+      text: "child benefit (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, invoke_citizen_assistant]
+skillPrompt: >-
+  Provide general child benefit guidance via citizen-assistant; never decide entitlement; escalate decision requests.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies

@@ -1,11 +1,52 @@
 # UDCSP — EUDI-Wallet readiness
 
+## Status update — post-audit refactor
+
+> Current status: **active implementation supersedes the original readiness-only position**.
+> The historical readiness assessment below is retained for audit context, but UDCSP now
+> has a deployable Microsoft Entra Verified ID issuer/verifier scaffold in
+> [`infra/identity/verified-id/`](../../infra/identity/verified-id/).
+
+The active Verified ID implementation publishes three credential contracts:
+
+* [`udcsp-residency-credential.json`](../../infra/identity/verified-id/credential-contracts/udcsp-residency-credential.json) — cross-border residency assertion.
+* [`udcsp-eligibility-receipt.json`](../../infra/identity/verified-id/credential-contracts/udcsp-eligibility-receipt.json) — signed Eligibility Pre-Assessor recommendation receipt.
+* [`udcsp-eudi-wallet-bridge.json`](../../infra/identity/verified-id/credential-contracts/udcsp-eudi-wallet-bridge.json) — OpenID4VP `vp_token` bridge for EUDI Wallet interoperability.
+
+## Active implementation
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Citizen as Citizen EUDI Wallet
+    participant ExternalID as Country External ID Tenant
+    participant Issuer as UDCSP Verified ID Issuer
+    participant Verifier as UDCSP OpenID4VP Verifier
+    participant Router as Sovereignty Router
+
+    ExternalID->>Issuer: Request VC issuance after strong national IdP sign-in
+    Issuer-->>Citizen: Issue residency / eligibility / bridge credential
+    Citizen->>Verifier: Present OpenID4VP vp_token with selected disclosures
+    Verifier->>Verifier: Validate DID trust, holder binding, policy and expiry
+    Verifier->>Router: Forward derived subjectId, country and assurance level
+    Router-->>Citizen: Continue sovereign service journey
+```
+
+The verifier keeps the `vp_token` transient, stores only derived routing claims and
+uses presentation policies that match the three credential contracts. This moves the
+platform from "ready to accept wallets later" to a concrete issuer/verifier baseline
+that can be tested and promoted as national EUDI Wallet schemes become available.
+
 > Status: **forward-looking architecture statement**. EUDI-Wallet is the
 > Architecture-and-Reference-Framework (ARF) coming out of eIDAS-2
 > (Regulation (EU) 2024/1183). Member-state wallets will be live by 2026.
 > UDCSP is built so that, the day the Danish/Swedish/Norwegian wallets land,
 > the platform can accept them as a third strong-identity option **without
 > code changes** to the back-end services.
+
+> Superseded note: the following readiness content remains historically accurate
+> for the original target architecture, but it is now superseded by the active
+> implementation described above.
 
 ---
 

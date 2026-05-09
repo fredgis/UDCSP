@@ -1,0 +1,9 @@
+{
+  "name": "redis-session",
+  "type": "stateStore",
+  "endpoint": "${REDIS_SESSION_ENDPOINT}",
+  "auth": "managedIdentity",
+  "ttlSeconds": 86400,
+  "stores": ["locale", "channel", "topic", "slots", "transcriptSummary"],
+  "status": "placeholder"
+}

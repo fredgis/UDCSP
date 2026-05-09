@@ -1,0 +1,39 @@
+kind: FoundrySkillPrompt
+id: greeting
+displayName: Greeting
+source: apps/copilot-studio/agents/citizen-assistant-bot/topics/greeting.yaml
+triggerPatterns:
+    - language: da
+      text: "greeting (da)"
+    - language: sv
+      text: "greeting (sv)"
+    - language: nb
+      text: "greeting (nb)"
+    - language: nn
+      text: "greeting (nn)"
+    - language: se
+      text: "greeting (se)"
+    - language: en
+      text: "greeting (en)"
+    - language: de
+      text: "greeting (de)"
+    - language: fr
+      text: "greeting (fr)"
+    - language: pl
+      text: "greeting (pl)"
+    - language: ar
+      text: "greeting (ar)"
+    - language: uk
+      text: "greeting (uk)"
+    - language: fi
+      text: "greeting (fi)"
+slots:
+  include: slot-definitions.yaml
+route:
+  tools: [invoke_classifier, invoke_citizen_assistant]
+skillPrompt: >-
+  Greet the citizen in their locale, classify their need, and route to KB Q&A or the next slot-filling question.
+responseContract:
+  response: localized citizen-facing text
+  nextAction: route, ask_slot, answer, upload_document, pre_assess, or escalate
+  escalationReason: null unless escalation-rules.json applies
