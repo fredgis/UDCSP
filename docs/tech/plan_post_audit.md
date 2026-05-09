@@ -116,8 +116,8 @@ Nouveaux phases ajoutées au `Install-UDCSP.ps1` (voir tableau §4 du plan origi
 ## 5. Critères de "done"
 
 - [x] Watermark git créé : `pre-post-audit-refactor-2026-05-09`
-- [ ] Toutes les SA-1 à SA-7 ont rendu (status ✅)
-- [ ] DAG installer cohérent (`Install-UDCSP.ps1 -TestOnly` passe)
+- [x] Toutes les SA-1 à SA-7 ont rendu (status ✅)
+- [x] DAG installer cohérent (`Install-UDCSP.ps1 -TestOnly` passe)
 - [ ] `markdown-link-check` propre sur tous les .md modifiés
 - [ ] README.md final propre avec paragraphe "Recommandations futures non implémentées" en bas
 - [ ] `agents.md` enrichi du run post-audit avec cumul wall-clock + sequential equivalent
