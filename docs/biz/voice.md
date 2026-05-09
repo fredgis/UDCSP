@@ -8,7 +8,7 @@
 
 [![Channel](https://img.shields.io/badge/📞_Channel-Telephone_PSTN-1565C0?style=for-the-badge)](#)
 [![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_topic--router-FF6F00?style=for-the-badge)](#)
-[![Languages](https://img.shields.io/badge/🗣️_Languages-12_·_neural_voices-AD1457?style=for-the-badge)](#)
+[![Languages](https://img.shields.io/badge/🗣️_Voices-6_neural_·_12_disclosure_scripts-AD1457?style=for-the-badge)](#)
 [![Latency](https://img.shields.io/badge/⚡_p95-≤_2_s_round_trip-2E7D32?style=for-the-badge)](#)
 
 [![Accessibility](https://img.shields.io/badge/♿_DTMF_+_slow_speech-Always_on-5E35B1?style=flat-square)](#)
@@ -44,10 +44,11 @@
 8. [SLOs, risks, and mitigations](#8-slos-risks-and-mitigations)
 9. [📞 Getting a real phone number you can actually call](#9--getting-a-real-phone-number-you-can-actually-call)
 10. [The activation runbook](#10-the-activation-runbook)
-11. [How to test it (three levels)](#11-how-to-test-it-three-levels)
-12. [The demo script for a jury](#12-the-demo-script-for-a-jury)
-13. [Anti-patterns we avoid](#13-anti-patterns-we-avoid)
-14. [Where the conversation is stored](#14-where-the-conversation-is-stored)
+11. [🧱 Voice runtime — readiness vs scaffold (what's actually runnable today)](#11--voice-runtime--readiness-vs-scaffold-whats-actually-runnable-today)
+12. [How to test it (three levels)](#12-how-to-test-it-three-levels)
+13. [The demo script for a jury](#13-the-demo-script-for-a-jury)
+14. [Anti-patterns we avoid](#14-anti-patterns-we-avoid)
+15. [Where the conversation is stored](#15-where-the-conversation-is-stored)
 
 ---
 
@@ -349,7 +350,7 @@ bindings:
   - country: no
     phoneNumber: "+47 800 12 345"     # the actual Nkom-approved toll-free
     acsResource: "udcsp-no-acs"
-    copilotStudioBot: "citizen-assistant-bot-no"
+    topicRouterAgent: "topic-router"          # Foundry agent, post-audit replacement of the Copilot Studio bot
     voiceFont: "nb-NO-PernilleNeural"
 ```
 
@@ -390,7 +391,69 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 
 ---
 
-## 11. How to test it (three levels)
+## 11. 🧱 Voice runtime — readiness vs scaffold (what's actually runnable today)
+
+> [!IMPORTANT]
+> **Honesty first.** This section is the canonical answer to the question *"if a real human dials a real phone number today, will they have a back-and-forth conversation with the Foundry agent?"* — **No, not end-to-end yet.** The voice channel is **declarative scaffolding**: the architecture, the IVR dialogs, the ACS resource, the Speech account, the recording-disclosure scripts, the SMS templates, and the procurement playbook are all in source. **The runtime that bridges an inbound PSTN call to the Foundry topic-router is not.** The list below is the explicit gap, so a reader knows exactly what's mocked, what's deployable, and what's missing.
+
+### 11.1 The two kinds of "voice" in this repo
+
+| Layer | Kind | Status today |
+|---|---|---|
+| **Architecture & spec** (this doc, the lifecycle diagram, the SLOs, the procurement playbook §9) | Documentation | ✅ Complete |
+| **Bicep modules** (`acs-resource.bicep`, `speech-config.bicep`) | Deployable IaC | ✅ Real, deployable against a real Azure subscription |
+| **PSTN number** (`phone-numbers.bicep`) | IaC scaffold | ⚠️ Captures *intent* only — the real number is issued by the regulator (DK ERST · SE PTS · NO Nkom), not by Bicep. Default `assignedNumber=""`, `status="pending-regulatory-approval"`. See §9. |
+| **IVR dialog YAMLs** (24 files: 6 langs × 4 dialogs) | Declarative content | ✅ Present, post-audit-clean (`kind: UDCSP.Voice.Dialog`) — but **no engine in the repo currently interprets them at runtime** |
+| **Recording disclosure** (`recording-disclosure.md`) | 12-language script | ✅ Real, ready to be played at call-pickup once the runtime exists |
+| **Escalation policy** (`escalation-config.yaml`) | Declarative routing | ✅ Real config — but **no code reads it** today |
+| **Transcript pipeline** (`logic-app-transcription.json`) | **Spec, not workflow** | ❌ This file is a **descriptive blueprint** (steps in plain English, placeholders for endpoints), not a deployable Logic App workflow. The `$schema`, `triggers`, `actions` of a real Logic App are not there. |
+| **Call Automation handler** (the service that subscribes to ACS Event Grid `Microsoft.Communication.IncomingCall`, calls `AnswerCall`, streams audio bidirectionally to AI Speech, posts to APIM `/agents/topic-router`, plays back TTS, and warm-transfers on escalation) | **Missing** | ❌ Not in the repo. No Function App, no Container App, no Bot Framework adapter. |
+| **APIM voice ingress** (`/agents/topic-router/voice/messages` with `actor=voice` JWT claim enforcement) | **Missing** | ❌ APIM has `/agents/topic-router` for chat (web/mobile) but no voice-specific shape today |
+| **`Test-Voice.ps1`** | **Stub** | ⚠️ Asserts a hard-coded transcript string. Does **not** exercise any real call path. Tagged "Replace with ACS test-call API once provisioned" inside the script. |
+| **`Deploy-Voice.ps1`** | **Stub** | ⚠️ `Write-Host`s the `az deployment` command; does not execute it. |
+| **E2E test** (`tests/e2e/tests/scenario-02-lars-no-voice.spec.ts`) | Playwright simulation | ⚠️ Hits an HTTP demo endpoint `/gateway/demo-scenarios/d2`, **not** a real call. The endpoint itself is also a placeholder. |
+
+### 11.2 What a real PSTN call → AI agent conversation requires (the closure list)
+
+To go from "scaffold" to "a citizen dials and talks to the agent", the following pieces must be added — none of them are speculative; each maps to a concrete Microsoft SDK or service:
+
+1. **A Call Automation handler** — Azure Function App or Container App in Node/.NET that:
+   - Subscribes to ACS Event Grid `Microsoft.Communication.IncomingCall` events.
+   - Calls `CallAutomationClient.AnswerCallAsync` with the `incomingCallContext`.
+   - Starts `MediaStreamingOptions` to push audio frames to an Azure AI Speech **streaming STT** session in real time.
+   - For each STT partial/final transcript chunk, POSTs to APIM `/agents/topic-router/messages` with `actor=voice`, `traceparent`, `locale`.
+   - Receives the topic-router response; calls `CallMedia.PlayAsync(TextSource)` for streaming TTS playback over the call leg.
+   - On escalation verdict, calls `CallMedia.TransferCallToParticipantAsync` to the D365 caseworker queue.
+   - Pushes redacted transcript metadata to ADLS Gen2 `voice-recordings/` and anchors a hash in Confidential Ledger.
+2. **Bicep for the Call Automation handler** — Function App / Container App, the Event Grid subscription wiring `IncomingCall` to the handler's HTTPS endpoint, App Insights wiring.
+3. **APIM voice route** — `/agents/topic-router/voice/messages` policy that asserts `actor=voice` in the JWT, enforces the voice-channel rate limit, and propagates `callCorrelationId` into the Foundry trace.
+4. **Migration of the 24 IVR YAMLs to a runtime schema** — either consumed directly by the Call Automation handler, or transformed into Bot Framework dialogs, or merged into `foundry/agents/topic-router/topics/voice-*.yaml`. Today the YAMLs are content with no interpreter.
+5. **A real Logic App** for the transcript-persistence pipeline — replace `logic-app-transcription.json` (the blueprint) with an actual `workflow.json` that has `$schema`, `triggers`, `actions`, deployable as `Microsoft.Logic/workflows`.
+6. **The remaining 6 Speech voice fonts** (Norwegian Nynorsk, Sámi, French, Polish, Ukrainian, Finnish) added to `voice-fonts.json` — they exist today only as fallback to the 6 scaffolded fonts.
+7. **A real PSTN number** — the manual regulatory pack documented in §9 (1–3 weeks for DK/SE/NO toll-free).
+
+### 11.3 What you *can* demo today
+
+| Demo | Path | What it actually exercises |
+|---|---|---|
+| 🚦 **Smoke test** | `pwsh apps/voice/scripts/Test-Voice.ps1` | A Pester-style string assertion against a hard-coded transcript. Proves the prompts file is well-formed. **Does not** exercise ACS, Speech, or the agent. |
+| 🧪 **Playwright simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | A web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. **Does not** touch ACS or Speech. |
+| 🌐 **Chat as voice's surrogate** | The `ChatWidget.tsx` → APIM `/agents/topic-router` path is fully real and uses the **same Foundry brain** that voice would use. So the *intent classification + agent reply + escalation* part of the journey is provably end-to-end via chat. | Same backend, different ingress (text instead of audio). |
+
+### 11.4 The two things to do, in order, to close the gap
+
+> [!TIP]
+> **Phase A — minimum viable demo (browser audio, no PSTN, ~1 day of work).** Add an `apps/web/src/pages/demo-voice.tsx` page that embeds the **ACS Web SDK** to capture browser microphone audio, sends frames to AI Speech streaming STT, posts transcripts to APIM `/agents/topic-router`, and plays back TTS. **No phone number, no Call Automation handler, no regulator.** This is what `voice.md §9.3` table row 3 ("ACS direct calling — no PSTN") and `§12 demo script` already point at. **It is documented as the recommended jury demo path** — it just isn't implemented yet.
+>
+> **Phase B — real PSTN ingress (~1 week of code + 1–3 weeks regulator).** Add the Call Automation handler service (item 1 above), its Bicep and Event Grid wiring, the APIM voice route, and submit the regulatory pack via §9.
+
+### 11.5 The single source of truth
+
+This `apps/voice/` tree is the contract. Anything not listed in §11.1 as ✅ is **not** a regression of a previously-working feature — it is a **declared scaffold** that was always meant to be implemented in a follow-up phase. The post-audit refactor (which removed Copilot Studio and consolidated everything onto Foundry) cleaned up the dialog descriptors but did not add the missing runtime; the runtime gap is recorded here so a reader knows what they are buying into.
+
+---
+
+## 12. How to test it (three levels)
 
 | Level | Command | What it proves | Lead time |
 |---|---|---|---|
@@ -400,7 +463,7 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 
 ---
 
-## 12. The demo script for a jury
+## 13. The demo script for a jury
 
 5 minutes, no setup beyond the deployed platform:
 
@@ -419,7 +482,7 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 
 ---
 
-## 13. Anti-patterns we avoid
+## 14. Anti-patterns we avoid
 
 | ❌ Anti-pattern | ✅ What we do instead |
 |---|---|
@@ -434,7 +497,7 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 
 ---
 
-## 14. Where the conversation is stored
+## 15. Where the conversation is stored
 
 Voice writes both media and dialog records: raw `.wav` plus STT JSON go to the per-country `voice-recordings/` store, while the Foundry `topic-router` conversation is retained as the canonical dialog transcript in Dataverse. ACS lifecycle events and Foundry traces stay in Zone 3 so audits can correlate call, transcript, and AI invocation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 

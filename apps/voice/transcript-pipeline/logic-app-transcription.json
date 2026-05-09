@@ -1,21 +1,23 @@
 {
+  "$comment": "Descriptive specification — NOT a deployable Logic App workflow. The runtime that consumes ACS Event Grid IncomingCall events, drives Call Automation, and brokers STT↔topic-router↔TTS does not yet exist in this repo (see apps/voice/README.md § Voice runtime readiness and docs/biz/voice.md § 11.5). This file is the blueprint that the future Function App / Logic App must implement.",
   "name": "udcsp-live-transcription-route",
-  "trigger": "ACS call connected event",
+  "trigger": "ACS call connected event (Microsoft.Communication.IncomingCall via Event Grid)",
   "steps": [
     "Stream call audio to Azure AI Speech STT",
     "Attach traceparent/callCorrelationId",
-    "Send transcript chunks to Foundry classifier endpoint placeholder",
-    "Route to Copilot Studio dialog by intent/language",
-    "Escalate to D365 human agent when escalation policy matches",
-    "Persist redacted transcript metadata for audit"
+    "Send transcript chunks to Foundry topic-router via APIM /agents/topic-router/messages",
+    "Route to the Foundry topic-router agent by intent/language (post-audit: replaces the previous Copilot Studio dialog)",
+    "Escalate to D365 human agent when escalation policy matches (apps/voice/escalation/escalation-config.yaml)",
+    "Persist redacted transcript metadata for audit (ADLS Gen2 voice-recordings/, anchored in Confidential Ledger)"
   ],
   "outputs": {
-    "dialogRoute": "copilotStudio.topicId",
+    "dialogRoute": "foundry.topicRouterTopicId",
     "humanQueue": "d365.queueId"
   },
   "placeholders": [
-    "FOUNDRY_CLASSIFIER_ENDPOINT",
-    "COPILOT_STUDIO_VOICE_ENDPOINT",
-    "D365_OMNICHANNEL_QUEUE_ID"
+    "APIM_BASE_URL",
+    "FOUNDRY_TOPIC_ROUTER_ENDPOINT",
+    "D365_OMNICHANNEL_QUEUE_ID",
+    "ACS_RESOURCE_NAME_PER_COUNTRY"
   ]
 }

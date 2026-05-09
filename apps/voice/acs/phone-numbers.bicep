@@ -51,7 +51,7 @@ var phoneNumberConfig = {
   assignedNumber:   assignedNumber
   status:           empty(assignedNumber) ? 'pending-regulatory-approval' : 'assigned'
   recordingDisclosurePath: '../recording-consent/recording-disclosure.md'
-  ivrEntryPath:     '../ivr/${country == 'dk' ? 'da' : country == 'se' ? 'sv' : 'nb'}/main-menu.yaml'
+  ivrEntryPath:     '../ivr/${country == 'dk' ? 'da' : country == 'se' ? 'sv' : 'nb'}/welcome.yaml'
 }
 
 output phoneNumberConfig object = phoneNumberConfig
@@ -59,7 +59,7 @@ output procurementChecklist array = [
   'Submit ACS regulatory documentation pack for ${country} via the Azure portal (Communication Services > Phone numbers > Get).'
   'Provide UDCSP entity proof (local registration), intended-use statement (regalian citizen-services voice channel), and a real address in ${country}.'
   'Once the request is approved, update the parameter file with assignedNumber and rerun this Bicep so the output flips to status = assigned.'
-  'Run apps/voice/scripts/Bind-AcsNumber.ps1 to bind the number to the ACS resource and to the country IVR entry point.'
+  'Append the new E.164 number to apps/voice/acs/phone-number-bindings.yaml (created at activation time, see docs/biz/voice.md §9.4); scripts/install/modules/Install-Voice.psm1 reads that file at install time to bind the number to the ACS resource and to the Foundry topic-router voice channel.'
   'Notify governance/purview/data-sources/ACS-PhoneNumbers.json with the new E.164 entry so Purview lineage picks it up.'
 ]
 

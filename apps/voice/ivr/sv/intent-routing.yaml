@@ -1,4 +1,4 @@
-kind: Microsoft.CopilotStudio.VoiceDialog
+kind: UDCSP.Voice.Dialog
 version: 1
 locale: sv
 id: intent-routing
