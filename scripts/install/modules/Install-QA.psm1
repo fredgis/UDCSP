@@ -1,17 +1,18 @@
 <#
 .SYNOPSIS
-    Install-QA (A14) — Wire CI eval/E2E/security/conformance pipelines,
-    run smoke gate, optionally produce evaluator HTML report.
+    Install-QA — Validates the cross-cutting CI smoke artefacts are in
+    place. The actual smoke tests run via -SmokeOnly (orchestrator path).
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-QA {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $workflows = Get-ChildItem (Join-Path $repo 'tests') -Recurse -Filter '*.yml' -ErrorAction SilentlyContinue |
-                 Where-Object { $_.FullName -match '\.github\\workflows\\' }
-    foreach ($w in $workflows) {
-        Write-Host "  → CI workflow registered: $($w.Name)"
-    }
+    $logFile = Join-Path $ReportDir 'install-qa.log'
+    $workflows = Get-ChildItem (Join-Path $repo '.github\workflows') -Filter '*.yml' -ErrorAction SilentlyContinue
+    Write-Log -LogFile $logFile -Message "[ci] $($workflows.Count) workflow(s) registered under .github/workflows"
+    foreach ($w in $workflows) { Write-Log -LogFile $logFile -Message "[ci] $($w.Name)" }
 }
 
 function Test-QA {
@@ -26,7 +27,6 @@ function Test-QA {
     foreach ($s in $smokes) {
         $p = Join-Path $repo $s
         if (-not (Test-Path $p)) { throw "Missing smoke artefact: $s" }
-        Write-Host "  ✓ smoke: $s"
     }
     "{`"phase`":`"QA`",`"smokes`":$($smokes.Count)}" | Set-Content (Join-Path $ReportDir 'test-qa.json')
 }

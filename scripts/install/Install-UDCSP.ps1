@@ -24,6 +24,11 @@
     Removed (post-audit refactor 2026-05-09): CopilotStudio (absorbed into
     Foundry topic-router agent).
 
+.PARAMETER ExcludePhase
+    Phases to exclude from the run. Useful for the documented two-pass install
+    workflow (first pass with `-ExcludePhase Voice,QA`, then a second pass
+    after the Voice config is harvested).
+
 .PARAMETER WhatIf
     Plans every Bicep/REST deployment without applying changes.
 
@@ -66,6 +71,13 @@ param(
                  'Apps','Voice','Purview','Priva','QA')]
     [string[]]$Phase,
 
+    [ValidateSet('LandingZone','Identity','VerifiedId','Bastion','Ciem',
+                 'Security','Ddos','BackupAsr','ConfidentialLedger','ChaosStudio',
+                 'Observability','Fabric','Postgres','Redis','SyntheticData',
+                 'Foundry','ConfidentialCompute','Apim','LogicApps','D365',
+                 'Apps','Voice','Purview','Priva','QA')]
+    [string[]]$ExcludePhase,
+
     [switch]$TestOnly,
     [switch]$SmokeOnly,
     [switch]$EvaluatorMode,
@@ -80,7 +92,10 @@ Set-StrictMode -Version Latest
 # ---------------------------------------------------------------------------
 $Script:RepoRoot       = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Script:ModulesPath    = Join-Path $PSScriptRoot 'modules'
+$Script:LibPath        = Join-Path $PSScriptRoot 'lib\InstallHelpers.psm1'
 $Script:ConfigPath     = Join-Path $PSScriptRoot 'config\udcsp.config.psd1'
+
+if (Test-Path $Script:LibPath) { Import-Module $Script:LibPath -Force -DisableNameChecking }
 $Script:RunStamp       = (Get-Date -Format 'yyyyMMdd-HHmmss')
 $Script:ReportDir      = Join-Path $PSScriptRoot "reports\$RunStamp"
 New-Item -Path $ReportDir -ItemType Directory -Force | Out-Null
@@ -266,8 +281,27 @@ if ($Environment -eq 'prod' -and -not $Force -and -not $WhatIfPreference -and -n
 
 $config = Import-Config
 $phases = Resolve-Phases $Phase
+if ($ExcludePhase) {
+    $phases = $phases | Where-Object { $_ -notin $ExcludePhase }
+    Write-StepInfo "Excluding phases: $($ExcludePhase -join ', ')"
+}
 
 Write-StepInfo "Phases to run (in dependency order): $($phases -join ', ')"
+
+# ---------------------------------------------------------------------------
+# Pre-flight — when running a real install (not -TestOnly, not -SmokeOnly,
+# not -WhatIf), require az CLI + login. We only need to check once at the
+# top; helpers in modules will fail fast if anything has been logged out
+# mid-flight.
+# ---------------------------------------------------------------------------
+if (-not $TestOnly -and -not $SmokeOnly -and -not $WhatIfPreference) {
+    if (Get-Command Assert-AzReady -ErrorAction SilentlyContinue) {
+        $acct = Assert-AzReady
+        Write-StepOk "Azure CLI logged in as '$($acct.user.name)' on tenant '$($acct.tenantId)' (default sub '$($acct.name)')."
+    } else {
+        Write-StepWarn "InstallHelpers.psm1 not loaded — phases will not perform real Azure deployments."
+    }
+}
 
 try {
     foreach ($p in $phases) { Invoke-Phase -Name $p -Config $config }

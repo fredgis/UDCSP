@@ -1,27 +1,43 @@
 <#
 .SYNOPSIS
-    Install-Bastion — Azure Bastion (Standard SKU) one host per sovereign zone,
-    in each country VNet. Removes the need for jump boxes and public IPs on
-    admin endpoints. Post-audit refactor 2026-05-09.
+    Install-Bastion — Azure Bastion Standard, one host per sovereign zone.
+    Real Bicep deployment to udcsp-{country}-rg.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Bastion {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    foreach ($country in 'dk','se','no') {
-        $bicep = Join-Path $repo 'infra\identity\bastion\bastion.bicep'
-        if (-not (Test-Path $bicep)) { Write-Warning "Missing $bicep"; continue }
-        if ($PSCmdlet.ShouldProcess("bastion-$country", 'Deploy')) {
-            "[scaffold] az deployment group create --resource-group udcsp-$country-rg --template-file $bicep" |
-                Add-Content (Join-Path $ReportDir "install-bastion-$country.log")
+    $bicep = Join-Path $repo 'infra\identity\bastion\bastion.bicep'
+    $logFile = Join-Path $ReportDir 'install-bastion.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
+
+    foreach ($country in 'DK','SE','NO') {
+        $sub = $Config.Subscriptions[$country]
+        $region = $Config.Regions[$country]
+        $rg = "udcsp-$($country.ToLower())-rg"
+        if ($PSCmdlet.ShouldProcess("bastion-$country", 'az deployment group create')) {
+            Invoke-AzGroupDeployment `
+                -Subscription $sub `
+                -ResourceGroup $rg `
+                -Location $region `
+                -TemplateFile $bicep `
+                -LogFile $logFile `
+                -DeploymentName "udcsp-bastion-$($country.ToLower())" `
+                -Tags $Config.Tags `
+                -WhatIfFlag $whatIf
         }
     }
 }
+
 function Test-Bastion {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $script = Join-Path $repo 'infra\identity\bastion\scripts\Test-Bastion.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script -Offline" } else { Write-Warning "Missing $script" }
+    $bicep = Join-Path $repo 'infra\identity\bastion\bastion.bicep'
+    if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
     "{`"phase`":`"Bastion`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-bastion.json')
 }
+
 Export-ModuleMember -Function Install-Bastion, Test-Bastion

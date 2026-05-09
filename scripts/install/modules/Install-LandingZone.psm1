@@ -1,23 +1,34 @@
 <#
 .SYNOPSIS
-    Install-LandingZone (A1) — Bicep deployment of MG hierarchy, networking,
-    Key Vault, ACR, Storage per country.
+    Install-LandingZone — MG hierarchy, networking, Key Vault, ACR,
+    Storage per sovereign country zone. Real Bicep deployment.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-LandingZone {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
 
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $bicepRoot = Join-Path $repo 'infra\landing-zone'
+    $main = Join-Path $bicepRoot 'main.bicep'
+    $logFile = Join-Path $ReportDir 'install-landing-zone.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $main)) { throw "Missing $main" }
+
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
         $param = Join-Path $bicepRoot "parameters\$($country.ToLower()).bicepparam"
-        Write-Host "  → $country sub=$sub region=$region"
-        if ($PSCmdlet.ShouldProcess("$country landing zone", 'Bicep deploy')) {
-            # az deployment sub create --subscription $sub --location $region --template-file $bicepRoot\main.bicep --parameters $param
-            "[scaffold] az deployment sub create --subscription $sub --location $region --template-file $bicepRoot\main.bicep --parameters $param" |
-                Add-Content (Join-Path $ReportDir 'install-landing-zone.log')
+        if ($PSCmdlet.ShouldProcess("$country landing zone", 'az deployment sub create')) {
+            Invoke-AzSubDeployment `
+                -Subscription $sub `
+                -Location    $region `
+                -TemplateFile $main `
+                -ParametersFile $param `
+                -LogFile     $logFile `
+                -DeploymentName "udcsp-landing-zone-$($country.ToLower())" `
+                -WhatIfFlag  $whatIf
         }
     }
 }

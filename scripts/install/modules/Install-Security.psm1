@@ -1,22 +1,39 @@
 <#
 .SYNOPSIS
-    Install-Security (A3) — Defender for Cloud, Sentinel, Azure Policy,
-    DPIA artefacts.
+    Install-Security — Defender for Cloud, Defender for APIs, Sentinel,
+    Azure Policy. Real Bicep deployments per subscription.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Security {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $bicepRoot = Join-Path $repo 'infra\security'
-    foreach ($country in 'DK','SE','NO','SharedPlatform') {
-        $sub = $Config.Subscriptions[$country]
+    $defender = Join-Path $repo 'infra\security\defender\defender-for-cloud.bicep'
+    $sentinel = Join-Path $repo 'infra\security\sentinel\sentinel-workspace.bicep'
+    $logFile  = Join-Path $ReportDir 'install-security.log'
+    $whatIf   = [bool]$WhatIfPreference
+    foreach ($f in @($defender, $sentinel)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+
+    foreach ($scope in 'DK','SE','NO','SharedPlatform') {
+        $sub = $Config.Subscriptions[$scope]
         if (-not $sub) { continue }
-        Write-Host "  → defender + sentinel sub=$sub"
-        if ($PSCmdlet.ShouldProcess("$country security baseline", 'Bicep deploy')) {
-            "[scaffold] az deployment sub create --subscription $sub --template-file $bicepRoot\defender\defender-for-cloud.bicep" |
-                Add-Content (Join-Path $ReportDir 'install-security.log')
-            "[scaffold] az deployment sub create --subscription $sub --template-file $bicepRoot\sentinel\sentinel-workspace.bicep" |
-                Add-Content (Join-Path $ReportDir 'install-security.log')
+        $region = if ($scope -eq 'SharedPlatform') { $Config.Regions.Shared } else { $Config.Regions[$scope] }
+        if ($PSCmdlet.ShouldProcess("$scope defender", 'az deployment sub create')) {
+            Invoke-AzSubDeployment `
+                -Subscription $sub -Location $region `
+                -TemplateFile $defender `
+                -LogFile $logFile `
+                -DeploymentName "udcsp-defender-$($scope.ToLower())" `
+                -WhatIfFlag $whatIf
+        }
+        if ($PSCmdlet.ShouldProcess("$scope sentinel", 'az deployment sub create')) {
+            Invoke-AzSubDeployment `
+                -Subscription $sub -Location $region `
+                -TemplateFile $sentinel `
+                -LogFile $logFile `
+                -DeploymentName "udcsp-sentinel-$($scope.ToLower())" `
+                -WhatIfFlag $whatIf
         }
     }
 }
@@ -24,8 +41,6 @@ function Install-Security {
 function Test-Security {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    # DPIA artefacts moved from infra/security/dpia/ to governance/dpia/ (commit 736dc14)
-    # to align with docs/biz/ai.md §11 and EDPB Guidelines 04/2018 governance ownership.
     $required = @(
         'infra\security\defender\defender-for-cloud.bicep',
         'infra\security\sentinel\sentinel-workspace.bicep',

@@ -1,29 +1,42 @@
 <#
 .SYNOPSIS
     Install-ConfidentialCompute — Confidential Container Apps environment
-    (SEV-SNP) hosting the Eligibility Pre-Assessor inference orchestration
-    layer. TEE confidentiality of citizen PII during cross-border inference.
-    Post-audit refactor 2026-05-09.
+    (SEV-SNP) hosting the Eligibility Pre-Assessor TEE inference. Real
+    Bicep deployment.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-ConfidentialCompute {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $env  = Join-Path $repo 'infra\security\confidential-compute\confidential-compute.bicep'
-    $app  = Join-Path $repo 'infra\security\confidential-compute\eligibility-confidential-app.bicep'
-    foreach ($f in @($env, $app)) {
-        if (-not (Test-Path $f)) { Write-Warning "Missing $f"; continue }
-        if ($PSCmdlet.ShouldProcess(($f | Split-Path -Leaf), 'Deploy')) {
-            "[scaffold] az deployment sub create --template-file $f" |
-                Add-Content (Join-Path $ReportDir 'install-confidential-compute.log')
+    $env = Join-Path $repo 'infra\security\confidential-compute\confidential-compute.bicep'
+    $app = Join-Path $repo 'infra\security\confidential-compute\eligibility-confidential-app.bicep'
+    $logFile = Join-Path $ReportDir 'install-confidential-compute.log'
+    $whatIf = [bool]$WhatIfPreference
+    foreach ($f in @($env,$app)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+
+    foreach ($pair in @(@{name='env'; file=$env}, @{name='app'; file=$app})) {
+        if ($PSCmdlet.ShouldProcess("confidential-$($pair.name)", 'az deployment sub create')) {
+            Invoke-AzSubDeployment `
+                -Subscription $Config.Subscriptions.SharedPlatform `
+                -Location $Config.Regions.Shared `
+                -TemplateFile $pair.file `
+                -LogFile $logFile `
+                -DeploymentName "udcsp-conf-compute-$($pair.name)" `
+                -WhatIfFlag $whatIf
         }
     }
 }
+
 function Test-ConfidentialCompute {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $script = Join-Path $repo 'infra\security\confidential-compute\scripts\Test-ConfidentialCompute.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script -Offline" } else { Write-Warning "Missing $script" }
+    foreach ($f in @('infra\security\confidential-compute\confidential-compute.bicep',
+                     'infra\security\confidential-compute\eligibility-confidential-app.bicep')) {
+        if (-not (Test-Path (Join-Path $repo $f))) { throw "Missing $f" }
+    }
     "{`"phase`":`"ConfidentialCompute`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-confidential-compute.json')
 }
+
 Export-ModuleMember -Function Install-ConfidentialCompute, Test-ConfidentialCompute

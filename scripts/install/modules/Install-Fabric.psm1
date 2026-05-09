@@ -1,17 +1,27 @@
 <#
 .SYNOPSIS
-    Install-Fabric (A4) — Capacities, workspaces, lakehouses, notebooks,
-    semantic models, pipelines.
+    Install-Fabric — Capacities, workspaces, lakehouses, notebooks,
+    semantic models, pipelines. Calls data/fabric/scripts/Deploy-Fabric.ps1
+    per country (REST against the Fabric control plane API).
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Fabric {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $script = Join-Path $repo 'data\fabric\scripts\Deploy-Fabric.ps1'
+    $logFile = Join-Path $ReportDir 'install-fabric.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $script)) { throw "Missing $script" }
+
     foreach ($country in 'DK','SE','NO') {
-        if ($PSCmdlet.ShouldProcess("$country Fabric", 'Capacity + workspace + lakehouses + notebooks')) {
-            "[scaffold] & $script -Country $($country.ToLower())" |
-                Add-Content (Join-Path $ReportDir 'install-fabric.log')
+        if ($PSCmdlet.ShouldProcess("$country Fabric", 'Deploy-Fabric.ps1')) {
+            Invoke-NativeCommand `
+                -Command @('pwsh','-File',$script,'-Environment',$Config.Environment) `
+                -LogFile $logFile `
+                -WhatIfFlag $whatIf `
+                -ContinueOnError
         }
     }
 }

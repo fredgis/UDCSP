@@ -14,7 +14,7 @@ The remainder of this document is organised in the **exact order an operator goe
 3. [Prepare the Microsoft Cloud tenants](#3-prepare-the-microsoft-cloud-tenants)
 4. [Configure the install (`udcsp.config.psd1`)](#4-configure-the-install-udcspconfigpsd1)
 5. [Validate before deploying (`-TestOnly` then `-WhatIf`)](#5-validate-before-deploying)
-6. [First-pass install (every phase except `Voice`)](#6-first-pass-install-every-phase-except-voice)
+6. [First-pass install (every phase except `Voice` and `QA`)](#6-first-pass-install-every-phase-except-voice-and-qa)
 7. [Configure the `Voice` phase from first-pass outputs and re-run](#7-configure-the-voice-phase-from-first-pass-outputs-and-re-run)
 8. [Optional — bind a real PSTN number](#8-optional--bind-a-real-pstn-number)
 9. [Post-install validation (smoke + recipe)](#9-post-install-validation)
@@ -49,23 +49,43 @@ Each country sub gets its own landing zone, External ID tenant, Microsoft Fabric
 
 ## 2. Prepare the operator workstation
 
-| Tool | Minimum | Notes |
-|---|---|---|
-| PowerShell | 7.4+ | Required by the installer |
-| Azure CLI | 2.60+ | `az bicep upgrade` after install |
-| Az PowerShell | 12.x | `Install-Module Az -Scope CurrentUser` |
-| Microsoft.Graph PowerShell | 2.x | For Entra ID / Entra External ID automation |
-| Power Platform CLI (`pac`) | latest | D365 solution import |
-| Bicep | 0.27+ | Bundled by Azure CLI |
-| Node.js | 20 LTS | For frontend & i18n tooling |
-| Python | 3.11 | For synthetic-data generators |
-| Git | 2.43+ | Working copy of this repo |
+The installer module phases call real CLIs. The table below lists the **mandatory** tools (used by every install) and the **conditionally required** tools (used by specific phases — if a CLI is missing the module logs a clear `[skip]` line so the rest of the run continues, but the corresponding component will not be deployed).
 
-A single bootstrap script installs everything except Azure CLI and Power Platform CLI (those have their own MSIs):
+| Tool | Mandatory? | Used by | Install |
+|---|---|---|---|
+| PowerShell | ✅ Always | Orchestrator + every module | <https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell> |
+| Azure CLI (`az`) 2.60+ | ✅ Always | LandingZone, Bastion, CIEM, Security, DDoS, BackupAsr, ConfidentialLedger, ChaosStudio, Observability, Postgres, Redis, ConfidentialCompute, VerifiedId, Identity (Bicep parts), Apim, LogicApps (Bicep parts), Purview, Voice | <https://learn.microsoft.com/en-us/cli/azure/install-azure-cli> + `az bicep upgrade` |
+| `Microsoft.Graph` PowerShell SDK 2.x | ⚠️ For Graph phases | Identity (user flows / extensions / CA / PIM), VerifiedId (credential contracts), CIEM (policies), Priva (DSR policies) | `Install-Module Microsoft.Graph -Scope CurrentUser` then `Connect-MgGraph -Scopes "Application.ReadWrite.All Policy.ReadWrite.ConditionalAccess Policy.ReadWrite.PermissionGrant ..."` |
+| Power Platform CLI (`pac`) | ⚠️ For D365 | D365 (solution import) | <https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction> |
+| Node.js 20 LTS + `npm` | ⚠️ For Apps | Apps (web build, mobile build) | <https://nodejs.org> |
+| Static Web Apps CLI (`swa`) | ⚠️ For web deploy | Apps | `npm i -g @azure/static-web-apps-cli` |
+| Expo EAS CLI (`eas`) | ⚠️ For mobile build | Apps | `npm i -g eas-cli` |
+| Azure Functions Core Tools (`func`) v4 | ⚠️ For Logic Apps | LogicApps (workflow publish) | <https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local> |
+| Python 3.11 | ⚠️ For synthetic data | SyntheticData (generators) | <https://www.python.org/downloads/> |
+| Git 2.43+ | ✅ Always | Working copy of this repo | <https://git-scm.com> |
+
+A single bootstrap script installs everything except `az` and `pac` (those have their own MSIs):
 
 ```powershell
 pwsh ./scripts/dev/Bootstrap-DevEnv.ps1
 ```
+
+After the workstation is ready, log in to all required control planes:
+
+```powershell
+az login                                                # Azure
+az account set --subscription <SharedPlatform-sub-id>   # default sub for shared deployments
+Connect-MgGraph -Scopes "Application.ReadWrite.All",`
+                        "Policy.ReadWrite.ConditionalAccess",`
+                        "Policy.ReadWrite.PermissionGrant",`
+                        "User.ReadWrite.All",`
+                        "Directory.ReadWrite.All",`
+                        "VerifiableCredential.Create.All",`
+                        "PrivacyManagement.ReadWrite.All"
+pac auth create --environment https://udcspdk.crm4.dynamics.com   # repeat for SE / NO
+```
+
+> The installer pre-flights `az login` once at the top and refuses to start a real install if you are not authenticated. `pac` / `Connect-MgGraph` / `npm` / `swa` / `eas` / `func` are checked lazily by each module — if missing, that module emits a `[skip]` line and the rest of the run continues, so a partial install is always restartable with `-Phase <name>`.
 
 ---
 
@@ -177,23 +197,22 @@ Without `-Force`, an `-Environment prod` invocation prints a warning and exits w
 
 ---
 
-## 6. First-pass install (every phase except `Voice`)
+## 6. First-pass install (every phase except `Voice` and `QA`)
+
+> **What "deploy" means here.** Every Install-* module in `scripts/install/modules/` invokes the **real** Azure CLI / `pac` / `npm` / `swa` / `eas` / `func` / MS Graph commands needed to provision its component into the operator's tenant. There is no scaffold mode: when you run the command below you actually create resource groups, deploy Bicep, push container images, import D365 solutions, build the SPA, register Foundry agents, etc. Logs of every external command (with stdout, stderr and exit code) land in `scripts/install/reports/<runStamp>/install-<phase>.log` for traceability.
 
 The simplest and recommended path:
 
 ```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Environment dev
+pwsh ./scripts/install/Install-UDCSP.ps1 -Environment dev -ExcludePhase Voice,QA
 ```
 
-This runs every phase sequentially in dependency order, idempotent, with a coloured progress log and a JSON report under `scripts/install/reports/<timestamp>/`. The Voice phase will execute against placeholder config and report the missing fields without failing the rest of the run; you'll fix it in [§ 7](#7-configure-the-voice-phase-from-first-pass-outputs-and-re-run).
+This runs every phase **except `Voice` and `QA`** sequentially in dependency order, idempotent, with a coloured progress log and a JSON report under `scripts/install/reports/<timestamp>/`. We defer:
 
-If you prefer to stop just before Voice (so the missing fields are isolated in their own report):
+- **`Voice`** because its config block needs values produced by the earlier phases (Container Apps env IDs, KV secret URIs, App Insights connection strings, D365 queue GUIDs) — see [§ 7](#7-configure-the-voice-phase-from-first-pass-outputs-and-re-run).
+- **`QA`** because its smoke gate exercises the deployed Voice runtime — it can only be green after Voice is up.
 
-```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase D365 -Environment dev
-```
-
-Because the installer's DAG resolves prerequisites automatically, this single command runs **LandingZone → Identity → VerifiedId → … → D365** in order — every phase Voice depends on, plus everything D365 depends on.
+Once first-pass is green, you'll harvest the Voice config in [§ 7](#7-configure-the-voice-phase-from-first-pass-outputs-and-re-run), then run the second pass (`-Phase QA` — DAG resolution pulls in `Voice` and the smoke gate).
 
 ### 6.1 The 25 phases, in install order
 
@@ -270,13 +289,21 @@ Read `scripts/install/reports/<runStamp>/install-report.json` and the Azure port
 
 Open `scripts/install/config/udcsp.config.psd1` and replace the placeholders for at least one country.
 
-### 7.3 Re-run the Voice phase only
+### 7.3 Re-run the Voice phase
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
 ```
 
-The DAG check confirms Voice's prerequisites (`LogicApps`, `Foundry`) are already up; it skips them and only deploys the voice runtime + replays bindings from `apps/voice/acs/phone-number-bindings.yaml`.
+The DAG resolver re-includes Voice's prerequisites (`LogicApps`, `Foundry`, and their own deps) — every Bicep deploy is idempotent so this is safe and takes only seconds for the already-up phases. If you want to deploy the orchestrator alone (e.g. after a code change), add `-ExcludePhase LandingZone,Identity,VerifiedId,Bastion,Ciem,Security,Ddos,BackupAsr,ConfidentialLedger,ChaosStudio,Observability,Fabric,Postgres,Redis,SyntheticData,Foundry,ConfidentialCompute,Apim,LogicApps,D365,Apps`.
+
+### 7.4 Run the QA smoke gate
+
+After Voice is green, run the deferred `QA` phase so the smoke gate exercises the live voice runtime:
+
+```powershell
+pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev
+```
 
 > **Why not auto-resolve?** The installer is intentionally agnostic to your tenant naming and DNS strategy. The two-pass workflow keeps the config file declarative and re-runnable on any tenant.
 
@@ -350,6 +377,11 @@ Removes every resource group tagged `costCenter=UDCSP` across all configured sub
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| Pre-flight aborts with `Azure CLI is not logged in` | `az login` not done in this shell | `az login` then `az account set --subscription <id>` |
+| `Install-D365` fails with `pac: command not found` | Power Platform CLI missing | Install per [§ 2](#2-prepare-the-operator-workstation), then `pac auth create --environment <env-url>` for each country |
+| `Install-LogicApps` fails with `func: command not found` on workflow publish | Azure Functions Core Tools v4 missing | `npm i -g azure-functions-core-tools@4 --unsafe-perm true` (or use the [installer per OS](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)) |
+| `Install-Apps` logs `[skip] swa CLI not found` / `[skip] eas CLI not found` | Static Web Apps / Expo CLIs missing | `npm i -g @azure/static-web-apps-cli eas-cli` then re-run `-Phase Apps` |
+| `Install-Identity` / `Install-VerifiedId` / `Install-Ciem` / `Install-Priva` log `[skip] Microsoft.Graph not connected` | `Connect-MgGraph` not run in the current shell | Run the `Connect-MgGraph -Scopes …` command from [§ 2](#2-prepare-the-operator-workstation), then re-run the affected phase. Bicep parts of these phases run regardless. |
 | `Install-Identity` fails on External ID user-flow upload | `TenantId` in config doesn't match the External ID tenant | Re-check the `ExternalIdTenants` block; the installer will attempt with the right tenant when corrected |
 | `Install-Fabric` returns `403 CapacityNotFound` | Fabric F-SKU not provisioned in the country region | Provision the capacity in Azure Portal → re-run with `-Phase Fabric` |
 | `Install-Foundry` fails on model deployment | Quota exhausted in the Foundry region | Request quota in Foundry portal or change region in config |

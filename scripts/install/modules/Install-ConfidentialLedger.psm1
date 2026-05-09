@@ -1,25 +1,35 @@
 <#
 .SYNOPSIS
-    Install-ConfidentialLedger — Microsoft Confidential Ledger (CCF-backed,
-    tamper-evident append-only). Hosts the EU AI Act Art. 26(6) registry of
-    every high-risk system decision. Post-audit refactor 2026-05-09.
+    Install-ConfidentialLedger — CCF-backed tamper-evident ledger hosting
+    the EU AI Act Art. 26(6) registry. Real Bicep deployment.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-ConfidentialLedger {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $bicep = Join-Path $repo 'infra\security\confidential-ledger\confidential-ledger.bicep'
-    if (-not (Test-Path $bicep)) { Write-Warning "Missing $bicep"; return }
-    if ($PSCmdlet.ShouldProcess('confidential-ledger', 'Deploy')) {
-        "[scaffold] az deployment sub create --location $($Config.Regions.Shared) --template-file $bicep" |
-            Add-Content (Join-Path $ReportDir 'install-confidential-ledger.log')
+    $logFile = Join-Path $ReportDir 'install-confidential-ledger.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
+    if ($PSCmdlet.ShouldProcess('confidential-ledger', 'az deployment sub create')) {
+        Invoke-AzSubDeployment `
+            -Subscription $Config.Subscriptions.SharedPlatform `
+            -Location $Config.ConfidentialLedger.Region `
+            -TemplateFile $bicep `
+            -LogFile $logFile `
+            -DeploymentName 'udcsp-confidential-ledger' `
+            -WhatIfFlag $whatIf
     }
 }
+
 function Test-ConfidentialLedger {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $script = Join-Path $repo 'infra\security\confidential-ledger\scripts\Test-ConfidentialLedger.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script -Offline" } else { Write-Warning "Missing $script" }
+    $bicep = Join-Path $repo 'infra\security\confidential-ledger\confidential-ledger.bicep'
+    if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
     "{`"phase`":`"ConfidentialLedger`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-confidential-ledger.json')
 }
+
 Export-ModuleMember -Function Install-ConfidentialLedger, Test-ConfidentialLedger

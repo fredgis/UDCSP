@@ -1,34 +1,53 @@
 <#
 .SYNOPSIS
-    Install-Ddos — Azure DDoS Protection Standard plan in shared region,
-    associated with each country VNet (3 associations). L3/L4 protection
-    beyond Front Door L7 — NIS2 expectation for 2.1M citizens platform.
-    Post-audit refactor 2026-05-09.
+    Install-Ddos — DDoS Protection Standard plan in shared region,
+    associated with each country VNet. Real Bicep deployments.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Ddos {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $plan = Join-Path $repo 'infra\security\ddos\ddos-protection-plan.bicep'
     $assoc = Join-Path $repo 'infra\security\ddos\vnet-association.bicep'
-    if (-not (Test-Path $plan)) { Write-Warning "Missing $plan"; return }
-    if ($PSCmdlet.ShouldProcess('ddos-protection-plan', 'Deploy')) {
-        "[scaffold] az deployment sub create --location $($Config.Regions.Shared) --template-file $plan" |
-            Add-Content (Join-Path $ReportDir 'install-ddos.log')
+    $logFile = Join-Path $ReportDir 'install-ddos.log'
+    $whatIf = [bool]$WhatIfPreference
+    if (-not (Test-Path $plan)) { throw "Missing $plan" }
+
+    if ($PSCmdlet.ShouldProcess('ddos-protection-plan', 'az deployment sub create')) {
+        Invoke-AzSubDeployment `
+            -Subscription $Config.Subscriptions.SharedPlatform `
+            -Location $Config.Regions.Shared `
+            -TemplateFile $plan `
+            -LogFile $logFile `
+            -DeploymentName 'udcsp-ddos-plan' `
+            -WhatIfFlag $whatIf
     }
-    foreach ($country in 'dk','se','no') {
-        if (-not (Test-Path $assoc)) { continue }
-        if ($PSCmdlet.ShouldProcess("ddos-vnet-$country", 'Associate')) {
-            "[scaffold] az deployment group create --resource-group udcsp-$country-rg --template-file $assoc" |
-                Add-Content (Join-Path $ReportDir "install-ddos-$country.log")
+    if (Test-Path $assoc) {
+        foreach ($country in 'DK','SE','NO') {
+            $sub = $Config.Subscriptions[$country]
+            $region = $Config.Regions[$country]
+            $rg = "udcsp-$($country.ToLower())-rg"
+            if ($PSCmdlet.ShouldProcess("ddos-vnet-$country", 'az deployment group create')) {
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $assoc `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-ddos-assoc-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
+            }
         }
     }
 }
+
 function Test-Ddos {
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $script = Join-Path $repo 'infra\security\ddos\scripts\Test-Ddos.ps1'
-    if (Test-Path $script) { Write-Host "  → component test: $script -Offline" } else { Write-Warning "Missing $script" }
+    $plan = Join-Path $repo 'infra\security\ddos\ddos-protection-plan.bicep'
+    if (-not (Test-Path $plan)) { throw "Missing $plan" }
     "{`"phase`":`"Ddos`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-ddos.json')
 }
+
 Export-ModuleMember -Function Install-Ddos, Test-Ddos

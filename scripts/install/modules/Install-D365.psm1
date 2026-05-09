@@ -1,21 +1,45 @@
 <#
 .SYNOPSIS
-    Install-D365 (A8) — Solutions, BPFs, queues, SLAs, Copilot for Service.
+    Install-D365 — Solutions (UDCSP_Core then UDCSP_<country>), BPFs,
+    queues, SLAs, Copilot for Service via Power Platform CLI.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-D365 {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
+    $solutionsRoot = Join-Path $repo 'apps\d365\solutions'
+    $logFile = Join-Path $ReportDir 'install-d365.log'
+    $whatIf = [bool]$WhatIfPreference
+
+    if (-not (Test-CliAvailable -Name 'pac')) {
+        Write-Log -LogFile $logFile -Message "[skip] Power Platform CLI ('pac') not on PATH. Install: https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction. Operations recorded for manual replay."
+    }
+
     foreach ($country in 'DK','SE','NO') {
         $url = $Config.D365EnvironmentUrls[$country]
-        $solutionsRoot = Join-Path $repo 'apps\d365\solutions'
-        $core = Join-Path $solutionsRoot 'UDCSP_Core'
-        $countrySln = Join-Path $solutionsRoot "UDCSP_$country"
-        if ($PSCmdlet.ShouldProcess($url, 'Import UDCSP_Core then country solution')) {
-            "[scaffold] pac solution import --path $core --environment $url" |
-                Add-Content (Join-Path $ReportDir 'install-d365.log')
-            "[scaffold] pac solution import --path $countrySln --environment $url" |
-                Add-Content (Join-Path $ReportDir 'install-d365.log')
+        if (-not $url) { continue }
+        if ($PSCmdlet.ShouldProcess($url, 'pac auth select')) {
+            Invoke-NativeCommand `
+                -Command @('pac','auth','select','--environment',$url) `
+                -LogFile $logFile `
+                -WhatIfFlag $whatIf `
+                -ContinueOnError
+        }
+        foreach ($sln in @('UDCSP_Core',"UDCSP_$country")) {
+            $path = Join-Path $solutionsRoot $sln
+            if (-not (Test-Path $path)) {
+                Write-Log -LogFile $logFile -Message "[skip] solution path not found: $path"
+                continue
+            }
+            if ($PSCmdlet.ShouldProcess("$sln@$url", 'pac solution import')) {
+                Invoke-NativeCommand `
+                    -Command @('pac','solution','import','--path',$path,'--publish-changes','--environment',$url) `
+                    -LogFile $logFile `
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
+            }
         }
     }
 }
