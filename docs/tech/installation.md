@@ -138,6 +138,49 @@ Mandatory keys:
 
 Secrets (External ID signing keys, D365 application-user secrets, Foundry deployment keys) are fetched **just-in-time** from a bootstrap Key Vault — the installer's first task is to provision that vault under the shared platform subscription and prompt for any secret it cannot resolve.
 
+### 2.4 Voice block placeholders & dependency-order workflow
+
+The post-audit voice runtime (`apps/voice/call-automation/`) is the only phase that reads a deeply per-country block from `udcsp.config.psd1`. The template (`scripts/install/config/udcsp.config.template.psd1`, `Voice = @{ dk = @{…}; se = @{…}; no = @{…} }`) ships **placeholders** for 19 fields per country. Most of those fields are produced by *earlier* phases of the same installer, so the operator workflow is necessarily iterative:
+
+1. **First pass — leave Voice placeholders as-is.** Run the installer up to but **not** including Voice:
+   ```powershell
+   pwsh ./scripts/install/Install-UDCSP.ps1 -Phase D365 -Environment dev
+   ```
+   Because `Resolve-Phases` walks the DAG, this single command runs LandingZone → Identity → … → D365 in dependency order (everything Voice depends on, plus everything D365 depends on).
+2. **Harvest outputs** from `scripts/install/reports/<runStamp>/install-report.json` and from the Azure portal:
+   | Field in `Voice.<country>` | Source phase | Where to read it |
+   |---|---|---|
+   | `containerAppsEnvironmentId` | `LandingZone` | Resource ID of the per-country Container Apps env |
+   | `userAssignedIdentityId` | `Identity` | Resource ID of the per-country UAMI created for the voice orchestrator |
+   | `image` | (manual) | `<acr>.azurecr.io/udcsp/voice-orchestrator:<tag>` — built from `apps/voice/call-automation/Dockerfile`, pushed to the ACR provisioned in `LandingZone` |
+   | `azureOpenAiAccountName`, `azureOpenAiEndpoint` | `Foundry` | Azure OpenAI resource hosting the GPT-4o Realtime deployment |
+   | `apimBaseUrl` | `Apim` | Public APIM gateway URL (e.g. `https://api.udcsp.dk`) |
+   | `cognitiveServicesEndpoint` | `Foundry` (or a sibling Speech resource) | Cognitive Services / Speech endpoint for STT-fallback |
+   | `acsConnectionStringSecretUri`, `voiceClientSecretUri` | `LandingZone` (Key Vault) | Key Vault secret URIs (the secrets themselves are seeded by the bootstrap KV step) |
+   | `voiceClientId` | `Identity` | Client ID of the App Registration with the `voice-orchestrator` app role |
+   | `appInsightsConnectionString` | `Observability` | Connection string of the per-country App Insights component |
+   | `publicHostname` | (DNS) | FQDN you point at the Container App (or use the default `*.azurecontainerapps.io`) |
+   | `d365TransferTargetId`, `d365VoiceQueueId` | `D365` | Power Apps maker portal → Customer Service admin centre → **Workstreams** → your voice workstream → **Queue** GUID + **Transfer target** GUID. See `docs/biz/voice.md` §10 for the click-path. |
+   | `deadLetterStorageAccountId` | `LandingZone` | Resource ID of the storage account used for Event Grid dead-lettering |
+   | `acsResourceName` | `Voice` (created on first pass `-WhatIf`) | Name of the per-country ACS resource — pre-created by the Voice Bicep before the orchestrator is deployed |
+   | `env`, `location`, `resourceGroup` | (config) | Plain values you choose |
+3. **Edit `udcsp.config.psd1`** — replace the placeholders for at least one country (DK is recommended for the case-study demo).
+4. **Second pass — run only the Voice phase**:
+   ```powershell
+   pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
+   ```
+   The DAG check confirms Voice's prerequisites (`LogicApps`, `Foundry`) are already up; it skips them and only deploys the voice runtime + replays bindings from `apps/voice/acs/phone-number-bindings.yaml`.
+5. **Bind a real PSTN number** (optional, required only for the live voice demo in `recipe.md` Scenario 2):
+   ```powershell
+   pwsh apps/voice/scripts/Bind-AcsNumber.ps1 -Country dk -Env dev `
+     -PhoneNumber +45XXXXXXXX -AcsResourceName udcsp-dk-acs `
+     -ResourceGroup udcsp-dk-voice -OrchestratorFqdn voice-dk.udcsp.dk `
+     -NumberType tollFree
+   ```
+   The script overwrites the matching `placeholder: true` entry in `apps/voice/acs/phone-number-bindings.yaml` in-place, so the next `Install-Voice` run re-binds without operator action.
+
+> **Why not auto-resolve?** The installer is intentionally agnostic to your tenant naming and DNS strategy. The two-pass workflow keeps the config file declarative and re-runnable on any tenant.
+
 ---
 
 ## 3. Install paths
@@ -167,6 +210,27 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -WhatIf
 ```
 
 Shows every Bicep what-if and APIM/Logic Apps/D365 deployment plan without applying anything. Required before any prod install.
+
+### 3.4 Component self-tests + smoke + evaluator HTML report
+
+```powershell
+# Quick component self-test of every phase (no deployments).
+pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Environment dev
+
+# Cross-cutting smoke suite (e2e + eval + accessibility + load) and
+# generate the single HTML artefact attached to the case-study deliverable.
+pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
+```
+
+`-EvaluatorMode` writes `scripts/install/reports/<runStamp>/install-report.html` in addition to the JSON report. This is the single artefact the case-study evaluator opens.
+
+### 3.5 Production install requires `-Force`
+
+```powershell
+pwsh ./scripts/install/Install-UDCSP.ps1 -Environment prod -Force
+```
+
+Without `-Force`, an `-Environment prod` invocation prints a warning and exits without making any changes (`scripts/install/Install-UDCSP.ps1:262-265`). `-WhatIf`, `-TestOnly`, and `-SmokeOnly` against `prod` do **not** require `-Force`.
 
 ---
 
@@ -222,35 +286,35 @@ graph LR
 
 > Blue nodes are the original 14 phases; green nodes are the 11 phases added by the post-audit refactor (`plan_post_audit.md`). **Total: 25 phases.** The legacy `CopilotStudio` phase was removed (its functionality was folded into `Foundry` via the `topic-router` agent).
 
-Phase names accepted by `-Phase`:
+Phase names accepted by `-Phase`, listed **in the dependency-respecting order the installer applies** (matches the DAG declared at `scripts/install/Install-UDCSP.ps1:99-124`):
 
-| Phase | Module | Owner WP | What it installs |
-|---|---|---|---|
-| `LandingZone` | `Install-LandingZone.psm1` | A1 | MG hierarchy, RGs, networking, Key Vault, ACR, Storage |
-| `Identity` | `Install-Identity.psm1` | A2 | External ID tenants, custom user flows, Microsoft Entra ID, CA, PIM |
-| `Security` | `Install-Security.psm1` | A3 | Defender for Cloud, Sentinel, Azure Policy, DPIA artefacts |
-| `Observability` | `Install-Observability.psm1` | A5 | Log Analytics, App Insights, workbooks, alerts |
-| `Postgres` *(post-audit)* | `Install-Postgres.psm1` | A4 | PostgreSQL Flexible Server (per country) — replaces Azure SQL + Cosmos persistent workloads |
-| `Redis` *(post-audit)* | `Install-Redis.psm1` | A4 | Azure Cache for Redis (per country) — replaces Cosmos ephemeral workloads |
-| `Fabric` | `Install-Fabric.psm1` | A4 | Capacities, workspaces, lakehouses, notebooks, semantic models |
-| `Purview` | `Install-Purview.psm1` | A13 | Account, sources, classifications, labels, DLP, sharing policies |
-| `Priva` *(post-audit)* | `Install-Priva.psm1` | A13 | Microsoft Priva Privacy Management — DSR system of record + Risk Management policies |
-| `ConfidentialLedger` *(post-audit)* | `Install-ConfidentialLedger.psm1` | A3 | Tamper-evident ledger for AI Act high-risk decisions |
-| `Foundry` | `Install-Foundry.psm1` | A6 | Hub & projects, agents (incl. **`topic-router`** which absorbs Copilot Studio), prompts, eval suites, Content Safety, AI Act registry |
-| `ConfidentialCompute` *(post-audit)* | `Install-ConfidentialCompute.psm1` | A3, A6 | Confidential Container Apps (TEE) for Eligibility Pre-Assessor inference |
-| `Apim` | `Install-Apim.psm1` | A7 | APIM instance(s), products, APIs, policies, named values |
-| `LogicApps` | `Install-LogicApps.psm1` | A7 | Standard workspaces, workflows, connections, Service Bus, Event Grid |
-| `D365` | `Install-D365.psm1` | A8 | Solutions, BPFs, queues, SLAs, Copilot for Service, Power Automate |
-| `Apps` | `Install-Apps.psm1` | A9, A12 | Static Web Apps deployment (citizen insights now via Chart.js, post-audit), mobile builds, i18n catalogues |
-| `Voice` | `Install-Voice.psm1` | A10 | ACS, AI Speech, IVR dialogs, transcript pipeline, SMS/email templates |
-| `VerifiedId` *(post-audit)* | `Install-VerifiedId.psm1` | A2 | Microsoft Entra Verified ID issuer + verifier (EUDI Wallet bridge) |
-| `Bastion` *(post-audit)* | `Install-Bastion.psm1` | A2, A3 | Azure Bastion Standard (per country) — sole admin shell ingress |
-| `Ciem` *(post-audit)* | `Install-Ciem.psm1` | A2, A3 | Microsoft Entra Permissions Management (CIEM) onboarding for the 3 sovereign tenants |
-| `Ddos` *(post-audit)* | `Install-Ddos.psm1` | A1, A3 | Azure DDoS Protection Standard plans + VNet associations |
-| `BackupAsr` *(post-audit)* | `Install-BackupAsr.psm1` | A3 | Azure Backup vaults + policies + Azure Site Recovery (per country, geo-paired) |
-| `ChaosStudio` *(post-audit)* | `Install-ChaosStudio.psm1` | A3, A14 | Azure Chaos Studio targets + monthly experiments validating the 99.9 % SLO |
-| `SyntheticData` | `Install-SyntheticData.psm1` | A15 | Generates and seeds personas, applications, conversations, eval datasets |
-| `QA` | `Install-QA.psm1` | A14 | Wires CI eval/E2E/security/conformance pipelines to GitHub Actions |
+| Wave | Phase | Module | Owner WP | What it installs |
+|:-:|---|---|---|---|
+| W0 | `LandingZone` | `Install-LandingZone.psm1` | A1 | MG hierarchy, RGs, networking, Key Vault, ACR, Storage |
+| W1 | `Identity` | `Install-Identity.psm1` | A2 | External ID tenants, custom user flows, Microsoft Entra ID, CA, PIM |
+| W1 | `VerifiedId` *(post-audit)* | `Install-VerifiedId.psm1` | A2 | Microsoft Entra Verified ID issuer + verifier (EUDI Wallet bridge) |
+| W1 | `Bastion` *(post-audit)* | `Install-Bastion.psm1` | A2, A3 | Azure Bastion Standard (per country) — sole admin shell ingress |
+| W1 | `Ciem` *(post-audit)* | `Install-Ciem.psm1` | A2, A3 | Microsoft Entra Permissions Management (CIEM) onboarding for the 3 sovereign tenants |
+| W1 | `Security` | `Install-Security.psm1` | A3 | Defender for Cloud, Sentinel, Azure Policy, DPIA artefacts |
+| W1 | `Ddos` *(post-audit)* | `Install-Ddos.psm1` | A1, A3 | Azure DDoS Protection Standard plans + VNet associations |
+| W1 | `BackupAsr` *(post-audit)* | `Install-BackupAsr.psm1` | A3 | Azure Backup vaults + policies + Azure Site Recovery (per country, geo-paired) |
+| W1 | `ConfidentialLedger` *(post-audit)* | `Install-ConfidentialLedger.psm1` | A3 | Tamper-evident ledger for AI Act high-risk decisions |
+| W1 | `ChaosStudio` *(post-audit)* | `Install-ChaosStudio.psm1` | A3, A14 | Azure Chaos Studio targets + monthly experiments validating the 99.9 % SLO |
+| W1 | `Observability` | `Install-Observability.psm1` | A5 | Log Analytics, App Insights, workbooks, alerts |
+| W1 | `Fabric` | `Install-Fabric.psm1` | A4 | Capacities, workspaces, lakehouses, notebooks, semantic models, Power BI Premium reports (`data/fabric/power-bi/`) |
+| W1 | `Postgres` *(post-audit)* | `Install-Postgres.psm1` | A4 | PostgreSQL Flexible Server (per country) — replaces Azure SQL + Cosmos persistent workloads |
+| W1 | `Redis` *(post-audit)* | `Install-Redis.psm1` | A4 | Azure Cache for Redis (per country) — replaces Cosmos ephemeral workloads |
+| W1 | `SyntheticData` | `Install-SyntheticData.psm1` | A15 | Generates and seeds personas, applications, conversations, eval datasets in `data/synthetic/` |
+| W2 | `Foundry` | `Install-Foundry.psm1` | A6 | Hub & projects, agents (incl. **`topic-router`** which absorbs Copilot Studio), prompts, eval suites, Content Safety, AI Act registry |
+| W2 | `ConfidentialCompute` *(post-audit)* | `Install-ConfidentialCompute.psm1` | A3, A6 | Confidential Container Apps (TEE) for Eligibility Pre-Assessor inference |
+| W2 | `Apim` | `Install-Apim.psm1` | A7 | APIM instance(s), products, APIs, policies, named values (incl. the single `agent-topic-router` facade used by chat **and** voice) |
+| W2 | `LogicApps` | `Install-LogicApps.psm1` | A7 | Standard workspaces, workflows, connections, Service Bus, Event Grid |
+| W2 | `D365` | `Install-D365.psm1` | A8 | Solutions, BPFs, queues, SLAs, Copilot for Service, Power Automate. The voice workstream + omnichannel queue created here produces the `d365TransferTargetId` and `d365VoiceQueueId` that the Voice phase reads from `udcsp.config.psd1` (see §2.4). |
+| W3 | `Apps` | `Install-Apps.psm1` | A9, A12 | Static Web Apps deployment (citizen insights now via Chart.js components in `apps/web/src/components/insights/`, post-audit), mobile builds, i18n catalogues |
+| W3 | `Voice` | `Install-Voice.psm1` | A10 | ACS resource (per country), GPT-4o Realtime deployment, voice orchestrator Container App (`apps/voice/call-automation/Dockerfile` → ACR push → `Deploy-Voice.ps1`), Event Grid `IncomingCall` subscription, replay of `apps/voice/acs/phone-number-bindings.yaml` via `Bind-AcsNumber.ps1`, IVR dialogs, transcript pipeline, SMS/email templates. **Real installer this iteration — see §2.4 for the per-country config block it expects.** |
+| W4 | `Purview` | `Install-Purview.psm1` | A13 | Account, sources, classifications, labels, DLP, sharing policies |
+| W4 | `Priva` *(post-audit)* | `Install-Priva.psm1` | A13 | Microsoft Priva Privacy Management — DSR system of record + Risk Management policies |
+| W4 | `QA` | `Install-QA.psm1` | A14 | Wires CI eval/E2E/security/conformance pipelines to GitHub Actions |
 
 The master script declares a DAG matching `plan.md` §4 and refuses to run a phase whose prerequisites are missing.
 
@@ -268,9 +332,11 @@ Per-country resources provisioned:
 The Bicep deployment creates the storage accounts, AI Search service, Event Hubs namespace, capture destination, `acs-events/` container and CMK bindings. After Bicep deploys these resources:
 
 1. The Foundry `topic-router` agent transcript schema is created automatically by `Install-Foundry`; it writes to App Insights and mirrors to a Dataverse `bot_session` table provisioned by `Install-D365`. *(Copilot Studio admin step removed in the post-audit refactor.)*
-2. Run [Set-AISearchIndex.ps1](#) to create the per-citizen memory index schema with row-level ACL by `citizen_id`.
-3. Run [Set-EventHubCapture.ps1](#) to wire ACS Event Grid -> Event Hubs -> ADLS capture path.
-4. Verify retention: [Test-RetentionPolicies.ps1](#) checks that lifecycle rules, immutability policies, Postgres lifecycle jobs and Redis TTLs are set per [`data.md`](./data.md) §5.
+2. AI Search index schema (per-citizen long-term memory, row-level ACL by `citizen_id`) — currently **scaffolded inside `Install-Foundry` / `Install-Observability`**; a dedicated `Set-AISearchIndex.ps1` will be extracted in a later iteration when those modules graduate from `[scaffold]` to real deployments.
+3. ACS Event Grid → Event Hubs → ADLS capture path — currently **scaffolded inside `Install-Voice` / `Install-Observability`** (the orchestrator subscribes to `Microsoft.Communication.IncomingCall`); a dedicated `Set-EventHubCapture.ps1` will be extracted when those modules graduate.
+4. Retention verification — currently covered by `infra/security/backup-asr/scripts/Test-BackupAsr.ps1` (run via `Install-UDCSP.ps1 -TestOnly -Phase BackupAsr`) and the per-zone `Postgres`/`Redis` retention tests; a dedicated `Test-RetentionPolicies.ps1` will be extracted when the data-zone modules graduate.
+
+> The three placeholder script names (`Set-AISearchIndex.ps1`, `Set-EventHubCapture.ps1`, `Test-RetentionPolicies.ps1`) appeared in the pre-post-audit plan; the work is currently performed inline by the modules listed above. The placeholder links are removed from this doc to avoid dead anchors.
 
 ---
 
