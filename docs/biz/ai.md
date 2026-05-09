@@ -610,20 +610,22 @@ flowchart LR
 
 UDCSP supports **12 languages by design**, not as a translation add-on.
 
+> The canonical 12-language set is enforced as a closed-list slot in [`foundry/agents/topic-router/topics/slot-definitions.yaml`](../../foundry/agents/topic-router/topics/slot-definitions.yaml) and pinned in [`scripts/install/config/udcsp.config.template.psd1`](../../scripts/install/config/udcsp.config.template.psd1) and [`governance/ai-act/registry/topic-router.yaml`](../../governance/ai-act/registry/topic-router.yaml). Any drift between this table and those files is a build-blocker.
+
 | Language | ISO | Coverage | Primary AI path |
 |---|---|---|---|
 | Danish | da | Full | Native model + Translator hybrid |
 | Swedish | sv | Full | Native model + Translator hybrid |
 | Norwegian (Bokmål) | nb | Full | Native model + Translator hybrid |
+| Norwegian (Nynorsk) | nn | Full | Native model (limited) + Translator hybrid + native QA |
+| Sami (Northern) | se | Full | Translator-led + native review (low-resource language) |
 | English | en | Full | Native model |
 | German | de | Full | Native model |
+| French | fr | Full | Native model |
 | Polish | pl | Full | Native model |
 | Arabic | ar | Full | Native model + RTL UI |
-| Somali | so | Full | Translator-led (model coverage limited) + native QA |
-| Tigrinya | ti | Full | Translator-led + native QA |
 | Ukrainian | uk | Full | Native model |
 | Finnish | fi | Full | Native model + Translator hybrid |
-| Sami (Northern) | se | Full | Translator-led + native review |
 
 **Mechanisms:**
 - **Detection** at every entry point (Classifier sets `language`).
@@ -703,6 +705,7 @@ Traces are stored in App Insights, exported nightly to a Fabric lakehouse for an
 | **Post-market monitoring plan** | `governance/ai-act/registry/<agent>.yaml` | Compliance |
 | **Conformity declaration** | Same file, signed before release | Compliance + product owner |
 | **Authority contact** (DK / SE / NO) | Same file | Compliance |
+| **GDPR Subject Rights Requests on AI traces** (right of access, erasure, rectification on AI conversation logs and Foundry traces) | **Microsoft Priva** Subject Rights Request workflow (`governance/priva/`), wired to the `gdpr-data-export` and `gdpr-data-erase` Logic Apps so that Foundry App Insights spans, knowledge-source extracts and eligibility evidence are part of the DSAR package — see [`datacompliance.md`](./datacompliance.md) § GDPR. | DPO |
 
 **Purview integration.** Every Foundry agent registers itself as a Purview asset (custom type `MicrosoftFoundry.Agent`) and emits lineage edges to the knowledge sources it grounds on, the data products it reads, and the data products it writes. Result: a single Purview query "what AI assets touch citizen X's case Y?" returns the full graph.
 
