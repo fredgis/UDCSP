@@ -38,24 +38,6 @@ UDCSP is **one** federated platform that:
 
 ---
 
-## 📈 Before vs After at a Glance
-
-```mermaid
-%%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
-graph LR
-    Before["⏳ <b>Today</b><br/>━━━━━━━━━━━<br/>📂 47 portals<br/>📅 28-day decisions<br/>🚫 No federation<br/>🗣️ Partial languages<br/>♿ A11y gaps<br/>🧩 Conflicting DPA rules"]
-    UDCSP(["🇩🇰 🇸🇪 🇳🇴<br/><b>UDCSP</b>"])
-    After["🚀 <b>Tomorrow</b><br/>━━━━━━━━━━━<br/>🏛️ 1 platform · 3 zones<br/>📅 4-day decisions<br/>🔐 2.1 M federated<br/>🗣️ 12 languages<br/>♿ WCAG 2.1 AA<br/>🤖 AI at every step"]
-
-    Before ==> UDCSP ==> After
-
-    style Before fill:#d73a49,stroke:#b31d28,color:#fff
-    style UDCSP fill:#8957e5,stroke:#6e40c9,color:#fff
-    style After fill:#2ea44f,stroke:#238636,color:#fff
-```
-
----
-
 ## 🏛️ Simplified Architecture
 
 ```mermaid
@@ -91,6 +73,83 @@ Green = citizens / channels, purple = identity & AI, orange = backend & process,
 
 ---
 
+## 🧠 AI Brain
+
+A simplified view of the AI architecture detailed in [`docs/biz/ai.md`](./docs/biz/ai.md): **one** Foundry brain, **one** APIM gateway, **one** Content Safety pipeline, **seven** channels, **seven** agents — and an explicit high-risk lane (Eligibility) running in a Trusted Execution Environment with tamper-evident logging.
+
+```mermaid
+%%{ init: { 'flowchart': { 'nodeSpacing': 22, 'rankSpacing': 28, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
+graph TB
+    subgraph CONV["💬 Conversational channels"]
+        Voice["📞 Voice"]
+        Web["🌐 Web"]
+        Mobile["📱 Mobile"]
+        Chat["💬 Chat"]
+    end
+    subgraph NOTIF["📨 Notification channels"]
+        SMS["📲 SMS"]
+        Email["📧 Email"]
+    end
+    Case["🧑‍💼 Caseworker<br/>D365 + Copilot for Service"]
+
+    APIM["🚪 APIM — single gateway<br/><i>auth · throttle · audit · /agents/topic-router</i>"]
+    Safety["🛡️ Content Safety<br/><i>input + output scan, every call</i>"]
+    Logic["⚙️ Logic Apps<br/><i>outbound SMS / email</i>"]
+
+    subgraph FOUNDRY["🧠 Microsoft AI Foundry — single AI brain"]
+        TR["🗣️ <b>topic-router</b><br/>orchestrator · slots · escalation"]
+        CL["🤖 Classifier<br/>intent · language · urgency"]
+        CA["🤖 Citizen Assistant<br/>RAG-grounded answers"]
+        DE["🤖 Doc Extractor<br/>OCR + verify"]
+        EL["⚠️ Eligibility<br/><b>HIGH-RISK · TEE</b>"]
+        TX["🤖 Translator<br/>12 languages"]
+        CW["🤖 Caseworker Helper<br/>RAG + summaries"]
+    end
+
+    RAG["📚 RAG knowledge<br/>SharePoint · agency sites · Fabric"]
+    Trace["🔍 Tracing — App Insights → Purview lineage"]
+    Ledger["🔒 Confidential Ledger<br/>AI Act Art. 26(6) tamper-evident log"]
+
+    CONV --> APIM
+    Case --> APIM
+    NOTIF --> Logic --> APIM
+
+    APIM --> Safety --> TR
+    TR --> CL
+    TR --> CA
+    TR --> DE
+    TR --> EL
+    TR --> TX
+    APIM --> CW
+
+    CA -. RAG .-> RAG
+    CW -. RAG .-> RAG
+    EL -. evidence .-> RAG
+
+    FOUNDRY ==> Trace
+    EL ==> Ledger
+
+    classDef chan fill:#2ea44f,stroke:#238636,color:#fff
+    classDef ws fill:#1565c0,stroke:#0d47a1,color:#fff
+    classDef gw fill:#8957e5,stroke:#6e40c9,color:#fff
+    classDef agent fill:#e36209,stroke:#c24e00,color:#fff
+    classDef hi fill:#d73a49,stroke:#b31d28,color:#fff
+    classDef gov fill:#6e40c9,stroke:#553098,color:#fff
+
+    class Voice,Web,Mobile,Chat,SMS,Email chan
+    class Case,Logic ws
+    class APIM,Safety gw
+    class TR,CL,CA,DE,TX,CW agent
+    class EL hi
+    class RAG,Trace,Ledger gov
+```
+
+> 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) and every workforce action (caseworker via D365 Copilot for Service) hits the **same APIM endpoint** `/agents/topic-router`. Notification channels (SMS, email) bypass conversational routing — they only need the **Translator** agent for outbound 12-language localisation. Inside Foundry, the `topic-router` is the only orchestrator: it owns slots, escalation rules, and dispatches to the six worker agents. **Content Safety runs on every input and every output**, no exceptions. The **Eligibility** agent is the platform's only EU AI Act high-risk component — it runs inside a **Trusted Execution Environment** (Confidential Compute, SEV-SNP) and every decision is appended to **Azure Confidential Ledger** for cryptographic, tamper-evident proof (AI Act Art. 26(6)). RAG-grounded agents cite their sources back to SharePoint, public agency sites and Fabric. The whole conversation is traced through App Insights and indexed in Purview.
+>
+> 👉 *Want the full picture?* See [`docs/biz/ai.md`](./docs/biz/ai.md) — mental model, agent catalogue, per-channel AI footprint, RAG strategy, safety + eval pipelines, EU AI Act registry, end-to-end conversation flow, anti-patterns.
+
+---
+
 ## 🌟 What Makes the Platform Distinctive
 
 | | Pillar | Highlights |
@@ -120,28 +179,6 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 > **Accessibility is non-negotiable.** axe-core gates every web build in CI/CD, and an annual third-party WCAG 2.1 AA audit is part of the operating contract.
 
 The 12 supported languages cover the **official** and **most common minority** languages of Denmark, Sweden, and Norway, plus the cross-border working languages required by the **EU Single Digital Gateway**.
-
----
-
-## 🧩 Mandatory Azure Services (from the case study)
-
-All nine services from the case study are first-class citizens of the platform — none can be removed.
-
-| | # | Service | Role in UDCSP |
-|:-:|:-:|---|---|
-| 🟦 | 1 | **Microsoft Entra External ID** ¹ | Citizen-facing identity store; per-country tenants federated through Entra. |
-| 🟦 | 2 | **Microsoft Entra ID** | Workforce identity for caseworkers & administrators; cross-border federation hub (eIDAS bridge). |
-| 🟧 | 3 | **Azure OpenAI** *(via Microsoft Foundry)* | Foundation models for the classifier, translator, eligibility reasoner, and citizen assistant. |
-| 🟩 | 4 | **Microsoft Fabric** | Lakehouse, real-time intelligence, semantic models, and the federated analytics layer across the 3 countries. |
-| 🟪 | 5 | **Dynamics 365 Customer Service** | Case management spine for caseworkers; SLA, queues, knowledge base, omnichannel integration. |
-| 🟨 | 6 | **Azure API Management** | Single entry point for all citizen channels and partner agencies; policies, throttling, transformation. |
-| 🟥 | 7 | **Microsoft Purview** | Data catalogue, classification, lineage, DLP, and the EU AI Act risk register for AI assets. |
-| 🟨 | 8 | **Azure Logic Apps** | Workflow orchestration of the 4-day end-to-end process across agencies. |
-| 🟩 | 9 | **Power BI** | Operational, executive, citizen-facing, and auditor dashboards on top of Fabric. |
-
-> ¹ **Substitution note** — the case study lists *Azure AD B2C* as the citizen-identity service. **Azure AD B2C is no longer available to new customers as of 1 May 2025**; Microsoft's official successor is **Microsoft Entra External ID**, which UDCSP adopts. Full rationale and feature-by-feature mapping in [`docs/tech/architecture.md` § 14.0 — Identity deviation](./docs/tech/architecture.md#identity-deviation-from-the-case-studys-b2c-mandate).
-
-> 🧰 **Additional Azure services included in the platform.** The 9 mandatory services above are paired with: Microsoft Foundry (incl. the `topic-router` agent), Azure Container Apps, Static Web Apps, Functions, **Azure Database for PostgreSQL — Flexible Server** (replaces Azure SQL + Cosmos DB workloads), **Azure Cache for Redis** (slot-filling + ephemeral state), Key Vault, Communication Services, AI Speech, AI Document Intelligence, AI Translator, AI Search, AI Content Safety, Defender for Cloud + Sentinel, Front Door + WAF, Service Bus, Event Grid, Monitor + Log Analytics + App Insights, ACR, Bicep, Azure Policy. A second wave added by the post-audit refactor: **Microsoft Entra Verified ID** (EUDI Wallet bridge), **Microsoft Priva** (GDPR DSR system of record), **Azure Confidential Ledger** (AI Act Art. 26(6) tamper-evident logging), **Azure Confidential Compute** (TEE for high-risk AI inference), **Microsoft Defender for APIs**, **Azure DDoS Protection Standard**, **Azure Backup + Site Recovery**, **Azure Chaos Studio**, **Azure Bastion** and **Microsoft Entra Permissions Management (CIEM)**. Every addition is detailed in [`architecture.md` § 14.2](./docs/tech/architecture.md#142-additional-azure-services-included-in-the-platform).
 
 ---
 
@@ -230,87 +267,9 @@ The table below maps every requirement and outcome stated in the case study to t
 
 ---
 
-## 🗂️ All Documentation
+## 🚧 Future Recommendations (not implemented in this repository)
 
-Every markdown lives under [`docs/`](./docs/), split into two clear families. One file per concern, each readable on its own.
-
-### 💼 Business documents — [`docs/biz/`](./docs/biz/)
-
-For decision-makers, evaluators, and anyone reading the UDCSP story end-to-end.
-
-| 📄 File | 🎯 Purpose | 👤 Best for |
-|---|---|---|
-| [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | The verbatim case study brief — the immutable contract everything in this repository answers to. | Everyone (read first to understand the constraints). |
-| [`docs/biz/ai.md`](./docs/biz/ai.md) | The AI story end-to-end — single brain in **Microsoft Foundry**, the 7-agent catalogue (incl. the post-audit `topic-router`), RAG strategy, safety + eval pipelines, EU AI Act registry, the canonical Anna conversation flow, anti-patterns. | Anyone reading the AI rationale. |
-| [`docs/biz/datacompliance.md`](./docs/biz/datacompliance.md) | **Data compliance — the executive answer.** Every regulation UDCSP responds to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses, citizen-rights operational SLAs, and the evidence pack a regulator can demand. | DPOs, legal, auditors, citizen advocates. |
-| [`docs/biz/uses.md`](./docs/biz/uses.md) | The 10 demonstration scenarios with the evaluation criteria each one satisfies. | Evaluators, demo presenters. |
-
-#### 🔀 Channel deep-dives — one file per communication channel
-
-Same hero / badges / mermaid lifecycle / sovereignty / activation runbook layout in every file. Each is **independently readable** — you can drop into one without reading the others.
-
-| 📄 File | 🎯 Purpose | 👤 Best for |
-|---|---|---|
-| [`docs/biz/voice.md`](./docs/biz/voice.md) | 📞 The **telephone** channel — call lifecycle, neural voices in 12 languages, DTMF + slow-speech, per-country sovereignty, **how to procure a real Nordic toll-free number**. | Voice designers · demo team. |
-| [`docs/biz/web.md`](./docs/biz/web.md) | 🌐 The **web portal** channel — Static Web App, React 18 + TS, External ID per country, ICU MessageFormat, WCAG 2.1 AA, embedded chat widget. | Web teams · accessibility leads. |
-| [`docs/biz/mobile.md`](./docs/biz/mobile.md) | 📱 The **mobile app** channel — Expo + React Native, MSAL biometrics, native camera capture, push notifications, VoiceOver / TalkBack, *one binary · three OIDC authorities*. | Mobile teams · push-notification ops. |
-| [`docs/biz/chat.md`](./docs/biz/chat.md) | 💬 The **chat widget** channel — APIM `/agents/topic-router` web embed (post-audit refactor), shared topics + escalation rules with the voice channel, **one bot, two channels, one brain in Foundry**. | Conversation designers · Foundry admins. |
-| [`docs/biz/sms.md`](./docs/biz/sms.md) | 📲 The **SMS** channel — ACS SMS, 12-language templates, STOP keyword + GDPR consent, per-country sender IDs, sender-ID procurement (alphanumeric · short code · long code). | Notification ops · compliance. |
-| [`docs/biz/email.md`](./docs/biz/email.md) | 📧 The **email** channel — bidirectional ACS Email, per-country sender domain + DKIM/SPF/DMARC, D365 email-to-case with Foundry classifier auto-routing, GDPR S/MIME exports. | Email ops · DPO. |
-| [`docs/biz/caseworker.md`](./docs/biz/caseworker.md) | 🧑‍💼 The **caseworker** channel — D365 Customer Service + Copilot for Service, where every escalation lands and the eligibility AI is human-supervised (EU AI Act Art. 14). | Caseworker leads · D365 specialists · DPO. |
-
-### 🛠️ Technical documents — [`docs/tech/`](./docs/tech/)
-
-For architects, builders, operators, and reviewers of the implementation itself.
-
-| 📄 File | 🎯 Purpose | 👤 Best for |
-|---|---|---|
-| [`docs/tech/architecture.md`](./docs/tech/architecture.md) | Full platform deep-dive — 15 sections covering principles, logical architecture, sovereignty topology, identity federation, AI architecture, integration, case management, data, governance, security, observability, multilingual strategy, end-to-end flows, service inventory, deployment. | Architects, tech leads. |
-| [`docs/tech/data.md`](./docs/tech/data.md) | **The storage truth** — five storage zones (Operational · Documents · Conversations · Knowledge & Memory · Analytics), per-data-category storage map, retention matrix anchored on EU AI Act Art. 26(6) + GDPR Art. 5/17 + ePrivacy Art. 5, right-to-erasure operational playbook, sovereignty & federation rules. | DPOs, architects, compliance. |
-| [`docs/tech/plan.md`](./docs/tech/plan.md) | The multi-agent delivery plan — 17 agent profiles, 5 waves of parallel execution, scope per agent, exit gates, risk register. | Delivery managers, AI coding agents. |
-| [`docs/tech/agents.md`](./docs/tech/agents.md) | The actual development log — per-agent timings, parallel execution evidence, models used, requests consumed, deliverables produced. | Anyone reviewing how the platform was built. |
-| [`docs/tech/installation.md`](./docs/tech/installation.md) | End-to-end install procedure — prerequisites, secrets, the 25 phases, dependency DAG, troubleshooting, teardown. | DevOps, operators. |
-| [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Step-by-step acceptance recipe — the single guided walkthrough that exercises every layer of the platform. | Acceptance testers, hands-on reviewers. |
-| [`docs/tech/plan_post_audit.md`](./docs/tech/plan_post_audit.md) | The post-audit refactor diff — every removal, every addition, every renamed module, with the wave-aligned migration plan. | Architects, reviewers comparing pre/post-audit. |
-| [`docs/tech/runbook-dr.md`](./docs/tech/runbook-dr.md) | Disaster-recovery runbook — RPO/RTO matrix, twice-yearly full-failover drill (pre-checks → trigger → caseworker simulation → cut-over → rollback), real-incident escalation order. | SRE on-call, country business-continuity officers. |
-
-> All twenty files (this README + 11 under `docs/biz/` + 8 under `docs/tech/`) are kept in sync; cross-links are validated by the `markdown-link-check` GitHub Action.
-
----
-
-## 🔁 Post-Audit Refactor Summary (May 2026)
-
-This repository was refactored after an internal architecture audit to consolidate the stack and fill compliance gaps. The full diff lives in [`docs/tech/plan_post_audit.md`](./docs/tech/plan_post_audit.md); the headline changes are:
-
-**➖ Removed**
-
-| Service | Replacement | Why |
-|---|---|---|
-| Azure SQL Database | Azure Database for PostgreSQL — Flexible Server (relational + JSONB) | Two OLTP engines (SQL + Cosmos) is never justified; Postgres covers both shapes. |
-| Azure Cosmos DB | PostgreSQL JSONB (durable docs) + Azure Cache for Redis (ephemeral / TTL) | Same: collapses to one OLTP engine + a true low-latency cache. |
-| Microsoft Copilot Studio | Foundry agent **`topic-router`** | Single AI brain (Foundry) instead of two; one API surface, one eval surface, one AI Act registry surface. |
-| Power BI **Embedded** for the citizen-facing portal | Lightweight HTML/JS Chart.js components (`apps/web/src/components/insights/`) | Reduce the dependency surface for citizen-facing pages. **Power BI Premium is kept** for internal users (operational, executive, auditor dashboards). |
-
-**➕ Added**
-
-| Service | Purpose |
-|---|---|
-| **Microsoft Entra Verified ID** | EUDI Wallet bridge (eIDAS 2.0) — moves the platform from "EUDI readiness" to active VC issuance/verification. |
-| **Microsoft Priva** | GDPR DSR system of record (access · erasure · portability · rectification) with SLA tracking + DPA evidence. |
-| **Azure Confidential Ledger** | Tamper-evident, CCF-backed log of every high-risk AI decision (AI Act Art. 26(6) cryptographic proof). |
-| **Azure Confidential Compute (Container Apps)** | TEE (SEV-SNP) host for the Eligibility Pre-Assessor inference — citizen PII encrypted in memory cross-border. |
-| **Microsoft Defender for APIs** | Runtime protection on APIM (sole ingress for the 47 consolidated portals) — shadow-API discovery, sensitive-data leakage detection. |
-| **Azure DDoS Protection Standard** | L3/L4 protection on every public-facing VNet (NIS2 expectation) — defence in depth alongside Front Door's L7. |
-| **Azure Backup + Azure Site Recovery** | Per-country BCDR, geo-paired in-EU; RPO ≤ 15 min, RTO ≤ 4 h (ISO 27001 + NIS2 baseline). |
-| **Azure Chaos Studio** | Monthly resilience experiments empirically validating the 99.9 % citizen-channel SLO. |
-| **Azure Bastion (Standard)** | Sole admin shell-access path — no jump boxes, no public RDP/SSH. |
-| **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant entitlement audit + drift detection across the 3 sovereign tenants. |
-
-The installer DAG grew from 15 to **25 phases** and has been smoke-tested end-to-end (`pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly`).
-
-### 🚧 Future Recommendations (not implemented in this repository)
-
-The audit also surfaced two larger replacements that would meaningfully reduce vendor lock-in but were **deliberately not implemented** in this case-study scaffolding (the case study mandates D365 and Logic Apps as part of the 9 Microsoft services). They are documented here as a forward-looking note for any team taking UDCSP into production:
+An internal architecture audit surfaced two larger replacements that would meaningfully reduce vendor lock-in but were **deliberately not implemented** in this case-study scaffolding (the case study mandates D365 and Logic Apps as part of the 9 Microsoft services). They are documented here as a forward-looking note for any team taking UDCSP into production:
 
 | Current | Proposed replacement | Why it would be considered |
 |---|---|---|
