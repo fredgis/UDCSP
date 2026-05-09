@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: Foundry Topic Router Agent API
+  version: 1.0.0
+  description: |
+    Single front door to the Foundry topic-router agent for all citizen-
+    facing channels (web chat widget, voice orchestrator, mobile handoff,
+    caseworker assist). Caller selects the channel via both the body field
+    `channel` and the header `x-channel-actor`; the APIM policy asserts
+    they match and rate-limits voice traffic separately.
+servers:
+  - url: https://{gateway-host}/agents/topic-router
+paths:
+  /messages:
+    post:
+      summary: Route a citizen message to the right downstream agent
+      operationId: post-agent-topic-router-messages
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+        - name: x-channel-actor
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [web, voice, mobile-handoff, caseworker]
+        - name: x-call-connection-id
+          in: header
+          required: false
+          schema: { type: string }
+        - name: traceparent
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageRequest" }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        '400': { description: Bad Request }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+  /health:
+    get:
+      summary: Health check
+      operationId: get-agent-topic-router-health
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    MessageRequest:
+      type: object
+      required: [sessionId, channel, locale, text]
+      properties:
+        sessionId: { type: string }
+        channel:
+          type: string
+          enum: [web, voice, mobile-handoff, caseworker]
+        locale:
+          type: string
+          enum: [da, sv, nb, en]
+        text: { type: string }
+        callConnectionId:
+          type: string
+          description: Set by the voice orchestrator to correlate with the ACS call.
+        traceparent:
+          type: string
+          description: W3C trace context propagated to Foundry.
+    MessageResponse:
+      type: object
+      properties:
+        reply: { type: string }
+        intent: { type: string }
+        escalate: { type: boolean }
+        escalationReason:
+          type: string
+          enum: [low_confidence, sensitive_topic, citizen_request, sentiment_negative, cross_border]
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              url: { type: string }
+        correlationId: { type: string }
+    HealthResponse:
+      type: object
+      properties:
+        correlationId: { type: string }
+        status: { type: string }

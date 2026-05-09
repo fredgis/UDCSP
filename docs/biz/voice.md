@@ -391,79 +391,85 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 
 ---
 
-## 11. 🧱 Voice runtime — readiness vs scaffold (what's actually runnable today)
+## 11. 🧱 Voice runtime — implemented (Phase A complete)
 
 > [!IMPORTANT]
-> **Honesty first.** This section is the canonical answer to the question *"if a real human dials a real phone number today, will they have a back-and-forth conversation with the Foundry agent?"* — **No, not yet end-to-end, but the gap is small and Microsoft-productized**, not a multi-month build. The voice channel uses **Dynamics 365 Customer Service voice channel** (which is built on ACS under the hood) as the runtime, so most of what *looks* missing in this `apps/voice/` tree is in fact provided by D365 Contact Center out of the box. What is still missing is one specific piece: a thin Bot Framework adapter that registers in the D365 voice workstream and proxies turns to APIM `/agents/topic-router/messages`.
+> **Status update.** The Phase A bridge between **Dynamics 365 Customer Service voice channel** (telephony / IVR / queue routing / recording) and the **Foundry `topic-router` agent** (the brain) is **implemented in `apps/voice/call-automation/`**. A real human dialling a real PSTN number bound to the country ACS resource will reach a low-latency conversational agent backed by Azure OpenAI **GPT-4o Realtime** (native STT + reasoning + TTS in one stream). The same orchestrator can warm-transfer the call to a D365 voice workstream queue when the citizen asks for a human or the topic-router flips `escalate=true`.
 
 ### 11.1 The two layers in the voice story
 
-The voice channel sits on **two stacks that already exist**:
+The voice channel sits on **two stacks that already exist** plus one **new** orchestrator service:
 
 | Layer | Provider | Where in the repo |
 |---|---|---|
-| **Telephony runtime** — PSTN ingress, IVR engine, call recording, real-time transcription, agent escalation, omnichannel queue routing | **D365 Customer Service voice channel** (built on Azure Communication Services) | `apps/d365/solutions/` (today: case management only — voice workstream config is the gap) |
-| **Conversational brain** — multi-turn dialog, intent classification, slot filling, content safety | **Foundry `topic-router` agent** + downstream agents | `foundry/agents/topic-router/`, exposed via APIM `/agents/topic-router/messages` |
-| **Bridge** between the two | A **Bot Framework SDK bot** registered in the D365 voice workstream's *Bots* panel, that proxies each turn to APIM | **Missing** — see §11.4 |
+| **Telephony runtime** — PSTN ingress, IVR engine, call recording, real-time transcription, agent escalation, omnichannel queue routing | **D365 Customer Service voice channel** (built on Azure Communication Services) | `apps/d365/solutions/` (case management) + Copilot Service admin center workstream config (procured numbers + queues) |
+| **Conversational brain** — multi-turn dialog, intent classification, slot filling, content safety | **Foundry `topic-router` agent** + downstream agents | `foundry/agents/topic-router/`, exposed via APIM `/agents/topic-router/messages` (`services/apim/apis/agent-topic-router/`) |
+| **Bridge / voice cortex** — answers the call, opens a bidirectional audio stream to GPT Realtime, exposes `lookup_topic_router`, `escalate_to_human`, `end_call_with_recap` as function tools, warm-transfers to D365 on escalate | **Voice orchestrator Container App** (Node.js + ACS Call Automation SDK + GPT Realtime WebSocket) | **`apps/voice/call-automation/`** |
 
-### 11.2 What D365 Customer Service voice channel actually gives us for free
+### 11.2 Why a custom orchestrator and not just D365 + Bot Framework?
+
+The earlier audit noted that the Bot Framework SDK is being **deprecated end of 2025** and the **Microsoft Agent Framework (MAF)** + M365 Agents SDK are the new direction. Both are *turn-based* (request → response). That works for chat but is the wrong shape for low-latency voice. Microsoft's own canonical sample for ACS + GPT-4o voice ([`Azure-Samples/acs-azopenai-voice-integration`](https://github.com/Azure-Samples/acs-azopenai-voice-integration)) connects ACS Call Automation **directly** to the Realtime WebSocket — neither Bot Framework nor MAF in the audio path. We follow that pattern; MAF still hosts the topic-router (the brain) reached via HTTP from the orchestrator's `lookup_topic_router` tool. **One brain, three channels (chat, voice, copilot) — no duplicated intelligence.**
+
+### 11.3 What D365 Customer Service voice channel still gives us for free
 
 (Source: [Microsoft Learn — Voice channel manage phone numbers](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-manage-phone-numbers))
 
-- ✅ **Trial phone number in 1 click** — D365 voice channel auto-provisions up to **two trial US toll-free numbers** with **60 minutes of free calling** the first time the voice trial is enabled. **No regulator pack, no Bicep, no wait.** This is the demo path.
-- ✅ **Production number procurement** — through the **Copilot Service admin center** UI (Channels → Phone numbers → Add ACS number), or for non-US numbers (DK / SE / NO) by purchasing in the ACS portal then **syncing into D365** ([sync-from-acs](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs)).
-- ✅ **Call Automation runtime** — D365 is the service that subscribes to ACS `IncomingCall`, answers, drives streaming STT/TTS, and exposes a Bot Framework activity stream to the registered IVR bot. **We do not write a Function App with the Call Automation SDK.**
-- ✅ **IVR engine** — DTMF menus, prompts, voice navigation, no-input / no-match retries are all configured in the D365 voice workstream UI.
-- ✅ **Transcription pipeline** — D365 records the call, transcribes it, and makes the transcript available to Power Automate / Dataverse. **We do not deploy the Logic App in `apps/voice/transcript-pipeline/`** — that file is a leftover blueprint from an earlier design that did not yet account for D365 voice channel; see §11.3.
-- ✅ **Warm transfer to human caseworker** — built into the voice workstream queue routing. The bot raises an `EndOfConversation` activity with `escalate=true`; D365 transfers the leg to the next available agent in the configured queue.
-- ✅ **Recording disclosure / consent** — supported natively at workstream config level; our 12-language `recording-disclosure.md` script is consumed at this layer.
+- ✅ **PSTN number ownership and procurement** — through the Copilot Service admin center for US toll-free trial numbers, or by purchasing in the ACS portal then [syncing into D365](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs) for non-US (DK / SE / NO).
+- ✅ **Workstream queue routing for warm transfers** — when the orchestrator calls `transferCallToParticipant` with the D365 voice workstream queue id, D365 routes the leg to the next available human caseworker. The orchestrator also passes a JSON `udcspEscalation` operation context so the caseworker sees the call summary on screen.
+- ✅ **Call recording / transcription** — recording is configured at the workstream level; transcripts land in Dataverse `callTranscript` and are picked up by the post-call enrichment pipeline (Dataverse → Fabric Lakehouse + Confidential Ledger anchor).
+- ✅ **Recording disclosure / consent** — supported natively at workstream config level; our 12-language `recording-disclosure.md` script is also injected by the orchestrator at call-pickup as the GPT Realtime first prompt for defence in depth.
 
-### 11.3 What this `apps/voice/` tree is, and what to do with it
+### 11.4 What the orchestrator (`apps/voice/call-automation/`) does
 
-| Artefact | Real status with D365 voice channel in mind | Action |
+| Concern | File | What happens |
 |---|---|---|
-| `apps/voice/acs/acs-resource.bicep` | ✅ **Useful** — D365 voice channel needs an ACS resource to bind to (per-country sovereignty enforced via `dataLocation`). Already deployable. | Keep as-is. |
-| `apps/voice/acs/phone-numbers.bicep` | ⚠️ **Half-redundant** — for the demo, the D365 trial number bypasses this. For production Nordic numbers, ACS portal procurement + D365 sync is the operator flow; this Bicep documents the *intent* and the regulator checklist. | Keep as a documentation artefact + sovereignty contract. |
-| `apps/voice/speech/speech-config.bicep` + `voice-fonts.json` | ✅ **Useful** — D365 voice channel uses Azure AI Speech for custom neural voices and per-locale lexicons. | Keep. |
-| `apps/voice/ivr/{lang}/*.yaml` (24 files) | ⚠️ **Design content, not runtime** — D365 voice workstream has its own IVR menu config in the admin UI; these YAMLs are the design specs that an admin would translate into the workstream config. They can also serve as the bot's prompt content. | Keep as design source; document that they are **not** consumed at runtime. |
-| `apps/voice/transcript-pipeline/logic-app-transcription.json` | ❌ **Obsolete blueprint** — D365 already owns transcription. This file should either be deleted in a follow-up cleanup or repurposed as a **post-transcription enrichment** Logic App (push from Dataverse to Fabric / Confidential Ledger anchoring). | Mark as superseded; revisit at next refactor. |
-| `apps/voice/escalation/escalation-config.yaml` | ⚠️ **Design content** — the actual escalation routing is configured in D365 voice workstream queues. This YAML is the design source. | Keep as design source. |
-| `apps/voice/recording-consent/recording-disclosure.md` | ✅ **Useful** — the 12-language disclosure script is played at call-pickup, configured in the workstream. | Keep. |
-| `apps/voice/notifications/{sms,email}-templates.json` | ✅ **Useful** — ACS SMS/Email récap templates after the call. | Keep. |
-| `apps/voice/scripts/Test-Voice.ps1`, `Deploy-Voice.ps1` | ⚠️ **Stubs** — to be promoted to actual D365 trial-number activation + bot health-check scripts. | Replace at Phase A. |
+| Event Grid `IncomingCall` | `src/call-handler.ts` | Validates the EventGrid handshake, calls `client.answerCall()` with `mediaStreamingOptions.transportUrl = wss://.../api/acs/media`. |
+| Bidirectional audio bridge | `src/realtime-bridge.ts` | ACS opens a WebSocket; the orchestrator opens a parallel WebSocket to `wss://{aoai}/openai/realtime?...&deployment=gpt-realtime` and proxies base64 PCM frames in both directions. Server-VAD turn detection + barge-in are configured on the GPT Realtime session. |
+| Function tools | `src/foundry-tool.ts`, `src/d365-handoff.ts` | `lookup_topic_router(text, locale)` POSTs to APIM `/agents/topic-router/messages` (same endpoint the chat widget calls); `escalate_to_human(reason, summary)` calls `transferCallToParticipant` with the country D365 voice queue id; `end_call_with_recap(recapText)` sends an SMS récap and hangs up. |
+| IVR pack | `src/ivr-loader.ts` | Loads the existing `apps/voice/ivr/{locale}/*.yaml` (`kind: UDCSP.Voice.Dialog`) + recording disclosure markdown; the welcome prompt + disclosure are spoken verbatim by GPT Realtime as the first turn. |
+| Observability | `src/logger.ts` | App Insights with `LogContext` (callConnectionId, traceparent, country, locale, intent) — same correlation id Foundry uses, so a single call ties together ACS events, GPT Realtime tool calls, APIM logs, Foundry traces and D365 transfer audit. |
+| Container App + Event Grid + Realtime deployment | `infra/voice-orchestrator.bicep`, `infra/event-grid-incoming-call.bicep`, `infra/gpt-realtime-deployment.bicep` | Per-country IaC. UAMI-bound, KV-backed secrets, public ingress with `transport: 'auto'` (WSS-capable). |
 
-### 11.4 The actual closure list (much smaller than it looks)
+### 11.5 Why the previous "Phase A bot adapter" idea is gone
 
-To go from "scaffold" to "a citizen dials a real number and talks to the agent", the work is:
+The earlier plan asked for a small Bot Framework SDK bot registered in the D365 voice workstream's *Bots* panel. We dropped that for three reasons:
 
-#### Phase A — demo with the D365 trial US toll-free (~½ day)
+1. **End-of-life clock.** Bot Framework SDK ends 31 Dec 2025; we would have shipped a Phase A artefact destined for immediate deprecation.
+2. **Latency.** A bot adapter inside the D365 workstream pipeline adds at minimum one extra hop and serialises to text, losing the GPT-4o Realtime native audio + barge-in capability.
+3. **Brain duplication risk.** Embedding dialog state in the bot would have created a second state machine alongside Foundry. The orchestrator pattern keeps GPT Realtime as a stateless "voice cortex" and Foundry as the only stateful brain.
 
-1. **Enable the D365 Customer Service voice trial** — Copilot Service admin center → Channels → Voice → Start trial. Records the trial US toll-free number.
-2. **Build a small Bot Framework SDK bot** — Node.js or .NET, hosted as an Azure App Service or Function App, ~150 lines:
-   - Implements `ActivityHandler.onMessage` that forwards `turnContext.activity.text` and `turnContext.activity.locale` to `${APIM_BASE_URL}/agents/topic-router/messages` with the same JWT shape as `ChatWidget.tsx` (just `actor=voice` instead of `actor=web`).
-   - Returns the response text via `turnContext.sendActivity(MessageFactory.text(reply))`.
-   - On `intent === "escalate"` raises `EndOfConversation` with `code=escalateToAgent`.
-3. **Register the bot in the D365 voice workstream** — Omnichannel admin → Bots → Add bot (handle + Microsoft App ID), then assign it as the IVR handler of the voice workstream.
-4. **Configure the workstream IVR menu** in the D365 admin UI (DTMF + prompts), using `apps/voice/ivr/en/*.yaml` as the design spec, plus the recording disclosure from `apps/voice/recording-consent/recording-disclosure.md`.
-5. **Test by dialling the trial US toll-free** from any US phone or a SIP softphone.
+D365 voice channel still owns PSTN, queue routing, recording and the human caseworker experience — it just no longer owns the IVR turns.
 
-#### Phase B — production Nordic numbers (1–3 weeks regulator + ½ day code)
+### 11.6 Mapping `apps/voice/` artefacts after Phase A
 
-6. **Submit the regulatory pack** for DK / SE / NO toll-free via the ACS portal (procedure documented in §9).
-7. **Sync the procured numbers into D365** ([sync-from-acs](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs)), bind each to a per-country voice workstream that uses the corresponding language pack (DA / SV / NB) of the bot.
-8. **Add the 6 missing Speech voice fonts** (Norwegian Nynorsk, Sámi, French, Polish, Ukrainian, Finnish) to `voice-fonts.json` and redeploy.
+| Artefact | Status | Action |
+|---|---|---|
+| `apps/voice/call-automation/` | ✅ **Implemented** — the orchestrator. | Build (`npm install && npm run build`), containerise, deploy via `Deploy-Voice.ps1`. |
+| `apps/voice/acs/acs-resource.bicep` | ✅ Useful — the orchestrator needs the per-country ACS resource (sovereignty-pinned via `dataLocation`). | Keep. |
+| `apps/voice/acs/phone-numbers.bicep` + `phone-number-bindings.yaml` | ✅ Useful — the regulator pack and binding ledger; `Bind-AcsNumber.ps1` appends to the YAML. | Keep. |
+| `apps/voice/speech/speech-config.bicep` + `voice-fonts.json` | ⚠️ Reserved — GPT Realtime does its own TTS, so Speech voice fonts are now **only** used by D365 IVR pre-orchestrator menus or post-call analytics. | Document the narrowed scope; keep for D365 workstream prompts. |
+| `apps/voice/ivr/{lang}/*.yaml` (24 files) | ✅ Useful — loaded at runtime by `ivr-loader.ts` to build the welcome + escalation prompts. Schema corrected to `kind: UDCSP.Voice.Dialog`. | Keep. |
+| `apps/voice/transcript-pipeline/logic-app-transcription.json` | ⚠️ Blueprint — still superseded by D365 native transcription; pending promotion to a real Dataverse → Fabric + Confidential Ledger workflow. | Replace at next iteration. |
+| `apps/voice/escalation/escalation-config.yaml` | ✅ Useful — the orchestrator's `escalate_to_human` tool reads its rules; D365 workstream queues mirror the same routing. | Keep. |
+| `apps/voice/recording-consent/recording-disclosure.md` | ✅ Useful — read by `ivr-loader.ts` and injected as the first GPT Realtime prompt. | Keep. |
+| `apps/voice/notifications/{sms,email}-templates.json` | ✅ Useful — `end_call_with_recap` reads the SMS template; email récap is a follow-on Logic App. | Keep. |
+| `apps/voice/scripts/Deploy-Voice.ps1` / `Test-Voice.ps1` / `Bind-AcsNumber.ps1` | ✅ Real — Bicep deploy + healthz + EventGrid handshake + PSTN binding. | Use. |
+| `services/apim/apis/agent-topic-router/` | ✅ Created — single APIM facade for the topic-router agent, used by chat **and** voice. | Keep. |
 
-### 11.5 What you *can* demo today (without Phase A)
+### 11.7 What Phase B still adds (regulator timelines, not code)
+
+1. **Submit the regulatory pack** for DK / SE / NO toll-free numbers via the ACS portal (procedure documented in §9).
+2. **Run `Bind-AcsNumber.ps1`** for each issued number — the orchestrator picks them up automatically (Event Grid is already subscribed).
+3. **Add the 6 missing Speech voice fonts** (Norwegian Nynorsk, Sámi, French, Polish, Ukrainian, Finnish) for D365 pre-orchestrator menus / post-call analytics. GPT Realtime itself does not need them.
+
+### 11.8 What you can demo today
 
 | Demo | Path | What it actually exercises |
 |---|---|---|
-| 🌐 **Chat as voice's surrogate** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agents/topic-router/messages` → Foundry topic-router | The **conversational brain** end-to-end. Same backend as voice would use, just with text instead of audio. Real today. |
-| 🚦 **Smoke test of voice prompts content** | `pwsh apps/voice/scripts/Test-Voice.ps1` | A string assertion against a hard-coded transcript. Proves the prompts file is well-formed. |
-| 🧪 **Playwright trace simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | A web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. Does not touch ACS or Speech. |
-
-### 11.6 What is unchanged on purpose
-
-The architecture (§§2–10), the SLOs (§8), the sovereignty model (§7), the procurement playbook (§9), the activation runbook (§10), and the demo script (§13) are all already correct at the level of intent. The post-audit refactor removed Copilot Studio as a separate brain, but **the Foundry topic-router is registered as the bot in the D365 voice workstream via the Phase A bot adapter** — it does not need its own runtime.
+| 📞 **End-to-end voice** | Dial the procured PSTN number → ACS → orchestrator → GPT-4o Realtime ↔ Foundry topic-router | Full citizen ↔ agent voice conversation, with warm transfer to D365 on "agent please". |
+| 🌐 **Chat with the same brain** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agents/topic-router/messages` → Foundry topic-router | Proves chat and voice share one brain — same APIM endpoint, different actor. |
+| 🚦 **Voice smoke test** | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev` | Hits `/healthz` and posts an EventGrid SubscriptionValidationEvent; asserts the orchestrator round-trips the validation code. |
+| 🧪 **Playwright trace simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | Web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. |
 
 ---
 

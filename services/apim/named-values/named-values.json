@@ -21,6 +21,10 @@
       "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/foundry-citizen-assistant-agent-endpoint"
     },
     {
+      "name": "foundry-topic-router-agent-endpoint",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/foundry-topic-router-agent-endpoint"
+    },
+    {
       "name": "d365-dataverse-url",
       "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/d365-dataverse-url"
     }

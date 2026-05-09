@@ -170,7 +170,7 @@ graph TB
         C["Citizens (DK · SE · NO) — 12 languages"]
         WEB["Web Portal — Azure Static Web Apps"]
         MOB["Mobile App — native shell + Static Web Apps backend"]
-        VOICE["Voice / IVR — Azure Communication Services + AI Speech"]
+        VOICE["Voice / IVR — ACS Call Automation + voice orchestrator + GPT-4o Realtime"]
         WAGENT["Web Chat Widget — APIM → Foundry topic-router"]
     end
 
@@ -859,7 +859,7 @@ UDCSP treats **language and accessibility as first-class platform invariants**. 
 |---|---|---|
 | Channels — Web | Static Web Apps + design system | **ICU MessageFormat** for plurals/genders; per-locale resource bundles; language switcher; locale-aware date/number formatting; right-to-left support where applicable. |
 | Channels — Mobile | Mobile shell | Same i18n pipeline; OS-level locale propagation. |
-| Channels — Voice | ACS + Azure AI Speech | STT/TTS configured per language; per-locale lexicons for civic terminology; barge-in supported in all languages. |
+| Channels — Voice | ACS Call Automation + voice orchestrator (`apps/voice/call-automation/`) + GPT-4o Realtime | Voice channel runs on a custom Container App that bridges ACS bidirectional audio to GPT-4o Realtime (native STT/TTS/VAD/barge-in in 12 languages); Foundry topic-router exposed as a function tool keeps the brain stateless and shared with chat. AI Speech is reserved for D365 pre-orchestrator menus and post-call analytics. |
 | Conversational AI | Microsoft Foundry — `topic-router` agent | Multi-turn topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules; slot-filling state held in **Azure Cache for Redis**. *(Replaces the original Copilot Studio surface — single brain in Foundry now.)* |
 | AI Brain — Classifier | Foundry agent | Multilingual model; eval set covers all 12 languages with golden examples per agency type. |
 | AI Brain — Translator | Foundry agent | Hybrid Azure OpenAI + Azure AI Translator; **glossary** per agency to preserve administrative terminology; quality gate before outbound communication. |
@@ -886,7 +886,7 @@ Coverage targets the **official**, **most-common minority** and **cross-border w
 | **Design system first** | Audited, accessible components shared across all citizen portals; no ad-hoc UI. |
 | **Automated CI gate** | `axe-core` and Lighthouse accessibility audits run on every PR; build fails below the agreed threshold. |
 | **Manual audit** | Annual third-party WCAG 2.1 AA audit per portal; findings tracked as platform debt. |
-| **Voice channel parity** | Citizens who cannot use a screen can complete every primary journey via the voice channel (ACS + Speech). |
+| **Voice channel parity** | Citizens who cannot use a screen can complete every primary journey via the voice channel (ACS Call Automation + voice orchestrator + GPT-4o Realtime + warm transfer to a human caseworker). |
 | **Caseworker assistance** | Caseworkers can complete forms on behalf of citizens and capture verifiable consent. |
 | **Plain language** | Foundry **Citizen Assistant** is prompted to reply in plain, jargon-free language at a defined reading level per locale. |
 | **Accessibility statements** | Each portal publishes a per-locale accessibility statement and a feedback channel routed to D365. |
@@ -959,8 +959,9 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant Citizen
-    participant ACS as Communication Services (PSTN)
-    participant Speech as AI Speech (STT/TTS)
+    participant ACS as ACS Call Automation (PSTN)
+    participant Orch as Voice Orchestrator<br/>(apps/voice/call-automation)
+    participant Realtime as Azure OpenAI<br/>GPT-4o Realtime
     participant APIM as APIM /agents/topic-router
     participant TR as Foundry — Topic Router
     participant Redis as Redis (session)
@@ -968,11 +969,16 @@ sequenceDiagram
     participant Assist as Foundry — Citizen Assistant
     participant KB as Knowledge Base (Fabric + SP)
     participant Safety as Content Safety
-    participant D365 as Dynamics 365
-    Citizen->>ACS: Calls support number
-    ACS->>Speech: Audio stream → text
-    Speech->>APIM: "How do I file my late tax return?" + traceparent
-    APIM->>TR: Route to topic-router
+    participant D365 as D365 Voice Workstream
+    Citizen->>ACS: Calls country PSTN number
+    ACS->>Orch: IncomingCall (Event Grid) → AnswerCall + media-streaming WSS
+    Orch->>Realtime: Open Realtime WS (session.update with TOOL_DEFS + IVR welcome + recording disclosure)
+    ACS->>Orch: Bidirectional PCM 16k audio (citizen voice)
+    Orch->>Realtime: input_audio_buffer.append (frame proxy)
+    Realtime-->>Realtime: server-VAD turn detection + barge-in
+    Realtime->>Orch: response.function_call lookup_topic_router
+    Orch->>APIM: POST /agents/topic-router/messages<br/>(channel=voice, x-channel-actor=voice, x-call-connection-id)
+    APIM->>TR: Forward (after JWT + actor + rate-limit)
     TR->>Redis: Hydrate session state
     TR->>Class: Classify intent + language
     TR->>Assist: Generate answer
@@ -981,12 +987,16 @@ sequenceDiagram
     Safety-->>Assist: Approved
     Assist-->>TR: Grounded answer + sources
     TR->>Redis: Persist updated state
-    TR-->>APIM: Reply text
-    APIM->>Speech: Text → audio
-    Speech->>ACS: Audio
+    TR-->>APIM: { reply, intent, escalate, citations }
+    APIM-->>Orch: Same payload
+    Orch->>Realtime: function_call_output → response.create
+    Realtime->>Orch: response.audio.delta (PCM 24k chunks)
+    Orch->>ACS: Audio frames
     ACS->>Citizen: Spoken answer
-    alt Citizen requests human
-        TR->>D365: Escalate to caseworker queue
+    alt Citizen says "agent" or escalate=true
+        Realtime->>Orch: response.function_call escalate_to_human
+        Orch->>ACS: transferCallToParticipant(D365 queue, udcspEscalation context)
+        ACS->>D365: Warm transfer (caseworker sees summary)
     end
 ```
 
