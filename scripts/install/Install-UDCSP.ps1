@@ -94,7 +94,7 @@ $Script:Report         = [ordered]@{
 }
 
 # ---------------------------------------------------------------------------
-# DAG (matches docs/tech/plan.md §4)
+# DAG (matches docs/tech/installation.md §6.1 — install order)
 # ---------------------------------------------------------------------------
 $Script:Dag = [ordered]@{
     LandingZone         = @{ Wave = 0; DependsOn = @();                                              Module = 'Install-LandingZone.psm1' }
