@@ -39,6 +39,38 @@
     {
       "name": "logicapp-notifications-url",
       "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/logicapp-notifications-url"
+    },
+    {
+      "name": "dk-backend-base-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/dk-backend-base-url"
+    },
+    {
+      "name": "se-backend-base-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/se-backend-base-url"
+    },
+    {
+      "name": "no-backend-base-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/no-backend-base-url"
+    },
+    {
+      "name": "entra-openid-config-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/entra-openid-config-url"
+    },
+    {
+      "name": "entra-api-audience",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/entra-api-audience"
+    },
+    {
+      "name": "external-id-openid-config-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/external-id-openid-config-url"
+    },
+    {
+      "name": "external-id-api-audience",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/external-id-api-audience"
+    },
+    {
+      "name": "portal-origin",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/portal-origin"
     }
   ]
 }

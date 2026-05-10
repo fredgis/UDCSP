@@ -72,14 +72,14 @@ foreach ($entry in $Config.Subscriptions.GetEnumerator()) {
 # JSON files in governance/purview/data-sources/ (the same source of truth
 # as Register-PurviewSources.ps1) and removes each by name. Sources that
 # weren't registered (e.g. fresh tenant) silently skip.
-if ($Config.PSObject.Properties.Name -contains 'Purview' -and $Config.Purview.AccountName) {
-    if ($PSCmdlet.ShouldProcess($Config.Purview.AccountName, "Unregister Purview UDCSP sources (env=$Environment)")) {
+if ($Config.ContainsKey('PurviewAccount') -and $Config.PurviewAccount.Name) {
+    if ($PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, "Unregister Purview UDCSP sources (env=$Environment)")) {
         $sourceFiles = Get-ChildItem -Path (Join-Path $PSScriptRoot '..\..\governance\purview\data-sources\*.json') -ErrorAction SilentlyContinue
         foreach ($sf in $sourceFiles) {
             try { $sourceName = ((Get-Content $sf.FullName -Raw | ConvertFrom-Json).entity.attributes.name) } catch { continue }
             if (-not $sourceName) { continue }
             Write-Host "  ✕ purview source $sourceName" -ForegroundColor Yellow
-            az purview source delete --account-name $Config.Purview.AccountName --name $sourceName --yes 2>$null | Out-Null
+            az purview source delete --account-name $Config.PurviewAccount.Name --name $sourceName --yes 2>$null | Out-Null
         }
     }
 }
