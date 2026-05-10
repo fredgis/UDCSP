@@ -1205,4 +1205,24 @@ graph TB
 
 ---
 
+## 16. Compliance & resilience hardening (deployed, not demo-driven)
+
+The case study mandates 18 Azure services as the *demo* surface. The platform deploys **9 additional services** that an EU public-sector go-live is expected to ship with — they are wired into the installer and into governance docs, but no scenario in [`recipe.md`](./recipe.md) drives them end-to-end. They exist so the audit pack does not have a hole.
+
+| Service | Why it ships | Owning install phase |
+|---|---|---|
+| **Microsoft Entra Verified ID** | eIDAS 2.0 / EUDI Wallet readiness — issues and verifies VC/VPs from the citizen wallet (currently used by the residency proof-of-address optional flow). | `VerifiedId` |
+| **Azure Bastion (Standard)** | Admin access to the per-country private VNets without jump boxes or public IPs (NIS2 §21 hardening expectation). | `Bastion` |
+| **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant audit of identity entitlements across the 3 sovereign zones; flags toxic permission combinations before they reach an auditor. | `Ciem` |
+| **Azure DDoS Protection Standard** | L3/L4 protection on the citizen-facing VNets ; Front Door covers L7 only and that is not enough for a Nordic public-sector context. | `Ddos` |
+| **Azure Confidential Ledger** | Tamper-evident registry for AI Act Art. 26(6) — every Eligibility agent decision is appended to the ledger before being returned. App Insights logs alone are mutable and would not satisfy a regulator. | `ConfidentialLedger` |
+| **Azure Confidential Computing (CVMs / Confidential Containers)** | Hosts the high-risk Eligibility agent so the citizen prompt + payslip data are protected by a TEE during inference, even from a privileged Azure operator. | `ConfidentialCompute` |
+| **Microsoft Defender for APIs** | Runtime protection on APIM (the entry point for every channel + every cross-zone call). Detects credential stuffing, schema violations, anomalous payloads. | `Security` (Defender plan toggle) |
+| **Azure Backup + Azure Site Recovery** | Per-zone BCDR baseline (PostgreSQL flexible-server PITR, ADLS soft-delete, ASR replication of the Container Apps environment to the paired region). Without this an ISO 27001 / NIS2 audit fails. | `BackupAsr` |
+| **Azure Chaos Studio** | Quarterly fault-injection campaign that proves the 99.9 % SLO advertised on the citizen surfaces — not run on every install, but the experiments and target identities exist. | `ChaosStudio` |
+
+> **Why call this out?** Every service above is a *production* concern, not a demo concern. Listing them honestly in the architecture document avoids the impression that the demo surface is the entire platform. The installer treats them as first-class phases — they have `-TestOnly` checks, `-WhatIf` plans, and dedicated `Test-<Phase>` smoke verbs — so an operator can prove the audit posture without running a citizen scenario through them.
+
+---
+
 *See [`plan.md`](./plan.md) for how this architecture will be built by the multi-agent development team — including the **A15 Synthetic Data & Personas** and **A16 Installer & Developer Experience** agents.*
