@@ -2,6 +2,13 @@
 
 # 🌐 UDCSP — The Web Portal
 
+</div>
+
+> [!NOTE]
+> **Channel surface only.** This document covers the React+Vite portal — pages, accessibility, routing, citizen-facing UX. The agent routing topology (which Foundry agent handles which intent, how the topic-router fans out, what happens when content safety blocks a turn) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how the citizen sees the platform on the web*; `ai.md` owns *how the platform thinks*.
+
+<div align="center">
+
 ### The single digital front door for 2.1 million Nordic citizens
 
 *How Anna opens a laptop browser, logs in with her national eID, submits a cross-border residency application in her own language, and gets a response in four days — with full GDPR + WCAG 2.1 AA compliance and three countries' sovereignty intact.*

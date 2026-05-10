@@ -1,5 +1,9 @@
 # UDCSP — Multi-Agent Development Plan
 
+> [!IMPORTANT]
+> **Historical document.** This is the original build plan that drove the parallel multi-agent scaffolding. The architecture has since evolved (see [`plan_post_audit.md`](./plan_post_audit.md) for the May 2026 stack diff and [`architecture.md`](./architecture.md) for the current design). Keep this file for traceability of *how* the platform was built; read `architecture.md` for *what* the platform is today.
+
+
 > Source-of-truth plan consumed by the **AI coding agents** that will implement the platform defined in [`architecture.md`](./architecture.md). This document describes **who builds what, in which order, and what runs in parallel**.
 
 > **Build status (as of last commit): all 17 work packages delivered.** See [`agents.md`](./agents.md) for the execution log (durations, models, file counts, parallelism factor). Component scaffolds live under `infra/`, `apps/`, `services/`, `foundry/`, `data/`, `governance/`, `tests/`. The orchestrator-owned installer lives under `scripts/install/`. Every component ships its own `Test-*` script — see [`installation.md`](./installation.md) §5.

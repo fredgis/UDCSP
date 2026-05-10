@@ -2,6 +2,13 @@
 
 # 💬 UDCSP — The Chat Widget
 
+</div>
+
+> [!NOTE]
+> **Channel surface only.** This document covers the in-page chat widget — UX, slot-filling, escalation handover. The underlying agent topology (topic-router → specialised agents → APIM facade → Redis session memory) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how chat feels to the citizen*; `ai.md` owns *which agent answers and why*.
+
+<div align="center">
+
 ### One brain (Foundry topic-router) for web chat and voice
 
 *How a citizen opens a corner panel, types a question in any of 12 languages, and gets a grounded answer — complete with cited adaptive cards, suggested actions, and a one-click escalation to a human caseworker — powered by the same Foundry brain that also answers the phone.*

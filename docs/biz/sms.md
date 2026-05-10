@@ -2,6 +2,13 @@
 
 # 📲 UDCSP — The SMS Channel
 
+</div>
+
+> [!NOTE]
+> **Supporting notification rail — not a case-study mandated channel.** [`case-study-11.md`](./case-study-11.md) mandates the **web, mobile and voice** citizen surfaces; SMS is documented here for completeness because it is the cheapest fallback when a citizen is offline or accessibility tooling fails. The deployment is real (ACS SMS), but no demo scenario in [`uses.md`](./uses.md) requires SMS to be live for evaluation.
+
+<div align="center">
+
 ### Transactional notifications across every other channel
 
 *How a case-status change in D365, a voice-call récap, or an SLA breach warning becomes a text message on a citizen's phone — in their own language, from a country-pinned number, with GDPR-compliant consent and a STOP keyword that actually works.*

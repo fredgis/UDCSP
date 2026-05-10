@@ -112,6 +112,18 @@ Additional quota and permission checks for the conversational data layer:
 | Permission: Owner on the country resource group | Azure RBAC | Required for CMK linkage between the new resources and the country Key Vault |
 | Permission: Power Platform admin on each Dataverse environment | Power Platform | Required to install D365 solutions and enable the Foundry → Dataverse `bot_session` mirror table |
 
+> **Power Platform environments must exist *before* the `D365` phase runs.** Create one Production environment per country (no sample apps, no Dataverse currency override):
+>
+> ```powershell
+> pac admin create --name UDCSP-DK --type Production --region europe        --currency DKK --language 1030
+> pac admin create --name UDCSP-SE --type Production --region 'sweden'      --currency SEK --language 1053
+> pac admin create --name UDCSP-NO --type Production --region 'norway'      --currency NOK --language 1044
+> ```
+>
+> Capture each environment URL into `D365EnvironmentUrls` in `udcsp.config.psd1` (next section).
+
+> **DNS + TLS for the citizen surfaces.** The Front Door + APIM phases assume the operator owns the apex zone `udcsp.{dk,se,no}` (or your equivalent) and have delegated NS records pointing at `infra/landing-zone/modules/networking.bicep` outputs. The installer provisions Front-Door-managed certificates for every `*.udcsp.{dk,se,no}` host, but it cannot delegate DNS for you. If you do not own these zones yet, register them before §5.
+
 > **EU residency note.** Every workload region MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`, `norwayeast`). The installer refuses to deploy to non-EU regions.
 
 ---
@@ -177,7 +189,7 @@ Walk every phase's preconditions, configuration parsing and module wiring withou
 pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Environment dev
 ```
 
-A green run here means the config file parses, every module loads, every component is reachable, and every per-phase `Test-<Phase>` function passes — nothing has been deployed yet.
+A green run here means the config file parses, every install module loads without error, every per-phase `Test-<Phase>` precondition function passes, and every Bicep template / helper script the installer is going to invoke exists at the expected path. **It does not call Azure**, so it cannot prove that quotas, subscriptions or RBAC are right — that is what `-WhatIf` (next section) is for.
 
 ### 5.2 What-if (dry-run)
 
