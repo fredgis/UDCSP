@@ -40,6 +40,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟩 1. Scenario 1 — 👩‍💼 Anna moves Denmark → Sweden (cross-border identity &amp; residency)</h2></summary>
 
+> *Anna moves from Copenhagen to Stockholm and registers her residency in Sweden using her Danish eID — one journey, two countries, one identity.*
+
 > Maps to: **uses.md scenario 01** · **eval-matrix rows 1, 2, 3, 7, 12, 13**
 
 | # | Action | Where | Expected outcome |
@@ -64,6 +66,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟪 2. Scenario 2 — 👨‍🦯 Lars (NO) accessibility voice journey 📞</h2></summary>
 
+> *Lars, blind, calls in Norwegian to check the status of a tax-refund case and is warm-transferred to a human caseworker — no screen needed.*
+
 > Maps to: **uses.md scenario 02** · **eval-matrix rows 4, 5, 11, 12, 17**
 
 | # | Action | Where | Expected outcome |
@@ -86,6 +90,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟨 3. Scenario 3 — 👩‍🍼 Maria (PL caregiver in SE) screen-reader application 🦮</h2></summary>
 
+> *Maria, Polish caregiver in Sweden, applies for child benefit using only NVDA + keyboard, in her own language end-to-end.*
+
 > Maps to: **uses.md scenario 03** · **eval-matrix rows 4, 5, 13**
 
 | # | Action | Where | Expected outcome |
@@ -105,6 +111,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 <details>
 <summary><h2>🟧 4. Scenario 4 — 👨‍🔧 Erik (DK SMB) mobile payslip upload 📱</h2></summary>
+
+> *Erik, Danish small-business owner, snaps a photo of his payslip on mobile to apply for an income-based benefit; AI extracts the fields, AI is assistive, never autonomous.*
 
 > Maps to: **uses.md scenario 04** · **eval-matrix rows 7, 13, 16**
 
@@ -126,6 +134,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟫 5. Scenario 5 — 👩‍⚖️ Astrid (SE caseworker) reviews AI pre-assessment</h2></summary>
 
+> *Astrid, Swedish caseworker, triages her queue with Copilot for Service, inspects the AI reasoning, overrides one decision and the override feeds shadow-mode metrics.*
+
 > Maps to: **uses.md scenario 05** · **eval-matrix rows 6, 7, 12, 14, 15**
 
 | # | Action | Where | Expected outcome |
@@ -146,6 +156,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>⬛ 6. Scenario 6 — 🧑‍💼 Hans (DK DPO) handles a Subject Access Request 🛡️</h2></summary>
 
+> *Hans, Danish DPO, fulfils a citizen's GDPR data export end-to-end with audit trail and Purview lineage — proof of "GDPR by design".*
+
 > Maps to: **uses.md scenario 06** · **eval-matrix rows 8, 9, 10, 18**
 
 | # | Action | Where | Expected outcome |
@@ -165,6 +177,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟥 7. Scenario 7 — 🦸‍♀️ Ingrid (SOC) investigates impossible-travel alert 🛰️</h2></summary>
 
+> *Ingrid, SOC analyst, opens a Sentinel impossible-travel alert on a caseworker account, runs the containment playbook (session revoked, PIM removed) — covers identity + AI-specific risks.*
+
 > Maps to: **uses.md scenario 07** · **eval-matrix rows 9, 10**
 
 | # | Action | Where | Expected outcome |
@@ -183,6 +197,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟦 8. Scenario 8 — 👨‍💻 Henrik (CIO) opens the cockpit 📊</h2></summary>
 
+> *Henrik, CIO, reads per-country / per-language outcomes in the Power BI cockpit and confirms the 28→4-day SLA + 47-portal sunset are measured automatically.*
+
 > Maps to: **uses.md scenario 08** · **eval-matrix rows 11, 16**
 
 | # | Action | Where | Expected outcome |
@@ -200,6 +216,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 <details>
 <summary><h2>🟪 9. Scenario 9 — 🧪 Evaluator cross-cutting walkthrough 🤖</h2></summary>
+
+> *A scripted Playwright run replays the 8 scenarios above in evaluator order and produces the single HTML report attached to the case-study deliverable.*
 
 > Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
 
