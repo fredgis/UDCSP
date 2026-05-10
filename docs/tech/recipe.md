@@ -6,9 +6,27 @@
 
 Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from `uses.md`** it satisfies.
 
+This recipe is split into **collapsible sections**. Click any ▶ to expand.
+
+| Section | Persona / theme |
+|---|---|
+| **0** | Pre-flight (5 minutes) |
+| **1** | Anna — cross-border identity & residency (DK → SE) |
+| **2** | Lars — accessibility voice journey (NO) |
+| **3** | Maria — Polish caregiver, screen-reader application (SE) |
+| **4** | Erik — DK SMB mobile payslip upload |
+| **5** | Astrid — SE caseworker reviews AI pre-assessment |
+| **6** | Hans — DK DPO handles a Subject Access Request |
+| **7** | Ingrid — SOC investigates impossible-travel alert |
+| **8** | Henrik — CIO opens the cockpit |
+| **9** | Ole — DevOps reproducible install |
+| **10** | Evaluator cross-cutting walkthrough |
+| **11** | Eval-matrix coverage map |
+
 ---
 
-## 0. Pre-flight (5 minutes)
+<details>
+<summary><h2>0. Pre-flight (5 minutes)</h2></summary>
 
 | # | Action | Command / file | Expected |
 |---|---|---|---|
@@ -17,9 +35,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 | 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | URL = `phases.Fabric.outputs.workspaceUrl` from the install report | Workspace lists the 3 reports (Executive Cockpit · Caseworker Operations · Compliance Audit); KPI tiles render |
 | 0.3b | Open the **citizen-facing** insights cockpit | Any country portal home page (e.g. `https://udcsp-dk.swa.azurestaticapps.net/`) | Per-citizen tiles render (no Power BI Embedded JS SDK loaded) |
 
+</details>
+
 ---
 
-## 1. Scenario 1 — Anna moves Denmark → Sweden (cross-border identity & residency)
+<details>
+<summary><h2>1. Scenario 1 — Anna moves Denmark → Sweden (cross-border identity &amp; residency)</h2></summary>
 
 > Maps to: **uses.md scenario 01** · **eval-matrix rows 1, 2, 3, 7, 12, 13**
 
@@ -38,15 +59,18 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** all 10 steps green; trace ID propagated; AI Act disclosure visible to citizen.
 
+</details>
+
 ---
 
-## 2. Scenario 2 — Lars (NO) accessibility voice journey
+<details>
+<summary><h2>2. Scenario 2 — Lars (NO) accessibility voice journey</h2></summary>
 
 > Maps to: **uses.md scenario 02** · **eval-matrix rows 4, 5, 11, 12, 17**
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no` | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid`. If still `placeholder: true`, bind a real one per [`installation.md` § 8](./installation.md#8-optional--bind-a-real-pstn-number) |
+| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no` | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid`. If still `placeholder: true`, bind a real one per [`installation.md` § C1](./installation.md#-c--optional-only-if-you-need-them) |
 | 2.2 | Smoke the orchestrator (no PSTN required) | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev -OrchestratorBaseUrl https://voice-no.udcsp.no` | `healthz` returns `ok=true country=no liveMode=true`; the synthetic Event Grid handshake succeeds |
 | 2.3 | **Real-call path** — dial the NO number, ask in Bokmål: « Hva er statusen på sak NO-2026-0117? » | Voice (PSTN) | Orchestrator answers in Norwegian, plays the recording-consent disclosure, opens GPT-4o Realtime, and routes through APIM to the Foundry topic-router |
 | 2.4 | Verify the APIM hop happened | App Insights query: `requests \| where url contains "/agents/topic-router/messages" and customDimensions["x-channel-actor"] == "voice" \| where timestamp > ago(2m)` | Exactly one HTTP 200 with `traceparent` linking back to the ACS call leg |
@@ -57,9 +81,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** voice path works without touching a screen; APIM hop proven (step 2.4); D365 warm transfer fires (step 2.6); transcript captured in observability with masked PII. Without a real PSTN number, steps 2.1–2.2 + 2.8 still demonstrate the chain is wired correctly.
 
+</details>
+
 ---
 
-## 3. Scenario 3 — Maria (PL caregiver in SE) screen-reader application
+<details>
+<summary><h2>3. Scenario 3 — Maria (PL caregiver in SE) screen-reader application</h2></summary>
 
 > Maps to: **uses.md scenario 03** · **eval-matrix rows 4, 5, 13**
 
@@ -74,9 +101,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** zero a11y violations across the journey; Polish language preserved end-to-end.
 
+</details>
+
 ---
 
-## 4. Scenario 4 — Erik (DK SMB) mobile payslip upload
+<details>
+<summary><h2>4. Scenario 4 — Erik (DK SMB) mobile payslip upload</h2></summary>
 
 > Maps to: **uses.md scenario 04** · **eval-matrix rows 7, 13, 16**
 
@@ -91,9 +121,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** AI is **assistive**, never autonomous; full PII flow documented in Purview.
 
+</details>
+
 ---
 
-## 5. Scenario 5 — Astrid (SE caseworker) reviews AI pre-assessment
+<details>
+<summary><h2>5. Scenario 5 — Astrid (SE caseworker) reviews AI pre-assessment</h2></summary>
 
 > Maps to: **uses.md scenario 05** · **eval-matrix rows 6, 7, 12, 14, 15**
 
@@ -108,9 +141,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** caseworker can override every AI decision; overrides feed back into model improvement.
 
+</details>
+
 ---
 
-## 6. Scenario 6 — Hans (DK DPO) handles a Subject Access Request
+<details>
+<summary><h2>6. Scenario 6 — Hans (DK DPO) handles a Subject Access Request</h2></summary>
 
 > Maps to: **uses.md scenario 06** · **eval-matrix rows 8, 9, 10, 18**
 
@@ -124,9 +160,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** SAR completes within target time; every data flow inventoried in Purview.
 
+</details>
+
 ---
 
-## 7. Scenario 7 — Ingrid (SOC) investigates impossible-travel alert
+<details>
+<summary><h2>7. Scenario 7 — Ingrid (SOC) investigates impossible-travel alert</h2></summary>
 
 > Maps to: **uses.md scenario 07** · **eval-matrix rows 9, 10**
 
@@ -139,9 +178,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** AI-specific risks (prompt injection, model misuse) and identity risks both covered.
 
+</details>
+
 ---
 
-## 8. Scenario 8 — Henrik (CIO) opens the cockpit
+<details>
+<summary><h2>8. Scenario 8 — Henrik (CIO) opens the cockpit</h2></summary>
 
 > Maps to: **uses.md scenario 08** · **eval-matrix rows 11, 16**
 
@@ -154,9 +196,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** business outcome KPIs (28 → 4 days, +38 % CSAT) are measured automatically.
 
+</details>
+
 ---
 
-## 9. Scenario 9 — Ole (DevOps) reproducible install
+<details>
+<summary><h2>9. Scenario 9 — Ole (DevOps) reproducible install</h2></summary>
 
 > Maps to: **uses.md scenario 09** · **eval-matrix rows 13, 17**
 
@@ -169,9 +214,12 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 **Exit gate:** install is idempotent and reproducible.
 
+</details>
+
 ---
 
-## 10. Scenario 10 — Evaluator cross-cutting walkthrough
+<details>
+<summary><h2>10. Scenario 10 — Evaluator cross-cutting walkthrough</h2></summary>
 
 > Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
 
@@ -183,9 +231,12 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 
 The HTML report it produces is the **single artefact** to attach to the case-study deliverable.
 
+</details>
+
 ---
 
-## 11. Eval-matrix coverage map
+<details>
+<summary><h2>11. Eval-matrix coverage map</h2></summary>
 
 This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#-evaluation-criteria--case-study-coverage-matrix):
 
@@ -211,5 +262,7 @@ This recipe walks through scenarios that, combined, cover every row of the [READ
 | 18 | Continuous evaluation (model + bias) | 5.6, scenario 10 |
 
 The column "Covered by recipe step" must remain green after every release.
+
+</details>
 
 — A14 · QA & Evaluation
