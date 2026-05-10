@@ -34,12 +34,14 @@ function Install-Security {
                 -DeploymentName "udcsp-defender-$($scope.ToLower())" `
                 -WhatIfFlag $whatIf
         }
-        if ($PSCmdlet.ShouldProcess("$scope sentinel", 'az deployment sub create')) {
-            Invoke-AzSubDeployment `
-                -Subscription $sub -Location $region `
+        if ($PSCmdlet.ShouldProcess("$scope sentinel", 'az deployment group create')) {
+            $sentinelRg = "udcsp-$($scope.ToLower())-sentinel-rg"
+            Invoke-AzGroupDeployment `
+                -Subscription $sub -ResourceGroup $sentinelRg -Location $region `
                 -TemplateFile $sentinel `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-sentinel-$($scope.ToLower())" `
+                -Tags $Config.Tags `
                 -WhatIfFlag $whatIf
         }
         if ($PSCmdlet.ShouldProcess("$scope azure-policy initiative", 'az policy set-definition create + assignment')) {

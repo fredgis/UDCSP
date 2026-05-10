@@ -17,13 +17,16 @@ function Install-ConfidentialCompute {
     foreach ($f in @($env,$app)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
     foreach ($pair in @(@{name='env'; file=$env}, @{name='app'; file=$app})) {
-        if ($PSCmdlet.ShouldProcess("confidential-$($pair.name)", 'az deployment sub create')) {
-            Invoke-AzSubDeployment `
+        $rg = "udcsp-shared-conf-compute-rg"
+        if ($PSCmdlet.ShouldProcess("confidential-$($pair.name)", 'az deployment group create')) {
+            Invoke-AzGroupDeployment `
                 -Subscription $Config.Subscriptions.SharedPlatform `
+                -ResourceGroup $rg `
                 -Location $Config.Regions.Shared `
                 -TemplateFile $pair.file `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-conf-compute-$($pair.name)" `
+                -Tags $Config.Tags `
                 -WhatIfFlag $whatIf
         }
     }

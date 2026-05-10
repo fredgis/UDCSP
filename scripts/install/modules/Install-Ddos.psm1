@@ -15,13 +15,16 @@ function Install-Ddos {
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $plan)) { throw "Missing $plan" }
 
-    if ($PSCmdlet.ShouldProcess('ddos-protection-plan', 'az deployment sub create')) {
-        Invoke-AzSubDeployment `
+    if ($PSCmdlet.ShouldProcess('ddos-protection-plan', 'az deployment group create')) {
+        $rg = "udcsp-shared-ddos-rg"
+        Invoke-AzGroupDeployment `
             -Subscription $Config.Subscriptions.SharedPlatform `
+            -ResourceGroup $rg `
             -Location $Config.Regions.Shared `
             -TemplateFile $plan `
             -LogFile $logFile `
             -DeploymentName 'udcsp-ddos-plan' `
+            -Tags $Config.Tags `
             -WhatIfFlag $whatIf
     }
     if (Test-Path $assoc) {

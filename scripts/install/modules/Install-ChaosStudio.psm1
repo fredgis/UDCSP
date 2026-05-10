@@ -17,13 +17,16 @@ function Install-ChaosStudio {
     foreach ($f in @($tgt,$exp)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
     foreach ($pair in @(@{name='target'; file=$tgt}, @{name='experiments'; file=$exp})) {
-        if ($PSCmdlet.ShouldProcess($pair.name, 'az deployment sub create')) {
-            Invoke-AzSubDeployment `
+        $rg = "udcsp-shared-chaos-rg"
+        if ($PSCmdlet.ShouldProcess($pair.name, 'az deployment group create')) {
+            Invoke-AzGroupDeployment `
                 -Subscription $Config.Subscriptions.SharedPlatform `
+                -ResourceGroup $rg `
                 -Location $Config.Regions.Shared `
                 -TemplateFile $pair.file `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-chaos-$($pair.name)" `
+                -Tags $Config.Tags `
                 -WhatIfFlag $whatIf
         }
     }
