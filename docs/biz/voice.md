@@ -21,7 +21,7 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services** answers → **Azure AI Speech** transcribes in streaming → **APIM** validates & audits → the Foundry **`topic-router`** routes the intent to the same Foundry agents that power web/mobile → **Speech TTS** speaks the answer back → an **SMS récap** is sent through ACS. **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
+> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services Call Automation** answers → the **voice orchestrator Container App** (`apps/voice/call-automation/`) opens a bidirectional WebSocket to **Azure OpenAI GPT-4o Realtime** for native low-latency STT + reasoning + TTS in one stream → from inside that stream the orchestrator calls **APIM** `/agents/topic-router` as a **function tool** to fan out to the same Foundry agents that power web/mobile → on `escalate=true` the call is **warm-transferred** to a D365 voice workstream queue. **Azure AI Speech is kept only for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11). **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
 >
 > | Field | Value |
 > |---|---|
@@ -71,18 +71,21 @@ The design principle, codified in `docs/biz/uses.md` § Demo 2:
 
 ```mermaid
 flowchart TB
-    PHONE["☎️ Citizen phone"] -->|PSTN| ACS["Azure Communication Services"]
-    ACS <-->|audio frames| SPEECH["Azure AI Speech<br/>STT + TTS"]
-    SPEECH -->|text + locale| APIM["APIM<br/>/agents/topic-router"]
+    PHONE["☎️ Citizen phone"] -->|PSTN| ACS["Azure Communication Services<br/>Call Automation"]
+    ACS <-->|bidirectional audio WS| ORCH["Voice orchestrator Container App<br/>apps/voice/call-automation/"]
+    ORCH <-->|GPT-4o Realtime WS<br/>native STT + TTS| GPTRT["Azure OpenAI<br/>gpt-realtime"]
+    ORCH -->|function tool: lookup_topic_router| APIM["APIM<br/>/agents/topic-router"]
     APIM --> ROUTER["Foundry topic-router"]
-    ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility"]
-    ROUTER --> D365["Dynamics 365<br/>warm transfer"]
+    ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility · doc-extractor · caseworker-helper"]
+    ORCH -->|escalate=true → warm transfer| D365["Dynamics 365<br/>voice workstream"]
     ROUTER --> FABRIC["Fabric + App Insights<br/>transcripts + traces"]
     D365 --> ACSOUT["ACS SMS récap"]
     ACSOUT -.-> PHONE
+    SPEECH["Azure AI Speech<br/>(reserved for D365 pre-orchestrator IVR menus<br/>+ post-call analytics — not in the live audio path)"]
+    D365 -. menus .-> SPEECH
 ```
 
-> 📖 **Reading the picture.** Voice keeps ACS and AI Speech for telephony and speech, and APIM invokes Foundry `topic-router`, the same brain used by web chat.
+> 📖 **Reading the picture.** Voice keeps ACS for telephony and **GPT-4o Realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
 
 ---
 
@@ -93,24 +96,28 @@ sequenceDiagram
     autonumber
     actor C as 📞 Citizen
     participant ACS as 🛰️ ACS (PSTN)
-    participant STT as 🎙️ AI Speech STT
+    participant ORCH as 🎚️ Voice orchestrator
+    participant GPTRT as 🧠 GPT-4o Realtime
     participant API as 🚪 APIM
     participant R as 🧠 Foundry topic-router
     participant F as 🤖 Foundry agents
     participant D as 📋 D365
-    participant TTS as 🔊 AI Speech TTS
     C->>ACS: dial country toll-free number
     ACS->>C: greeting + recording disclosure
     C->>ACS: consent / utterance
-    ACS->>STT: stream audio frames
-    STT-->>API: text + locale
+    ACS->>ORCH: bidirectional audio WebSocket
+    ORCH->>GPTRT: stream audio frames (Realtime WS)
+    GPTRT-->>ORCH: streaming partial transcript + intent
+    ORCH->>API: function tool: lookup_topic_router(text, locale)
     API->>API: validate voice channel token · audit
     API->>R: POST /agents/topic-router
     R->>F: delegate answer / eligibility / translation
     F-->>R: answer + evidence + safety verdict
     R-->>API: channel-shaped response
-    API->>TTS: synthesize response
-    TTS-->>ACS: audio stream
+    API-->>ORCH: response text + actions
+    ORCH->>GPTRT: send response text for TTS
+    GPTRT-->>ORCH: stream synthesised audio
+    ORCH-->>ACS: forward audio frames
     ACS-->>C: spoken answer
     R->>D: warm-transfer when required
     D->>ACS: post-call SMS récap
