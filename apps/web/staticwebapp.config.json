@@ -26,7 +26,7 @@
     }
   },
   "globalHeaders": {
-    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://*.azure-api.net https://*.ciamlogin.com https://*.botframework.com https://*.directline.botframework.com; frame-src https://*.botframework.com https://*.copilotstudio.microsoft.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; frame-ancestors 'none'",
+    "Content-Security-Policy": "default-src 'self'; connect-src 'self' https://*.azure-api.net https://*.ciamlogin.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'self'; frame-ancestors 'none'",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",

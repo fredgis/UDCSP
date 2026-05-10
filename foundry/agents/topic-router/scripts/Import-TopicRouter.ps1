@@ -1,8 +1,7 @@
 <#
 .SYNOPSIS
     Import-TopicRouter — imports the Foundry `topic-router` agent into a
-    target Foundry workspace (the agent that absorbed the previous
-    Microsoft Copilot Studio surface).
+    target Foundry workspace.
 
 .DESCRIPTION
     Calls the Foundry CLI to deploy `agent.yaml` into the target

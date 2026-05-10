@@ -354,7 +354,7 @@ bindings:
   - country: no
     phoneNumber: "+47 800 12 345"     # the actual Nkom-approved toll-free
     acsResource: "udcsp-no-acs"
-    topicRouterAgent: "topic-router"          # Foundry agent, post-audit replacement of the Copilot Studio bot
+    topicRouterAgent: "topic-router"          # Foundry agent owning the multilingual conversational façade
     voiceFont: "nb-NO-PernilleNeural"
 ```
 

@@ -1,7 +1,7 @@
 # UDCSP Microsoft Foundry Assets
 
 ## Purpose
-Defines six Foundry-mediated AI agents, shared prompts, evaluation suites and golden datasets for the UDCSP case study. Copilot Studio calls classifier and citizen-assistant; APIM and D365 call specialist agents. All Azure calls are scaffold placeholders.
+Defines six Foundry-mediated AI agents, shared prompts, evaluation suites and golden datasets for the UDCSP case study. APIM, D365 and the Foundry `topic-router` invoke the specialist agents. All Azure calls are scaffold placeholders.
 
 ## How to regenerate
 Regenerate datasets with data/synthetic/scripts/Generate-All.ps1, then run foundry/evaluations/scripts/Run-Evaluation.ps1 against a configured tenant.

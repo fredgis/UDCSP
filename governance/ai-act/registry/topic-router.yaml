@@ -1,7 +1,7 @@
 id: topic-router
 name: "Foundry Topic Router (multilingual conversational orchestrator)"
 riskLevel: limited
-purpose: "Owns multi-turn conversational state and intent routing for the citizen-facing channels (web, mobile, voice). Replaces the previous Microsoft Copilot Studio surface (post-audit refactor); does not produce decisions on welfare/residency claims — defers to the eligibility (high-risk) agent for any pre-assessment."
+purpose: "Owns multi-turn conversational state and intent routing for the citizen-facing channels (web, mobile, voice). Does not produce decisions on welfare/residency claims — defers to the eligibility (high-risk) agent for any pre-assessment."
 dataSources:
   - utterance from APIM `/agents/topic-router/messages`
   - approved Foundry knowledge sources (`citizens-faq`, `sharepoint-policies`)

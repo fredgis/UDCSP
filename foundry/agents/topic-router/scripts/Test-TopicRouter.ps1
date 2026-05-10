@@ -1,8 +1,7 @@
 <#
 .SYNOPSIS
-    Test-TopicRouter — offline structure validator for the post-audit
-    Foundry `topic-router` agent (the agent that absorbed the previous
-    Microsoft Copilot Studio surface).
+    Test-TopicRouter — offline structure validator for the Foundry
+    `topic-router` agent.
 
 .DESCRIPTION
     Asserts that every artefact promised by docs/biz/chat.md is present

@@ -171,7 +171,7 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 | Layer | How the 12 languages are handled |
 |---|---|
 | 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice IVR with **Azure AI Speech** STT/TTS in all 12 languages. |
-| 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). *(Post-audit refactor: Copilot Studio folded into Foundry — single brain, single API surface.)* |
+| 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). |
 | 🧠 **AI Brain (Foundry)** | The **Translator agent** chains Azure OpenAI with **Azure AI Translator** to preserve administrative terminology; the **Classifier** and **Citizen Assistant** are evaluated per language with golden datasets. |
 | 📄 **Documents** | **Azure AI Document Intelligence** + LLM verification handle multilingual passports, payslips, leases, and forms. |
 | 📋 **Case management** | **D365 Customer Service** multilingual knowledge base; outbound communications translated and edited by a caseworker before sending. |
@@ -259,7 +259,7 @@ The table below maps every requirement and outcome stated in the case study to t
 |---|---|
 | 👔 **Citizens / business sponsors** | This README. |
 | 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
-| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — Foundry as the single AI brain (with the `topic-router` agent absorbing what was Copilot Studio), the 7-agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
+| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — Foundry as the single AI brain (with the `topic-router` agent), the 7-agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
 | 🔀 **Channel designers / demo team** | One deep-dive per channel under [`docs/biz/`](./docs/biz/) — 📞 [`voice`](./docs/biz/voice.md) · 🌐 [`web`](./docs/biz/web.md) · 📱 [`mobile`](./docs/biz/mobile.md) · 💬 [`chat`](./docs/biz/chat.md) · 📲 [`sms`](./docs/biz/sms.md) · 📧 [`email`](./docs/biz/email.md) · 🧑‍💼 [`caseworker`](./docs/biz/caseworker.md). |
 | 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 15 sections. |
 | 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
