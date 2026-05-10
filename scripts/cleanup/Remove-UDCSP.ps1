@@ -22,6 +22,7 @@ if (-not (Test-Path $ConfigPath)) { throw "Config missing: $ConfigPath" }
 $Config = Import-PowerShellDataFile -Path $ConfigPath
 
 $PolicyInitiativeName  = 'udcsp-security-compliance-baseline'
+$DefenderPlans         = @('VirtualMachines','StorageAccounts','KeyVaults','Containers','AppServices','Api')
 
 foreach ($entry in $Config.Subscriptions.GetEnumerator()) {
     $sub = $entry.Value
@@ -35,6 +36,15 @@ foreach ($entry in $Config.Subscriptions.GetEnumerator()) {
     if ($PSCmdlet.ShouldProcess($sub, "Delete policy assignment $assignmentName + initiative $PolicyInitiativeName")) {
         az policy assignment delete --subscription $sub --name $assignmentName --scope "/subscriptions/$sub" 2>$null | Out-Null
         az policy set-definition delete --subscription $sub --name $PolicyInitiativeName 2>$null | Out-Null
+    }
+
+    # Best-effort Defender for Cloud pricing reset. Install-Security raises
+    # each plan in $DefenderPlans to Standard at subscription scope; on
+    # teardown we lower them back to Free so the cost stops with the RGs.
+    if ($PSCmdlet.ShouldProcess($sub, "Reset Defender for Cloud plans to Free")) {
+        foreach ($plan in $DefenderPlans) {
+            az security pricing create --subscription $sub --name $plan --tier Free 2>$null | Out-Null
+        }
     }
 
     if ($PSCmdlet.ShouldProcess($sub, "List & delete RGs tagged costCenter=UDCSP env=$Environment")) {
