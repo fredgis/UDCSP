@@ -19,7 +19,7 @@ function Install-Apim {
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-apim-rg"
         $apimName = "udcsp-$($country.ToLower())-apim"
-        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
         $apimCfg = if ($Config.ContainsKey('Apim')) { $Config.Apim } else { @{ PublisherEmail = 'platform@udcsp.local'; PublisherName = 'UDCSP Platform' } }
         if ($PSCmdlet.ShouldProcess("apim-$country", 'az deployment group create')) {
             $apimParams = [ordered]@{

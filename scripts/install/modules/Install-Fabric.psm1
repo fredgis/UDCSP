@@ -14,7 +14,7 @@ function Install-Fabric {
     $logFile = Join-Path $ReportDir 'install-fabric.log'
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $script)) { throw "Missing $script" }
-    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
 
     foreach ($country in 'DK','SE','NO') {
         if ($PSCmdlet.ShouldProcess("$country Fabric", 'Deploy-Fabric.ps1')) {
