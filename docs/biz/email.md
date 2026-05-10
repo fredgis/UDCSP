@@ -2,6 +2,13 @@
 
 # 📧 UDCSP — The Email Channel
 
+</div>
+
+> [!NOTE]
+> **Supporting notification rail — not a case-study mandated channel.** [`case-study-11.md`](./case-study-11.md) mandates the **web, mobile and voice** citizen surfaces; email is documented here for completeness because it is the audit trail of every long-running case (decision letters, GDPR SAR bundles, AI-Act lineage exports). The deployment is real (ACS Email + Logic Apps), but no demo scenario in [`uses.md`](./uses.md) requires email to be live for evaluation.
+
+<div align="center">
+
 ### Bidirectional, country-domains, GDPR-grade
 
 *How a citizen receives a legally-binding case notification from their national agency — DKIM-signed, in their own language — and how their reply finds its way back to the right caseworker queue, in the right country, in the right language.*

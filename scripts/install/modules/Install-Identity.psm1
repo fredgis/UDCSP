@@ -41,8 +41,14 @@ function Install-Identity {
         }
     }
 
-    # Country bicep templates (User-Assigned Managed Identity, Conditional Access bicep, etc.)
-    $bicepFiles = Get-ChildItem -Path (Join-Path $repo 'infra\identity') -Filter '*.bicep' -File -ErrorAction SilentlyContinue
+    # Country bicep templates (User-Assigned Managed Identity, Conditional
+    # Access bicep, etc.). Scope is **external-id/** + the entra `external-id.bicep`
+    # convenience template only; `bastion/`, `ciem/`, and `verified-id/`
+    # have dedicated install phases (Bastion / Ciem / VerifiedId).
+    $bicepFiles = @(
+        Get-ChildItem -Path (Join-Path $repo 'infra\identity\external-id') -Filter '*.bicep' -File -ErrorAction SilentlyContinue
+        Get-ChildItem -Path (Join-Path $repo 'infra\identity\entra')        -Filter 'external-id.bicep' -File -ErrorAction SilentlyContinue
+    )
     foreach ($f in $bicepFiles) {
         foreach ($country in 'DK','SE','NO') {
             $sub = $Config.Subscriptions[$country]

@@ -188,7 +188,8 @@ function Invoke-AzSubDeployment {
               '--name',$DeploymentName,
               '--template-file',$TemplateFile,
               '--only-show-errors','--output','none')
-    if ($ParametersFile -and (Test-Path $ParametersFile)) {
+    if ($ParametersFile) {
+        if (-not (Test-Path $ParametersFile)) { throw "Parameters file not found: $ParametersFile" }
         $args += @('--parameters', $ParametersFile)
     }
     Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag
@@ -224,7 +225,8 @@ function Invoke-AzGroupDeployment {
               '--name',$DeploymentName,
               '--template-file',$TemplateFile,
               '--only-show-errors','--output','none')
-    if ($ParametersFile -and (Test-Path $ParametersFile)) {
+    if ($ParametersFile) {
+        if (-not (Test-Path $ParametersFile)) { throw "Parameters file not found: $ParametersFile" }
         $args += @('--parameters', $ParametersFile)
     }
     Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag

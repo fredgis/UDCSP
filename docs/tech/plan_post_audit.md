@@ -1,5 +1,9 @@
 # UDCSP — Post-Audit Refactor Plan
 
+> [!IMPORTANT]
+> **Historical document.** This plan was executed in May 2026 to re-shape the stack after the architectural audit (suppress Azure SQL DB / Cosmos DB / Copilot Studio / Power BI Embedded ; add Verified ID, Priva, Confidential Ledger, Confidential Compute, Defender for APIs, DDoS Standard, Backup+ASR, Chaos Studio, Bastion, CIEM). All work landed; the live design is in [`architecture.md`](./architecture.md). This file is kept for audit traceability of *why* the stack diverges from the initial `plan.md`.
+
+
 > **Watermark git** : `pre-post-audit-refactor-2026-05-09` (rollback possible avec `git reset --hard pre-post-audit-refactor-2026-05-09`).
 >
 > Plan d'exécution multi-agent du refactor post-audit. Companion log : [`agents.md`](./agents.md) §11.

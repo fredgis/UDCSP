@@ -1,5 +1,9 @@
 # UDCSP — Multi-Agent Build Log
 
+> [!IMPORTANT]
+> **Historical execution log.** Records *who built what, with which model, in how much wall-clock time*. Useful for reproducibility and cost analysis ; not a source of truth for the current architecture (see [`architecture.md`](./architecture.md)) or for current install steps (see [`installation.md`](./installation.md)).
+
+
 > Execution log of the parallel multi-agent build that produced the **UDCSP** platform scaffolding.
 >
 > This document is the **operational counterpart** to [`plan.md`](./plan.md): plan.md declares *who builds what, in which order*; agents.md records *who built what, with which model, in how much wall-clock time, and where the output landed*.
