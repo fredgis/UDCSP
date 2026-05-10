@@ -64,7 +64,7 @@ The orchestrator (this CLI session) writes the installer, master docs and CI plu
 | `agent-foundry` | A6, A11, A12, A15 | Claude Sonnet 4.6 | T+0 | 6 m 1 s | ✅ | 142 | 6 Foundry agents · Copilot Studio bot (initial scaffold — later absorbed into the Foundry `topic-router` agent by `sa4-copilot-into-foundry` in § 4-bis) · 12-language i18n · synthetic data set DK/SE/NO |
 | `agent-frontend` | A9, A10 | Claude Sonnet 4.6 | T+0 | 7 m 15 s | ✅ | 103 | React 18 + TS · Expo mobile · ACS + AI Speech IVR (6 languages) |
 | `agent-qa` | A14 | Claude Sonnet 4.6 | T+0 | 7 m 26 s | ✅ | 89 | Playwright (10 scenarios) · 8 eval pipelines · WCAG · k6 · OWASP ZAP · eIDAS/GDPR/AI Act conformance |
-| `agent-services` | A7, A8 | Claude Sonnet 4.6 | T+0 | 10 m 2 s | ✅ | 102 | APIM (8 APIs) · Logic Apps (6 workflows) · D365 solutions × 4 · 5 Power Automate flows · 3 Functions/ACA |
+| `agent-services` | A7, A8 | Claude Sonnet 4.6 | T+0 | 10 m 2 s | ✅ | 102 | APIM (11 APIs) · Logic Apps (10 workflows) · D365 solutions × 4 · 5 Power Automate flows · 3 Functions/ACA |
 | `agent-platform` | A1, A2, A3, A5 | Claude Sonnet 4.6 | T+0 | 11 m 5 s | ✅ | 64 | Landing-zone Bicep · 3 External ID tenants + custom policies · Defender + Sentinel + 6 analytics rules · Log Analytics + 3 workbooks |
 
 > Default model for the `task` tool is Claude Sonnet 4.6. All vertical sub-agents ran on this model; no overrides applied.

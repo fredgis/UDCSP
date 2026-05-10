@@ -5,9 +5,9 @@ using '../redis-enterprise.bicep'
 // =============================================================================
 
 param country = 'se'
-param env = 'dev'
+param env = 'prod'
 param location = 'swedencentral'
 
-param keyVaultId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-platform/providers/Microsoft.KeyVault/vaults/udcsp-se-dev-kv'
-param logAnalyticsWorkspaceId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-observability/providers/Microsoft.OperationalInsights/workspaces/udcsp-se-dev-law'
-param privateEndpointSubnetId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-network/providers/Microsoft.Network/virtualNetworks/udcsp-se-vnet/subnets/data-pe-subnet'
+param keyVaultId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-prod-platform-rg/providers/Microsoft.KeyVault/vaults/udcsp-se-prod-kv'
+param logAnalyticsWorkspaceId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-se-prod-law'
+param privateEndpointSubnetId = '/subscriptions/{{se-subscription-id}}/resourceGroups/udcsp-se-prod-platform-rg/providers/Microsoft.Network/virtualNetworks/udcsp-se-prod-vnet/subnets/data'
