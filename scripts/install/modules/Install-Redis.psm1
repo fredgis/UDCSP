@@ -17,14 +17,16 @@ function Install-Redis {
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
+        $rg = "udcsp-$($country.ToLower())-redis-rg"
         $param = Join-Path $repo "infra\data\redis\parameters\$($country.ToLower()).bicepparam"
-        if ($PSCmdlet.ShouldProcess("redis-$country", 'az deployment sub create')) {
-            Invoke-AzSubDeployment `
-                -Subscription $sub -Location $region `
+        if ($PSCmdlet.ShouldProcess("redis-$country", 'az deployment group create')) {
+            Invoke-AzGroupDeployment `
+                -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
                 -ParametersFile $param `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-redis-$($country.ToLower())" `
+                -Tags $Config.Tags `
                 -WhatIfFlag $whatIf
         }
     }

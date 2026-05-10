@@ -15,13 +15,16 @@ function Install-VerifiedId {
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
 
-    if ($PSCmdlet.ShouldProcess('verified-id-issuer', 'az deployment sub create')) {
-        Invoke-AzSubDeployment `
+    if ($PSCmdlet.ShouldProcess('verified-id-issuer', 'az deployment group create')) {
+        $rg = "udcsp-shared-verified-id-rg"
+        Invoke-AzGroupDeployment `
             -Subscription $Config.Subscriptions.SharedPlatform `
+            -ResourceGroup $rg `
             -Location $Config.Regions.Shared `
             -TemplateFile $bicep `
             -LogFile $logFile `
             -DeploymentName 'udcsp-verified-id-issuer' `
+            -Tags $Config.Tags `
             -WhatIfFlag $whatIf
     }
 

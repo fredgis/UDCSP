@@ -13,13 +13,31 @@ function Install-ConfidentialLedger {
     $logFile = Join-Path $ReportDir 'install-confidential-ledger.log'
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
-    if ($PSCmdlet.ShouldProcess('confidential-ledger', 'az deployment sub create')) {
-        Invoke-AzSubDeployment `
+    if ($PSCmdlet.ShouldProcess('confidential-ledger', 'az deployment group create')) {
+        $rg = "udcsp-shared-conf-ledger-rg"
+        # logAnalyticsWorkspaceId is required by the bicep but the actual LAW
+        # is provisioned by Install-Observability per country; ops wires the
+        # diagnostic-settings target post-install. Pass a placeholder so the
+        # deployment can proceed; operators replace it via az policy or a
+        # follow-up `az monitor diagnostic-settings update`.
+        $clParams = [ordered]@{
+            '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+            contentVersion = '1.0.0.0'
+            parameters = [ordered]@{
+                logAnalyticsWorkspaceId = @{ value = "/subscriptions/$($Config.Subscriptions.SharedPlatform)/resourceGroups/udcsp-shared-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-shared-law" }
+            }
+        }
+        $clParamsFile = Join-Path $ReportDir 'confidential-ledger.parameters.json'
+        $clParams | ConvertTo-Json -Depth 6 | Set-Content $clParamsFile -Encoding utf8
+        Invoke-AzGroupDeployment `
             -Subscription $Config.Subscriptions.SharedPlatform `
+            -ResourceGroup $rg `
             -Location $Config.ConfidentialLedger.Region `
             -TemplateFile $bicep `
+            -ParametersFile $clParamsFile `
             -LogFile $logFile `
             -DeploymentName 'udcsp-confidential-ledger' `
+            -Tags $Config.Tags `
             -WhatIfFlag $whatIf
     }
 }

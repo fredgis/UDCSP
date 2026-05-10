@@ -17,14 +17,16 @@ function Install-Postgres {
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
+        $rg = "udcsp-$($country.ToLower())-postgres-rg"
         $param = Join-Path $repo "infra\data\postgresql\parameters\$($country.ToLower()).bicepparam"
-        if ($PSCmdlet.ShouldProcess("postgres-$country", 'az deployment sub create')) {
-            Invoke-AzSubDeployment `
-                -Subscription $sub -Location $region `
+        if ($PSCmdlet.ShouldProcess("postgres-$country", 'az deployment group create')) {
+            Invoke-AzGroupDeployment `
+                -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
                 -ParametersFile $param `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-postgres-$($country.ToLower())" `
+                -Tags $Config.Tags `
                 -WhatIfFlag $whatIf
         }
     }
