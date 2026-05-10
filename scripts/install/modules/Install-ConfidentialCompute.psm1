@@ -10,13 +10,13 @@ function Install-ConfidentialCompute {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
-    $env = Join-Path $repo 'infra\security\confidential-compute\confidential-compute.bicep'
+    $envBicep = Join-Path $repo 'infra\security\confidential-compute\confidential-compute.bicep'
     $app = Join-Path $repo 'infra\security\confidential-compute\eligibility-confidential-app.bicep'
     $logFile = Join-Path $ReportDir 'install-confidential-compute.log'
     $whatIf = [bool]$WhatIfPreference
-    foreach ($f in @($env,$app)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+    foreach ($f in @($envBicep,$app)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
-    foreach ($pair in @(@{name='env'; file=$env}, @{name='app'; file=$app})) {
+    foreach ($pair in @(@{name='env'; file=$envBicep}, @{name='app'; file=$app})) {
         $rg = "udcsp-shared-conf-compute-rg"
         if ($PSCmdlet.ShouldProcess("confidential-$($pair.name)", 'az deployment group create')) {
             Invoke-AzGroupDeployment `
