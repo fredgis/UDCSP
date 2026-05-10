@@ -2,12 +2,12 @@
 
 # 🍳 UDCSP — Acceptance Recipe
 
-### 9 scenarios · ≈ 1 h 35 walkthrough · 100 % eval coverage
+### 8 scenarios · ≈ 1 h 15 walkthrough · 100 % eval coverage
 
-*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors [`uses.md`](./uses.md), minus Demo 9 (DevOps reproducible install — not exercised live).*
+*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors [`uses.md`](./uses.md) demos 1-8 (demos 9-10 are not exercised live — see footer note).*
 
-[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-9_live-2E7D32?style=for-the-badge)](#)
-[![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h35-AD1457?style=for-the-badge)](#)
+[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-8_live-2E7D32?style=for-the-badge)](#)
+[![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h15-AD1457?style=for-the-badge)](#)
 [![Coverage](https://img.shields.io/badge/🎯_Eval_rows-1_→_18-E65100?style=for-the-badge)](#)
 
 </div>
@@ -32,8 +32,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | Hans fulfils a citizen's GDPR data export end-to-end with Purview lineage. | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
 | 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | Ingrid investigates a Sentinel alert on a caseworker account, runs the containment playbook. | 🛰️ Sentinel | ~10 min | 9, 10 |
 | 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | Henrik reads per-country / per-language outcomes; confirms 28→4-day SLA + 47-portal sunset. | 📊 Power BI | ~5 min | 11, 16 |
-| 🟪 **9** | 🧪 Evaluator cross-cutting walkthrough | The evaluator replays the 8 scenarios above in audit order; produces the deliverable HTML report. | 🤖 Playwright | ~15 min | 1–18 |
-| | | | **Total** | **≈ 1 h 35** | |
+| | | | **Total** | **≈ 1 h 15** | |
 
 ---
 
@@ -212,25 +211,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 </details>
 
----
-
-<details>
-<summary><h2>🟪 9. Scenario 9 — 🧪 Evaluator cross-cutting walkthrough 🤖</h2></summary>
-
-> *A scripted Playwright run replays the 8 scenarios above in evaluator order and produces the single HTML report attached to the case-study deliverable.*
-
-> Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
-
-A single Playwright test (`tests/e2e/tests/scenario-10-evaluator-cross-cutting.spec.ts`) chains the 8 live scenarios above in the order an evaluator would explore the platform. Run with:
-
-```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
-```
-
-The HTML report it produces is the **single artefact** to attach to the case-study deliverable.
-
-</details>
-
-> **Note.** [`uses.md`](./uses.md) Demo 9 (Ole — DevOps reproducible install) is **not exercised live**: a full tear-down + re-install takes ~90 min. The proof of reproducibility is the `install-report.json` already produced when you ran the platform — diff two consecutive runs to verify idempotence.
+> **Note.** Two demos from [`uses.md`](./uses.md) are intentionally **not exercised live** in this recipe:
+> - **Demo 9 — Ole, DevOps reproducible install.** A full tear-down + re-install takes ~90 min. Proof of reproducibility is the `install-report.json` already produced when you ran the platform — diff two consecutive runs to verify idempotence.
+> - **Demo 10 — Evaluator cross-cutting walkthrough.** Run automatically by the QA pipeline (`pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode`); the HTML report it produces is the deliverable artefact, no live re-play needed.
 
 — A14 · QA & Evaluation
