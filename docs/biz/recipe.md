@@ -22,18 +22,18 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
-| # | Persona / theme | Channel | ⏱️ Time | Eval-matrix rows |
-|---|---|---|---|---|
-| 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | 🌐 Web | ~15 min | 1, 2, 3, 7, 12, 13 |
-| 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | 📞 Voice | ~10 min | 4, 5, 11, 12, 17 |
-| 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | 🌐 Web + 🦮 NVDA | ~10 min | 4, 5, 13 |
-| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | 📱 Mobile | ~10 min | 7, 13, 16 |
-| 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | 🖥️ D365 | ~10 min | 6, 7, 12, 14, 15 |
-| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
-| 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | 🛰️ Sentinel | ~10 min | 9, 10 |
-| 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | ~5 min | 11, 16 |
-| 🟪 **9** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | ~15 min | 1–18 |
-| | | **Total** | **≈ 1 h 35** | |
+| # | Persona / theme | Use case (one-liner) | Channel | ⏱️ Time | Eval-matrix rows |
+|---|---|---|---|---|---|
+| 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | Moves from Copenhagen to Stockholm and registers her Swedish residency using her Danish eID. | 🌐 Web | ~15 min | 1, 2, 3, 7, 12, 13 |
+| 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | Blind, calls in Norwegian to check a tax-refund case and is warm-transferred to a human. | 📞 Voice | ~10 min | 4, 5, 11, 12, 17 |
+| 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | Applies for child benefit in Sweden using NVDA + keyboard, in Polish end-to-end. | 🌐 Web + 🦮 NVDA | ~10 min | 4, 5, 13 |
+| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | Snaps a payslip on mobile for an income-based benefit; AI extracts fields, AI is assistive. | 📱 Mobile | ~10 min | 7, 13, 16 |
+| 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | Triages her D365 queue with Copilot, inspects AI reasoning, overrides one decision. | 🖥️ D365 | ~10 min | 6, 7, 12, 14, 15 |
+| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | Fulfils a citizen's GDPR data export end-to-end with Purview lineage. | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
+| 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | Investigates a Sentinel alert on a caseworker account, runs the containment playbook. | 🛰️ Sentinel | ~10 min | 9, 10 |
+| 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | Reads per-country / per-language outcomes; confirms 28→4-day SLA + 47-portal sunset. | 📊 Power BI | ~5 min | 11, 16 |
+| 🟪 **9** | 🧪 Evaluator cross-cutting walkthrough | Replays the 8 scenarios above in evaluator order; produces the deliverable HTML report. | 🤖 Playwright | ~15 min | 1–18 |
+| | | | **Total** | **≈ 1 h 35** | |
 
 ---
 
