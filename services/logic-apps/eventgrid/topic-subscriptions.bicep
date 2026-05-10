@@ -3,8 +3,9 @@ param country string
 @allowed(['dev','test','prod'])
 param env string
 param location string = resourceGroup().location
+@description('Optional. When empty, only the topic is created (subscription wiring is deferred to ops once a webhook URL is known).')
 @secure()
-param logicAppWebhookEndpoint string
+param logicAppWebhookEndpoint string = ''
 
 var tags = {
   country: country
@@ -20,7 +21,7 @@ resource topic 'Microsoft.EventGrid/topics@2023-12-15-preview' = {
   tags: tags
 }
 
-resource sub 'Microsoft.EventGrid/eventSubscriptions@2023-12-15-preview' = {
+resource sub 'Microsoft.EventGrid/eventSubscriptions@2023-12-15-preview' = if (!empty(logicAppWebhookEndpoint)) {
   name: 'udcsp-${country}-${env}-logic-sub'
   scope: topic
   properties: {

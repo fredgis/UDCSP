@@ -27,6 +27,18 @@
     {
       "name": "d365-dataverse-url",
       "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/d365-dataverse-url"
+    },
+    {
+      "name": "citizen-insights-backend-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/citizen-insights-backend-url"
+    },
+    {
+      "name": "logicapp-documents-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/logicapp-documents-url"
+    },
+    {
+      "name": "logicapp-notifications-url",
+      "keyVaultSecretIdentifier": "https://<kv>.vault.azure.net/secrets/logicapp-notifications-url"
     }
   ]
 }
