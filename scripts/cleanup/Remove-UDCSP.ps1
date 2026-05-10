@@ -46,18 +46,18 @@ foreach ($entry in $Config.Subscriptions.GetEnumerator()) {
     }
 }
 
-# Best-effort Purview source un-registration (the lineage edges keep working
-# in the catalog even after RG deletion; this purges them so the next
-# install starts clean).
+# Best-effort Purview source un-registration. Enumerates the Atlas entity
+# JSON files in governance/purview/data-sources/ (the same source of truth
+# as Register-PurviewSources.ps1) and removes each by name. Sources that
+# weren't registered (e.g. fresh tenant) silently skip.
 if ($Config.PSObject.Properties.Name -contains 'Purview' -and $Config.Purview.AccountName) {
     if ($PSCmdlet.ShouldProcess($Config.Purview.AccountName, "Unregister Purview UDCSP sources (env=$Environment)")) {
-        $sources = az purview source list `
-            --account-name $Config.Purview.AccountName `
-            --query "[?contains(name,'udcsp-$Environment')].name" `
-            -o tsv 2>$null
-        foreach ($src in ($sources -split "`n" | Where-Object { $_ })) {
-            Write-Host "  ✕ purview source $src" -ForegroundColor Yellow
-            az purview source delete --account-name $Config.Purview.AccountName --name $src --yes 2>$null | Out-Null
+        $sourceFiles = Get-ChildItem -Path (Join-Path $PSScriptRoot '..\..\governance\purview\data-sources\*.json') -ErrorAction SilentlyContinue
+        foreach ($sf in $sourceFiles) {
+            try { $sourceName = ((Get-Content $sf.FullName -Raw | ConvertFrom-Json).entity.attributes.name) } catch { continue }
+            if (-not $sourceName) { continue }
+            Write-Host "  ✕ purview source $sourceName" -ForegroundColor Yellow
+            az purview source delete --account-name $Config.Purview.AccountName --name $sourceName --yes 2>$null | Out-Null
         }
     }
 }

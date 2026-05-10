@@ -169,7 +169,7 @@ sequenceDiagram
     A->>SWA: return to /apply/residency with token
     SWA-->>A: render ApplyResidencyPage, pre-fill known claims
     A->>A: fill 3-step wizard, upload employment contract
-    A->>APIM: POST /applications/residency with JWT Bearer + traceparent
+    A->>APIM: POST /citizen/applications {type:"residency",...} with JWT Bearer + traceparent
     APIM->>APIM: validate JWT, audit, rate-limit, country claim
     APIM->>F: invoke classifier agent, intent = cross-border-residency-transfer
     F->>F: content safety in, classify, content safety out
