@@ -282,72 +282,14 @@ flowchart LR
 
 ---
 
-## 📁 Repository Layout
-
-| Path | Purpose |
-|---|---|
-| 📄 `README.md` | This file — story, simplified architecture, evaluation matrix. |
-| 🏗️ [`docs/tech/architecture.md`](./docs/tech/architecture.md) | Deep-dive architecture: layers, sub-systems, data flows, sovereignty zones, multilingual strategy, deployment. |
-| 🗄️ [`docs/tech/data.md`](./docs/tech/data.md) | Storage architecture: 5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping, right-to-erasure playbook. |
-| 🛡️ [`docs/biz/datacompliance.md`](./docs/biz/datacompliance.md) | Data compliance — every regulation responded to (GDPR, EU AI Act, ePrivacy, eIDAS, NIS2, WCAG, DK·SE·NO national law) with article-by-article responses, citizen rights SLAs, and evidence pack. |
-| 🤖 [`docs/tech/plan.md`](./docs/tech/plan.md) | Multi-agent development plan — work packages, agent profiles, parallel waves. |
-| 🎬 [`docs/biz/uses.md`](./docs/biz/uses.md) | **10 demonstration scenarios** an evaluator can run, each mapped to the evaluation matrix rows below. |
-| 📚 [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) | Original case study extracted from the source brief. |
-| 🏛️ `infra/` | Bicep landing zone, Microsoft Entra External ID + Microsoft Entra ID + custom user flows, Defender + Sentinel baseline, Log Analytics + App Insights observability stack. |
-| 💻 `apps/` | React web portal (incl. the new HTML/JS Chart.js insights components — post-audit replacement for Power BI Embedded), Expo mobile shell, **voice orchestrator Container App** (`apps/voice/call-automation/` — Node.js + ACS Call Automation SDK + GPT-4o Realtime + Foundry topic-router as a function tool + D365 warm transfer), ACS + AI Speech IVR scaffolding, D365 model-driven apps + Power Platform solutions. *(The conversational orchestration that lived in `apps/copilot-studio/` is now in `foundry/agents/topic-router/`.)* |
-| 🔌 `services/` | API Management (11 OpenAPI APIs), Logic Apps (10 workflows), Functions / Container Apps, Power Automate flows. |
-| 🧠 `foundry/` | 7 Foundry agents (eligibility, classifier, citizen-assistant, translator, doc-extractor, caseworker-helper, **topic-router** *(post-audit)*), prompts, evaluations, datasets. |
-| 📊 `data/` | Fabric capacities + 3 sovereign workspaces (DK / SE / NO), each holding 1 Lakehouse with 3 medallion layers (Bronze · Silver · Gold) — i.e. 3 Lakehouses × 3 layers = **9 logical zones**. Notebooks + Power BI items, **synthetic personas & cases for DK/SE/NO** (A15). |
-| 🛡️ `governance/` | Purview classifications & policies, EU AI Act registry entries, DPIAs, sovereignty test packs. |
-| 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
-| 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) with **25 phase modules** *(post-audit: +Postgres, +Redis, +VerifiedId, +Bastion, +Ciem, +Ddos, +BackupAsr, +ConfidentialLedger, +ConfidentialCompute, +ChaosStudio, +Priva; −CopilotStudio)*. Companion scripts: `scripts/cleanup/Remove-UDCSP.ps1` (tear-down), `scripts/dev/Bootstrap-DevEnv.ps1` (operator workstation). See [`installation.md`](./docs/tech/installation.md). |
-| ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
-| 📑 [`docs/tech/agents.md`](./docs/tech/agents.md) · [`docs/tech/installation.md`](./docs/tech/installation.md) · [`docs/biz/recipe.md`](./docs/biz/recipe.md) | Build execution log · install procedure · acceptance walk-through. |
-
----
-
-## 🎯 Evaluation Criteria — Case-Study Coverage Matrix
-
-The table below maps every requirement and outcome stated in the case study to the platform component(s) that deliver it and to the validation method that proves it.
-
-**Legend** — 🟦 Reach / Scale · 🟨 Functional channel · 🟧 AI capability · 🟪 Case management · 🟩 Outcome · 🟥 Compliance · 🟫 Mandatory services
-
-| | # | Case-study requirement / outcome | Delivered by | Validation method |
-|:-:|:-:|---|---|---|
-| 🟦 | 1 | Consolidate **47 legacy portals** into a unified front door | Static Web Apps + design system + API Management aggregation layer | Inventory mapping in `architecture.md`; portal-decommission tracker |
-| 🟦 | 2 | **Cross-border identity federation** for 2.1 M citizens | Microsoft Entra External ID (per country) + Microsoft Entra ID + eIDAS bridge | Federation conformance test against eIDAS sandbox; SSO load test |
-| 🟩 | 3 | Reduce processing time **28 d → 4 d** | Logic Apps end-to-end orchestration + Foundry eligibility pre-assessment + D365 queues | Process-mining KPI in Fabric; Power BI SLA dashboard |
-| 🟩 | 4 | **+38 % citizen satisfaction** | GenAI assistant (Foundry **`topic-router`** + downstream agents) + omnichannel + WCAG-compliant UI | CSAT survey pipeline → Fabric → Power BI trend |
-| 🟧 | 5 | AI **classification & routing in 12 languages** | Foundry classifier agent + AI Translator + Azure OpenAI | Foundry evaluations (accuracy, BLEU, language coverage); golden dataset per language |
-| 🟧 | 6 | **GenAI citizen assistant** across web / mobile / phone | Foundry `topic-router` + downstream Foundry agents + AI Speech + Azure Communication Services | Foundry evals + content-safety scorecards + per-channel UAT |
-| 🟥 | 7 | **Automated eligibility pre-assessment** before human review | Foundry eligibility model (high-risk under EU AI Act) + business rules in Logic Apps + D365 review queue | Shadow-mode evaluation (model vs. caseworker), bias audit, EU AI Act conformity |
-| 🟥 | 8 | **WCAG 2.1 AA** accessibility | Accessible design system + automated axe scans in CI/CD + manual annual audit | axe-core CI gate; third-party accessibility audit report |
-| 🟥 | 9 | **GDPR + EU AI Act + sector directives** compliance | Purview classification & policies + AI Act registry + DPIA per use case + Sentinel + Defender for Cloud | DPIA checklist; AI Act high-risk system documentation; Purview compliance report |
-| 🟦 | 10 | **National data sovereignty** preserved per country | Three sovereign Azure regions (DK / SE / NO) + per-country Fabric workspaces + per-country External ID tenants + cross-border data-sharing policies in Purview | Network topology review; data-residency tests; Purview policy diff |
-| 🟥 | 11 | Different **DPA interpretations** of data-sharing rules | Per-tenant policy packs in Purview + per-country Logic Apps connectors + DPIA per data-flow | Policy unit-tests; legal sign-off per country |
-| 🟨 | 12 | **Web, mobile, telephone** channels | Static Web Apps + native mobile shell + **voice orchestrator** (`apps/voice/call-automation/` — ACS Call Automation ↔ GPT-4o Realtime ↔ Foundry topic-router) + **D365 Customer Service voice channel** for PSTN, queues and warm-transfer to human caseworkers | Channel UAT scripts; `apps/voice/scripts/Test-Voice.ps1` (healthz + Event Grid handshake); voice transcription accuracy in Fabric |
-| 🟦 | 13 | **Multilingual support across all 12 languages** | ICU i18n in UI; Translator agent in Foundry; Speech STT/TTS in 12 languages; Foundry `topic-router` per-locale topic logic; per-language KPIs | Per-language Foundry eval suites; per-language CSAT slicing in Power BI |
-| 🟫 | 14 | Use of **all 9 mandatory Azure services** | External ID + Entra + Foundry (OpenAI) + Fabric + D365 + APIM + Purview + Logic Apps + Power BI Premium — all light up across the 10 demo scenarios in [`uses.md`](./docs/biz/uses.md) | Architecture review; service-inventory CI check |
-| 🟧 | 15 | **Auditability** of every AI decision | Foundry tracing + Application Insights + Fabric audit lakehouse + Power BI audit dashboard | Trace replay test; auditor walkthrough |
-| 🟪 | 16 | **Caseworker productivity** | D365 Customer Service + Copilot for Service + multilingual knowledge base | D365 KPIs (AHT, FCR); caseworker satisfaction survey |
-| 🟦 | 17 | **Synthetic but realistic data** for the three countries (demos, training, evals, audits) | Dedicated synthetic-data agent (A15) producing 12-language personas, applications, documents, conversations and golden eval datasets — GDPR-safe, regenerable | Dataset coverage report; eval baselines green; auditor-ready persona book |
-| 🟫 | 18 | **One-shot installable platform** — repeatable, zero-to-running deployment | Dedicated installer agent (A16) producing `scripts/install/Install-UDCSP.ps1` that orchestrates Bicep, Foundry (incl. the `topic-router` agent), D365 and Power Platform assets across the 3 sovereign zones — **25 phases** post-audit | Smoke deployment from a clean Azure tenant in CI; tear-down script verifies idempotency; deployment report archived in `scripts/install/reports/` |
-
----
-
 ## 📚 Where to Go Next
 
 | Audience | Start with |
 |---|---|
-| 👔 **Citizens / business sponsors** | This README. |
-| 🎬 **Evaluators / demo audiences** | [`uses.md`](./docs/biz/uses.md) — **10 scenarios** that exercise every row of the evaluation matrix. |
-| 🧠 **Anyone reading the AI story** | [`ai.md`](./docs/biz/ai.md) — Foundry as the single AI brain (with the `topic-router` agent), the 7-agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow. |
-| 🔀 **Channel designers / demo team** | One deep-dive per channel under [`docs/biz/`](./docs/biz/) — 📞 [`voice`](./docs/biz/voice.md) · 🌐 [`web`](./docs/biz/web.md) · 📱 [`mobile`](./docs/biz/mobile.md) · 💬 [`chat`](./docs/biz/chat.md) · 📲 [`sms`](./docs/biz/sms.md) · 📧 [`email`](./docs/biz/email.md) · 🧑‍💼 [`caseworker`](./docs/biz/caseworker.md). |
-| 🏗️ **Architects** | [`architecture.md`](./docs/tech/architecture.md) — deep-dive across 16 sections. |
-| 🤖 **Delivery teams & AI coding agents** | [`plan.md`](./docs/tech/plan.md) — 17 agent profiles, 5 waves, parallelisation graphs. |
-| 🛠️ **Operators / DevOps** | [`installation.md`](./docs/tech/installation.md) + [`scripts/install/Install-UDCSP.ps1`](./scripts/install/Install-UDCSP.ps1) — the one-shot installer with **25 phase modules** *(post-audit refactor)*. |
-| 🛡️ **Auditors / DPOs** | [`datacompliance.md`](./docs/biz/datacompliance.md) — every regulation we answer to (GDPR · EU AI Act · ePrivacy · eIDAS · NIS2 · WCAG · DK·SE·NO national law) with article-by-article responses + evidence pack. |
-| 📚 **Original case study** | [`case-study-11.md`](./docs/biz/case-study-11.md). |
+| 📋 **The original case study** | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) — the immutable brief this repo answers. |
+| 📚 **Business documentation** | [`docs/biz/`](./docs/biz/) — channels, AI architecture, data-compliance, demo scenarios, acceptance recipe. |
+| ⚙️ **Technical documentation** | [`docs/tech/`](./docs/tech/) — deep-dive architecture, data model, install guide, build & refactor history, DR runbook. |
+| 🗂️ **Both at once** | [`docs/`](./docs/) — the documentation hub. |
 
 ---
 
