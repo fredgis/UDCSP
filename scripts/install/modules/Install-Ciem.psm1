@@ -15,11 +15,44 @@ function Install-Ciem {
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
 
-    if ($PSCmdlet.ShouldProcess('entra-permissions-management', 'az deployment sub create')) {
-        Invoke-AzSubDeployment `
-            -Subscription $Config.Subscriptions.SharedPlatform `
+    # bicep targetScope = 'tenant' AND ciemPrincipalId is a mandatory
+    # parameter (service principal object ID of the Permissions
+    # Management collector). Without a real principal ID we cannot
+    # deploy. Operators populate $Config.Ciem.PrincipalId after
+    # registering the CIEM enterprise app in Entra ID.
+    if (-not $Config.ContainsKey('Ciem') -or -not $Config.Ciem.PrincipalId) {
+        Write-Log -LogFile $logFile -Message "[skip] Config.Ciem.PrincipalId is missing; CIEM onboarding deferred until the Permissions Management service principal is registered."
+        return
+    }
+
+    $subs = @{
+        DK = $Config.Subscriptions['DK']
+        SE = $Config.Subscriptions['SE']
+        NO = $Config.Subscriptions['NO']
+        Shared = $Config.Subscriptions['SharedPlatform']
+    }
+    $azureSubscriptions = @(
+        [ordered]@{ name='udcsp-dk-sovereign';     tenantType='sovereign-country'; country='dk';     subscriptionId=$subs.DK }
+        [ordered]@{ name='udcsp-se-sovereign';     tenantType='sovereign-country'; country='se';     subscriptionId=$subs.SE }
+        [ordered]@{ name='udcsp-no-sovereign';     tenantType='sovereign-country'; country='no';     subscriptionId=$subs.NO }
+        [ordered]@{ name='udcsp-workforce-shared'; tenantType='workforce';         country='shared'; subscriptionId=$subs.Shared }
+    )
+    $ciemParams = [ordered]@{
+        '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+        contentVersion = '1.0.0.0'
+        parameters = [ordered]@{
+            ciemPrincipalId    = @{ value = $Config.Ciem.PrincipalId }
+            azureSubscriptions = @{ value = $azureSubscriptions }
+        }
+    }
+    $paramsFile = Join-Path $ReportDir 'ciem.parameters.json'
+    $ciemParams | ConvertTo-Json -Depth 8 | Set-Content $paramsFile -Encoding utf8
+
+    if ($PSCmdlet.ShouldProcess('entra-permissions-management', 'az deployment tenant create')) {
+        Invoke-AzTenantDeployment `
             -Location $Config.Regions.Shared `
             -TemplateFile $bicep `
+            -ParametersFile $paramsFile `
             -LogFile $logFile `
             -DeploymentName 'udcsp-ciem' `
             -WhatIfFlag $whatIf
