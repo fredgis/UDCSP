@@ -442,7 +442,7 @@ graph TB
 
 ## 5. AI Architecture — Microsoft Foundry at the Core
 
-> 📘 **For the dedicated AI deep-dive** (single brain — Foundry only — with the new `topic-router` agent absorbing what was Copilot Studio, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
+> 📘 **For the dedicated AI deep-dive** (single brain — Foundry only — `topic-router` agent, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
 
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
 
@@ -460,7 +460,7 @@ graph TB
     end
 
     subgraph FOUNDRY["Microsoft Foundry — Hub & Project"]
-        AG_TR["Agent — Topic Router<br/>(absorbs Copilot Studio topics<br/>· 12 languages · multi-turn)"]
+        AG_TR["Agent — Topic Router<br/>(12 languages · multi-turn · slot-filling)"]
         AG_CLASS["Agent — Request Classifier<br/>(intent, agency, language)"]
         AG_TRANS["Agent — Translator orchestrator"]
         AG_ELIG["Agent — Eligibility Pre-Assessor<br/>(EU AI Act: high-risk · runs in TEE)"]
@@ -560,7 +560,7 @@ graph TB
 
 | Agent | Purpose | Model strategy | EU AI Act class | Human-in-the-loop |
 |---|---|---|---|---|
-| **Topic Router** *(post-audit, replaces Copilot Studio)* | Multi-turn conversational orchestrator. Detects intent, manages slot-filling state in Redis, routes to the appropriate downstream skill (classifier, citizen-assistant, doc-extractor, eligibility, translator). Owns 12-language topic logic that previously lived in Copilot Studio. | Small low-latency model with tool-use; topics versioned per locale; eval per language. | Limited risk | Caseworker can override routing; transcripts visible in caseworker copilot. |
+| **Topic Router** | Multi-turn conversational orchestrator. Detects intent, manages slot-filling state in Redis, routes to the appropriate downstream skill (classifier, citizen-assistant, doc-extractor, eligibility, translator). Owns 12-language topic logic. | Small low-latency model with tool-use; topics versioned per locale; eval per language. | Limited risk | Caseworker can override routing; transcripts visible in caseworker copilot. |
 | **Request Classifier** | Detect intent, target agency, language, urgency. | Small, low-latency model; periodically fine-tuned on labelled traces. | Limited risk | Caseworker can re-route. |
 | **Translator orchestrator** | Translate citizen content and outbound communications across the 12 languages, preserving administrative terminology. | OpenAI + AI Translator hybrid. | Limited risk | Caseworker can edit translation before sending. |
 | **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a recommendation, never a decision. **Inference orchestration runs inside Azure Confidential Compute (TEE / SEV-SNP)**; every decision is hashed and appended to **Azure Confidential Ledger** for AI Act Art. 26(6) tamper-evident logging. | Tool-using LLM with deterministic rule plug-ins; full lineage. | **High risk** | Always reviewed by a caseworker; never auto-approves. |
@@ -861,7 +861,7 @@ UDCSP treats **language and accessibility as first-class platform invariants**. 
 | Channels — Web | Static Web Apps + design system | **ICU MessageFormat** for plurals/genders; per-locale resource bundles; language switcher; locale-aware date/number formatting; right-to-left support where applicable. |
 | Channels — Mobile | Mobile shell | Same i18n pipeline; OS-level locale propagation. |
 | Channels — Voice | ACS Call Automation + voice orchestrator (`apps/voice/call-automation/`) + GPT-4o Realtime | Voice channel runs on a custom Container App that bridges ACS bidirectional audio to GPT-4o Realtime (native STT/TTS/VAD/barge-in in 12 languages); Foundry topic-router exposed as a function tool keeps the brain stateless and shared with chat. AI Speech is reserved for D365 pre-orchestrator menus and post-call analytics. |
-| Conversational AI | Microsoft Foundry — `topic-router` agent | Multi-turn topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules; slot-filling state held in **Azure Cache for Redis**. *(Replaces the original Copilot Studio surface — single brain in Foundry now.)* |
+| Conversational AI | Microsoft Foundry — `topic-router` agent | Multi-turn topics authored once and reviewed per locale; language detection on entry; multilingual entities; per-locale fallback rules; slot-filling state held in **Azure Cache for Redis**. Single conversational brain in Foundry. |
 | AI Brain — Classifier | Foundry agent | Multilingual model; eval set covers all 12 languages with golden examples per agency type. |
 | AI Brain — Translator | Foundry agent | Hybrid Azure OpenAI + Azure AI Translator; **glossary** per agency to preserve administrative terminology; quality gate before outbound communication. |
 | AI Brain — Citizen Assistant | Foundry agent | RAG knowledge base indexed per language; cross-lingual retrieval as fallback; safety filters per locale. |
@@ -1107,7 +1107,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 
 | Service | Role |
 |---|---|
-| **Microsoft Foundry** | AI agent runtime, model catalog, evaluations, tracing, AI Act registry. Includes the new `topic-router` agent that absorbs the conversational orchestration responsibility (post-audit refactor). |
+| **Microsoft Foundry** | AI agent runtime, model catalog, evaluations, tracing, AI Act registry. Hosts the `topic-router` agent that owns conversational orchestration across web, mobile and voice. |
 | **Azure Front Door + WAF** | Global edge, TLS termination, L7 WAF, OWASP rule set. |
 | **Azure DDoS Protection Standard** | L3/L4 protection on every VNet that fronts a public IP — defence-in-depth complement to Front Door, expected by NIS2. *(Post-audit addition.)* Bicep at [`infra/security/ddos/`](../../infra/security/ddos/). |
 | **Azure Static Web Apps** | Hosting for citizen web portals. |
@@ -1115,7 +1115,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure Confidential Container Apps** | TEE-attested runtime (SEV-SNP) for the Eligibility Pre-Assessor (AI Act high-risk). *(Post-audit addition.)* Bicep at [`infra/security/confidential-compute/`](../../infra/security/confidential-compute/). |
 | **Azure Functions** | Event-driven glue and lightweight integrations. |
 | **Azure Database for PostgreSQL — Flexible Server** | Operational OLTP store; replaces both the original Azure SQL Database and Azure Cosmos DB workloads (relational data + JSONB documents in a single engine; one OLTP engine instead of two; CMK, private endpoint, geo-zone redundant backup). *(Post-audit replacement.)* Bicep at [`infra/data/postgresql/`](../../infra/data/postgresql/). |
-| **Azure Cache for Redis** | Conversational session state for the topic-router (slot-filling), short-lived caches for draft applications and rate-limit counters. *(Post-audit addition; replaces Cosmos DB ephemeral workloads.)* Bicep at [`infra/data/redis/`](../../infra/data/redis/). |
+| **Azure Cache for Redis** | Conversational session state for the topic-router (slot-filling), short-lived caches for draft applications and rate-limit counters. Bicep at [`infra/data/redis/`](../../infra/data/redis/). |
 | **Azure Storage / ADLS Gen2** | Three per-country Storage accounts: citizen-uploads/ (documents), voice-recordings/ (PSTN audio + STT transcripts, WORM 90 days), email-attachments/ (email binaries). All CMK-encrypted. See data.md § 3.2. |
 | **Azure Backup + Azure Site Recovery** | BCDR for Postgres + Redis + critical Storage + agent VMs / Container App environments; per-country vaults; RPO ≤ 15 min / RTO ≤ 4 h. *(Post-audit addition; previously absent.)* Bicep at [`infra/security/backup-asr/`](../../infra/security/backup-asr/). |
 | **Azure Confidential Ledger** | Tamper-evident, CCF-backed log of every high-risk AI decision (AI Act Art. 26(6)) and every Foundry lineage event that needs cryptographic integrity beyond what App Insights / Fabric can offer. *(Post-audit addition.)* Bicep at [`infra/security/confidential-ledger/`](../../infra/security/confidential-ledger/). |

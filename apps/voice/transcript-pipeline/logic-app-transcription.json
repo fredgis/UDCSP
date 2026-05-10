@@ -6,7 +6,7 @@
     "Stream call audio to Azure AI Speech STT",
     "Attach traceparent/callCorrelationId",
     "Send transcript chunks to Foundry topic-router via APIM /agents/topic-router/messages",
-    "Route to the Foundry topic-router agent by intent/language (post-audit: replaces the previous Copilot Studio dialog)",
+    "Route to the Foundry topic-router agent by intent/language",
     "Escalate to D365 human agent when escalation policy matches (apps/voice/escalation/escalation-config.yaml)",
     "Persist redacted transcript metadata for audit (ADLS Gen2 voice-recordings/, anchored in Confidential Ledger)"
   ],

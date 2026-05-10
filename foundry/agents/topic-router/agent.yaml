@@ -1,5 +1,5 @@
 name: topic-router
-description: "Multi-turn conversational orchestrator. Replaces Copilot Studio topic engine. Routes citizen utterances to the appropriate domain skill (citizen-assistant for KB Q&A, classifier for intake routing, doc-extractor for upload flows, eligibility for pre-assess) while preserving 12-language slot-filling state in Redis."
+description: "Multi-turn conversational orchestrator. Routes citizen utterances to the appropriate domain skill (citizen-assistant for KB Q&A, classifier for intake routing, doc-extractor for upload flows, eligibility for pre-assess) while preserving 12-language slot-filling state in Redis."
 model: gpt-5.4
 systemPromptFile: system-prompt.md
 inputs:

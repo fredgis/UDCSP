@@ -28,12 +28,12 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen opens the chat panel embedded in the web portal or mobile WebView → React `ChatWidget.tsx` sends the message to **APIM `/agents/topic-router`** with the Entra token and `traceparent` → the Foundry `topic-router` agent selects the right downstream agent → the answer returns with citations, adaptive cards, and suggested actions → escalation opens a warm D365 case with the full transcript attached. **This was Copilot Studio channel adapter in the previous version; it is now Foundry topic-router via APIM.**
+> **TL;DR.** A citizen opens the chat panel embedded in the web portal or mobile WebView → React `ChatWidget.tsx` sends the message to **APIM `/agents/topic-router`** with the Entra token and `traceparent` → the Foundry `topic-router` agent selects the right downstream agent → the answer returns with citations, adaptive cards, and suggested actions → escalation opens a warm D365 case with the full transcript attached.
 >
 > | Field | Value |
 > |---|---|
 > | 🗄️ **Where stored** | Canonical dialog transcript in Dataverse `bot_session`; slot state in Redis Enterprise; drafts over 24 h in PostgreSQL JSONB; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake and Confidential Ledger anchors. |
-> | 🧱 **Implementation note** | The React `ChatWidget.tsx` posts `JSON` to `${VITE_APIM_BASE_URL}/agents/topic-router/messages`; **no DirectLine, no Copilot Studio web embed, no iframe**. |
+> | 🧱 **Implementation note** | The React `ChatWidget.tsx` posts `JSON` to `${VITE_APIM_BASE_URL}/agents/topic-router/messages`; **no DirectLine, no iframe, no third-party web embed**. |
 
 ---
 
@@ -109,7 +109,7 @@ flowchart TB
     ROUTER -->|transcript + trace| FABRIC
 ```
 
-> 📖 **Reading the picture.** Channel code renders the panel; APIM is the only ingress; Foundry `topic-router` is the shared brain for both web chat and voice. This was Copilot Studio in the previous version; the routing now lives in Foundry.
+> 📖 **Reading the picture.** Channel code renders the panel; APIM is the only ingress; Foundry `topic-router` is the shared brain for both web chat and voice.
 
 ---
 
@@ -175,7 +175,7 @@ A DPO or caseworker can use this single `traceparent` to reconstruct the entire 
 |:-:|---|---|---|
 | **1** | **Foundry `topic-router` agent** | Owns the dialog state machine, topic routing, slot filling, and adaptive-card rendering for **both** web and voice channels. One agent definition (`agent.yaml`), invoked by every channel through APIM. Supports 12 languages out of the box. | `foundry/agents/topic-router/agent.yaml` |
 | **2** | **Topics** | Each `.yaml` topic file is a dialog node: trigger phrases in 12 languages, slot-fill steps and downstream agent calls. Topics are **shared between web and voice** — a change to `child-benefit.yaml` affects both channels simultaneously. | `foundry/agents/topic-router/topics/*.yaml` |
-| **3** | **Slot definitions** | Five closed-list slots used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). *(Post-audit: the 5 closed-list `entities/*.json` files from Copilot Studio have been folded into a single `topics/slot-definitions.yaml`.)* | `foundry/agents/topic-router/topics/slot-definitions.yaml` |
+| **3** | **Slot definitions** | Five closed-list slots used for structured slot filling: `channel` (web · mobile · voice · chat), `country` (DK · SE · NO), `language` (all 12 locales), `serviceType` (residency · tax-cert · child-allowance · social-benefit · business-registration), `accessibilityNeed` (screen-reader · voice-only · cognitive-support · mobility-support · none). | `foundry/agents/topic-router/topics/slot-definitions.yaml` |
 | **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `foundry/agents/topic-router/knowledge-sources/*.json` |
 | **5** | **Connections** | Four connection definitions: `apim-facade.json` is the public ingress, `foundry-skills.json` invokes the downstream Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator), `redis-session.json` holds the slot-fill state, `d365-escalation.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/connections/*.json` |
 | **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation-rules.json` |
@@ -485,7 +485,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
 }
 ```
 
-The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to APIM together with a stable per-session UUID and a W3C `traceparent` header. **No iframe, no DirectLine, no Copilot Studio web embed** — the widget is plain React posting JSON to APIM.
+The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to APIM together with a stable per-session UUID and a W3C `traceparent` header. **No iframe, no DirectLine, no third-party web embed** — the widget is plain React posting JSON to APIM.
 
 ### How it is embedded on the home page
 

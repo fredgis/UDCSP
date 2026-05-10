@@ -21,9 +21,6 @@
     Postgres, Redis, SyntheticData, Foundry, ConfidentialCompute, Apim,
     LogicApps, D365, Apps, Voice, Purview, Priva, QA.
 
-    Removed (post-audit refactor 2026-05-09): CopilotStudio (absorbed into
-    Foundry topic-router agent).
-
 .PARAMETER ExcludePhase
     Phases to exclude from the run. Useful for the documented two-pass install
     workflow (first pass with `-ExcludePhase Voice,QA`, then a second pass
@@ -150,7 +147,6 @@ $Script:Dag = [ordered]@{
     Priva               = @{ Wave = 4; DependsOn = @('Purview');                                     Module = 'Install-Priva.psm1' }
     QA                  = @{ Wave = 4; DependsOn = @('Apps','Voice','Purview','Priva','ConfidentialCompute'); Module = 'Install-QA.psm1' }
 }
-# Removed (post-audit refactor 2026-05-09): CopilotStudio (absorbed into Foundry topic-router).
 
 # ---------------------------------------------------------------------------
 # Helpers

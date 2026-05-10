@@ -4,7 +4,7 @@
 
 ### Microsoft Foundry · topic-router · Azure OpenAI · 7 agents · 12 languages
 
-*One brain: Microsoft Foundry. The new `topic-router` agent absorbs the previous Copilot Studio façade and routes web chat, mobile chat, and voice through APIM.*
+*One brain: Microsoft Foundry. The `topic-router` agent owns the conversational façade and routes web chat, mobile chat, and voice through APIM.*
 
 [![AI Brain](https://img.shields.io/badge/🧠_Brain-Microsoft_Foundry-FF6F00?style=for-the-badge)](#)
 [![Router](https://img.shields.io/badge/🗣️_Router-topic--router-0078D4?style=for-the-badge)](#)
@@ -21,9 +21,9 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP now has **one AI brain: Microsoft Foundry**. The previous version used Microsoft Copilot Studio as a conversational façade; this refactor removes that dual-brain story. Web chat, mobile chat, and voice IVR now call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to the six worker agents — `citizen-assistant`, `classifier`, `translator`, `doc-extractor`, `eligibility`, and `caseworker-helper` — as needed.
+> **TL;DR.** UDCSP has **one AI brain: Microsoft Foundry**. Web chat, mobile chat, and voice IVR call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to the six worker agents — `citizen-assistant`, `classifier`, `translator`, `doc-extractor`, `eligibility`, and `caseworker-helper` — as needed.
 >
-> This was Copilot Studio in the previous version; it is now the Foundry `topic-router` agent. The EU AI Act registry, evaluations, traces, and content-safety controls stay in Foundry and are backed by Azure Confidential Ledger.
+> The conversational façade lives entirely in the Foundry `topic-router` agent. The EU AI Act registry, evaluations, traces, and content-safety controls stay in Foundry and are backed by Azure Confidential Ledger.
 >
 > 📡 *For a **per-channel breakdown** — what AI fires on voice vs web vs mobile vs chat vs SMS vs email vs caseworker, with one consolidated matrix — see [§ 7. AI per communication channel](#7-ai-per-communication-channel).*
 >
@@ -250,7 +250,7 @@ Each `agent.yaml` is the source of truth — installer + CI deploy from it, eval
 
 ## 4. Foundry topic-router — the conversational orchestrator
 
-> **One-liner.** The `topic-router` is a Foundry agent that owns conversational routing for citizen channels. It replaces the previous Microsoft Copilot Studio façade: same citizen journeys, fewer moving parts, one trace plane.
+> **One-liner.** The `topic-router` is a Foundry agent that owns conversational routing for citizen channels: same citizen journeys, single trace plane, one place to author dialogue.
 
 ### 4.1 What the topic-router owns
 
@@ -264,7 +264,7 @@ Each `agent.yaml` is the source of truth — installer + CI deploy from it, eval
 
 ### 4.2 Explicit migration note
 
-This was Copilot Studio in the previous version; it is now the Foundry `topic-router` agent. Voice IVR, the web chat widget, and mobile chat no longer use previous channel tokens or Copilot Studio channel adapters. They call APIM directly and receive a Foundry-mediated response shaped for their channel.
+Voice IVR, the web chat widget, and mobile chat all call APIM directly and receive a Foundry-mediated response shaped for their channel.
 
 ---
 
