@@ -25,7 +25,7 @@ function Install-BackupAsr {
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
-        $rg = "udcsp-$($country.ToLower())-rg"
+        $rg = "udcsp-$($country.ToLower())-backup-asr-rg"
         $cl = $country.ToLower()
         $vaultName = "udcsp-$cl-$envName-rsv"
 
