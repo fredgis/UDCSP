@@ -1208,7 +1208,7 @@ graph TB
 
 ## 16. Compliance & resilience hardening (deployed, not demo-driven)
 
-The case study mandates 18 Azure services as the *demo* surface. The platform deploys **9 additional services** that an EU public-sector go-live is expected to ship with — they are wired into the installer and into governance docs, but no scenario in [`recipe.md`](./recipe.md) drives them end-to-end. They exist so the audit pack does not have a hole.
+The case study mandates 18 Azure services as the *demo* surface. The platform deploys **9 additional services** that an EU public-sector go-live is expected to ship with — they are wired into the installer and into governance docs, but no scenario in [`recipe.md`](../biz/recipe.md) drives them end-to-end. They exist so the audit pack does not have a hole.
 
 | Service | Why it ships | Owning install phase |
 |---|---|---|

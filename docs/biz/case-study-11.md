@@ -21,7 +21,7 @@
 ---
 
 > [!IMPORTANT]
-> **This document is immutable.** It is the verbatim case-study brief delivered as input to the team. Every other file in this repository (`README.md`, `docs/tech/architecture.md`, `docs/biz/ai.md`, `docs/biz/uses.md`, `docs/tech/plan.md`, `docs/tech/installation.md`, `docs/tech/recipe.md`, `docs/tech/agents.md`) is a *response* to this brief — and must remain consistent with it.
+> **This document is immutable.** It is the verbatim case-study brief delivered as input to the team. Every other file in this repository (`README.md`, `docs/tech/architecture.md`, `docs/biz/ai.md`, `docs/biz/uses.md`, `docs/biz/recipe.md`, `docs/tech/plan.md`, `docs/tech/installation.md`, `docs/tech/agents.md`) is a *response* to this brief — and must remain consistent with it.
 
 ---
 

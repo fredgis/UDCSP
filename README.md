@@ -302,7 +302,7 @@ flowchart LR
 | 🧪 `tests/` | Playwright e2e (10 scenarios), Foundry eval pipelines, axe accessibility gate, k6 load, OWASP ZAP, eIDAS / GDPR / AI Act conformance suites. |
 | 🛠️ `scripts/install/` | **One-shot PowerShell installer** `Install-UDCSP.ps1` (A16) with **25 phase modules** *(post-audit: +Postgres, +Redis, +VerifiedId, +Bastion, +Ciem, +Ddos, +BackupAsr, +ConfidentialLedger, +ConfidentialCompute, +ChaosStudio, +Priva; −CopilotStudio)*. Companion scripts: `scripts/cleanup/Remove-UDCSP.ps1` (tear-down), `scripts/dev/Bootstrap-DevEnv.ps1` (operator workstation). See [`installation.md`](./docs/tech/installation.md). |
 | ⚙️ `.github/workflows/` | CI for installer validation, repo checks, e2e tests, evals, accessibility, load, security, conformance. |
-| 📑 [`docs/tech/agents.md`](./docs/tech/agents.md) · [`docs/tech/installation.md`](./docs/tech/installation.md) · [`docs/tech/recipe.md`](./docs/tech/recipe.md) | Build execution log · install procedure · acceptance walk-through. |
+| 📑 [`docs/tech/agents.md`](./docs/tech/agents.md) · [`docs/tech/installation.md`](./docs/tech/installation.md) · [`docs/biz/recipe.md`](./docs/biz/recipe.md) | Build execution log · install procedure · acceptance walk-through. |
 
 ---
 

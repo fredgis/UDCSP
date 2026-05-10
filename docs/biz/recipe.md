@@ -1,10 +1,25 @@
-# UDCSP — Acceptance Recipe
+<div align="center">
+
+# 🍳 UDCSP — Acceptance Recipe
+
+### 11 sections · 10 scenarios · ≈ 1 h 45 walkthrough · 100 % eval coverage
+
+*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform.*
+
+[![Sections](https://img.shields.io/badge/📚_Sections-12-1565C0?style=for-the-badge)](#)
+[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-10-2E7D32?style=for-the-badge)](#)
+[![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h45-AD1457?style=for-the-badge)](#)
+[![Coverage](https://img.shields.io/badge/🎯_Eval_rows-1_→_18-E65100?style=for-the-badge)](#)
+
+</div>
+
+---
 
 > **Audience:** evaluators and platform owners walking through the platform end-to-end after install.
 >
-> **Goal:** prove that every requirement in [`case-study-11.md`](../biz/case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
+> **Goal:** prove that every requirement in [`case-study-11.md`](./case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
 
-Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from `uses.md`** it satisfies.
+Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from [`uses.md`](./uses.md)** it satisfies.
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
@@ -71,7 +86,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no` | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid`. If still `placeholder: true`, bind a real one per [`installation.md` § C1](./installation.md#-c--optional-only-if-you-need-them) |
+| 2.1 | Look up the bound NO PSTN number | `apps/voice/acs/phone-number-bindings.yaml` — entry where `country: no` | E.164 number + `inboundWebhook: https://voice-no.udcsp.no/api/acs/eventgrid`. If still `placeholder: true`, bind a real one per [`installation.md` § C1](../tech/installation.md#-c--optional-only-if-you-need-them) |
 | 2.2 | Smoke the orchestrator (no PSTN required) | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev -OrchestratorBaseUrl https://voice-no.udcsp.no` | `healthz` returns `ok=true country=no liveMode=true`; the synthetic Event Grid handshake succeeds |
 | 2.3 | **Real-call path** — dial the NO number, ask in Bokmål: « Hva er statusen på sak NO-2026-0117? » | Voice (PSTN) | Orchestrator answers in Norwegian, plays the recording-consent disclosure, opens GPT-4o Realtime, and routes through APIM to the Foundry topic-router |
 | 2.4 | Verify the APIM hop happened | App Insights query: `requests \| where url contains "/agents/topic-router/messages" and customDimensions["x-channel-actor"] == "voice" \| where timestamp > ago(2m)` | Exactly one HTTP 200 with `traceparent` linking back to the ACS call leg |
