@@ -9,7 +9,7 @@ param countryVaults array = [
   {
     country: 'dk'
     resourceGroupName: 'udcsp-dk-prod-platform-rg'
-    location: 'denmarkeast'
+    location: 'northeurope'
     keyUri: ''
   }
   {

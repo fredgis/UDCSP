@@ -31,7 +31,11 @@ function Install-Ddos {
         foreach ($country in 'DK','SE','NO') {
             $sub = $Config.Subscriptions[$country]
             $region = $Config.Regions[$country]
-            $rg = "udcsp-$($country.ToLower())-rg"
+            # vnet-association is co-deployed alongside the landing-zone VNet
+            # so the DDoS PUT is idempotent against the already-created shape.
+            # See infra/landing-zone/main.bicep:20 — the VNet lives in
+            # udcsp-{country}-prod-platform-rg.
+            $rg = "udcsp-$($country.ToLower())-prod-platform-rg"
             if ($PSCmdlet.ShouldProcess("ddos-vnet-$country", 'az deployment group create')) {
                 Invoke-AzGroupDeployment `
                     -Subscription $sub -ResourceGroup $rg -Location $region `
