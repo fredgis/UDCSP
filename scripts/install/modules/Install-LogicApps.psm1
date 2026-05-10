@@ -20,11 +20,29 @@ function Install-LogicApps {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-logicapps-rg"
+        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+        $aiCs = ''
+        if ($Config.ContainsKey('Voice') -and $Config.Voice.ContainsKey($country.ToLower())) {
+            $aiCs = [string]$Config.Voice[$country.ToLower()].appInsightsConnectionString
+        }
+        if (-not $aiCs) { $aiCs = 'InstrumentationKey=00000000-0000-0000-0000-000000000000' }
         if (Test-Path $workspaceBicep) {
             if ($PSCmdlet.ShouldProcess("logicapps-workspace-$country", 'az deployment group create')) {
+                $wsParams = [ordered]@{
+                    '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                    contentVersion = '1.0.0.0'
+                    parameters = [ordered]@{
+                        country                     = @{ value = $country.ToLower() }
+                        env                         = @{ value = $envName }
+                        appInsightsConnectionString = @{ value = $aiCs }
+                    }
+                }
+                $wsParamsFile = Join-Path $ReportDir "logicapps-ws-$($country.ToLower()).parameters.json"
+                $wsParams | ConvertTo-Json -Depth 6 | Set-Content $wsParamsFile -Encoding utf8
                 Invoke-AzGroupDeployment `
                     -Subscription $sub -ResourceGroup $rg -Location $region `
                     -TemplateFile $workspaceBicep `
+                    -ParametersFile $wsParamsFile `
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-ws-$($country.ToLower())" `
                     -Tags $Config.Tags `
@@ -33,9 +51,20 @@ function Install-LogicApps {
         }
         if (Test-Path $sbBicep) {
             if ($PSCmdlet.ShouldProcess("logicapps-servicebus-$country", 'az deployment group create')) {
+                $sbParams = [ordered]@{
+                    '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                    contentVersion = '1.0.0.0'
+                    parameters = [ordered]@{
+                        country = @{ value = $country.ToLower() }
+                        env     = @{ value = $envName }
+                    }
+                }
+                $sbParamsFile = Join-Path $ReportDir "logicapps-sb-$($country.ToLower()).parameters.json"
+                $sbParams | ConvertTo-Json -Depth 6 | Set-Content $sbParamsFile -Encoding utf8
                 Invoke-AzGroupDeployment `
                     -Subscription $sub -ResourceGroup $rg -Location $region `
                     -TemplateFile $sbBicep `
+                    -ParametersFile $sbParamsFile `
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-sb-$($country.ToLower())" `
                     -Tags $Config.Tags `
@@ -46,7 +75,7 @@ function Install-LogicApps {
             # Domain-events topic. Subscription wiring deferred (empty webhook
             # endpoint) until ops know the consumer URL — see services/logic-apps/eventgrid/README.md.
             if ($PSCmdlet.ShouldProcess("logicapps-eventgrid-$country", 'az deployment group create')) {
-                $envName = if ($Config.ContainsKey('Env')) { $Config.Env } else { 'dev' }
+                $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
                 $egParams = [ordered]@{
                     '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
                     contentVersion = '1.0.0.0'
