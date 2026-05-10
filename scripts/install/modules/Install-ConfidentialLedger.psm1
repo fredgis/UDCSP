@@ -16,16 +16,21 @@ function Install-ConfidentialLedger {
     if ($PSCmdlet.ShouldProcess('confidential-ledger', 'az deployment group create')) {
         $rg = "udcsp-shared-conf-ledger-rg"
         $clRegion = if ($Config.ContainsKey('ConfidentialLedger') -and $Config.ConfidentialLedger.Region) { $Config.ConfidentialLedger.Region } else { $Config.Regions.Shared }
-        # logAnalyticsWorkspaceId is required by the bicep but the actual LAW
-        # is provisioned by Install-Observability per country; ops wires the
-        # diagnostic-settings target post-install. Pass a placeholder so the
-        # deployment can proceed; operators replace it via az policy or a
-        # follow-up `az monitor diagnostic-settings update`.
+        # logAnalyticsWorkspaceId is required by the bicep for diagnostic
+        # settings. There is no shared LAW — Install-Observability provisions
+        # one LAW per sovereign zone. The Confidential Ledger registry is
+        # cross-border (one shared instance), so we anchor its diagnostics
+        # to the DK LAW by convention; operators can repoint via
+        # `az monitor diagnostic-settings update` post-install if they want
+        # a dedicated shared workspace.
+        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
+        $lawSub = $Config.Subscriptions['DK']
+        $lawId  = "/subscriptions/$lawSub/resourceGroups/udcsp-dk-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-dk-$envName-law"
         $clParams = [ordered]@{
             '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
             contentVersion = '1.0.0.0'
             parameters = [ordered]@{
-                logAnalyticsWorkspaceId = @{ value = "/subscriptions/$($Config.Subscriptions.SharedPlatform)/resourceGroups/udcsp-shared-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-shared-law" }
+                logAnalyticsWorkspaceId = @{ value = $lawId }
             }
         }
         $clParamsFile = Join-Path $ReportDir 'confidential-ledger.parameters.json'
