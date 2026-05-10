@@ -15,6 +15,7 @@ function Install-ConfidentialLedger {
     if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
     if ($PSCmdlet.ShouldProcess('confidential-ledger', 'az deployment group create')) {
         $rg = "udcsp-shared-conf-ledger-rg"
+        $clRegion = if ($Config.ContainsKey('ConfidentialLedger') -and $Config.ConfidentialLedger.Region) { $Config.ConfidentialLedger.Region } else { $Config.Regions.Shared }
         # logAnalyticsWorkspaceId is required by the bicep but the actual LAW
         # is provisioned by Install-Observability per country; ops wires the
         # diagnostic-settings target post-install. Pass a placeholder so the
@@ -32,7 +33,7 @@ function Install-ConfidentialLedger {
         Invoke-AzGroupDeployment `
             -Subscription $Config.Subscriptions.SharedPlatform `
             -ResourceGroup $rg `
-            -Location $Config.ConfidentialLedger.Region `
+            -Location $clRegion `
             -TemplateFile $bicep `
             -ParametersFile $clParamsFile `
             -LogFile $logFile `

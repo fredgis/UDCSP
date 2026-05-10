@@ -14,11 +14,16 @@ function Install-Purview {
     $logFile = Join-Path $ReportDir 'install-purview.log'
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $bicep)) { throw "Missing $bicep" }
+    if (-not $Config.ContainsKey('PurviewAccount') -or -not $Config.PurviewAccount.Name) {
+        Write-Log -LogFile $logFile -Message "[skip] Config.PurviewAccount is missing or has no Name; Purview deploy skipped."
+        return
+    }
+    $purview = $Config.PurviewAccount
 
-    if ($PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, 'az deployment group create')) {
+    if ($PSCmdlet.ShouldProcess($purview.Name, 'az deployment group create')) {
         Invoke-AzGroupDeployment `
-            -Subscription $Config.PurviewAccount.Subscription `
-            -ResourceGroup $Config.PurviewAccount.ResourceGroup `
+            -Subscription $purview.Subscription `
+            -ResourceGroup $purview.ResourceGroup `
             -Location $Config.Regions.Shared `
             -TemplateFile $bicep `
             -LogFile $logFile `
@@ -28,9 +33,9 @@ function Install-Purview {
     }
 
     $register = Join-Path $repo 'governance\purview\scripts\Register-PurviewSources.ps1'
-    if ((Test-Path $register) -and $PSCmdlet.ShouldProcess($Config.PurviewAccount.Name, 'Register-PurviewSources.ps1')) {
+    if ((Test-Path $register) -and $PSCmdlet.ShouldProcess($purview.Name, 'Register-PurviewSources.ps1')) {
         Invoke-NativeCommand `
-            -Command @('pwsh','-File',$register,'-PurviewAccountName',$Config.PurviewAccount.Name) `
+            -Command @('pwsh','-File',$register,'-PurviewAccountName',$purview.Name) `
             -LogFile $logFile `
             -WhatIfFlag $whatIf `
             -ContinueOnError

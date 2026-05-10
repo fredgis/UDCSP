@@ -17,8 +17,10 @@ function Install-D365 {
         Write-Log -LogFile $logFile -Message "[skip] Power Platform CLI ('pac') not on PATH. Install: https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction. Operations recorded for manual replay."
     }
 
+    $d365Urls = if ($Config.ContainsKey('D365EnvironmentUrls')) { $Config.D365EnvironmentUrls } else { @{} }
+
     foreach ($country in 'DK','SE','NO') {
-        $url = $Config.D365EnvironmentUrls[$country]
+        $url = $d365Urls[$country]
         if (-not $url) { continue }
         if ($PSCmdlet.ShouldProcess($url, 'pac auth select')) {
             Invoke-NativeCommand `

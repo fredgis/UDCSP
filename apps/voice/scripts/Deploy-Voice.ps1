@@ -101,6 +101,7 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
 $infraDir = Join-Path $repoRoot 'apps\voice\call-automation\infra'
+$acsDir   = Join-Path $repoRoot 'apps\voice\acs'
 
 function Invoke-AzDeployment {
     param([string]$Name, [string]$TemplateFile, [hashtable]$Parameters)
@@ -133,6 +134,19 @@ function Invoke-AzDeployment {
 Write-Host "═══════════════════════════════════════════════════════════════"
 Write-Host " UDCSP voice deployment | country=$Country | env=$Env | rg=$ResourceGroup"
 Write-Host "═══════════════════════════════════════════════════════════════"
+
+# 0. Country ACS resource (data-pinned). The Event Grid subscription in
+#    step 3 references this as `existing`, and the orchestrator's KV
+#    secret `acs-connection-string` points at the access key of this
+#    resource. Idempotent: re-deploy is a no-op when name + location
+#    match.
+Invoke-AzDeployment `
+    -Name "udcsp-$Country-$Env-voice-acs" `
+    -TemplateFile (Join-Path $acsDir 'acs-resource.bicep') `
+    -Parameters @{
+        country  = $Country
+        location = $Location
+    }
 
 # 1. GPT-4o Realtime deployment in the country Azure OpenAI account.
 Invoke-AzDeployment `
