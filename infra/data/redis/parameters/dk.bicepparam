@@ -5,12 +5,17 @@ using '../redis-enterprise.bicep'
 // =============================================================================
 
 param country = 'dk'
-param env = 'dev'
+param env = 'prod'
 param location = 'northeurope'
 
 // Filled in by the installer from the bootstrap Key Vault. The values here
-// are the resource-naming convention so that operators can dry-run with a
-// real config later.
-param keyVaultId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-platform/providers/Microsoft.KeyVault/vaults/udcsp-dk-dev-kv'
-param logAnalyticsWorkspaceId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-observability/providers/Microsoft.OperationalInsights/workspaces/udcsp-dk-dev-law'
-param privateEndpointSubnetId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-network/providers/Microsoft.Network/virtualNetworks/udcsp-dk-vnet/subnets/data-pe-subnet'
+// follow the resource-naming conventions of the upstream phases:
+// - Key Vault and VNet/subnet are created by Install-LandingZone in
+//   `udcsp-<country>-prod-platform-rg`.
+// - Log Analytics is created by Install-Observability in
+//   `udcsp-<country>-observability-rg`.
+// {{<country>-subscription-id}} is substituted at deploy time by
+// Resolve-BicepParamSubscriptionTokens.
+param keyVaultId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-prod-platform-rg/providers/Microsoft.KeyVault/vaults/udcsp-dk-prod-kv'
+param logAnalyticsWorkspaceId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-dk-prod-law'
+param privateEndpointSubnetId = '/subscriptions/{{dk-subscription-id}}/resourceGroups/udcsp-dk-prod-platform-rg/providers/Microsoft.Network/virtualNetworks/udcsp-dk-prod-vnet/subnets/data'

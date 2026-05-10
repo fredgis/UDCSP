@@ -5,9 +5,9 @@ using '../postgresql-flexible.bicep'
 // =============================================================================
 
 param country = 'no'
-param env = 'dev'
+param env = 'prod'
 param location = 'norwayeast'
 
-param keyVaultId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-platform/providers/Microsoft.KeyVault/vaults/udcsp-no-dev-kv'
-param logAnalyticsWorkspaceId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-observability/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-dev-law'
-param privateEndpointSubnetId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-network/providers/Microsoft.Network/virtualNetworks/udcsp-no-vnet/subnets/data-pe-subnet'
+param keyVaultId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-prod-platform-rg/providers/Microsoft.KeyVault/vaults/udcsp-no-prod-kv'
+param logAnalyticsWorkspaceId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law'
+param privateEndpointSubnetId = '/subscriptions/{{no-subscription-id}}/resourceGroups/udcsp-no-prod-platform-rg/providers/Microsoft.Network/virtualNetworks/udcsp-no-prod-vnet/subnets/data'
