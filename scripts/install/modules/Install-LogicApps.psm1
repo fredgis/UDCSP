@@ -75,7 +75,6 @@ function Install-LogicApps {
             # Domain-events topic. Subscription wiring deferred (empty webhook
             # endpoint) until ops know the consumer URL — see services/logic-apps/eventgrid/README.md.
             if ($PSCmdlet.ShouldProcess("logicapps-eventgrid-$country", 'az deployment group create')) {
-                $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
                 $egParams = [ordered]@{
                     '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
                     contentVersion = '1.0.0.0'

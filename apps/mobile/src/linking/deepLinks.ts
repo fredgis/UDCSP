@@ -64,8 +64,10 @@ export function useDeepLinkRouter(): void {
         const caseId = path.split('/')[1];
         if (caseId) navigation.navigate('CaseDetail', { caseId });
       } else if (path.startsWith('apply/')) {
-        const country = path.split('/')[1] as 'dk' | 'se' | 'no';
-        navigation.navigate('ApplyResidency', { country });
+        const country = path.split('/')[1];
+        if (country === 'dk' || country === 'se' || country === 'no') {
+          navigation.navigate('ApplyResidency', { country });
+        }
       } else if (path === 'settings/accessibility') {
         navigation.navigate('AccessibilitySettings');
       }
