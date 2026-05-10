@@ -15,8 +15,8 @@
 A potential breach is any event in Microsoft Sentinel that:
 
 * Triggers an analytics rule of severity `High` or `Critical`,
-* Originates from one of the citizen-data scopes (Dataverse, Cosmos,
-  OneLake, Blob, Defender for Storage virus-scan tag = `Malicious`),
+* Originates from one of the citizen-data scopes (Dataverse, PostgreSQL,
+  Redis, OneLake, ADLS Gen2, AI Search, Defender for Storage virus-scan tag = `Malicious`),
 * Or is reported by a sub-processor under their own DPA.
 
 The rule fires an Incident in the per-country Sentinel workspace and

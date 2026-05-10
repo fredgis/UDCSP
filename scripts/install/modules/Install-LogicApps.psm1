@@ -14,6 +14,7 @@ function Install-LogicApps {
     $whatIf = [bool]$WhatIfPreference
     $workspaceBicep = Join-Path $repo 'services\logic-apps\workspace.bicep'
     $sbBicep = Join-Path $repo 'services\logic-apps\servicebus\servicebus.bicep'
+    $egBicep = Join-Path $repo 'services\logic-apps\eventgrid\topic-subscriptions.bicep'
 
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
@@ -37,6 +38,31 @@ function Install-LogicApps {
                     -TemplateFile $sbBicep `
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-sb-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
+            }
+        }
+        if (Test-Path $egBicep) {
+            # Domain-events topic. Subscription wiring deferred (empty webhook
+            # endpoint) until ops know the consumer URL — see services/logic-apps/eventgrid/README.md.
+            if ($PSCmdlet.ShouldProcess("logicapps-eventgrid-$country", 'az deployment group create')) {
+                $envName = if ($Config.ContainsKey('Env')) { $Config.Env } else { 'dev' }
+                $egParams = [ordered]@{
+                    '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                    contentVersion = '1.0.0.0'
+                    parameters = [ordered]@{
+                        country = @{ value = $country.ToLower() }
+                        env     = @{ value = $envName }
+                    }
+                }
+                $egParamsFile = Join-Path $ReportDir "logicapps-eg-$($country.ToLower()).parameters.json"
+                $egParams | ConvertTo-Json -Depth 6 | Set-Content $egParamsFile -Encoding utf8
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $egBicep `
+                    -ParametersFile $egParamsFile `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-logicapps-eg-$($country.ToLower())" `
                     -Tags $Config.Tags `
                     -WhatIfFlag $whatIf
             }
