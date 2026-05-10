@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: AI Lineage & Decision Registry API
+  version: 1.0.0
+  description: |
+    Append-only registry of agent decisions for EU AI Act Art. 26(6) compliance.
+    Every high-risk agent invocation (today: `eligibility`) MUST persist its
+    grounding, model version and recommendation here BEFORE returning to the
+    caller. The endpoint fans out to Microsoft Purview lineage and Azure
+    Confidential Ledger so the record is tamper-evident.
+servers:
+  - url: https://{gateway-host}/lineage
+paths:
+  /agent-decisions:
+    post:
+      summary: Append an agent decision to lineage + Confidential Ledger
+      operationId: post-lineage-agent-decisions
+      parameters:
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Request" }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+  /agent-decisions/{decisionId}:
+    get:
+      summary: Read an appended decision (audit replay)
+      operationId: get-lineage-agent-decisions-decisionId
+      parameters:
+        - name: decisionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Response" }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Request: { type: object, additionalProperties: true }
+    Response:
+      type: object
+      properties:
+        correlationId: { type: string }
+        ledgerTransactionId: { type: string }
+        purviewLineageId: { type: string }
+        writtenAt: { type: string, format: date-time }
+        status: { type: string }

@@ -21,7 +21,7 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP now has **one AI brain: Microsoft Foundry**. The previous version used Microsoft Copilot Studio as a conversational façade; this refactor removes that dual-brain story. Web chat, mobile chat, and voice IVR now call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to `citizen-assistant`, `classifier`, `translator`, `document-extractor`, and `eligibility` as needed.
+> **TL;DR.** UDCSP now has **one AI brain: Microsoft Foundry**. The previous version used Microsoft Copilot Studio as a conversational façade; this refactor removes that dual-brain story. Web chat, mobile chat, and voice IVR now call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to the six worker agents — `citizen-assistant`, `classifier`, `translator`, `doc-extractor`, `eligibility`, and `caseworker-helper` — as needed.
 >
 > This was Copilot Studio in the previous version; it is now the Foundry `topic-router` agent. The EU AI Act registry, evaluations, traces, and content-safety controls stay in Foundry and are backed by Azure Confidential Ledger.
 >
