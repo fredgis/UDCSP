@@ -146,6 +146,8 @@ graph TB
 
 > 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) and every workforce action (caseworker via D365 Copilot for Service) hits the **same APIM endpoint** `/agents/topic-router`. Notification channels (SMS, email) bypass conversational routing — they only need the **Translator** agent for outbound 12-language localisation. Inside Foundry, the `topic-router` is the only orchestrator: it owns slots, escalation rules, and dispatches to the six worker agents. **Content Safety runs on every input and every output**, no exceptions. The **Eligibility** agent is the platform's only EU AI Act high-risk component — it runs inside a **Trusted Execution Environment** (Confidential Compute, SEV-SNP) and every decision is appended to **Azure Confidential Ledger** for cryptographic, tamper-evident proof (AI Act Art. 26(6)). RAG-grounded agents cite their sources back to SharePoint, public agency sites and Fabric. The whole conversation is traced through App Insights and indexed in Purview.
 >
+> 🔗 **Concrete wiring.** The Eligibility agent's three tools (`deterministic-rules-engine`, `case-history-lookup`, `lineage-writer`) and the topic-router's six connections / knowledge sources are declared as real OpenAPI contracts under [`foundry/agents/`](./foundry/agents/) — APIM endpoints, managed-identity auth, per-tool rate limits, AI-Act compliance refs. The installer substitutes the per-tenant `${VAR}` placeholders at deploy time.
+>
 > 👉 *Want the full picture?* See [`docs/biz/ai.md`](./docs/biz/ai.md) — mental model, agent catalogue, per-channel AI footprint, RAG strategy, safety + eval pipelines, EU AI Act registry, end-to-end conversation flow, anti-patterns.
 
 ---
