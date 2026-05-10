@@ -73,7 +73,6 @@ function Test-Security {
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $required = @(
         'infra\security\defender\defender-for-cloud.bicep',
-        'infra\security\defender\defender-for-apis.bicep',
         'infra\security\defender\defender-for-apis-onboarding.bicep',
         'infra\security\sentinel\sentinel-workspace.bicep',
         'infra\security\azure-policy\baseline-initiative.json',

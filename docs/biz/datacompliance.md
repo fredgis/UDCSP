@@ -246,16 +246,17 @@ sequenceDiagram
 
 ### What the AI Act demands of UDCSP
 
-UDCSP runs six AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies each one by risk:
+UDCSP runs seven AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies each one by risk:
 
 | # | Agent | AI Act risk class | Why |
 |---|---|---|---|
-| 1 | Classifier | Limited risk | Routes intents; no decision impact |
-| 2 | Translator | Limited risk | Translation; no decision impact |
-| 3 | **Eligibility Pre-Assessor** | **HIGH-RISK** (Annex III, point 5(a) — access to public services + benefits) | Recommends eligibility; affects access to benefits |
-| 4 | Citizen Assistant | Limited risk | Conversational answer + citation |
-| 5 | Document Extractor | Limited risk | Form parsing; caseworker validates |
-| 6 | Caseworker Helper | Limited risk | Productivity aid; caseworker is operator |
+| 1 | topic-router | Limited risk | Channel routing + slot state; no decision impact |
+| 2 | Classifier | Limited risk | Routes intents; no decision impact |
+| 3 | Translator | Limited risk | Translation; no decision impact |
+| 4 | **Eligibility Pre-Assessor** | **HIGH-RISK** (Annex III, point 5(a) — access to public services + benefits) | Recommends eligibility; affects access to benefits |
+| 5 | Citizen Assistant | Limited risk | Conversational answer + citation |
+| 6 | Document Extractor | Limited risk | Form parsing; caseworker validates |
+| 7 | Caseworker Helper | Limited risk | Productivity aid; caseworker is operator |
 
 **One agent is high-risk.** That single agent is what triggers the heaviest AI Act obligations. UDCSP treats every other agent with the same diligence as a defensive posture, but the *binding* obligations are concentrated on the Eligibility Pre-Assessor.
 
