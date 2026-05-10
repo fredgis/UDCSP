@@ -186,17 +186,99 @@ The 12 supported languages cover the **official** and **most common minority** l
 
 ## 🤖 Built by an Agent Swarm
 
-UDCSP is delivered by a swarm of **17 specialised AI coding agents**, organised in **5 waves** with explicit parallelisation. Two agents are highlighted up front because they make this case study **demonstrable end-to-end**:
+UDCSP was built **end-to-end by AI coding agents**, in three distinct campaigns: an initial 17-agent build (`plan.md`), a 7-agent post-audit refactor (`plan_post_audit.md` §1-§6), and 19 cycles of iterative audit hardening (`plan_post_audit.md` §7).
 
-| | Agent | What it produces | Why it matters for the case study |
+### 🗺️ End-to-end timeline
+
+```mermaid
+timeline
+    title Three campaigns, one platform
+    section Campaign 1 — Initial build (plan.md)
+      W0 Foundation : A0 Architect : A1 LandingZone+DevOps
+      W1 Horizontals (parallel) : A2 Identity : A3 Security : A4 Fabric : A5 Observability : A15 SyntheticData
+      W2 Verticals (parallel) : A6 Foundry+AI : A7 APIM+LogicApps : A8 D365 : A9 Web+Mobile : A10 Voice+Channels
+      W3 Intelligence (parallel) : A11 Topic-router : A12 i18n+a11y : A13 Purview
+      W4 Qualification : A14 QA+Evals : A16 One-shot installer
+    section Campaign 2 — Post-audit refactor (plan_post_audit.md §1-§6)
+      7 sub-agents (parallel, strict folder boundaries) : SA-1 PostgreSQL+Redis : SA-2 ConfLedger+ConfCompute+DDoS+Backup+Chaos+DefenderAPIs : SA-3 VerifiedID+Bastion+CIEM : SA-4 Copilot Studio→Foundry topic-router : SA-5 PBI Embedded→HTML+Chart.js : SA-6 Priva (GDPR DSR) : SA-7 docs/biz refresh
+    section Campaign 3 — Iterative audit (plan_post_audit.md §7)
+      19 audit cycles (r6 → r24) : 3 parallel Haiku agents per cycle : 57 sub-agent runs total : 19 fix commits : ~28 P0 + ~30 P1 + ~5 P2 defects : ~25 hallucinations rejected : r24 = first fully-CLEAN round → stop
+```
+
+### 🏗️ Campaign 1 — Initial build (17 agents · 5 waves)
+
+```mermaid
+flowchart LR
+    classDef wave fill:#0e639c,color:#fff,stroke:#0a4d7a
+    classDef arch fill:#7e57c2,color:#fff,stroke:#5e35b1
+    W0["W0 · Foundation<br/>A0 Architect → A1 LandingZone"]:::wave
+    W1["W1 · Horizontals (∥)<br/>A2 Identity · A3 Security · A4 Fabric<br/>A5 Observability · A15 SyntheticData"]:::wave
+    W2["W2 · Verticals (∥)<br/>A6 Foundry+AI · A7 APIM+LogicApps<br/>A8 D365 · A9 Web+Mobile · A10 Voice"]:::wave
+    W3["W3 · Intelligence (∥)<br/>A11 Topic-router · A12 i18n+a11y · A13 Purview"]:::wave
+    W4["W4 · Qualification<br/>A14 QA+Evals · A16 One-shot installer"]:::wave
+    W0 --> W1 --> W2 --> W3 --> W4
+```
+
+Two agents are highlighted because they make the case study **demonstrable end-to-end**:
+
+| | Agent | What it produces | Why it matters |
 |:-:|---|---|---|
-| 🎲 | **A15 · Synthetic Data & Personas** | GDPR-safe personas, applications, documents, multilingual conversations and golden eval datasets for **DK · SE · NO** in **all 12 languages**, with regenerable pipelines. | Provides the realistic, multi-country dataset needed to demo cross-border journeys, train and evaluate the Foundry agents, prove accessibility, and run audits — without ever using real PII. |
-| 🛠️ | **A16 · Installer & Developer Experience** | A single **PowerShell one-shot installer** (`scripts/install/Install-UDCSP.ps1`) that stands up the entire platform end-to-end (landing zone → identity → security → data → Foundry → integration → D365 → frontends → voice → governance), plus a tear-down counterpart and developer-onboarding scripts. | Lets an evaluator (or a new developer) go **from a clean Azure tenant to a running federated platform in one command**. Repeatable, idempotent, CI-validated. |
+| 🎲 | **A15 · Synthetic Data & Personas** | GDPR-safe personas, applications, documents, multilingual conversations and golden eval datasets for **DK · SE · NO** in **all 12 languages**, regenerable. | Realistic multi-country dataset for cross-border journeys, agent training/eval, accessibility audits — without ever touching real PII. |
+| 🛠️ | **A16 · Installer & Developer Experience** | One-shot **PowerShell installer** (`Install-UDCSP.ps1`) — landing zone → identity → security → data → Foundry → integration → D365 → frontends → voice → governance — plus tear-down + dev onboarding. | Goes **from a clean Azure tenant to a running federated platform in one command**. Repeatable, idempotent, CI-validated. |
+
+> Full agent catalogue, dependency graph, per-wave sub-diagrams and risk register: [`plan.md`](./docs/tech/plan.md).
+
+### 🔄 Campaign 2 — Post-audit refactor (7 sub-agents · parallel · strict folder boundaries)
+
+| SA | Mission | Net stack diff |
+|:-:|---|---|
+| **SA-1** | Data refactor | `−` Cosmos · `+` PostgreSQL Flexible (×3 countries) · `+` Redis Enterprise |
+| **SA-2** | Security additions | `+` Confidential Ledger · Confidential Compute · DDoS Std · Backup+ASR · Chaos Studio · Defender for APIs |
+| **SA-3** | Identity additions | `+` Verified ID · Bastion · CIEM (Permissions Management) |
+| **SA-4** | Copilot Studio → Foundry | `−` Copilot Studio · `+` Foundry `topic-router` agent (12 langs absorbed) |
+| **SA-5** | Power BI Embedded → HTML | `−` PBI Embedded *citizen-facing* · `+` Chart.js + React wrappers |
+| **SA-6** | Priva (GDPR DSR) | `+` Microsoft Priva (industrialises Subject Rights Requests) |
+| **SA-7** | docs/biz refresh | All 10 channel/biz `.md` files re-aligned to the new stack |
+
+**Net result:** 4 services suppressed · 9 services added · installer phases **15 → 25** · 2 future swaps documented but **not implemented** ([`§Future Recommendations`](#-future-recommendations-not-implemented-in-this-repository)).
+
+> Full diff, DAG, sub-agent boundaries: [`plan_post_audit.md`](./docs/tech/plan_post_audit.md) §1-§6.
+
+### 🔁 Campaign 3 — Iterative audit hardening (19 cycles · stop on CLEAN)
+
+The commanditaire's instruction: *« on va faire ça jusqu'à ne plus rien trouver. »* Each cycle launched **3 parallel Haiku sub-agents**, with each prompt embedding the cumulative ALREADY-FIXED + hallucination-filter list from prior rounds. Stop condition: first round CLEAN on all 3 surfaces.
+
+```mermaid
+flowchart LR
+    classDef agent fill:#26a69a,color:#fff,stroke:#00897b
+    classDef stop fill:#43a047,color:#fff,stroke:#2e7d32
+    Cycle["Cycle r<sub>n</sub>"] --> Code["code-audit<br/>apps/ + services/"]:::agent
+    Cycle --> Docs["docs-audit<br/>docs/ + README.md"]:::agent
+    Cycle --> Inst["installer-audit<br/>scripts/install/ + infra/"]:::agent
+    Code --> Triage["Triage + verify cited lines"]
+    Docs --> Triage
+    Inst --> Triage
+    Triage -->|defect found| Fix["Apply fix<br/>+ TestOnly 25/25<br/>+ commit + push"]
+    Fix --> Cycle
+    Triage -->|all 3 CLEAN| Stop["✅ r24 — STOP"]:::stop
+```
+
+| Métrique | Valeur |
+|---|---|
+| Cycles d'audit total (r6 → r24) | **19** |
+| Sous-agents Haiku lancés | **57 runs** (3 × 19) |
+| Commits de correction | **19** |
+| Defects appliqués | **~28 P0 · ~30 P1 · ~5 P2** |
+| Hallucinations rejetées | **~25** (7 patterns persistants filtrés à chaque round) |
+| Wall-clock total (3ᵉ campagne) | **~2 h** |
+| Équivalent séquentiel | **~5-6 h** |
+| Première manche CLEAN | **r24** |
+| Validation finale | `pwsh Install-UDCSP.ps1 -TestOnly -Environment dev` → **25/25 ✅** |
+
+> Tableau cycle-par-cycle, patterns d'erreurs récurrents, leçons apprises : [`plan_post_audit.md`](./docs/tech/plan_post_audit.md) §7.
 
 > [!TIP]
-> **From zero to running platform in one command.** Once Wave 4 closes, an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
-
-The full agent catalogue, dependency graph, per-wave sub-diagrams and risk register live in [`plan.md`](./docs/tech/plan.md).
+> **From zero to running platform in one command.** Once Wave 4 closed (and after 24 audit cycles polished every edge), an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
 
 ---
 
