@@ -71,7 +71,26 @@ function Test-Apim {
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $script = Join-Path $repo 'services\apim\scripts\Test-Apim.ps1'
     if (-not (Test-Path $script)) { throw "Missing $script" }
-    "{`"phase`":`"Apim`",`"status`":`"OK`"}" | Set-Content (Join-Path $ReportDir 'test-apim.json')
+    $result = [ordered]@{ phase = 'Apim'; status = 'OK'; mode = 'offline' }
+    if ($env:UDCSP_TESTONLY -eq '1') {
+        $result.mode = 'offline'
+        $result.note = 'TestOnly: skipped live HTTP probe'
+    } else {
+        try {
+            foreach ($country in 'DK','SE','NO') {
+                $apimName = "udcsp-$($country.ToLower())-apim"
+                $gatewayUrl = "https://$apimName.azure-api.net"
+                & $script -GatewayUrl $gatewayUrl 2>&1 | Out-Null
+            }
+            $result.mode = 'live'
+        } catch {
+            $result.status = 'Failed'
+            $result.error  = "$_"
+            $result | ConvertTo-Json -Compress | Set-Content (Join-Path $ReportDir 'test-apim.json')
+            throw
+        }
+    }
+    $result | ConvertTo-Json -Compress | Set-Content (Join-Path $ReportDir 'test-apim.json')
 }
 
 Export-ModuleMember -Function Install-Apim, Test-Apim

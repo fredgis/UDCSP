@@ -256,7 +256,7 @@ Once first-pass is green, you'll harvest the Voice config in [§ 7](#7-configure
 | 24 | `Priva` | `Install-Priva.psm1` | Microsoft Priva Privacy Management — DSR system of record + Risk Management policies, wired to the GDPR Logic Apps |
 | 25 | `QA` | `Install-QA.psm1` | Wires CI eval / E2E / security / conformance pipelines to GitHub Actions |
 
-> The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:99-125` and refuses to run a phase whose prerequisites are missing.
+> The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:114-140` and refuses to run a phase whose prerequisites are missing.
 
 ### 6.2 Re-running a single phase
 

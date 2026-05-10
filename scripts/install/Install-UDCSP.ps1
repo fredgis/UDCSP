@@ -42,6 +42,15 @@
     Generates the evaluator HTML report after smoke (used in CI for the
     case-study deliverable).
 
+.PARAMETER SeedSyntheticData
+    Ensures the SyntheticData phase runs (it is part of the default DAG, but
+    this switch makes the docs/uses.md examples explicit and forces inclusion
+    even when -Phase is restricted to a subset that would otherwise skip it).
+
+.PARAMETER Zone
+    Restricts per-country phases to a single sovereign zone. One of dk | se |
+    no | all (default: all). Read by phase modules via `$Config.ZoneFilter`.
+
 .PARAMETER Force
     Required for tear-down or re-install against -Environment prod.
 
@@ -55,8 +64,8 @@
     pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 
 .EXAMPLE
-    pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Postgres,Redis,Priva -WhatIf
-    # Post-audit refactor — deploy only the new data layer + Priva DSR orchestrator.
+    pwsh ./scripts/install/Install-UDCSP.ps1 -Environment dev -Zone all -SeedSyntheticData
+    # The "one-command DEV" workflow advertised in README + docs/biz/uses.md.
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -81,6 +90,9 @@ param(
     [switch]$TestOnly,
     [switch]$SmokeOnly,
     [switch]$EvaluatorMode,
+    [switch]$SeedSyntheticData,
+    [ValidateSet('dk','se','no','all')]
+    [string]$Zone = 'all',
     [switch]$Force
 )
 
@@ -280,9 +292,14 @@ if ($Environment -eq 'prod' -and -not $Force -and -not $WhatIfPreference -and -n
 }
 
 $config = Import-Config
+$config.ZoneFilter = $Zone
 if ($TestOnly)   { $env:UDCSP_TESTONLY   = '1' } else { Remove-Item Env:UDCSP_TESTONLY   -ErrorAction SilentlyContinue }
 if ($SmokeOnly)  { $env:UDCSP_SMOKEONLY  = '1' } else { Remove-Item Env:UDCSP_SMOKEONLY  -ErrorAction SilentlyContinue }
 $phases = Resolve-Phases $Phase
+if ($SeedSyntheticData -and $phases -notcontains 'SyntheticData') {
+    $phases = Resolve-Phases (@($Phase) + 'SyntheticData')
+    Write-StepInfo "-SeedSyntheticData: forcing SyntheticData phase into the run"
+}
 if ($ExcludePhase) {
     $phases = $phases | Where-Object { $_ -notin $ExcludePhase }
     Write-StepInfo "Excluding phases: $($ExcludePhase -join ', ')"
