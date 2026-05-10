@@ -116,6 +116,11 @@
         Sku = 'Standard'
     }
 
+    Apim = @{
+        PublisherEmail = '<apim-publisher-email@example.org>'
+        PublisherName  = 'UDCSP Platform'
+    }
+
     Fabric = @{
         CapacitySku  = 'F64'           # F2 for dev sandbox, F64+ for prod
         WorkspaceIds = @{
