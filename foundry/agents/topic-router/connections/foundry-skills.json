@@ -1,17 +1,22 @@
 {
   "name": "foundry-skills",
   "type": "foundryAgentSet",
-  "sourceMappings": [
-    "apps/copilot-studio/agents/citizen-assistant-bot/connections/foundry-classifier.json",
-    "apps/copilot-studio/agents/citizen-assistant-bot/connections/foundry-citizen-assistant.json"
-  ],
-  "targets": [
-    { "name": "classifier", "endpoint": "${FOUNDRY_CLASSIFIER_ENDPOINT}" },
-    { "name": "citizen-assistant", "endpoint": "${FOUNDRY_CITIZEN_ASSISTANT_ENDPOINT}" },
-    { "name": "doc-extractor", "endpoint": "${FOUNDRY_DOC_EXTRACTOR_ENDPOINT}" },
-    { "name": "translator", "endpoint": "${FOUNDRY_TRANSLATOR_ENDPOINT}" },
-    { "name": "eligibility", "endpoint": "${FOUNDRY_ELIGIBILITY_ENDPOINT}", "note": "Pre-assess route only; high-risk Eligibility agent remains unchanged." }
-  ],
+  "description": "Specialised Foundry agents the topic-router delegates to once it has classified the intent. Each delegation is a single-shot call with the slot-filling context and the locale; the topic-router aggregates the response and replies on the channel of origin.",
   "auth": "managedIdentity",
-  "status": "placeholder"
+  "targets": [
+    { "name": "classifier",        "agentRef": "../../classifier/agent.yaml",        "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/classifier/invoke",        "intents": ["any"],                                  "timeoutMs": 800 },
+    { "name": "citizen-assistant", "agentRef": "../../citizen-assistant/agent.yaml", "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/citizen-assistant/invoke", "intents": ["faq", "how-to", "status-query"],         "timeoutMs": 2500 },
+    { "name": "doc-extractor",     "agentRef": "../../doc-extractor/agent.yaml",     "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/doc-extractor/invoke",     "intents": ["upload-document", "verify-document"],    "timeoutMs": 4000 },
+    { "name": "translator",        "agentRef": "../../translator/agent.yaml",        "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/translator/invoke",        "intents": ["any (post-process when locale != reply)"], "timeoutMs": 600 },
+    {
+      "name": "eligibility",
+      "agentRef": "../../eligibility/agent.yaml",
+      "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/eligibility/invoke",
+      "intents": ["pre-assess-benefit"],
+      "timeoutMs": 3000,
+      "note": "High-risk EU AI Act agent. The topic-router only requests a *recommendation* and ALWAYS returns it to the citizen as 'pre-assessment, subject to caseworker review' — never as a decision."
+    },
+    { "name": "caseworker-helper", "agentRef": "../../caseworker-helper/agent.yaml", "endpoint": "${FOUNDRY_PROJECT_ENDPOINT}/agents/caseworker-helper/invoke", "intents": ["caseworker-summary"],  "scope": "internal-only", "timeoutMs": 2000 }
+  ],
+  "fallbackOrder": ["citizen-assistant", "classifier"]
 }

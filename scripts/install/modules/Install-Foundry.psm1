@@ -22,19 +22,26 @@ function Install-Foundry {
     foreach ($a in $agents) {
         $yaml = Join-Path $a.FullName 'agent.yaml'
         if (-not (Test-Path $yaml)) { continue }
-        $importer = Join-Path $a.FullName "scripts\Import-$($a.Name).ps1"
-        $importerCamel = Join-Path $a.FullName 'scripts' | ForEach-Object {
-            Get-ChildItem -Path $_ -Filter 'Import-*.ps1' -File -ErrorAction SilentlyContinue | Select-Object -First 1
+
+        # Look for an Import-*.ps1 helper. We accept any name pattern under
+        # <agent>/scripts/Import-*.ps1 — agents may use kebab-case or camel
+        # variants. If multiple are found we run the first.
+        $scriptsDir = Join-Path $a.FullName 'scripts'
+        $importer = $null
+        if (Test-Path $scriptsDir) {
+            $importer = Get-ChildItem -Path $scriptsDir -Filter 'Import-*.ps1' -File -ErrorAction SilentlyContinue | Select-Object -First 1
         }
+
         if ($PSCmdlet.ShouldProcess($a.Name, "Foundry agent deploy ($workspace)")) {
-            if ($importerCamel) {
+            if ($importer) {
                 Invoke-NativeCommand `
-                    -Command @('pwsh','-File',$importerCamel.FullName,'-FoundryWorkspace',$workspace) `
+                    -Command @('pwsh','-File',$importer.FullName,'-FoundryWorkspace',$workspace) `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
             } else {
-                Write-Log -LogFile $logFile -Message "[skip] agent '$($a.Name)' has no Import-*.ps1 helper — manual deploy required (foundry agents create --workspace $workspace --file $yaml)."
+                # Generic fallback: log the manual command an operator would run.
+                Write-Log -LogFile $logFile -Message "[skip] agent '$($a.Name)' has no scripts/Import-*.ps1 helper. Manual deploy: az ml online-endpoint create --workspace $workspace --file $yaml"
             }
         }
     }

@@ -1,8 +1,18 @@
 {
   "name": "apim-facade",
   "type": "entryPoint",
-  "endpoint": "${APIM_BASE_URL}/agents/topic-router",
+  "endpoint": "${APIM_BASE_URL}/agents/topic-router/messages",
+  "openapiSpec": "../../../services/apim/apis/agent-topic-router/openapi.yaml",
   "auth": "managedIdentityOrUserDelegatedToken",
-  "status": "placeholder",
-  "note": "Replaces DirectLine token broker/webchat entry point."
+  "policy": "../../../services/apim/apis/agent-topic-router/policy.xml",
+  "channels": ["web", "chat", "voice", "sms", "email", "mobile"],
+  "rateLimits": {
+    "voice": "600 calls/min",
+    "default": "120 calls/min"
+  },
+  "headers": {
+    "x-channel-actor": "required (web|chat|voice|sms|email|mobile)",
+    "traceparent": "required (W3C Trace Context)"
+  },
+  "notes": "Single facade for every channel. Replaces the previous DirectLine/webchat token broker. Per-channel rate limits enforced in policy.xml; voice is bursty so it gets the higher quota."
 }

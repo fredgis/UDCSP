@@ -1,9 +1,19 @@
 {
   "name": "redis-session",
   "type": "stateStore",
+  "description": "Per-conversation slot-filling and short-term memory for the topic-router. Survives across web/chat/voice channel hops within the same citizen session.",
   "endpoint": "${REDIS_SESSION_ENDPOINT}",
   "auth": "managedIdentity",
   "ttlSeconds": 86400,
-  "stores": ["locale", "channel", "topic", "slots", "transcriptSummary"],
-  "status": "placeholder"
+  "keyPattern": "udcsp:{country}:{citizenId}:{sessionId}",
+  "stores": {
+    "locale": "BCP-47 string (e.g. 'sv-SE')",
+    "channel": "enum: web|chat|voice|sms|email|mobile",
+    "topic": "enum: residency|tax|child-benefit|unemployment|other",
+    "slots": "object<{slotName: value, capturedAt}>",
+    "transcriptSummary": "string (last 3 turns, redacted)",
+    "lastIntent": "string",
+    "humanReviewRequested": "boolean"
+  },
+  "notes": "Redis Enterprise per country (deployed by `Install-Redis`). Keys are namespaced by country to keep data residency tight."
 }
