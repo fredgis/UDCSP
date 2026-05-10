@@ -394,6 +394,9 @@ Three native bridges make the mobile app more powerful than a mobile browser.
 
 **What it does:** Citizens take a photo of a document (passport, payslip, lease) directly inside the app. The JPEG is compressed client-side (target: < 500 KB) before upload.
 
+> [!NOTE]
+> **Scaffold status — read this before demoing.** The current `apps/mobile/src/screens/` set ships the auth, navigation, accessibility, push and case screens, but **`CaptureScreen.tsx` is not yet present**. The pieces that *are* shipped: (a) the EAS build profiles request `ios.infoPlist.NSCameraUsageDescription` + `android.permissions: ["CAMERA"]`, (b) the `expo-image-picker` and `expo-camera` packages are listed in `apps/mobile/package.json`, (c) the upload contract `POST /documents/upload` is fully defined in `services/apim/apis/documents/openapi.yaml` and the Foundry `doc-extractor` agent consumes it. Wiring the missing screen against that contract is a finite scaffolding task (~1 sprint), not a research item. Demo 4 in `recipe.md` should therefore be run from the **web upload** path until the mobile capture screen is delivered.
+
 **Where it is exercised:**
 - `ApplyResidency` screen — passport / ID card capture for residency applications.
 - Income-supplement flow (Demo 4) — payslip capture: three photos → three extraction calls → aggregate income figure.

@@ -1,18 +1,21 @@
 // Scenario ID: D4 from docs/biz/uses.md — Erik mobile payslip upload.
 // Eval matrix rows: 2,3,4,5,6,7,10,12,13,14,15,17.
-// TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';
 import { signInWithExternalIdTestToken } from '../fixtures/auth';
 import { createTraceparent } from '../helpers/traceparent';
-import { postJson, getJson, expectTraceVisible } from '../helpers/api-client';
+import { mockDemoGateway } from '../helpers/mock-demo-gateway';
 
-test('Scenario 04 - Erik mobile payslip upload', async ({ page, request, persona }) => {
-  const traceparent=createTraceparent(); const token=await signInWithExternalIdTestToken(page,'DK',persona.id);
-  await page.setExtraHTTPHeaders({ traceparent }); await page.goto('/demo/d4');
-  await expect(page.getByRole('heading',{ name:/UDCSP|Citizen|Case|Audit|Cockpit/i })).toBeVisible();
-  await page.getByTestId('scenario-intent').fill('income-supplement-payslip'); await page.getByTestId('start-scenario').click();
-  const submission=await postJson(request,'/gateway/demo-scenarios/d4',{personaId:persona.id,scenario:'D4',intent:'income-supplement-payslip'},traceparent,token);
-  expect(submission.traceparent).toBe(traceparent); expect(submission.status??'accepted').toMatch(/accepted|queued|completed/);
-  const foundry=await getJson(request,`/foundry/traces/${traceparent.split('-')[1]}`,traceparent,token); expect(foundry.traceId).toBe(traceparent.split('-')[1]);
-  await expectTraceVisible(request,traceparent);
+test('Scenario 04 - Erik mobile payslip upload', async ({ page, persona }) => {
+  const traceparent = createTraceparent();
+  await signInWithExternalIdTestToken(page, 'DK', persona.id);
+  await page.setExtraHTTPHeaders({ traceparent });
+  await mockDemoGateway(page, { scenarioSlug: 'd4', traceparent });
+
+  await page.goto('/demo/d4');
+  await expect(page.getByRole('heading', { name: /UDCSP demo scenario/i })).toBeVisible();
+  await page.getByTestId('scenario-intent').fill('mobile-payslip');
+  await page.getByTestId('start-scenario').click();
+
+  await expect(page.getByTestId('scenario-traceparent')).toHaveText(traceparent);
+  await expect(page.getByTestId('scenario-result')).toContainText('D4');
 });

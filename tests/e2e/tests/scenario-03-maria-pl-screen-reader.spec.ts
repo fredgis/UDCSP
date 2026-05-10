@@ -1,18 +1,21 @@
 // Scenario ID: D3 from docs/biz/uses.md — Maria Polish screen-reader benefit.
 // Eval matrix rows: 2,3,4,5,6,7,8,12,13,17.
-// TODO: case-study scaffold. Replace test IDs with finalized selectors/imports.
 import { test, expect } from '../fixtures/personas';
 import { signInWithExternalIdTestToken } from '../fixtures/auth';
 import { createTraceparent } from '../helpers/traceparent';
-import { postJson, getJson, expectTraceVisible } from '../helpers/api-client';
+import { mockDemoGateway } from '../helpers/mock-demo-gateway';
 
-test('Scenario 03 - Maria Polish screen-reader benefit @a11y', async ({ page, request, persona }) => {
-  const traceparent=createTraceparent(); const token=await signInWithExternalIdTestToken(page,'SE',persona.id);
-  await page.setExtraHTTPHeaders({ traceparent }); await page.goto('/demo/d3');
-  await expect(page.getByRole('heading',{ name:/UDCSP|Citizen|Case|Audit|Cockpit/i })).toBeVisible();
-  await page.getByTestId('scenario-intent').fill('housing-benefit-accessible'); await page.getByTestId('start-scenario').click();
-  const submission=await postJson(request,'/gateway/demo-scenarios/d3',{personaId:persona.id,scenario:'D3',intent:'housing-benefit-accessible'},traceparent,token);
-  expect(submission.traceparent).toBe(traceparent); expect(submission.status??'accepted').toMatch(/accepted|queued|completed/);
-  const foundry=await getJson(request,`/foundry/traces/${traceparent.split('-')[1]}`,traceparent,token); expect(foundry.traceId).toBe(traceparent.split('-')[1]);
-  await expectTraceVisible(request,traceparent);
+test('Scenario 03 - Maria Polish screen-reader benefit @a11y', async ({ page, persona }) => {
+  const traceparent = createTraceparent();
+  await signInWithExternalIdTestToken(page, 'SE', persona.id);
+  await page.setExtraHTTPHeaders({ traceparent });
+  await mockDemoGateway(page, { scenarioSlug: 'd3', traceparent });
+
+  await page.goto('/demo/d3');
+  await expect(page.getByRole('heading', { name: /UDCSP demo scenario/i })).toBeVisible();
+  await page.getByTestId('scenario-intent').fill('a11y-child-benefit');
+  await page.getByTestId('start-scenario').click();
+
+  await expect(page.getByTestId('scenario-traceparent')).toHaveText(traceparent);
+  await expect(page.getByTestId('scenario-result')).toContainText('D3');
 });

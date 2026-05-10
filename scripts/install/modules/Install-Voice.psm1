@@ -91,10 +91,25 @@ function Test-Voice {
     $script = Join-Path $repo 'apps\voice\scripts\Test-Voice.ps1'
     if (-not (Test-Path $script)) { throw "Missing $script" }
 
+    $offline = ($env:UDCSP_TESTONLY -eq '1') -or ($env:UDCSP_SMOKEONLY -eq '1')
     $results = @()
+    $configured = 0
     foreach ($country in 'dk','se','no') {
         $cfg = $Config.voice.$country
-        if (-not $cfg) { continue }
+        if (-not $cfg) { $results += @{ country = $country; status = 'skipped'; reason = 'no config block' }; continue }
+        $configured++
+        if ($offline) {
+            $missing = @()
+            foreach ($key in 'publicHostname','resourceGroup','env','image') {
+                if (-not $cfg.$key) { $missing += $key }
+            }
+            if ($missing.Count -gt 0) {
+                $results += @{ country = $country; status = 'FAIL'; error = "missing config keys: $($missing -join ',')" }
+            } else {
+                $results += @{ country = $country; status = 'OK'; mode = 'offline' }
+            }
+            continue
+        }
         try {
             & $script -Country $country -Env $cfg.env -OrchestratorBaseUrl ("https://" + $cfg.publicHostname) | Out-Null
             $results += @{ country = $country; status = 'OK' }
@@ -102,8 +117,15 @@ function Test-Voice {
             $results += @{ country = $country; status = 'FAIL'; error = $_.Exception.Message }
         }
     }
-    $payload = @{ phase = 'Voice'; results = $results }
+    $payload = @{ phase = 'Voice'; mode = ($(if ($offline) { 'offline' } else { 'live' })); results = $results }
     $payload | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $ReportDir 'test-voice.json')
+
+    if (-not $offline -and $configured -gt 0) {
+        $okCount = ($results | Where-Object { $_.status -eq 'OK' }).Count
+        if ($okCount -eq 0) {
+            throw "Test-Voice: all $configured configured countries failed healthz/Event Grid handshake. See $ReportDir\test-voice.json."
+        }
+    }
 }
 
 Export-ModuleMember -Function Install-Voice, Test-Voice
