@@ -41,7 +41,12 @@ function uuid(): string {
 
 async function load(): Promise<PendingMutation[]> {
   const raw = await AsyncStorage.getItem(KEY);
-  return raw ? (JSON.parse(raw) as PendingMutation[]) : [];
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as PendingMutation[];
+  } catch {
+    return [];
+  }
 }
 
 async function save(queue: PendingMutation[]): Promise<void> {
