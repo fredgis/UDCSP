@@ -26,8 +26,8 @@ Ensure-Module 'Microsoft.Graph'
 Ensure-Module 'Pester'
 Ensure-Module 'powershell-yaml'  # required by Install-Voice (parses apps/voice/acs/phone-number-bindings.yaml)
 
-# Bicep CLI via Az CLI
-try { az bicep upgrade --quiet } catch { Write-Warning "Could not upgrade bicep — install az CLI from https://aka.ms/installazurecli." }
+# Bicep CLI via Az CLI (--only-show-errors silences info banners; --quiet is not a valid flag here)
+try { az bicep upgrade --only-show-errors 2>$null | Out-Null } catch { Write-Warning "Could not upgrade bicep — install az CLI from https://aka.ms/installazurecli." }
 
 # Node + Python sanity check
 foreach ($t in 'node','python','git','az') {
