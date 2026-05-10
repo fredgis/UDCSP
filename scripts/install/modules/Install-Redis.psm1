@@ -19,11 +19,16 @@ function Install-Redis {
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-redis-rg"
         $param = Join-Path $repo "infra\data\redis\parameters\$($country.ToLower()).bicepparam"
+        $resolvedParam = Resolve-BicepParamSubscriptionTokens `
+            -SourceFile $param `
+            -Subscriptions $Config.Subscriptions `
+            -OutputDir $ReportDir `
+            -Tag "redis-$($country.ToLower())"
         if ($PSCmdlet.ShouldProcess("redis-$country", 'az deployment group create')) {
             Invoke-AzGroupDeployment `
                 -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
-                -ParametersFile $param `
+                -ParametersFile $resolvedParam `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-redis-$($country.ToLower())" `
                 -Tags $Config.Tags `

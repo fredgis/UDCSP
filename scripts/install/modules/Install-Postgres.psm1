@@ -19,11 +19,16 @@ function Install-Postgres {
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-postgres-rg"
         $param = Join-Path $repo "infra\data\postgresql\parameters\$($country.ToLower()).bicepparam"
+        $resolvedParam = Resolve-BicepParamSubscriptionTokens `
+            -SourceFile $param `
+            -Subscriptions $Config.Subscriptions `
+            -OutputDir $ReportDir `
+            -Tag "postgres-$($country.ToLower())"
         if ($PSCmdlet.ShouldProcess("postgres-$country", 'az deployment group create')) {
             Invoke-AzGroupDeployment `
                 -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
-                -ParametersFile $param `
+                -ParametersFile $resolvedParam `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-postgres-$($country.ToLower())" `
                 -Tags $Config.Tags `

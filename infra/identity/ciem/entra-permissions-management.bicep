@@ -5,31 +5,31 @@ targetScope = 'tenant'
 @description('Service principal object ID used by Entra Permissions Management / CIEM collectors.')
 param ciemPrincipalId string
 
-@description('Azure subscriptions to onboard: three sovereign country subscriptions and one shared workforce/federation subscription.')
+@description('Azure subscriptions to onboard: three sovereign country subscriptions and one shared workforce/federation subscription. Replace placeholder GUIDs with the real IDs at deployment time (Install-Ciem builds these from udcsp.config.psd1).')
 param azureSubscriptions array = [
   {
     name: 'udcsp-dk-sovereign'
     tenantType: 'sovereign-country'
     country: 'dk'
-    subscriptionId: '00000000-0000-0000-0000-0000000000dk'
+    subscriptionId: '00000000-0000-0000-0000-000000000001'
   }
   {
     name: 'udcsp-se-sovereign'
     tenantType: 'sovereign-country'
     country: 'se'
-    subscriptionId: '00000000-0000-0000-0000-0000000000se'
+    subscriptionId: '00000000-0000-0000-0000-000000000002'
   }
   {
     name: 'udcsp-no-sovereign'
     tenantType: 'sovereign-country'
     country: 'no'
-    subscriptionId: '00000000-0000-0000-0000-0000000000no'
+    subscriptionId: '00000000-0000-0000-0000-000000000003'
   }
   {
     name: 'udcsp-workforce-shared'
     tenantType: 'workforce'
     country: 'shared'
-    subscriptionId: '00000000-0000-0000-0000-0000000000ff'
+    subscriptionId: '00000000-0000-0000-0000-000000000099'
   }
 ]
 

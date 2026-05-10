@@ -195,6 +195,88 @@ function Invoke-AzSubDeployment {
     Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag
 }
 
+function Resolve-BicepParamSubscriptionTokens {
+    <#
+    .SYNOPSIS
+        Substitute {{dk-subscription-id}} / {{se-subscription-id}} /
+        {{no-subscription-id}} / {{shared-subscription-id}} placeholders in a
+        .bicepparam file with the real GUIDs from $Config.Subscriptions, then
+        write the resolved file under $OutputDir so the original (under source
+        control) stays untouched. Returns the path of the resolved file.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SourceFile,
+        [Parameter(Mandatory)][hashtable]$Subscriptions,
+        [Parameter(Mandatory)][string]$OutputDir,
+        [Parameter(Mandatory)][string]$Tag
+    )
+    if (-not (Test-Path $SourceFile)) { throw "Bicepparam not found: $SourceFile" }
+    if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
+    $content = Get-Content -Path $SourceFile -Raw
+    $map = @{
+        '{{dk-subscription-id}}'     = $Subscriptions['DK']
+        '{{se-subscription-id}}'     = $Subscriptions['SE']
+        '{{no-subscription-id}}'     = $Subscriptions['NO']
+        '{{shared-subscription-id}}' = $Subscriptions['SharedPlatform']
+    }
+    foreach ($k in $map.Keys) {
+        if ($map[$k]) {
+            $content = $content.Replace($k, $map[$k])
+        }
+    }
+    $leaf = [System.IO.Path]::GetFileNameWithoutExtension($SourceFile)
+    $out = Join-Path $OutputDir ("{0}.{1}.bicepparam" -f $leaf, $Tag)
+    # Side-by-side copy of the source `.bicep` referenced by `using` so the
+    # `using '../X.bicep'` relative path inside the resolved file still
+    # resolves. We copy by recreating the same directory layout.
+    $sourceDir = Split-Path $SourceFile -Parent
+    $sourceParent = Split-Path $sourceDir -Parent
+    $bicepRefMatch = [regex]::Match($content, "using\s+'(?<rel>[^']+)'")
+    if ($bicepRefMatch.Success) {
+        $rel = $bicepRefMatch.Groups['rel'].Value
+        $absolute = Resolve-Path (Join-Path $sourceDir $rel) -ErrorAction SilentlyContinue
+        if ($absolute) {
+            $content = $content.Replace("using '$rel'", "using '$($absolute.Path.Replace('\','/'))'")
+        }
+    }
+    $content | Set-Content -Path $out -Encoding utf8
+    return $out
+}
+
+function Invoke-AzTenantDeployment {
+    <#
+    .SYNOPSIS
+        Idempotent tenant-scope Bicep deployment. Used for cross-
+        subscription / cross-tenant resources such as Entra Permissions
+        Management onboarding.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Location,
+        [Parameter(Mandatory)][string]$TemplateFile,
+        [string]$ParametersFile,
+        [Parameter(Mandatory)][string]$LogFile,
+        [string]$DeploymentName,
+        [bool]$WhatIfFlag = $false
+    )
+    if (-not (Test-Path $TemplateFile)) { throw "Template not found: $TemplateFile" }
+    if (-not $DeploymentName) {
+        $base = (Split-Path $TemplateFile -LeafBase) -replace '[^\w\-]','-'
+        $DeploymentName = "udcsp-$base-$([DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'))"
+    }
+    $args = @('deployment','tenant','create',
+              '--location',$Location,
+              '--name',$DeploymentName,
+              '--template-file',$TemplateFile,
+              '--only-show-errors','--output','none')
+    if ($ParametersFile) {
+        if (-not (Test-Path $ParametersFile)) { throw "Parameters file not found: $ParametersFile" }
+        $args += @('--parameters', $ParametersFile)
+    }
+    Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag
+}
+
 function Invoke-AzGroupDeployment {
     <#
     .SYNOPSIS
@@ -286,5 +368,7 @@ Export-ModuleMember -Function `
     Invoke-NativeCommand, `
     New-AzResourceGroupIfNeeded, `
     Invoke-AzSubDeployment, `
+    Invoke-AzTenantDeployment, `
     Invoke-AzGroupDeployment, `
+    Resolve-BicepParamSubscriptionTokens, `
     Invoke-MgGraphIfReady

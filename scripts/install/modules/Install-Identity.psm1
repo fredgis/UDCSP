@@ -47,13 +47,17 @@ function Install-Identity {
         }
     }
 
-    # Country bicep templates (User-Assigned Managed Identity, Conditional
-    # Access bicep, etc.). Scope is **external-id/** + the entra `external-id.bicep`
-    # convenience template only; `bastion/`, `ciem/`, and `verified-id/`
-    # have dedicated install phases (Bastion / Ciem / VerifiedId).
+    # `infra/identity/external-id/*.bicep` — country-scoped resource-group
+    # bicep modules (UAMI, conditional access). Deploy per-country.
+    # NOTE: `infra/identity/entra/external-id.bicep` is a subscription-scope
+    # OUTPUT-ONLY helper that emits the Graph patch payload for federation;
+    # it has no resources and requires `externalIdTenantDomain` +
+    # `eidasMetadataUrl` parameters that come from the operator's tenant
+    # registration. Operators apply it manually with `az deployment sub
+    # create` after collecting the federation metadata; the installer
+    # intentionally skips it.
     $bicepFiles = @(
         Get-ChildItem -Path (Join-Path $repo 'infra\identity\external-id') -Filter '*.bicep' -File -ErrorAction SilentlyContinue
-        Get-ChildItem -Path (Join-Path $repo 'infra\identity\entra')        -Filter 'external-id.bicep' -File -ErrorAction SilentlyContinue
     )
     foreach ($f in $bicepFiles) {
         foreach ($country in 'DK','SE','NO') {
