@@ -31,7 +31,7 @@
       "description": "Returns the citizen's prior application history (open + closed cases) from D365 Customer Service via the cases API. Used by the agent to detect duplicate or escalated applications and to attach the recommendation to the correct case.",
       "auth": "managedIdentity",
       "network": "privateEndpoint",
-      "endpoint": "${APIM_BASE_URL}/cases/cases/{caseId}",
+      "endpoint": "${APIM_BASE_URL}/cases/{caseId}",
       "openapiSpec": "../../../services/apim/apis/case-management/openapi.yaml",
       "operationId": "get-case-management-cases-caseId",
       "input": {
