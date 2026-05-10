@@ -2,7 +2,7 @@
 
 targetScope = 'subscription'
 
-param plans array = ['VirtualMachines', 'StorageAccounts', 'KeyVaults', 'Containers', 'AppServices']
+param plans array = ['VirtualMachines', 'StorageAccounts', 'KeyVaults', 'Containers', 'AppServices', 'Api']
 
 resource pricing 'Microsoft.Security/pricings@2023-01-01' = [for plan in plans: {
   name: plan

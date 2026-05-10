@@ -2,8 +2,8 @@
   "name": "d365-escalation",
   "type": "customConnector",
   "description": "Creates a D365 Customer Service case (or appends to an existing one) when the topic-router decides the citizen interaction needs human review, accessibility support, or low-confidence escalation.",
-  "endpoint": "${APIM_BASE_URL}/cases/v1/cases",
-  "openapiSpec": "../../../services/apim/apis/cases/openapi.yaml",
+  "endpoint": "${APIM_BASE_URL}/cases",
+  "openapiSpec": "../../../../services/apim/apis/case-management/openapi.yaml",
   "operationId": "createOrAppendCase",
   "auth": "managedIdentity",
   "input": {

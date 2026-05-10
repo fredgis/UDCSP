@@ -63,6 +63,30 @@ function Install-Apim {
                 }
             }
         }
+        # Defender for APIs onboarding: register all imported APIs as Microsoft.Security/apiCollections.
+        # This runs here (not in Install-Security) because the APIM resource must already exist.
+        $defenderApisOnboarding = Join-Path $repo 'infra\security\defender\defender-for-apis-onboarding.bicep'
+        $apiNames = @($apis | ForEach-Object { $_.Name })
+        if ((Test-Path $defenderApisOnboarding) -and $apiNames.Count -gt 0) {
+            if ($PSCmdlet.ShouldProcess("defender-for-apis-onboarding-$country", 'az deployment group create')) {
+                $paramsFile = Join-Path $ReportDir "defender-apis-params-$($country.ToLower()).json"
+                @{
+                    '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                    contentVersion = '1.0.0.0'
+                    parameters = @{
+                        apimServiceName = @{ value = $apimName }
+                        apiIds          = @{ value = $apiNames }
+                    }
+                } | ConvertTo-Json -Depth 6 | Set-Content $paramsFile
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $defenderApisOnboarding `
+                    -ParametersFile $paramsFile `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-defender-apis-onb-$($country.ToLower())" `
+                    -WhatIfFlag $whatIf
+            }
+        }
     }
 }
 
