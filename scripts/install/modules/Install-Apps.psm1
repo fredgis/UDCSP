@@ -14,6 +14,7 @@ function Install-Apps {
     $whatIf = [bool]$WhatIfPreference
     $webDir = Join-Path $repo 'apps\web'
     $mobDir = Join-Path $repo 'apps\mobile'
+    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
 
     if (-not (Test-CliAvailable -Name 'npm')) {
         Write-Log -LogFile $logFile -Message "[skip] npm not on PATH. Install Node.js LTS. Operations recorded for manual replay."
@@ -30,7 +31,7 @@ function Install-Apps {
                 Invoke-NativeCommand -Command @('npm','run','build') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
             }
             if ((Test-CliAvailable -Name 'swa') -and $PSCmdlet.ShouldProcess('apps/web', 'swa deploy')) {
-                Invoke-NativeCommand -Command @('swa','deploy','./dist','--env',$Config.Environment) -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                Invoke-NativeCommand -Command @('swa','deploy','./dist','--env',$envName) -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
             } else {
                 Write-Log -LogFile $logFile -Message "[skip] swa CLI not on PATH. Install: npm install -g @azure/static-web-apps-cli."
             }

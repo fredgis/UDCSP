@@ -14,11 +14,12 @@ function Install-Fabric {
     $logFile = Join-Path $ReportDir 'install-fabric.log'
     $whatIf = [bool]$WhatIfPreference
     if (-not (Test-Path $script)) { throw "Missing $script" }
+    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
 
     foreach ($country in 'DK','SE','NO') {
         if ($PSCmdlet.ShouldProcess("$country Fabric", 'Deploy-Fabric.ps1')) {
             Invoke-NativeCommand `
-                -Command @('pwsh','-File',$script,'-Environment',$Config.Environment) `
+                -Command @('pwsh','-File',$script,'-Environment',$envName) `
                 -LogFile $logFile `
                 -WhatIfFlag $whatIf `
                 -ContinueOnError
