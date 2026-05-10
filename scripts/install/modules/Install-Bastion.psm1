@@ -17,7 +17,12 @@ function Install-Bastion {
     foreach ($country in 'DK','SE','NO') {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
-        $rg = "udcsp-$($country.ToLower())-rg"
+        # Bastion bicep references udcsp-{country}-prod-vnet as `existing`.
+        # That VNet is created by Install-LandingZone in the platform RG
+        # (see infra/landing-zone/main.bicep:20 and parameters/{country}.bicepparam
+        # which pins env=prod). Targeting any other RG fails with
+        # "VirtualNetwork not found".
+        $rg = "udcsp-$($country.ToLower())-prod-platform-rg"
         if ($PSCmdlet.ShouldProcess("bastion-$country", 'az deployment group create')) {
             Invoke-AzGroupDeployment `
                 -Subscription $sub `
