@@ -2,11 +2,11 @@
 
 # 🍳 UDCSP — Acceptance Recipe
 
-### 10 scenarios · ≈ 1 h 35 walkthrough · 100 % eval coverage
+### 9 scenarios · ≈ 1 h 35 walkthrough · 100 % eval coverage
 
-*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors the 10 demos of [`uses.md`](./uses.md) one-for-one.*
+*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors [`uses.md`](./uses.md), minus Demo 9 (DevOps reproducible install — not exercised live).*
 
-[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-10-2E7D32?style=for-the-badge)](#)
+[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-9_live-2E7D32?style=for-the-badge)](#)
 [![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h35-AD1457?style=for-the-badge)](#)
 [![Coverage](https://img.shields.io/badge/🎯_Eval_rows-1_→_18-E65100?style=for-the-badge)](#)
 
@@ -32,9 +32,8 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
 | 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | 🛰️ Sentinel | ~10 min | 9, 10 |
 | 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | ~5 min | 11, 16 |
-| 🟩 **9** | 🧑‍🚀 Ole — DevOps reproducible install | ⚙️ Installer | ~90 min | 13, 17 |
-| 🟪 **10** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | ~15 min | 1–18 |
-| | | **Total (skip §9 re-install)** | **≈ 1 h 35** | |
+| 🟪 **9** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | ~15 min | 1–18 |
+| | | **Total** | **≈ 1 h 35** | |
 
 ---
 
@@ -200,29 +199,11 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>🟩 9. Scenario 9 — 🧑‍🚀 Ole (DevOps) reproducible install ⚙️</h2></summary>
-
-> Maps to: **uses.md scenario 09** · **eval-matrix rows 13, 17**
-
-| # | Action | Where | Expected outcome |
-|---|---|---|---|
-| 9.1 | Tear down environment | `pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment test` | RGs deleted, External ID disabled, Purview unregistered |
-| 9.2 | Re-install | `pwsh ./scripts/install/Install-UDCSP.ps1 -Environment test` | Full platform up in one shot |
-| 9.3 | Diff install reports | `Compare-Object (Get-Content reports/run1.json) (Get-Content reports/run2.json)` | Same phases, same status, same checksums |
-| 9.4 | Run smoke | `Install-UDCSP.ps1 -SmokeOnly` | All 4 smoke tests green |
-
-**Exit gate:** install is idempotent and reproducible.
-
-</details>
-
----
-
-<details>
-<summary><h2>🟪 10. Scenario 10 — 🧪 Evaluator cross-cutting walkthrough 🤖</h2></summary>
+<summary><h2>🟪 9. Scenario 9 — 🧪 Evaluator cross-cutting walkthrough 🤖</h2></summary>
 
 > Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
 
-A single Playwright test (`tests/e2e/tests/scenario-10-evaluator-cross-cutting.spec.ts`) chains the previous 9 scenarios in the order an evaluator would explore the platform. Run with:
+A single Playwright test (`tests/e2e/tests/scenario-10-evaluator-cross-cutting.spec.ts`) chains the 8 live scenarios above in the order an evaluator would explore the platform. Run with:
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
@@ -231,5 +212,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 The HTML report it produces is the **single artefact** to attach to the case-study deliverable.
 
 </details>
+
+> **Note.** [`uses.md`](./uses.md) Demo 9 (Ole — DevOps reproducible install) is **not exercised live**: a full tear-down + re-install takes ~90 min. The proof of reproducibility is the `install-report.json` already produced when you ran the platform — diff two consecutive runs to verify idempotence.
 
 — A14 · QA & Evaluation
