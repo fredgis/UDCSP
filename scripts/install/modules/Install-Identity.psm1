@@ -17,8 +17,14 @@ function Install-Identity {
     $caDir    = Join-Path $repo 'infra\identity\conditional-access'
     $pimDir   = Join-Path $repo 'infra\identity\pim'
 
+    $extIdTenants = if ($Config.ContainsKey('ExternalIdTenants')) { $Config.ExternalIdTenants } else { @{} }
+
     foreach ($country in 'DK','SE','NO') {
-        $tenant = $Config.ExternalIdTenants[$country]
+        $tenant = $extIdTenants[$country]
+        if (-not $tenant) {
+            Write-Log -LogFile $logFile -Message "[skip $country] no ExternalIdTenants entry; identity policies skipped for this country."
+            continue
+        }
         Write-Log -LogFile $logFile -Message "[tenant $country] $tenant"
 
         foreach ($pair in @(@{dir=$flowsDir; uri='https://graph.microsoft.com/beta/identity/userFlows'},
