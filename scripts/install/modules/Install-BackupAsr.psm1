@@ -17,6 +17,9 @@ function Install-BackupAsr {
     foreach ($f in @($vault,$pol,$asr)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
     $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+    $backupCfg = if ($Config.ContainsKey('BackupAsr')) { $Config.BackupAsr } else { @{} }
+    $defaultRedundancy = if ($envName -eq 'prod') { 'GeoRedundant' } else { 'ZoneRedundant' }
+    $vaultRedundancy = if ($backupCfg.ContainsKey('VaultStorageType') -and $backupCfg.VaultStorageType) { $backupCfg.VaultStorageType } else { $defaultRedundancy }
     $recoveryPair = @{ DK = $Config.Regions.SE; SE = $Config.Regions.NO; NO = $Config.Regions.SE }
 
     foreach ($country in 'DK','SE','NO') {
@@ -34,7 +37,7 @@ function Install-BackupAsr {
                 env      = @{ value = $envName }
                 location = @{ value = $region }
                 keyUri   = @{ value = '' }
-                backupStorageRedundancy = @{ value = 'GeoRedundant' }
+                backupStorageRedundancy = @{ value = $vaultRedundancy }
             }
         }
         $vaultParamsFile = Join-Path $ReportDir "backup-vault-$cl.parameters.json"
