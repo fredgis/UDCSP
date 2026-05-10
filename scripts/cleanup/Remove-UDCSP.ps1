@@ -21,9 +21,21 @@ $ConfigPath = Join-Path $PSScriptRoot '..\install\config\udcsp.config.psd1'
 if (-not (Test-Path $ConfigPath)) { throw "Config missing: $ConfigPath" }
 $Config = Import-PowerShellDataFile -Path $ConfigPath
 
+$PolicyInitiativeName  = 'udcsp-security-compliance-baseline'
+
 foreach ($entry in $Config.Subscriptions.GetEnumerator()) {
     $sub = $entry.Value
+    $scopeKey = $entry.Key.ToLower()
+    $assignmentName = "udcsp-baseline-$scopeKey"
     Write-Host "→ subscription $sub" -ForegroundColor Cyan
+
+    # Best-effort Azure Policy cleanup. Subscription-scope assignments + the
+    # initiative set-definition created by Install-Security must be removed
+    # before/alongside resource groups so they don't survive teardown.
+    if ($PSCmdlet.ShouldProcess($sub, "Delete policy assignment $assignmentName + initiative $PolicyInitiativeName")) {
+        az policy assignment delete --subscription $sub --name $assignmentName --scope "/subscriptions/$sub" 2>$null | Out-Null
+        az policy set-definition delete --subscription $sub --name $PolicyInitiativeName 2>$null | Out-Null
+    }
 
     if ($PSCmdlet.ShouldProcess($sub, "List & delete RGs tagged costCenter=UDCSP env=$Environment")) {
         $rgs = az group list `

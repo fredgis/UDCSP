@@ -138,7 +138,7 @@ $Script:Dag = [ordered]@{
     SyntheticData       = @{ Wave = 1; DependsOn = @('Fabric');                                      Module = 'Install-SyntheticData.psm1' }
     Foundry             = @{ Wave = 2; DependsOn = @('Identity','Security','Fabric');                Module = 'Install-Foundry.psm1' }
     ConfidentialCompute = @{ Wave = 2; DependsOn = @('Foundry','ConfidentialLedger');                Module = 'Install-ConfidentialCompute.psm1' }
-    Apim                = @{ Wave = 2; DependsOn = @('Identity','LandingZone');                      Module = 'Install-Apim.psm1' }
+    Apim                = @{ Wave = 2; DependsOn = @('Identity','LandingZone','Security');           Module = 'Install-Apim.psm1' }
     LogicApps           = @{ Wave = 2; DependsOn = @('Apim','Foundry');                              Module = 'Install-LogicApps.psm1' }
     D365                = @{ Wave = 2; DependsOn = @('Identity','LogicApps');                        Module = 'Install-D365.psm1' }
     Apps                = @{ Wave = 3; DependsOn = @('Identity','Apim','Postgres','Redis');          Module = 'Install-Apps.psm1' }
