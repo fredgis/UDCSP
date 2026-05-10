@@ -2,7 +2,7 @@
 
 > **Audience.** Platform engineers and reviewers performing a clean install of the **Unified Digital Citizen Services Platform** on a sacrificial Microsoft Cloud tenant.
 >
-> **Outcome.** Every component referenced by [`architecture.md`](./architecture.md) provisioned in dependency order, smoke-tested, and ready to drive the 10 acceptance scenarios in [`recipe.md`](./recipe.md).
+> **Outcome.** Every component referenced by [`architecture.md`](./architecture.md) provisioned in dependency order, smoke-tested, and ready to drive the 10 acceptance scenarios in [`recipe.md`](../biz/recipe.md).
 
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
@@ -267,7 +267,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev
 
 A green QA gate prints the platform's URLs to console.
 
-✅ **Section B done — the platform is fully running.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](./recipe.md) for the 10 acceptance scenarios.
+✅ **Section B done — the platform is fully running.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios.
 
 </details>
 
@@ -281,7 +281,7 @@ A green QA gate prints the platform's URLs to console.
 <details>
 <summary><b>C1. Bind a real PSTN number</b></summary>
 
-Required only for the live voice demo in [`recipe.md`](./recipe.md) Scenario 2. After acquiring a Nordic toll-free or local number through ACS:
+Required only for the live voice demo in [`recipe.md`](../biz/recipe.md) Scenario 2. After acquiring a Nordic toll-free or local number through ACS:
 
 ```powershell
 pwsh apps/voice/scripts/Bind-AcsNumber.ps1 -Country dk -Env dev `
@@ -484,7 +484,7 @@ Each country sub gets its own landing zone, External ID tenant, Microsoft Fabric
 <summary><h2>📎 Appendix 3 — Walk through the recipe (10 acceptance scenarios)</h2></summary>
 
 ```powershell
-code ./docs/tech/recipe.md
+code ./docs/biz/recipe.md
 ```
 
 The recipe exercises every layer of the platform — citizen voice call, web journey, mobile payslip OCR, caseworker triage, eligibility human-in-the-loop, DPO DSR, prompt-injection containment, executive workspace, DevOps reproducibility — and is the canonical proof that the platform satisfies the case study.

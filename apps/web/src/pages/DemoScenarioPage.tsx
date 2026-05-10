@@ -4,7 +4,7 @@ import { apiFetch } from '../api/client';
 
 /**
  * DemoScenarioPage — runtime entry point for the 10 acceptance scenarios
- * walked through in `docs/tech/recipe.md`. Each scenario maps to a unique
+ * walked through in `docs/biz/recipe.md`. Each scenario maps to a unique
  * URL slug (`d1`..`d10`, plus the combined `d5-d6`) and to a server-side
  * gateway action under `/gateway/demo-scenarios/<slug>` which orchestrates
  * the underlying Logic App / Foundry agent / D365 entity for that scenario.
