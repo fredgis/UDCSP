@@ -8,9 +8,12 @@
 .DESCRIPTION
     Honours -WhatIf via SupportsShouldProcess. Per country it:
 
-      1. Calls Deploy-Voice.ps1 with values pulled from $Config (one block
+      1. Pre-creates the voice resource group via New-AzResourceGroupIfNeeded
+         (Deploy-Voice.ps1 calls `az deployment group create` directly so
+         the RG must exist beforehand).
+      2. Calls Deploy-Voice.ps1 with values pulled from $Config (one block
          per country: $Config.voice.dk, .se, .no).
-      2. For every binding in apps/voice/acs/phone-number-bindings.yaml
+      3. For every binding in apps/voice/acs/phone-number-bindings.yaml
          that targets this country, calls Bind-AcsNumber.ps1 to verify the
          number is still owned by the ACS resource.
 
@@ -19,6 +22,8 @@
 
     The legacy '[scaffold]' log lines are gone — this is the real installer.
 #>
+Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
 function Install-Voice {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -30,12 +35,27 @@ function Install-Voice {
     $deployScript = Join-Path $repo 'apps\voice\scripts\Deploy-Voice.ps1'
     $bindScript   = Join-Path $repo 'apps\voice\scripts\Bind-AcsNumber.ps1'
     $bindingsFile = Join-Path $repo 'apps\voice\acs\phone-number-bindings.yaml'
+    $whatIf = [bool]$WhatIfPreference
 
     foreach ($country in 'dk','se','no') {
         $cfg = $Config.voice.$country
         if (-not $cfg) {
             "[skip] No voice config block for country '$country' in `$Config.voice.$country" | Add-Content $logFile
             continue
+        }
+
+        $countryUpper = $country.ToUpper()
+        $sub = $Config.Subscriptions[$countryUpper]
+        if ($sub -and $cfg.resourceGroup -and $cfg.location) {
+            New-AzResourceGroupIfNeeded `
+                -Subscription $sub `
+                -ResourceGroup $cfg.resourceGroup `
+                -Location $cfg.location `
+                -LogFile $logFile `
+                -Tags $Config.Tags `
+                -WhatIfFlag $whatIf
+        } else {
+            "[skip-rg] $country missing subscription or RG/location for pre-create" | Add-Content $logFile
         }
 
         if ($PSCmdlet.ShouldProcess("voice/$country", 'Deploy-Voice')) {

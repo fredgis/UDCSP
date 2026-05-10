@@ -20,7 +20,7 @@ function Install-LogicApps {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-logicapps-rg"
-        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
         $aiCs = ''
         if ($Config.ContainsKey('Voice') -and $Config.Voice.ContainsKey($country.ToLower())) {
             $aiCs = [string]$Config.Voice[$country.ToLower()].appInsightsConnectionString
@@ -75,7 +75,7 @@ function Install-LogicApps {
             # Domain-events topic. Subscription wiring deferred (empty webhook
             # endpoint) until ops know the consumer URL — see services/logic-apps/eventgrid/README.md.
             if ($PSCmdlet.ShouldProcess("logicapps-eventgrid-$country", 'az deployment group create')) {
-                $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+                $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
                 $egParams = [ordered]@{
                     '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
                     contentVersion = '1.0.0.0'

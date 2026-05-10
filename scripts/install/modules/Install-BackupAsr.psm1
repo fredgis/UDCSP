@@ -16,7 +16,7 @@ function Install-BackupAsr {
     $whatIf = [bool]$WhatIfPreference
     foreach ($f in @($vault,$pol,$asr)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
-    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
     $backupCfg = if ($Config.ContainsKey('BackupAsr')) { $Config.BackupAsr } else { @{} }
     $defaultRedundancy = if ($envName -eq 'prod') { 'GeoRedundant' } else { 'ZoneRedundant' }
     $vaultRedundancy = if ($backupCfg.ContainsKey('VaultStorageType') -and $backupCfg.VaultStorageType) { $backupCfg.VaultStorageType } else { $defaultRedundancy }

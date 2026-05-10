@@ -101,4 +101,4 @@ If the drill is **not** a drill (real region loss, ransomware suspicion, soverei
 
 ---
 
-> See also: [`data.md`](./data.md) §10 (BCDR matrix), [`architecture.md`](./architecture.md) §17 (resilience), [`installation.md`](./installation.md) §8 (operational test loop).
+> See also: [`data.md`](./data.md) §10 (BCDR matrix), [`architecture.md`](./architecture.md) §16 (Compliance & resilience hardening), [`installation.md`](./installation.md) §9 (Post-install validation).

@@ -14,7 +14,7 @@ function Install-Apps {
     $whatIf = [bool]$WhatIfPreference
     $webDir = Join-Path $repo 'apps\web'
     $mobDir = Join-Path $repo 'apps\mobile'
-    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+    $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
 
     if (-not (Test-CliAvailable -Name 'npm')) {
         Write-Log -LogFile $logFile -Message "[skip] npm not on PATH. Install Node.js LTS. Operations recorded for manual replay."

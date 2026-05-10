@@ -6,7 +6,13 @@
     # ----------------------------------------------------------------------
     TenantId = '<entra-tenant-guid>'
 
-    Environment = 'dev'   # dev | test | preprod | prod
+    Environment = 'prod'   # dev | test | preprod | prod
+                          # NOTE: must match the `env` baked into landing-zone
+                          # bicepparam files (infra/landing-zone/parameters/{country}.bicepparam,
+                          # currently 'prod') and the data plane bicepparam
+                          # files (infra/data/{postgresql,redis}/parameters/*).
+                          # Changing this requires aligning all .bicepparam
+                          # files and re-deploying the platform RG.
 
     Subscriptions = @{
         SharedPlatform = '<sub-guid>'
