@@ -2,13 +2,12 @@
 
 # 🍳 UDCSP — Acceptance Recipe
 
-### 11 sections · 10 scenarios · ≈ 1 h 45 walkthrough · 100 % eval coverage
+### 10 scenarios · ≈ 1 h 35 walkthrough · 100 % eval coverage
 
-*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform.*
+*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors the 10 demos of [`uses.md`](./uses.md) one-for-one.*
 
-[![Sections](https://img.shields.io/badge/📚_Sections-12-1565C0?style=for-the-badge)](#)
 [![Scenarios](https://img.shields.io/badge/🎬_Scenarios-10-2E7D32?style=for-the-badge)](#)
-[![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h45-AD1457?style=for-the-badge)](#)
+[![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h35-AD1457?style=for-the-badge)](#)
 [![Coverage](https://img.shields.io/badge/🎯_Eval_rows-1_→_18-E65100?style=for-the-badge)](#)
 
 </div>
@@ -25,7 +24,6 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 | # | Persona / theme | Channel | ⏱️ Time | Eval-matrix rows |
 |---|---|---|---|---|
-| 🟦 **0** | Pre-flight (5 minutes) | 🛠️ Ops | ~5 min | — |
 | 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | 🌐 Web | ~15 min | 1, 2, 3, 7, 12, 13 |
 | 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | 📞 Voice | ~10 min | 4, 5, 11, 12, 17 |
 | 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | 🌐 Web + 🦮 NVDA | ~10 min | 4, 5, 13 |
@@ -36,22 +34,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | ~5 min | 11, 16 |
 | 🟩 **9** | 🧑‍🚀 Ole — DevOps reproducible install | ⚙️ Installer | ~90 min | 13, 17 |
 | 🟪 **10** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | ~15 min | 1–18 |
-| 🟨 **11** | 🗺️ Eval-matrix coverage map | — | ~2 min | 1–18 |
-| | | **Total (skip §9 re-install)** | **≈ 1 h 45** | |
-
----
-
-<details>
-<summary><h2>🟦 0. Pre-flight (5 minutes)</h2></summary>
-
-| # | Action | Command / file | Expected |
-|---|---|---|---|
-| 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase |
-| 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 25 phases healthy |
-| 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | URL = `phases.Fabric.outputs.workspaceUrl` from the install report | Workspace lists the 3 reports (Executive Cockpit · Caseworker Operations · Compliance Audit); KPI tiles render |
-| 0.3b | Open the **citizen-facing** insights cockpit | Any country portal home page (e.g. `https://udcsp-dk.swa.azurestaticapps.net/`) | Per-citizen tiles render (no Power BI Embedded JS SDK loaded) |
-
-</details>
+| | | **Total (skip §9 re-install)** | **≈ 1 h 35** | |
 
 ---
 
@@ -246,38 +229,6 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 ```
 
 The HTML report it produces is the **single artefact** to attach to the case-study deliverable.
-
-</details>
-
----
-
-<details>
-<summary><h2>🟨 11. Eval-matrix coverage map 🗺️</h2></summary>
-
-This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#-evaluation-criteria--case-study-coverage-matrix):
-
-| Row | Criterion | Covered by recipe step |
-|---|---|---|
-| 1 | EU sovereignty + residency | 1.10, 6.5 |
-| 2 | Identity & cross-border | 1.1–1.3 |
-| 3 | 47 portals → unified front door | 1.1, 8.1 |
-| 4 | Multilingual (12 languages) | 2.4, 3.5 |
-| 5 | Accessibility (WCAG 2.1 AA) | 2.1, 3.6 |
-| 6 | AI under human control (supervised) | 5.3–5.4 |
-| 7 | Service experience modernized (28→4 days) | 1.6, 4.5, 8.1 |
-| 8 | GDPR by design | 6.1–6.5 |
-| 9 | EU AI Act compliance | 1.8, 7.1, 5.3 |
-| 10 | Security & SOC | 7.1–7.4 |
-| 11 | Observability + trace propagation | 1.10, 8.4 |
-| 12 | Voice + omnichannel | 2.1–2.6 |
-| 13 | Reproducibility & DevEx | 9.1–9.4 |
-| 14 | Caseworker AI assistance | 5.2–5.5 |
-| 15 | Shadow-mode evaluation | 5.6 |
-| 16 | Business outcomes measurable | 8.1–8.4 |
-| 17 | Operational resilience | 7.3, 9.4 |
-| 18 | Continuous evaluation (model + bias) | 5.6, scenario 10 |
-
-The column "Covered by recipe step" must remain green after every release.
 
 </details>
 
