@@ -7,22 +7,24 @@
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
 
-This guide is split into **4 visible sections** for operator clarity:
+This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 
 | Section | What it is | When to use |
 |---|---|---|
-| **🟦 [A — Prerequisites](#a--prerequisites-do-this-once)** | Things you do **once** on your workstation and Microsoft Cloud tenants before touching the installer. | Day-1 setup. |
-| **🟩 [B — Mandatory install](#b--mandatory-install-run-in-order)** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
-| **🟨 [C — Optional](#c--optional-only-if-you-need-them)** | Things you can skip for a basic install (PSTN, evaluator HTML, conversational smoke, tear-down). | Demos & audits. |
-| **🟪 [D — Re-run / Troubleshooting](#d--re-run--troubleshooting)** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
+| **🟦 A — Prerequisites** | Things you do **once** on your workstation and Microsoft Cloud tenants before touching the installer. | Day-1 setup. |
+| **🟩 B — Mandatory install** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
+| **🟨 C — Optional** | Things you can skip for a basic install (PSTN, evaluator HTML, conversational smoke, tear-down). | Demos & audits. |
+| **🟪 D — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
 
 ---
 
-# 🟦 A — PREREQUISITES (do this once)
+<details>
+<summary><h2>🟦 A — PREREQUISITES (do this once)</h2></summary>
 
 > Run the **A1 → A4** steps top-to-bottom on your workstation. Stop at the end of A4 — do **not** start the installer yet, that's section B.
 
-## A1. Install workstation tooling
+<details>
+<summary><b>A1. Install workstation tooling</b></summary>
 
 The installer module phases call real CLIs. The bootstrap script installs **everything except** `az` (Azure CLI MSI) and `pac` (Power Platform CLI MSI):
 
@@ -47,7 +49,10 @@ Then install the two MSIs manually if not already present:
 
 > Conditional tools that are missing produce a `[skip]` line during install — the rest of the run continues, so a partial install is always restartable later.
 
-## A2. Sign in to all control planes
+</details>
+
+<details>
+<summary><b>A2. Sign in to all control planes</b></summary>
 
 ```powershell
 az login                                                # Azure
@@ -66,7 +71,10 @@ pac auth create --environment https://udcspdk.crm4.dynamics.com   # repeat for S
 
 > The installer pre-flights `az login` once at the top and refuses to start a real install if you are not authenticated. `Connect-MgGraph` / `pac` / `npm` / `swa` / `eas` / `func` are checked lazily.
 
-## A3. Provision the Microsoft Cloud tenants & subscriptions
+</details>
+
+<details>
+<summary><b>A3. Provision the Microsoft Cloud tenants & subscriptions</b></summary>
 
 You need owner-level access to:
 
@@ -103,7 +111,10 @@ Capture each environment URL for the next step (A4).
 >
 > **EU residency.** Workload regions MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`, `norwayeast`). The installer refuses non-EU regions.
 
-## A4. Configure `udcsp.config.psd1`
+</details>
+
+<details>
+<summary><b>A4. Configure <code>udcsp.config.psd1</code></b></summary>
 
 ```powershell
 Copy-Item scripts/install/config/udcsp.config.template.psd1 scripts/install/config/udcsp.config.psd1
@@ -146,21 +157,27 @@ Fill the **mandatory** keys at minimum:
 }
 ```
 
-> **Leave the `Voice = @{ dk = ...; se = ...; no = ... }` block as placeholders.** It will be filled later in [B5](#b5-configure-the-voice-block-from-first-pass-outputs) using values produced by the first install pass.
+> **Leave the `Voice = @{ dk = ...; se = ...; no = ... }` block as placeholders.** It will be filled later in **B5** using values produced by the first install pass.
 
 > **Secrets** (External ID signing keys, D365 application-user secrets, Foundry deployment keys) are fetched **just-in-time** from a bootstrap Key Vault — the installer's first task provisions that vault and prompts for any secret it cannot resolve.
 
 ✅ **Section A done.** Move on to section B.
 
+</details>
+
+</details>
+
 ---
 
-# 🟩 B — MANDATORY INSTALL (run in order)
+<details>
+<summary><h2>🟩 B — MANDATORY INSTALL (run in order)</h2></summary>
 
 > **What "deploy" means here.** Every Install-* module in `scripts/install/modules/` invokes the **real** Azure CLI / `pac` / `npm` / `swa` / `eas` / `func` / MS Graph commands. There is no scaffold mode: when you run B3 you actually create resource groups, deploy Bicep, push container images, import D365 solutions, build the SPA, register Foundry agents, etc. Logs land in `scripts/install/reports/<runStamp>/install-<phase>.log`.
 
 > **`-Environment dev` is recommended for the first run.** `prod` requires `-Force` and you must have run B1 + B2 successfully against `dev` first.
 
-## B1. Offline self-test (no Azure calls)
+<details>
+<summary><b>B1. Offline self-test (no Azure calls)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Environment dev
@@ -168,7 +185,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Environment dev
 
 Walks every phase's preconditions, configuration parsing and module wiring without touching Azure. **Expected output: `25/25 ✅`.** Fix any red line before continuing.
 
-## B2. WhatIf dry-run (Azure read-only plan)
+</details>
+
+<details>
+<summary><b>B2. WhatIf dry-run (Azure read-only plan)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -WhatIf -Environment dev
@@ -176,7 +196,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -WhatIf -Environment dev
 
 Shows every Bicep what-if and APIM/Logic Apps/D365 deployment plan without applying anything. **Mandatory before any `prod` install.**
 
-## B3. First-pass install (everything except Voice & QA)
+</details>
+
+<details>
+<summary><b>B3. First-pass install (everything except Voice & QA)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Environment dev -ExcludePhase Voice,QA
@@ -189,9 +212,12 @@ This runs **23 of the 25 phases** sequentially in dependency order, idempotent, 
 
 > **Expected duration:** ≈ 60–90 minutes on a clean tenant (APIM Premium cold start is the long pole at ≈ 45 min; the installer streams progress every 60 s).
 
-> The full 25-phase DAG is detailed in the [appendix](#appendix-1--the-25-phases-in-install-order).
+> The full 25-phase DAG is detailed in **Appendix 1**.
 
-## B4. Harvest Voice outputs from B3
+</details>
+
+<details>
+<summary><b>B4. Harvest Voice outputs from B3</b></summary>
 
 Read `scripts/install/reports/<runStamp>/install-report.json` and the Azure portal for each field below. **For the case-study demo, filling DK alone is enough.**
 
@@ -212,11 +238,17 @@ Read `scripts/install/reports/<runStamp>/install-report.json` and the Azure port
 | `acsResourceName` | `Voice` (created on first-pass `-WhatIf`) | Pre-created by Voice Bicep before orchestrator deploy |
 | `env`, `location`, `resourceGroup` | (config) | Plain values you choose |
 
-## B5. Configure the Voice block from first-pass outputs
+</details>
+
+<details>
+<summary><b>B5. Configure the Voice block from first-pass outputs</b></summary>
 
 Re-open `scripts/install/config/udcsp.config.psd1` and replace placeholders for at least one country (DK).
 
-## B6. Run the Voice phase
+</details>
+
+<details>
+<summary><b>B6. Run the Voice phase</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
@@ -224,7 +256,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
 
 The DAG resolver re-includes Voice's prerequisites — every Bicep deploy is idempotent so this is safe and takes only seconds for already-up phases.
 
-## B7. Run the QA smoke gate
+</details>
+
+<details>
+<summary><b>B7. Run the QA smoke gate</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev
@@ -234,11 +269,17 @@ A green QA gate prints the platform's URLs to console.
 
 ✅ **Section B done — the platform is fully running.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](./recipe.md) for the 10 acceptance scenarios.
 
+</details>
+
+</details>
+
 ---
 
-# 🟨 C — OPTIONAL (only if you need them)
+<details>
+<summary><h2>🟨 C — OPTIONAL (only if you need them)</h2></summary>
 
-## C1. Bind a real PSTN number
+<details>
+<summary><b>C1. Bind a real PSTN number</b></summary>
 
 Required only for the live voice demo in [`recipe.md`](./recipe.md) Scenario 2. After acquiring a Nordic toll-free or local number through ACS:
 
@@ -251,7 +292,10 @@ pwsh apps/voice/scripts/Bind-AcsNumber.ps1 -Country dk -Env dev `
 
 The script overwrites the matching `placeholder: true` entry in `apps/voice/acs/phone-number-bindings.yaml` in-place, so the next `Install-Voice` run re-binds without operator action.
 
-## C2. Generate the evaluator HTML report
+</details>
+
+<details>
+<summary><b>C2. Generate the evaluator HTML report</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
@@ -264,7 +308,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 3. `tests/accessibility/automated/axe-runner.spec.ts` — homepage axe scan.
 4. `tests/load/k6/citizen-application-submit.k6.js` — short ramp.
 
-## C3. Conversational data smoke checks
+</details>
+
+<details>
+<summary><b>C3. Conversational data smoke checks</b></summary>
 
 - **SMS** — send a test SMS; verify it lands in the `sms_activity` Dataverse table and in the `acs-events/` ADLS container.
 - **Voice** — make a test voice call; verify the `.wav` lands in `voice-recordings/` ADLS, the STT transcript is stored alongside it, and the dialog turn is emitted by the Foundry `topic-router` into App Insights traces.
@@ -272,7 +319,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
 - **Foundry trace** — trigger a Foundry agent invocation; verify the trace is in App Insights and mirrored to OneLake Bronze.
 - **Right-to-erasure** — `POST /privacy/erase/{test_citizen_id}`; verify deletion cascades across all 5 zones within 30 minutes in test mode.
 
-## C4. Tear-down
+</details>
+
+<details>
+<summary><b>C4. Tear-down</b></summary>
 
 ```powershell
 pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment dev -Confirm
@@ -280,11 +330,17 @@ pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment dev -Confirm
 
 Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, unregisters Purview sources tagged for the environment, and disables (does **not** delete) the Microsoft Entra app registrations tagged `udcsp-env-<env>`. External ID tenants are intentionally not deleted automatically — delete them manually from the Entra admin centre when no longer needed. Refuses to run against `prod` unless `-Force` is supplied.
 
+</details>
+
+</details>
+
 ---
 
-# 🟪 D — RE-RUN / TROUBLESHOOTING
+<details>
+<summary><h2>🟪 D — RE-RUN / TROUBLESHOOTING</h2></summary>
 
-## D1. Re-run a single phase (after a code change)
+<details>
+<summary><b>D1. Re-run a single phase (after a code change)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Foundry,D365,Apps -Environment dev
@@ -292,13 +348,19 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Foundry,D365,Apps -Environment d
 
 Each phase is idempotent — safe to re-run.
 
-## D2. Re-run an offline self-test for one phase
+</details>
+
+<details>
+<summary><b>D2. Re-run an offline self-test for one phase</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Phase Foundry
 ```
 
-## D3. Run only the Voice orchestrator (after voice code change)
+</details>
+
+<details>
+<summary><b>D3. Run only the Voice orchestrator (after voice code change)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev `
@@ -307,7 +369,10 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev `
                 SyntheticData,Foundry,ConfidentialCompute,Apim,LogicApps,D365,Apps
 ```
 
-## D4. `-Environment prod` requires `-Force`
+</details>
+
+<details>
+<summary><b>D4. <code>-Environment prod</code> requires <code>-Force</code></b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Environment prod -Force
@@ -315,21 +380,27 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Environment prod -Force
 
 Without `-Force`, a `prod` invocation prints a warning and exits without making any changes. `-WhatIf`, `-TestOnly`, and `-SmokeOnly` against `prod` do **not** require `-Force`.
 
-## D5. Common errors
+</details>
+
+<details>
+<summary><b>D5. Common errors</b></summary>
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Pre-flight aborts with `Azure CLI is not logged in` | `az login` not done in this shell | `az login` then `az account set --subscription <id>` |
-| `Install-D365` fails with `pac: command not found` | Power Platform CLI missing | Install per [A1](#a1-install-workstation-tooling), then `pac auth create --environment <env-url>` for each country |
+| `Install-D365` fails with `pac: command not found` | Power Platform CLI missing | Install per **A1**, then `pac auth create --environment <env-url>` for each country |
 | `Install-LogicApps` fails with `func: command not found` | Azure Functions Core Tools v4 missing | `npm i -g azure-functions-core-tools@4 --unsafe-perm true` |
 | `Install-Apps` logs `[skip] swa CLI not found` / `[skip] eas CLI not found` | Static Web Apps / Expo CLIs missing | `npm i -g @azure/static-web-apps-cli eas-cli` then re-run `-Phase Apps` |
-| `Install-Identity` / `VerifiedId` / `Ciem` / `Priva` log `[skip] Microsoft.Graph not connected` | `Connect-MgGraph` not run in current shell | Run the `Connect-MgGraph -Scopes …` from [A2](#a2-sign-in-to-all-control-planes), then re-run the affected phase. Bicep parts of these phases run regardless. |
+| `Install-Identity` / `VerifiedId` / `Ciem` / `Priva` log `[skip] Microsoft.Graph not connected` | `Connect-MgGraph` not run in current shell | Run the `Connect-MgGraph -Scopes …` from **A2**, then re-run the affected phase. Bicep parts of these phases run regardless. |
 | `Install-Identity` fails on External ID user-flow upload | `TenantId` doesn't match the External ID tenant | Re-check the `ExternalIdTenants` block |
 | `Install-Fabric` returns `403 CapacityNotFound` | Fabric F-SKU not provisioned in country region | Provision the capacity in Azure Portal → re-run `-Phase Fabric` |
 | `Install-Foundry` fails on model deployment | Quota exhausted in the Foundry region | Request quota in Foundry portal or change region in config |
 | `Install-Apim` slow on first run | Premium APIM cold start ≈ 45 minutes | Expected. Installer streams progress every 60 s. |
 
-## D6. Reading the install reports
+</details>
+
+<details>
+<summary><b>D6. Reading the install reports</b></summary>
 
 Every run produces:
 
@@ -343,9 +414,14 @@ Grep tip:
 Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|\[skip\]'
 ```
 
+</details>
+
+</details>
+
 ---
 
-# Appendix 1 — The 25 phases, in install order
+<details>
+<summary><h2>📎 Appendix 1 — The 25 phases, in install order</h2></summary>
 
 The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:123-149` and refuses to run a phase whose prerequisites are missing.
 
@@ -377,7 +453,10 @@ The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:123-149` a
 | 24 | `Priva` | `Install-Priva.psm1` | Microsoft Priva Privacy Management — DSR system of record + Risk Management policies |
 | 25 | `QA` | `Install-QA.psm1` | Wires CI eval / E2E / security / conformance pipelines to GitHub Actions |
 
-# Appendix 2 — Topology you will install
+</details>
+
+<details>
+<summary><h2>📎 Appendix 2 — Topology you will install</h2></summary>
 
 ```mermaid
 graph TB
@@ -399,10 +478,15 @@ Each country sub gets its own landing zone, External ID tenant, Microsoft Fabric
 
 > **Demo simplification.** You can collapse all 4 subscriptions into a single sub by repeating the same GUID 4× in `Subscriptions`. The naming convention (`udcsp-{country}-{purpose}-rg`) keeps the country-level isolation visible.
 
-# Appendix 3 — Walk through the recipe (10 acceptance scenarios)
+</details>
+
+<details>
+<summary><h2>📎 Appendix 3 — Walk through the recipe (10 acceptance scenarios)</h2></summary>
 
 ```powershell
 code ./docs/tech/recipe.md
 ```
 
 The recipe exercises every layer of the platform — citizen voice call, web journey, mobile payslip OCR, caseworker triage, eligibility human-in-the-loop, DPO DSR, prompt-injection containment, executive workspace, DevOps reproducibility — and is the canonical proof that the platform satisfies the case study.
+
+</details>
