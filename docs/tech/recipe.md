@@ -8,25 +8,25 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
-| Section | Persona / theme |
-|---|---|
-| **0** | Pre-flight (5 minutes) |
-| **1** | Anna — cross-border identity & residency (DK → SE) |
-| **2** | Lars — accessibility voice journey (NO) |
-| **3** | Maria — Polish caregiver, screen-reader application (SE) |
-| **4** | Erik — DK SMB mobile payslip upload |
-| **5** | Astrid — SE caseworker reviews AI pre-assessment |
-| **6** | Hans — DK DPO handles a Subject Access Request |
-| **7** | Ingrid — SOC investigates impossible-travel alert |
-| **8** | Henrik — CIO opens the cockpit |
-| **9** | Ole — DevOps reproducible install |
-| **10** | Evaluator cross-cutting walkthrough |
-| **11** | Eval-matrix coverage map |
+| # | Persona / theme | Channel | Eval-matrix rows |
+|---|---|---|---|
+| 🟦 **0** | Pre-flight (5 minutes) | 🛠️ Ops | — |
+| 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | 🌐 Web | 1, 2, 3, 7, 12, 13 |
+| 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | 📞 Voice | 4, 5, 11, 12, 17 |
+| 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | 🌐 Web + 🦮 NVDA | 4, 5, 13 |
+| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | 📱 Mobile | 7, 13, 16 |
+| 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | 🖥️ D365 | 6, 7, 12, 14, 15 |
+| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | 🛡️ APIM + Purview | 8, 9, 10, 18 |
+| 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | 🛰️ Sentinel | 9, 10 |
+| 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | 11, 16 |
+| 🟩 **9** | 🧑‍🚀 Ole — DevOps reproducible install | ⚙️ Installer | 13, 17 |
+| 🟪 **10** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | 1–18 |
+| 🟨 **11** | 🗺️ Eval-matrix coverage map | — | 1–18 |
 
 ---
 
 <details>
-<summary><h2>0. Pre-flight (5 minutes)</h2></summary>
+<summary><h2>🟦 0. Pre-flight (5 minutes)</h2></summary>
 
 | # | Action | Command / file | Expected |
 |---|---|---|---|
@@ -40,7 +40,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>1. Scenario 1 — Anna moves Denmark → Sweden (cross-border identity &amp; residency)</h2></summary>
+<summary><h2>🟩 1. Scenario 1 — 👩‍💼 Anna moves Denmark → Sweden (cross-border identity &amp; residency)</h2></summary>
 
 > Maps to: **uses.md scenario 01** · **eval-matrix rows 1, 2, 3, 7, 12, 13**
 
@@ -64,7 +64,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>2. Scenario 2 — Lars (NO) accessibility voice journey</h2></summary>
+<summary><h2>🟪 2. Scenario 2 — 👨‍🦯 Lars (NO) accessibility voice journey 📞</h2></summary>
 
 > Maps to: **uses.md scenario 02** · **eval-matrix rows 4, 5, 11, 12, 17**
 
@@ -86,7 +86,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>3. Scenario 3 — Maria (PL caregiver in SE) screen-reader application</h2></summary>
+<summary><h2>🟨 3. Scenario 3 — 👩‍🍼 Maria (PL caregiver in SE) screen-reader application 🦮</h2></summary>
 
 > Maps to: **uses.md scenario 03** · **eval-matrix rows 4, 5, 13**
 
@@ -106,7 +106,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>4. Scenario 4 — Erik (DK SMB) mobile payslip upload</h2></summary>
+<summary><h2>🟧 4. Scenario 4 — 👨‍🔧 Erik (DK SMB) mobile payslip upload 📱</h2></summary>
 
 > Maps to: **uses.md scenario 04** · **eval-matrix rows 7, 13, 16**
 
@@ -126,7 +126,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>5. Scenario 5 — Astrid (SE caseworker) reviews AI pre-assessment</h2></summary>
+<summary><h2>🟫 5. Scenario 5 — 👩‍⚖️ Astrid (SE caseworker) reviews AI pre-assessment</h2></summary>
 
 > Maps to: **uses.md scenario 05** · **eval-matrix rows 6, 7, 12, 14, 15**
 
@@ -146,7 +146,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>6. Scenario 6 — Hans (DK DPO) handles a Subject Access Request</h2></summary>
+<summary><h2>⬛ 6. Scenario 6 — 🧑‍💼 Hans (DK DPO) handles a Subject Access Request 🛡️</h2></summary>
 
 > Maps to: **uses.md scenario 06** · **eval-matrix rows 8, 9, 10, 18**
 
@@ -165,7 +165,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>7. Scenario 7 — Ingrid (SOC) investigates impossible-travel alert</h2></summary>
+<summary><h2>🟥 7. Scenario 7 — 🦸‍♀️ Ingrid (SOC) investigates impossible-travel alert 🛰️</h2></summary>
 
 > Maps to: **uses.md scenario 07** · **eval-matrix rows 9, 10**
 
@@ -183,7 +183,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>8. Scenario 8 — Henrik (CIO) opens the cockpit</h2></summary>
+<summary><h2>🟦 8. Scenario 8 — 👨‍💻 Henrik (CIO) opens the cockpit 📊</h2></summary>
 
 > Maps to: **uses.md scenario 08** · **eval-matrix rows 11, 16**
 
@@ -201,7 +201,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>9. Scenario 9 — Ole (DevOps) reproducible install</h2></summary>
+<summary><h2>🟩 9. Scenario 9 — 🧑‍🚀 Ole (DevOps) reproducible install ⚙️</h2></summary>
 
 > Maps to: **uses.md scenario 09** · **eval-matrix rows 13, 17**
 
@@ -219,7 +219,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 ---
 
 <details>
-<summary><h2>10. Scenario 10 — Evaluator cross-cutting walkthrough</h2></summary>
+<summary><h2>🟪 10. Scenario 10 — 🧪 Evaluator cross-cutting walkthrough 🤖</h2></summary>
 
 > Maps to: **uses.md scenario 10** · **eval-matrix rows 1–18**
 
@@ -236,7 +236,7 @@ The HTML report it produces is the **single artefact** to attach to the case-stu
 ---
 
 <details>
-<summary><h2>11. Eval-matrix coverage map</h2></summary>
+<summary><h2>🟨 11. Eval-matrix coverage map 🗺️</h2></summary>
 
 This recipe walks through scenarios that, combined, cover every row of the [README evaluation criteria matrix](../../README.md#-evaluation-criteria--case-study-coverage-matrix):
 
