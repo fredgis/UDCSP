@@ -19,10 +19,25 @@ function Install-Apim {
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-apim-rg"
         $apimName = "udcsp-$($country.ToLower())-apim"
+        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'dev' }
+        $apimCfg = if ($Config.ContainsKey('Apim')) { $Config.Apim } else { @{ PublisherEmail = 'platform@udcsp.local'; PublisherName = 'UDCSP Platform' } }
         if ($PSCmdlet.ShouldProcess("apim-$country", 'az deployment group create')) {
+            $apimParams = [ordered]@{
+                '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                contentVersion = '1.0.0.0'
+                parameters = [ordered]@{
+                    country        = @{ value = $country.ToLower() }
+                    env            = @{ value = $envName }
+                    publisherEmail = @{ value = $apimCfg.PublisherEmail }
+                    publisherName  = @{ value = $apimCfg.PublisherName }
+                }
+            }
+            $apimParamsFile = Join-Path $ReportDir "apim-$($country.ToLower()).parameters.json"
+            $apimParams | ConvertTo-Json -Depth 6 | Set-Content $apimParamsFile -Encoding utf8
             Invoke-AzGroupDeployment `
                 -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
+                -ParametersFile $apimParamsFile `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-apim-$($country.ToLower())" `
                 -Tags $Config.Tags `
