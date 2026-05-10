@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
-    Install-Security — Defender for Cloud, Defender for APIs, Sentinel,
-    Azure Policy. Real Bicep deployments per subscription.
+    Install-Security — Defender for Cloud (incl. Defender for APIs pricing tier),
+    Sentinel workspace, Azure Policy baseline initiative + assignment, DPIA artefacts.
+    Real Bicep + az CLI deployments per subscription. Defender for APIs collection
+    onboarding (which requires APIM to exist) runs in Phase 18 (Install-Apim).
 #>
 Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
 
@@ -11,9 +13,14 @@ function Install-Security {
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $defender = Join-Path $repo 'infra\security\defender\defender-for-cloud.bicep'
     $sentinel = Join-Path $repo 'infra\security\sentinel\sentinel-workspace.bicep'
+    $policyInitiative = Join-Path $repo 'infra\security\azure-policy\baseline-initiative.json'
     $logFile  = Join-Path $ReportDir 'install-security.log'
     $whatIf   = [bool]$WhatIfPreference
-    foreach ($f in @($defender, $sentinel)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+    foreach ($f in @($defender, $sentinel, $policyInitiative)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
+
+    $initiative = Get-Content $policyInitiative -Raw | ConvertFrom-Json
+    $defsFile = Join-Path $ReportDir 'baseline-initiative-definitions.json'
+    @($initiative.properties.policyDefinitions) | ConvertTo-Json -Depth 10 | Set-Content $defsFile
 
     foreach ($scope in 'DK','SE','NO','SharedPlatform') {
         $sub = $Config.Subscriptions[$scope]
@@ -35,6 +42,29 @@ function Install-Security {
                 -DeploymentName "udcsp-sentinel-$($scope.ToLower())" `
                 -WhatIfFlag $whatIf
         }
+        if ($PSCmdlet.ShouldProcess("$scope azure-policy initiative", 'az policy set-definition create + assignment')) {
+            Invoke-NativeCommand `
+                -Command @('az','policy','set-definition','create',
+                           '--name', $initiative.name,
+                           '--subscription', $sub,
+                           '--definitions', $defsFile,
+                           '--display-name', $initiative.properties.displayName,
+                           '--description', $initiative.properties.description,
+                           '--only-show-errors','--output','none') `
+                -LogFile $logFile `
+                -WhatIfFlag $whatIf `
+                -ContinueOnError
+            Invoke-NativeCommand `
+                -Command @('az','policy','assignment','create',
+                           '--name', "udcsp-baseline-$($scope.ToLower())",
+                           '--subscription', $sub,
+                           '--policy-set-definition', $initiative.name,
+                           '--scope', "/subscriptions/$sub",
+                           '--only-show-errors','--output','none') `
+                -LogFile $logFile `
+                -WhatIfFlag $whatIf `
+                -ContinueOnError
+        }
     }
 }
 
@@ -43,7 +73,10 @@ function Test-Security {
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $required = @(
         'infra\security\defender\defender-for-cloud.bicep',
+        'infra\security\defender\defender-for-apis.bicep',
+        'infra\security\defender\defender-for-apis-onboarding.bicep',
         'infra\security\sentinel\sentinel-workspace.bicep',
+        'infra\security\azure-policy\baseline-initiative.json',
         'governance\dpia\dpia-template.md',
         'governance\dpia\dpia-eligibility-model.md'
     )

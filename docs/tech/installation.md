@@ -381,7 +381,7 @@ Add these to your post-install checklist:
 pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment dev -Confirm
 ```
 
-Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, deletes External ID tenants flagged disposable, and unregisters Purview sources. Refuses to run against `prod` unless `-Force` is supplied.
+    Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, unregisters Purview sources tagged for the environment, and disables (does **not** delete) the Microsoft Entra app registrations tagged `udcsp-env-<env>`. External ID tenants are intentionally not deleted automatically — they often host shared user populations; the operator deletes the tenant manually from the Microsoft Entra admin centre when the disposable tenant is no longer needed. Refuses to run against `prod` unless `-Force` is supplied.
 
 ---
 

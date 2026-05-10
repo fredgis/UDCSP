@@ -1,0 +1,15 @@
+{
+  "entity": {
+    "typeName": "azure_postgresql_server",
+    "attributes": {
+      "qualifiedName": "postgresql://udcsp-${country}-${env}-pg.postgres.database.azure.com/udcsp_case_state",
+      "name": "Postgres-Case-State",
+      "description": "Case state, draft applications and long-lived JSONB documents on PostgreSQL Flexible Server (replaces the historical Cosmos DB store)."
+    },
+    "classifications": [
+      {
+        "typeName": "Confidential-Citizen"
+      }
+    ]
+  }
+}
