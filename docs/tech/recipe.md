@@ -8,20 +8,21 @@ Each step is **directly executable**, names the file/script involved, the expect
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
-| # | Persona / theme | Channel | Eval-matrix rows |
-|---|---|---|---|
-| 🟦 **0** | Pre-flight (5 minutes) | 🛠️ Ops | — |
-| 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | 🌐 Web | 1, 2, 3, 7, 12, 13 |
-| 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | 📞 Voice | 4, 5, 11, 12, 17 |
-| 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | 🌐 Web + 🦮 NVDA | 4, 5, 13 |
-| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | 📱 Mobile | 7, 13, 16 |
-| 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | 🖥️ D365 | 6, 7, 12, 14, 15 |
-| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | 🛡️ APIM + Purview | 8, 9, 10, 18 |
-| 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | 🛰️ Sentinel | 9, 10 |
-| 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | 11, 16 |
-| 🟩 **9** | 🧑‍🚀 Ole — DevOps reproducible install | ⚙️ Installer | 13, 17 |
-| 🟪 **10** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | 1–18 |
-| 🟨 **11** | 🗺️ Eval-matrix coverage map | — | 1–18 |
+| # | Persona / theme | Channel | ⏱️ Time | Eval-matrix rows |
+|---|---|---|---|---|
+| 🟦 **0** | Pre-flight (5 minutes) | 🛠️ Ops | ~5 min | — |
+| 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | 🌐 Web | ~15 min | 1, 2, 3, 7, 12, 13 |
+| 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | 📞 Voice | ~10 min | 4, 5, 11, 12, 17 |
+| 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | 🌐 Web + 🦮 NVDA | ~10 min | 4, 5, 13 |
+| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | 📱 Mobile | ~10 min | 7, 13, 16 |
+| 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | 🖥️ D365 | ~10 min | 6, 7, 12, 14, 15 |
+| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
+| 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | 🛰️ Sentinel | ~10 min | 9, 10 |
+| 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | 📊 Power BI | ~5 min | 11, 16 |
+| 🟩 **9** | 🧑‍🚀 Ole — DevOps reproducible install | ⚙️ Installer | ~90 min | 13, 17 |
+| 🟪 **10** | 🧪 Evaluator cross-cutting walkthrough | 🤖 Playwright | ~15 min | 1–18 |
+| 🟨 **11** | 🗺️ Eval-matrix coverage map | — | ~2 min | 1–18 |
+| | | **Total (skip §9 re-install)** | **≈ 1 h 45** | |
 
 ---
 
