@@ -1,20 +1,16 @@
 {
   "name": "udcsp-sharepoint-policies",
   "type": "sharepoint",
-  "url": "${UDCSP_POLICY_SITE_URL}",
-  "languages": [
-    "da",
-    "sv",
-    "nb",
-    "nn",
-    "se",
-    "en",
-    "de",
-    "fr",
-    "pl",
-    "ar",
-    "uk",
-    "fi"
-  ],
-  "status": "placeholder"
+  "description": "Policy library indexed for retrieval-augmented generation. Each country owns its SharePoint site; the topic-router fans out to the country site matching the session's `country` slot only (zero cross-border bleed).",
+  "sites": {
+    "DK": "${UDCSP_POLICY_SITE_URL_DK}",
+    "SE": "${UDCSP_POLICY_SITE_URL_SE}",
+    "NO": "${UDCSP_POLICY_SITE_URL_NO}"
+  },
+  "auth": "managedIdentity",
+  "languages": ["da", "sv", "nb", "nn", "se", "en", "de", "fr", "pl", "ar", "uk", "fi"],
+  "indexName": "udcsp-sharepoint-policies",
+  "freshnessSlaHours": 6,
+  "groundingMandatory": true,
+  "notes": "groundingMandatory=true means the agent MUST cite at least one policy URL in any answer that quotes a benefit threshold or eligibility rule."
 }

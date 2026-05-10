@@ -1,20 +1,24 @@
 {
   "name": "udcsp-citizens-faq",
-  "type": "webOrDataverse",
-  "source": "${UDCSP_FAQ_SOURCE}",
-  "languages": [
-    "da",
-    "sv",
-    "nb",
-    "nn",
-    "se",
-    "en",
-    "de",
-    "fr",
-    "pl",
-    "ar",
-    "uk",
-    "fi"
-  ],
-  "status": "placeholder"
+  "type": "azureAiSearch",
+  "description": "Multilingual FAQ index covering the 47 unified citizen-services portals. Source-of-truth lives in Dataverse (UDCSP_FAQ entity, owned by the editorial board); the index is rebuilt nightly by `data/fabric/notebooks/03_publish_faq_to_search.py`.",
+  "indexName": "udcsp-citizens-faq",
+  "endpoint": "${AI_SEARCH_ENDPOINT}",
+  "auth": "managedIdentity",
+  "languages": ["da", "sv", "nb", "nn", "se", "en", "de", "fr", "pl", "ar", "uk", "fi"],
+  "fields": {
+    "id": "string",
+    "country": "enum: DK|SE|NO|shared",
+    "topic": "enum: residency|tax|child-benefit|unemployment|other",
+    "locale": "BCP-47",
+    "question": "Edm.String",
+    "answer": "Edm.String",
+    "sourcePolicyRef": "string"
+  },
+  "retrieval": {
+    "top": 4,
+    "queryType": "semantic",
+    "semanticConfiguration": "udcsp-semantic"
+  },
+  "freshnessSlaHours": 24
 }

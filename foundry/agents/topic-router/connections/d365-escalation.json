@@ -1,9 +1,24 @@
 {
   "name": "d365-escalation",
   "type": "customConnector",
-  "sourceMapping": "apps/copilot-studio/agents/citizen-assistant-bot/connections/d365-case-create.json",
-  "endpoint": "${D365_CASE_CREATE_ENDPOINT}",
+  "description": "Creates a D365 Customer Service case (or appends to an existing one) when the topic-router decides the citizen interaction needs human review, accessibility support, or low-confidence escalation.",
+  "endpoint": "${APIM_BASE_URL}/cases/v1/cases",
+  "openapiSpec": "../../../services/apim/apis/cases/openapi.yaml",
+  "operationId": "createOrAppendCase",
   "auth": "managedIdentity",
-  "status": "placeholder",
-  "note": "Creates human review, accessibility, complaint, and low-confidence cases."
+  "input": {
+    "subjectCitizenId": "string (External ID subject claim, required)",
+    "country": "enum: DK|SE|NO (required)",
+    "channel": "enum: web|chat|voice|sms|email|mobile (required)",
+    "reasonCode": "enum: human-review|accessibility|complaint|low-confidence|safety-block (required)",
+    "transcriptRef": "string (App Insights operationId or ADLS blob URI)",
+    "locale": "string (BCP-47, required)"
+  },
+  "output": {
+    "caseId": "string",
+    "queueId": "string",
+    "status": "enum: created|appended"
+  },
+  "fallbackBehaviour": "If the call fails, the topic-router records the escalation request to the Service Bus dead-letter and surfaces a graceful 'we will call you back' to the citizen.",
+  "timeoutMs": 2000
 }
