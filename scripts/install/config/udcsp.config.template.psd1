@@ -116,6 +116,16 @@
         Sku = 'Standard'
     }
 
+    Fabric = @{
+        CapacitySku  = 'F64'           # F2 for dev sandbox, F64+ for prod
+        WorkspaceIds = @{
+            DK = '<workspace-guid-dk>'
+            SE = '<workspace-guid-se>'
+            NO = '<workspace-guid-no>'
+        }
+        Token        = '<service-principal-or-managed-identity-token>'
+    }
+
     # ----------------------------------------------------------------------
     # Voice channel (A10) — one block per sovereign country.
     # Read by scripts/install/modules/Install-Voice.psm1; field names match

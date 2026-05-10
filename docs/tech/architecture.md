@@ -26,6 +26,7 @@
 13. [End-to-End Flow Examples](#13-end-to-end-flow-examples)
 14. [Service Inventory](#14-service-inventory)
 15. [Deployment & Developer Experience](#15-deployment--developer-experience)
+16. [Compliance & Resilience Hardening](#16-compliance--resilience-hardening)
 
 ---
 

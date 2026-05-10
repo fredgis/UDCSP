@@ -14,7 +14,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 |---|---|---|---|
 | 0.1 | Confirm install report is green | `Get-Content scripts/install/reports/latest/install-report.json` | `"status": "Succeeded"` for every phase |
 | 0.2 | Confirm tenant inventory | `pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly` | All 25 phases healthy |
-| 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | URL = `phases.Fabric.outputs.workspaceUrl` from the install report | Workspace lists the 3 reports (Citizen Journey · AI Decision Trace · Executive Cockpit); KPI tiles render |
+| 0.3a | Open the **internal** Power BI Premium workspace (Fabric) | URL = `phases.Fabric.outputs.workspaceUrl` from the install report | Workspace lists the 3 reports (Executive Cockpit · Caseworker Operations · Compliance Audit); KPI tiles render |
 | 0.3b | Open the **citizen-facing** insights cockpit | Any country portal home page (e.g. `https://udcsp-dk.swa.azurestaticapps.net/`) | Per-citizen tiles render (no Power BI Embedded JS SDK loaded) |
 
 ---
@@ -104,7 +104,7 @@ Each step is **directly executable**, names the file/script involved, the expect
 | 5.3 | Click "Show AI reasoning" | Side panel | Sources, prompt, model version, registry ID, fairness slice info |
 | 5.4 | Disagree with AI assessment | "Override" button | Form requests reason → captured in Dataverse → mirrored to Fabric for shadow-mode metrics |
 | 5.5 | Decision published | "Approve" | Logic App `caseworker-decision-publish` notifies citizen, archives event |
-| 5.6 | Open Foundry shadow-mode dashboard | **AI Decision Trace** report in the Power BI Premium workspace | Astrid's override is added to the human-AI agreement metric |
+| 5.6 | Open Foundry shadow-mode dashboard | **Compliance Audit** report in the Power BI Premium workspace | Astrid's override is added to the human-AI agreement metric |
 
 **Exit gate:** caseworker can override every AI decision; overrides feed back into model improvement.
 
