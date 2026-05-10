@@ -4,7 +4,7 @@
   "description": "Creates a D365 Customer Service case (or appends to an existing one) when the topic-router decides the citizen interaction needs human review, accessibility support, or low-confidence escalation.",
   "endpoint": "${APIM_BASE_URL}/cases",
   "openapiSpec": "../../../../services/apim/apis/case-management/openapi.yaml",
-  "operationId": "createOrAppendCase",
+  "operationId": "post-case-management-cases",
   "auth": "managedIdentity",
   "input": {
     "subjectCitizenId": "string (External ID subject claim, required)",
