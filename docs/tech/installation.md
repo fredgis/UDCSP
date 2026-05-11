@@ -58,11 +58,18 @@ Then install the two MSIs manually if not already present:
 
 > 🎯 **Goal:** authenticate against the things that already exist on a fresh tenant. **D365 sign-in is deferred to A4** because the D365 environments don't exist yet — A3 creates them.
 
+> ⚠️ **Multi-identity Windows trap.** If you are signed into Windows with a corporate account (e.g. `you@microsoft.com`) but the UDCSP tenant is a *separate* MCAPS / sandbox tenant (e.g. `admin@MngEnvMCAP123456.onmicrosoft.com`), `az` / `pac` / `Connect-MgGraph` all default to your Windows SSO identity and silently sign you into the **wrong tenant**. Always pass `--tenant <UDCSP-tenant-id>` to `az login` and `pac auth create`, and pick the UDCSP admin UPN — not your Windows UPN — at the device-code prompt.
+
 **Step 1 — Azure CLI**
 
 ```powershell
-az login                                                # Azure
-az account set --subscription <SharedPlatform-sub-id>   # default sub for shared deployments
+# Replace <UDCSP-tenant-id> with the tenant where the deployment will run.
+# If you only have one tenant, just `az login` is enough.
+az login --tenant <UDCSP-tenant-id>
+az account set --subscription <SharedPlatform-sub-id>
+
+# Verify you landed in the right tenant:
+az account show --query '{tenant:tenantId,user:user.name}' -o table
 ```
 
 **Step 2 — Microsoft Graph PowerShell SDK (core scopes only)**
@@ -168,7 +175,21 @@ You need owner-level access to create:
 
 **Step 3.5 — Create the 3 D365 / Power Platform environments**
 
-> The `Install-D365` phase will fail without these. Use `pac admin create` (CLI) **or** the Power Platform admin centre (<https://admin.powerplatform.microsoft.com>):
+> The `Install-D365` phase will fail without these.
+>
+> ⚠️ **Sign `pac` into the UDCSP tenant first.** `pac admin create` uses whichever identity `pac` last cached — if you skipped the explicit `--tenant`, that's your Windows SSO identity, which will fail with `Your tenant's administrators have disabled environment creation for non-admin users` (because you're not admin in that tenant). Bind `pac` to the UDCSP tenant with the admin UPN before calling `pac admin create`:
+>
+> ```powershell
+> pac auth clear                                   # purge any cached SSO identity
+> pac auth create --name udcsp-tenant-admin `
+>                 --tenant <UDCSP-tenant-id> `
+>                 --deviceCode
+> # → at the device-code prompt, sign in with the UDCSP tenant admin UPN
+> #   (e.g. admin@MngEnvMCAP123456.onmicrosoft.com), NOT your corp UPN.
+> pac auth list                                    # confirm the right UPN is "active"
+> ```
+
+Then create the environments either via CLI or via the Power Platform admin centre (<https://admin.powerplatform.microsoft.com>):
 
 ```powershell
 pac admin create --name UDCSP-DK --type Production --region europe   --currency DKK --language 1030
