@@ -23,7 +23,7 @@ resource replicationPolicy 'Microsoft.RecoveryServices/vaults/replicationPolicie
       appConsistentFrequencyInMinutes: 240
       crashConsistentFrequencyInMinutes: replicationFrequencyInSeconds / 60
       multiVmSyncStatus: 'Enable'
-      recoveryPointHistory: 24
+      recoveryPointHistory: 1440
     }
   }
 }
