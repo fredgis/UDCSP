@@ -82,18 +82,8 @@ var longRetention = {
   }
 }
 
-resource postgresPolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-02-01' = {
-  parent: vault
-  name: 'udcsp-postgres-daily'
-  properties: {
-    backupManagementType: 'AzureWorkload'
-    workLoadType: 'PostgreSQL'
-    policyType: 'Full'
-    timeZone: timeZone
-    schedulePolicy: dailySchedule
-    retentionPolicy: longRetention
-  }
-}
+// Note: PostgreSQL Flexible Server is backed up via Microsoft.DataProtection (Backup Vault)
+// and native PITR, not via Recovery Services Vault. No AzureWorkload policy is created here.
 
 resource storagePolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-02-01' = {
   parent: vault
@@ -101,7 +91,6 @@ resource storagePolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-02
   properties: {
     backupManagementType: 'AzureStorage'
     workLoadType: 'AzureFileShare'
-    policyType: 'V1'
     timeZone: timeZone
     schedulePolicy: dailySchedule
     retentionPolicy: {
@@ -154,7 +143,6 @@ resource vmPolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-02-01' 
   name: 'udcsp-vm-daily'
   properties: {
     backupManagementType: 'AzureIaasVM'
-    policyType: 'V2'
     timeZone: timeZone
     schedulePolicy: dailySchedule
     retentionPolicy: longRetention
@@ -162,7 +150,6 @@ resource vmPolicy 'Microsoft.RecoveryServices/vaults/backupPolicies@2023-02-01' 
 }
 
 output policyIds array = [
-  postgresPolicy.id
   storagePolicy.id
   vmPolicy.id
 ]

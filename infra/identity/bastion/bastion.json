@@ -1,0 +1,118 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "4286977384121640341"
+    }
+  },
+  "parameters": {
+    "country": {
+      "type": "string",
+      "allowedValues": [
+        "dk",
+        "se",
+        "no"
+      ],
+      "metadata": {
+        "description": "Country code (lowercase): dk | se | no."
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "[format('udcsp-{0}-prod-vnet', parameters('country'))]",
+      "metadata": {
+        "description": "Existing VNet name in this resource group (created by LandingZone)."
+      }
+    },
+    "bastionNsgId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional NSG to attach to AzureBastionSubnet. Leave empty for the Azure-managed default rules."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Deployment region."
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "prod",
+      "metadata": {
+        "description": "Deployment environment name."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "workload": "identity",
+        "capability": "bastion",
+        "sovereigntyPolicy": "bastion-public-ip-only"
+      },
+      "metadata": {
+        "description": "Common tags applied to Bastion resources."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-09-01",
+      "name": "[format('udcsp-{0}-{1}-bastion-pip', parameters('country'), parameters('env'))]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('country', parameters('country'), 'publicIpException', 'azure-bastion-only'))]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/bastionHosts",
+      "apiVersion": "2023-09-01",
+      "name": "[format('udcsp-{0}-{1}-bastion', parameters('country'), parameters('env'))]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('country', parameters('country')))]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "enableIpConnect": true,
+        "enableTunneling": true,
+        "ipConfigurations": [
+          {
+            "name": "bastion-ipconfig",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'AzureBastionSubnet')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('udcsp-{0}-{1}-bastion-pip', parameters('country'), parameters('env')))]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', format('udcsp-{0}-{1}-bastion-pip', parameters('country'), parameters('env')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "bastionHostId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/bastionHosts', format('udcsp-{0}-{1}-bastion', parameters('country'), parameters('env')))]"
+    },
+    "bastionPublicIpId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/publicIPAddresses', format('udcsp-{0}-{1}-bastion-pip', parameters('country'), parameters('env')))]"
+    }
+  }
+}

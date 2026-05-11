@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "12330081531270506333"
+    }
+  },
+  "parameters": {
+    "plans": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "VirtualMachines"
+        },
+        {
+          "name": "StorageAccounts"
+        },
+        {
+          "name": "KeyVaults"
+        },
+        {
+          "name": "Containers"
+        },
+        {
+          "name": "AppServices"
+        },
+        {
+          "name": "Api",
+          "subPlan": "P1"
+        }
+      ],
+      "metadata": {
+        "description": "Defender plans to enable. Each entry: { name, subPlan? }. The \"Api\" plan requires a subPlan (P1..P5)."
+      }
+    }
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "pricing",
+        "count": "[length(parameters('plans'))]",
+        "mode": "serial",
+        "batchSize": 1
+      },
+      "type": "Microsoft.Security/pricings",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('plans')[copyIndex()].name]",
+      "properties": "[union(createObject('pricingTier', 'Standard'), if(contains(parameters('plans')[copyIndex()], 'subPlan'), createObject('subPlan', parameters('plans')[copyIndex()].subPlan), createObject()))]"
+    }
+  ],
+  "outputs": {
+    "enabledPlans": {
+      "type": "array",
+      "copy": {
+        "count": "[length(parameters('plans'))]",
+        "input": "[parameters('plans')[copyIndex()].name]"
+      }
+    }
+  }
+}
