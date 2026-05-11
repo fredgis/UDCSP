@@ -78,12 +78,20 @@ function Install-Security {
             # on some builds and returns InvalidRequestUri.
             foreach ($builtin in $initiative.properties._referencedBuiltInInitiatives) {
                 $guid = ($builtin.id -split '/')[-1]
+                # NIST 800-53 + ISO 27001 contain Modify / DeployIfNotExists
+                # policies, so ARM requires a managed identity on the
+                # assignment (Azure error: ResourceIdentityRequired).
+                # MCSB is Audit-only and tolerates --mi-system-assigned too,
+                # so we apply it uniformly. --location is mandatory when the
+                # MI flag is set, even for sub-scoped assignments.
                 Invoke-NativeCommand `
                     -Command @('az','policy','assignment','create',
                                '--name', "udcsp-$($builtin.name)-$($scope.ToLower())",
                                '--subscription', $sub,
                                '--policy-set-definition', $guid,
                                '--scope', "/subscriptions/$sub",
+                               '--mi-system-assigned',
+                               '--location', $region,
                                '--only-show-errors','--output','none') `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
