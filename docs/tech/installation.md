@@ -63,9 +63,24 @@ az account set --subscription <SharedPlatform-sub-id>   # default sub for shared
 
 **Step 2 — Microsoft Graph PowerShell SDK**
 
-> ⚠️ On Windows, the default `Connect-MgGraph` flow uses **Web Account Manager (WAM)** which often fails with `InteractiveBrowserCredential authentication failed` in embedded terminals (VS Code, Windows Terminal pane, Warp, etc.) — the browser popup is hidden behind other windows or blocked by WAM. **Use device-code flow instead** — it prints a code to paste into <https://microsoft.com/devicelogin> and works in any shell:
+> ⚠️ On Windows, the default `Connect-MgGraph` flow uses **Web Account Manager (WAM)** which often fails with `InteractiveBrowserCredential authentication failed` in embedded terminals (VS Code, Windows Terminal pane, Warp, etc.) — the browser popup is hidden behind other windows or blocked by WAM. **Use device-code flow instead** — it prints a code to paste into <https://microsoft.com/devicelogin> and works in any shell.
+
+> ⚠️ The two scopes `VerifiableCredential.Create.All` and `PrivacyManagement.ReadWrite.All` require **Microsoft Entra Verified ID** and **Microsoft Priva** to be already onboarded in the tenant. On a fresh tenant they don't exist yet (`AADSTS70011: scope … does not exist`). Run the **core connect first** — Verified ID and Priva phases of the installer will provision them, and you can re-`Connect-MgGraph` with the add-on scopes afterwards.
 
 ```powershell
+# Core scopes — work on any tenant, sufficient for phases A3..VerifiedId
+Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
+                                       "Policy.ReadWrite.ConditionalAccess",`
+                                       "Policy.ReadWrite.PermissionGrant",`
+                                       "User.ReadWrite.All",`
+                                       "Directory.ReadWrite.All"
+```
+
+After the **VerifiedId** and **Priva** install phases have run (they create the missing service principals), reconnect with the add-on scopes to unlock the rest:
+
+```powershell
+# Add-on scopes — only after VerifiedId + Priva phases have completed
+Disconnect-MgGraph -ErrorAction SilentlyContinue
 Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
                                        "Policy.ReadWrite.ConditionalAccess",`
                                        "Policy.ReadWrite.PermissionGrant",`
@@ -88,6 +103,18 @@ dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
 pac --version    # sanity check
 ```
+
+> ⚠️ **Antivirus interference** — if the install fails with `Access to the path '…\.dotnet\tools\.store\.stage\…' is denied`, your AV (Defender or corporate AV) is locking the staging folder mid-extract. Three workarounds:
+>
+> 1. **Retry** — often succeeds on the 2nd attempt.
+> 2. **Install to a non-profile path** the AV doesn't watch:
+>    ```powershell
+>    New-Item -ItemType Directory C:\tools\dotnet -Force | Out-Null
+>    dotnet tool install Microsoft.PowerApps.CLI.Tool --tool-path C:\tools\dotnet
+>    $env:PATH += ";C:\tools\dotnet"
+>    pac --version
+>    ```
+> 3. Ask IT to add `%USERPROFILE%\.dotnet\tools` to Defender exclusions (admin only).
 
 Then authenticate against each country's D365 environment:
 
