@@ -35,7 +35,7 @@ function Install-Foundry {
         if ($PSCmdlet.ShouldProcess($a.Name, "Foundry agent deploy ($workspace)")) {
             if ($importer) {
                 Invoke-NativeCommand `
-                    -Command @('pwsh','-File',$importer.FullName,'-FoundryWorkspace',$workspace) `
+                    -Command @('pwsh','-NoProfile','-NoLogo','-NonInteractive','-File',$importer.FullName,'-FoundryWorkspace',$workspace) `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
