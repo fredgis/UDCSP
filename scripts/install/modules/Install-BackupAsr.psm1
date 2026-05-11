@@ -38,6 +38,9 @@ function Install-BackupAsr {
                 location = @{ value = $region }
                 keyUri   = @{ value = '' }
                 backupStorageRedundancy = @{ value = $vaultRedundancy }
+                # MCAPS sandbox: norwaywest is access-restricted, so CRR cannot complete.
+                # The same applies to any other region whose pair is gated; extend the list as needed.
+                enableCrossRegionRestore = @{ value = ($country -notin @('NO')) }
             }
         }
         $vaultParamsFile = Join-Path $ReportDir "backup-vault-$cl.parameters.json"

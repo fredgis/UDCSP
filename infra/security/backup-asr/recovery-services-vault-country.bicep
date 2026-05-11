@@ -8,6 +8,8 @@ param location string
 param keyUri string
 @allowed(['GeoRedundant', 'ZoneRedundant', 'LocallyRedundant'])
 param backupStorageRedundancy string
+@description('Enable Cross-Region Restore. Requires GRS. Disable for sovereign regions where the paired region is restricted (e.g. norwaywest in MCAPS sandbox).')
+param enableCrossRegionRestore bool = true
 
 var tags = {
   purpose: 'bcdr'
@@ -56,7 +58,7 @@ resource storageConfig 'Microsoft.RecoveryServices/vaults/backupstorageconfig@20
     storageModelType: backupStorageRedundancy
     storageType: backupStorageRedundancy
     storageTypeState: 'Unlocked'
-    crossRegionRestoreFlag: backupStorageRedundancy == 'GeoRedundant'
+    crossRegionRestoreFlag: backupStorageRedundancy == 'GeoRedundant' && enableCrossRegionRestore
   }
 }
 
