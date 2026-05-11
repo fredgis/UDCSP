@@ -129,8 +129,8 @@ $Script:Dag = [ordered]@{
     Security            = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Security.psm1' }
     Ddos                = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Ddos.psm1' }
     BackupAsr           = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-BackupAsr.psm1' }
-    ConfidentialLedger  = @{ Wave = 1; DependsOn = @('Security');                                    Module = 'Install-ConfidentialLedger.psm1' }
-    ChaosStudio         = @{ Wave = 1; DependsOn = @('Security');                                    Module = 'Install-ChaosStudio.psm1' }
+    ConfidentialLedger  = @{ Wave = 1; DependsOn = @('Security','Observability');                    Module = 'Install-ConfidentialLedger.psm1' }
+    ChaosStudio         = @{ Wave = 1; DependsOn = @('Security','Observability');                    Module = 'Install-ChaosStudio.psm1' }
     Observability       = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Observability.psm1' }
     Fabric              = @{ Wave = 1; DependsOn = @('LandingZone');                                 Module = 'Install-Fabric.psm1' }
     Postgres            = @{ Wave = 1; DependsOn = @('LandingZone','Security');                      Module = 'Install-Postgres.psm1' }

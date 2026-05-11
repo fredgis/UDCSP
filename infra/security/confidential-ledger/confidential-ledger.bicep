@@ -44,16 +44,8 @@ resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
   properties: {
     workspaceId: logAnalyticsWorkspaceId
     logs: [
-      {
-        category: 'ApplicationLogs'
-        enabled: true
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
+      { category: 'userdefinedlogs', enabled: true }
+      { category: 'transactionlogs', enabled: true }
     ]
   }
 }
