@@ -4,7 +4,7 @@
 
 ### *What* is built · *How* it fits together · *How* to install, operate, recover
 
-[![Docs](https://img.shields.io/badge/📑_Docs-7-1565C0?style=for-the-badge)](#)
+[![Docs](https://img.shields.io/badge/📑_Docs-8-1565C0?style=for-the-badge)](#)
 [![Phases](https://img.shields.io/badge/🛠️_Install_phases-25-2E7D32?style=for-the-badge)](#)
 [![Zones](https://img.shields.io/badge/🌍_Sovereign_zones-3-AD1457?style=for-the-badge)](#)
 [![Stores](https://img.shields.io/badge/🗄️_Data_stores-25-E65100?style=for-the-badge)](#)
@@ -19,6 +19,7 @@
 |---|---|---|
 | 🏛️ [`architecture.md`](./architecture.md) | **The platform definition.** Every layer, every sovereignty zone, every AI agent, every governance control. | New to the codebase — read this once. |
 | 🗄️ [`data.md`](./data.md) | **Storage truth.** 5 zones · ~25 stores · retention matrix · compliance map. | Anyone touching data, retention, or DSR flows. |
+| 🌐 [`network.md`](./network.md) | **Network truth.** 3 sovereign spokes · ~25 private endpoints · 1 public IP per country (Bastion) · DDoS + NSG topology. Includes [`network.drawio`](./network.drawio) schematic. | Anyone wiring a new service into the spoke or troubleshooting connectivity. |
 | 🛠️ [`installation.md`](./installation.md) | **Install guide.** 4 collapsible sections (Prerequisites · Mandatory · Optional · Re-run). | About to deploy on a fresh tenant. |
 
 ---
