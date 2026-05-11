@@ -18,29 +18,22 @@ var subnetSpecs = [
   { name: 'ai', prefix: cidrSubnet(addressPrefix, 24, 5) }
 ]
 
+// AzureBastionSubnet must be a /26 minimum and is owned by the LandingZone
+// (not by the Bastion module) so that re-deploying the LandingZone is fully
+// idempotent. The Bastion module references this subnet via `existing`.
+var bastionSubnetPrefix = cidrSubnet(addressPrefix, 26, 224)
+
 resource nsgs 'Microsoft.Network/networkSecurityGroups@2023-09-01' = [for s in subnetSpecs: {
   name: '${name}-${s.name}-nsg'
   location: location
   tags: tags
 }]
 
-// VNet declared WITHOUT inline subnets to keep re-deploys additive.
-// Inline subnets cause "InUseSubnetCannotBeDeleted" when other modules
-// (Bastion's AzureBastionSubnet, Postgres delegated subnet, etc.) add
-// child subnets later — ARM would try to drop them on re-apply.
-resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' = {
-  name: '${name}-vnet'
-  location: location
-  tags: tags
-  properties: {
-    addressSpace: { addressPrefixes: [addressPrefix] }
-  }
-}
-
-// Subnets as separate child resources — additive idempotency.
-@batchSize(1)
-resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = [for (s, i) in subnetSpecs: {
-  parent: vnet
+// LandingZone owns ALL subnets (named workload subnets + AzureBastionSubnet).
+// Inline declaration is the canonical ARM pattern and keeps the LZ
+// authoritative — other modules (Bastion, Postgres delegated, Apim, etc.)
+// must reference subnets via `existing` instead of creating their own.
+var workloadSubnets = [for (s, i) in subnetSpecs: {
   name: s.name
   properties: {
     addressPrefix: s.prefix
@@ -48,6 +41,22 @@ resource subnets 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = [for (
     privateEndpointNetworkPolicies: 'Disabled'
   }
 }]
+var bastionSubnet = {
+  name: 'AzureBastionSubnet'
+  properties: {
+    addressPrefix: bastionSubnetPrefix
+  }
+}
+
+resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' = {
+  name: '${name}-vnet'
+  location: location
+  tags: tags
+  properties: {
+    addressSpace: { addressPrefixes: [addressPrefix] }
+    subnets: concat(workloadSubnets, [bastionSubnet])
+  }
+}
 
 resource toHub 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-09-01' = if (!empty(hubVnetId)) {
   parent: vnet
@@ -59,6 +68,6 @@ resource toHub 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-09
   }
 }
 
-output dataSubnetId string = subnets[2].id
-output integrationSubnetId string = subnets[3].id
+output dataSubnetId string = vnet.properties.subnets[2].id
+output integrationSubnetId string = vnet.properties.subnets[3].id
 
