@@ -10,9 +10,6 @@ param country string
 @description('Existing VNet name in this resource group (created by LandingZone).')
 param vnetName string = 'udcsp-${country}-prod-vnet'
 
-@description('CIDR for the AzureBastionSubnet (must be /26 or larger and inside the VNet address space).')
-param bastionSubnetPrefix string = country == 'dk' ? '10.10.250.0/26' : country == 'se' ? '10.20.250.0/26' : '10.30.250.0/26'
-
 @description('Optional NSG to attach to AzureBastionSubnet. Leave empty for the Azure-managed default rules.')
 param bastionNsgId string = ''
 
@@ -33,6 +30,14 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   name: vnetName
 }
 
+// AzureBastionSubnet is owned by the LandingZone (networking.bicep) so that
+// re-deploying the LandingZone is idempotent. We reference it as `existing`
+// here and only create the public IP + bastion host.
+resource bastionSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  parent: vnet
+  name: 'AzureBastionSubnet'
+}
+
 resource publicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   name: 'udcsp-${country}-${env}-bastion-pip'
   location: location
@@ -45,17 +50,6 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
   }
   properties: {
     publicIPAllocationMethod: 'Static'
-  }
-}
-
-resource bastionSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {
-  parent: vnet
-  name: 'AzureBastionSubnet'
-  properties: {
-    addressPrefix: bastionSubnetPrefix
-    networkSecurityGroup: empty(bastionNsgId) ? null : {
-      id: bastionNsgId
-    }
   }
 }
 
