@@ -38,17 +38,24 @@ foreach ($t in 'node','python','git','az') {
 
 if ($IncludePowerPlatformCli) {
     if (-not (Get-Command pac -ErrorAction SilentlyContinue)) {
-        if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+        $installed = $false
+        if (Get-Command winget -ErrorAction SilentlyContinue) {
+            Write-Host "Installing Power Platform CLI via winget…" -ForegroundColor Yellow
+            winget install --id Microsoft.PowerAppsCLI -e --accept-source-agreements --accept-package-agreements 2>&1 | Out-Host
+            if ($LASTEXITCODE -eq 0) { $installed = $true }
+        }
+        if (-not $installed -and (Get-Command dotnet -ErrorAction SilentlyContinue)) {
             Write-Host "Installing Power Platform CLI via dotnet tool…" -ForegroundColor Yellow
             dotnet tool install --global Microsoft.PowerApps.CLI.Tool 2>&1 | Out-Host
             $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
-            if (Get-Command pac -ErrorAction SilentlyContinue) {
-                Write-Host "pac installed -> $((Get-Command pac).Source)" -ForegroundColor DarkGray
-            } else {
-                Write-Warning "pac install attempted but command still not on PATH. Open a new shell, or run: `$env:PATH += `";`$env:USERPROFILE\.dotnet\tools`""
-            }
+            if (Get-Command pac -ErrorAction SilentlyContinue) { $installed = $true }
+        }
+        if ($installed) {
+            $pc = Get-Command pac -ErrorAction SilentlyContinue
+            if ($pc) { Write-Host "pac installed -> $($pc.Source)" -ForegroundColor DarkGray }
+            else { Write-Warning "pac installed but not yet on PATH — open a new shell." }
         } else {
-            Write-Warning "dotnet SDK not found. Install .NET 6+ then run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool"
+            Write-Warning "Could not install pac automatically. See installation.md A2 step 3 for manual options (winget / dotnet tool / MSI)."
         }
     } else {
         Write-Host "pac -> $((Get-Command pac).Source)" -ForegroundColor DarkGray

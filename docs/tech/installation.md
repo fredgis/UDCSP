@@ -94,17 +94,31 @@ Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
 
 **Step 3 — Power Platform CLI (`pac`)**
 
-> The bootstrap script does **not** auto-install `pac` (it requires the .NET tools SDK and a `PATH` refresh). Install it once globally:
+> The bootstrap script does **not** auto-install `pac`. Two reliable install paths on Windows — **prefer winget**, it pulls the MSI maintained by the Power Platform team and avoids the `DotnetToolSettings.xml`-not-found bug that plagues the dotnet-tool package on .NET 9:
+
+```powershell
+# Recommended — Windows Package Manager (winget) → official MSI
+winget install --id Microsoft.PowerAppsCLI -e
+
+# After install, OPEN A NEW SHELL so PATH picks up pac, then:
+pac --version    # sanity check
+```
+
+Fallback if winget is unavailable (corporate-locked machines):
 
 ```powershell
 dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 
-# Refresh PATH in current shell (no need to reboot):
+# If you hit "DotnetToolSettings.xml not found" on .NET 9, pin a known-good
+# version that still ships the legacy settings file:
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool --version 1.34.4
+
+# Then refresh PATH in current shell (or open a new shell):
 $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
-pac --version    # sanity check
+pac --version
 ```
 
-> ⚠️ **Antivirus interference** — if the install fails with `Access to the path '…\.dotnet\tools\.store\.stage\…' is denied`, your AV (Defender or corporate AV) is locking the staging folder mid-extract. Three workarounds:
+> ⚠️ **Antivirus interference (dotnet-tool path only)** — if the install fails with `Access to the path '…\.dotnet\tools\.store\.stage\…' is denied`, your AV (Defender or corporate AV) is locking the staging folder mid-extract. Three workarounds:
 >
 > 1. **Retry** — often succeeds on the 2nd attempt.
 > 2. **Install to a non-profile path** the AV doesn't watch:
