@@ -7,6 +7,8 @@ param env string
 param location string
 param addressPrefix string
 param hubVnetId string = ''
+@description('Optional Azure DDoS Protection Standard plan resource ID. When set, the spoke VNet is attached to this plan. Set by the Install-Ddos phase after the plan is created.')
+param ddosProtectionPlanId string = ''
 param tags object
 
 var name = 'udcsp-${country}-${env}'
@@ -54,10 +56,13 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' = {
   name: '${name}-vnet'
   location: location
   tags: tags
-  properties: {
+  properties: union({
     addressSpace: { addressPrefixes: [addressPrefix] }
     subnets: concat(workloadSubnets, [bastionSubnet])
-  }
+  }, empty(ddosProtectionPlanId) ? {} : {
+    enableDdosProtection: true
+    ddosProtectionPlan: { id: ddosProtectionPlanId }
+  })
 }
 
 resource toHub 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-09-01' = if (!empty(hubVnetId)) {
