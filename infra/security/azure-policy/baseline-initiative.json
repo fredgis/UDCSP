@@ -3,7 +3,7 @@
   "type": "Microsoft.Authorization/policySetDefinitions",
   "properties": {
     "displayName": "UDCSP NIST 800-53 + GDPR baseline",
-    "description": "Bundles core preventive controls for GDPR, EU AI Act evidence, ISO/NIST posture.",
+    "description": "Atomic preventive policies layered on top of the Azure built-in regulatory initiatives (assigned separately, see _referencedBuiltInInitiatives).",
     "metadata": {
       "category": "Regulatory Compliance",
       "standards": [
@@ -11,26 +11,22 @@
         "GDPR"
       ]
     },
-    "_note": "These reference Azure built-in policy *initiatives* (policySetDefinitions), not single policy definitions. They are layered together to give a single 'NIST 800-53 + GDPR' compliance posture per UDCSP landing zone. Initiative GUIDs are stable Microsoft built-ins; verify with 'az policy set-definition show --name <guid>'.",
+    "_note": "An Azure policySetDefinition can ONLY reference policyDefinitions (atomic), not other policySetDefinitions. The 3 built-in regulatory initiatives (Microsoft cloud security benchmark, NIST 800-53 Rev 5, ISO 27001:2013) are therefore assigned directly by Install-Security.psm1 — see _referencedBuiltInInitiatives below.",
+    "_referencedBuiltInInitiatives": [
+      {
+        "name": "microsoft-cloud-security-benchmark",
+        "id": "/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8"
+      },
+      {
+        "name": "nist-sp-800-53-rev5",
+        "id": "/providers/Microsoft.Authorization/policySetDefinitions/179d1daa-458f-4e47-8086-2a68d0d6c38f"
+      },
+      {
+        "name": "iso-27001-2013",
+        "id": "/providers/Microsoft.Authorization/policySetDefinitions/89c6cddc-1c73-4ac1-b19c-54d1a15a42f2"
+      }
+    ],
     "policyDefinitions": [
-      {
-        "policyDefinitionReferenceId": "microsoft-cloud-security-benchmark",
-        "_displayName": "Microsoft cloud security benchmark",
-        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/azure-security-benchmark",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8"
-      },
-      {
-        "policyDefinitionReferenceId": "nist-sp-800-53-rev5",
-        "_displayName": "NIST SP 800-53 Rev. 5",
-        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/nist-sp-800-53-r5",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/179d1daa-458f-4e47-8086-2a68d0d6c38f"
-      },
-      {
-        "policyDefinitionReferenceId": "iso-27001-2013",
-        "_displayName": "ISO 27001:2013",
-        "_source": "https://learn.microsoft.com/azure/governance/policy/samples/iso-27001",
-        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/89c6cddc-1c73-4ac1-b19c-54d1a15a42f2"
-      },
       {
         "policyDefinitionReferenceId": "cmk-on-storage",
         "_displayName": "Storage accounts should use customer-managed key for encryption",

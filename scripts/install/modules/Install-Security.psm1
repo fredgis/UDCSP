@@ -67,6 +67,24 @@ function Install-Security {
                 -LogFile $logFile `
                 -WhatIfFlag $whatIf `
                 -ContinueOnError
+
+            # Azure built-in regulatory initiatives. They cannot be nested
+            # inside our custom initiative (Azure rejects PolicySetDefinition
+            # references inside policySetDefinitions.policyDefinitions),
+            # so we assign them directly at subscription scope. Idempotent:
+            # 'az policy assignment create' is a PUT, second call is a no-op.
+            foreach ($builtin in $initiative.properties._referencedBuiltInInitiatives) {
+                Invoke-NativeCommand `
+                    -Command @('az','policy','assignment','create',
+                               '--name', "udcsp-$($builtin.name)-$($scope.ToLower())",
+                               '--subscription', $sub,
+                               '--policy-set-definition', $builtin.id,
+                               '--scope', "/subscriptions/$sub",
+                               '--only-show-errors','--output','none') `
+                    -LogFile $logFile `
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
+            }
         }
     }
 }
