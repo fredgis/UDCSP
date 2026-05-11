@@ -67,6 +67,9 @@ param storageSizeGB int = 32
 @allowed(['P4','P6','P10','P15','P20','P30','P40','P50','P60','P70','P80'])
 param storageTier string = 'P10'
 
+@description('Enable Zone-Redundant HA. MCAPS sandbox subscriptions usually do not support this; default off.')
+param enableHa bool = false
+
 var purpose = 'postgres'
 var serverName = toLower('udcsp-${country}-${env}-${purpose}')
 var keyVaultName = last(split(keyVaultId, '/'))
@@ -119,7 +122,7 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2026-01-01-preview' =
       autoGrow: 'Enabled'
     }
     highAvailability: {
-      mode: env == 'prod' ? 'ZoneRedundant' : 'Disabled'
+      mode: enableHa ? 'ZoneRedundant' : 'Disabled'
     }
   }, enablePasswordAuth ? {
     administratorLogin: administratorLogin
