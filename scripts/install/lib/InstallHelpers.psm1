@@ -250,22 +250,18 @@ function Resolve-BicepParamSubscriptionTokens {
         }
     }
     $leaf = [System.IO.Path]::GetFileNameWithoutExtension($SourceFile)
-    $out = Join-Path $OutputDir ("{0}.{1}.bicepparam" -f $leaf, $Tag)
-    # Side-by-side copy of the source `.bicep` referenced by `using` so the
-    # `using '../X.bicep'` relative path inside the resolved file still
-    # resolves. We copy by recreating the same directory layout.
+    # Bicep parser rejects Windows-absolute paths in `using` (treats `C:` as
+    # a module scheme), so we cannot rewrite the using to an absolute path.
+    # Instead, write the resolved .bicepparam next to the SOURCE bicepparam
+    # (same directory) so the original relative `using '../X.bicep'` keeps
+    # resolving as authored. Mirror a copy into OutputDir for the install
+    # report and return the deployed file path for `az`.
     $sourceDir = Split-Path $SourceFile -Parent
-    $sourceParent = Split-Path $sourceDir -Parent
-    $bicepRefMatch = [regex]::Match($content, "using\s+'(?<rel>[^']+)'")
-    if ($bicepRefMatch.Success) {
-        $rel = $bicepRefMatch.Groups['rel'].Value
-        $absolute = Resolve-Path (Join-Path $sourceDir $rel) -ErrorAction SilentlyContinue
-        if ($absolute) {
-            $content = $content.Replace("using '$rel'", "using '$($absolute.Path.Replace('\','/'))'")
-        }
-    }
-    $content | Set-Content -Path $out -Encoding utf8
-    return $out
+    $deployedParam = Join-Path $sourceDir ("{0}.{1}.resolved.bicepparam" -f $leaf, $Tag)
+    $reportCopy    = Join-Path $OutputDir ("{0}.{1}.bicepparam" -f $leaf, $Tag)
+    $content | Set-Content -Path $deployedParam -Encoding utf8
+    Copy-Item -Path $deployedParam -Destination $reportCopy -Force
+    return $deployedParam
 }
 
 function Invoke-AzTenantDeployment {

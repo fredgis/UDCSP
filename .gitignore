@@ -43,3 +43,6 @@ tests/load/k6/results/
 # --- Foundry / D365 local cache ---
 foundry/.cache/
 apps/d365/.pac/
+
+# Resolved bicepparam files written next to source so bicep using-path resolves
+*.resolved.bicepparam
