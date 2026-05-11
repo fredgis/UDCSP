@@ -290,6 +290,7 @@ function Invoke-AzGroupDeployment {
         [Parameter(Mandatory)][string]$Location,
         [Parameter(Mandatory)][string]$TemplateFile,
         [string]$ParametersFile,
+        [hashtable]$Parameters,
         [Parameter(Mandatory)][string]$LogFile,
         [string]$DeploymentName,
         [hashtable]$Tags,
@@ -310,6 +311,13 @@ function Invoke-AzGroupDeployment {
     if ($ParametersFile) {
         if (-not (Test-Path $ParametersFile)) { throw "Parameters file not found: $ParametersFile" }
         $args += @('--parameters', $ParametersFile)
+    }
+    if ($Parameters -and $Parameters.Count -gt 0) {
+        $args += '--parameters'
+        foreach ($k in $Parameters.Keys) {
+            $v = $Parameters[$k]
+            $args += "$k=$v"
+        }
     }
     Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag
 }

@@ -1,31 +1,23 @@
-// name: bastion | owner agent: SA-3 | purpose: country-scoped Azure Bastion Standard hosts without jump-box public IPs
+// name: bastion | owner agent: SA-3 | purpose: country-scoped Azure Bastion Standard host without jump-box public IPs
+// One country per deployment — the installer (Install-Bastion.psm1) loops over DK/SE/NO and calls this template once per country in the right RG/sub/region.
 
 targetScope = 'resourceGroup'
 
-@description('Three country VNet definitions. Each VNet receives one Standard Azure Bastion host.')
-param countries array = [
-  {
-    country: 'dk'
-    location: 'northeurope'
-    vnetName: 'udcsp-dk-prod-vnet'
-    bastionSubnetPrefix: '10.10.250.0/26'
-    bastionNsgId: ''
-  }
-  {
-    country: 'se'
-    location: 'swedencentral'
-    vnetName: 'udcsp-se-prod-vnet'
-    bastionSubnetPrefix: '10.20.250.0/26'
-    bastionNsgId: ''
-  }
-  {
-    country: 'no'
-    location: 'norwayeast'
-    vnetName: 'udcsp-no-prod-vnet'
-    bastionSubnetPrefix: '10.30.250.0/26'
-    bastionNsgId: ''
-  }
-]
+@description('Country code (lowercase): dk | se | no.')
+@allowed(['dk', 'se', 'no'])
+param country string
+
+@description('Existing VNet name in this resource group (created by LandingZone).')
+param vnetName string = 'udcsp-${country}-prod-vnet'
+
+@description('CIDR for the AzureBastionSubnet (must be /26 or larger and inside the VNet address space).')
+param bastionSubnetPrefix string = country == 'dk' ? '10.10.250.0/26' : country == 'se' ? '10.20.250.0/26' : '10.30.250.0/26'
+
+@description('Optional NSG to attach to AzureBastionSubnet. Leave empty for the Azure-managed default rules.')
+param bastionNsgId string = ''
+
+@description('Deployment region.')
+param location string = resourceGroup().location
 
 @description('Deployment environment name.')
 param env string = 'prod'
@@ -37,15 +29,15 @@ param tags object = {
   sovereigntyPolicy: 'bastion-public-ip-only'
 }
 
-resource vnets 'Microsoft.Network/virtualNetworks@2023-09-01' existing = [for country in countries: {
-  name: country.vnetName
-}]
+resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
+  name: vnetName
+}
 
-resource publicIps 'Microsoft.Network/publicIPAddresses@2023-09-01' = [for country in countries: {
-  name: 'udcsp-${country.country}-${env}-bastion-pip'
-  location: country.location
+resource publicIp 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
+  name: 'udcsp-${country}-${env}-bastion-pip'
+  location: location
   tags: union(tags, {
-    country: country.country
+    country: country
     publicIpException: 'azure-bastion-only'
   })
   sku: {
@@ -54,24 +46,24 @@ resource publicIps 'Microsoft.Network/publicIPAddresses@2023-09-01' = [for count
   properties: {
     publicIPAllocationMethod: 'Static'
   }
-}]
+}
 
-resource bastionSubnets 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = [for (country, i) in countries: {
-  parent: vnets[i]
+resource bastionSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' = {
+  parent: vnet
   name: 'AzureBastionSubnet'
   properties: {
-    addressPrefix: country.bastionSubnetPrefix
-    networkSecurityGroup: empty(country.bastionNsgId) ? null : {
-      id: country.bastionNsgId
+    addressPrefix: bastionSubnetPrefix
+    networkSecurityGroup: empty(bastionNsgId) ? null : {
+      id: bastionNsgId
     }
   }
-}]
+}
 
-resource bastions 'Microsoft.Network/bastionHosts@2023-09-01' = [for (country, i) in countries: {
-  name: 'udcsp-${country.country}-${env}-bastion'
-  location: country.location
+resource bastion 'Microsoft.Network/bastionHosts@2023-09-01' = {
+  name: 'udcsp-${country}-${env}-bastion'
+  location: location
   tags: union(tags, {
-    country: country.country
+    country: country
   })
   sku: {
     name: 'Standard'
@@ -84,16 +76,16 @@ resource bastions 'Microsoft.Network/bastionHosts@2023-09-01' = [for (country, i
         name: 'bastion-ipconfig'
         properties: {
           subnet: {
-            id: bastionSubnets[i].id
+            id: bastionSubnet.id
           }
           publicIPAddress: {
-            id: publicIps[i].id
+            id: publicIp.id
           }
         }
       }
     ]
   }
-}]
+}
 
-output bastionHostIds array = [for (country, i) in countries: bastions[i].id]
-output bastionPublicIpIds array = [for (country, i) in countries: publicIps[i].id]
+output bastionHostId string = bastion.id
+output bastionPublicIpId string = publicIp.id
