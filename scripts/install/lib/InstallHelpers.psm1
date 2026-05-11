@@ -104,8 +104,19 @@ function Invoke-NativeCommand {
     )
     $cmdLine = ($Command | ForEach-Object { if ($_ -match '\s|"') { '"' + ($_ -replace '"','\"') + '"' } else { $_ } }) -join ' '
     Write-Log -LogFile $LogFile -Message "[run] $cmdLine"
+    # Compact human-readable label for console (no -Verbose required)
+    $label = & {
+        if ($Command[0] -ne 'az') { return "$($Command[0]) $($Command[1])" }
+        $verb = ($Command[1..([Math]::Min(3,$Command.Count-1))]) -join ' '
+        $nameIdx = [Array]::IndexOf($Command, '--name')
+        if ($nameIdx -lt 0) { $nameIdx = [Array]::IndexOf($Command, '-n') }
+        $name = if ($nameIdx -ge 0 -and $nameIdx + 1 -lt $Command.Count) { " $($Command[$nameIdx + 1])" } else { '' }
+        "az $verb$name"
+    }
+    Write-Host ("    ↳ {0,-90} " -f $label) -NoNewline -ForegroundColor DarkGray
     if ($WhatIfFlag) {
         Write-Log -LogFile $LogFile -Message "[whatif] command not executed (planning mode)"
+        Write-Host "[whatif]" -ForegroundColor Yellow
         return
     }
     $sw = [Diagnostics.Stopwatch]::StartNew()
@@ -136,6 +147,7 @@ function Invoke-NativeCommand {
         if ($exit -ne 0) {
             $msg = "[exit $exit] FAIL in $([Math]::Round($sw.Elapsed.TotalSeconds,1)) s : $cmdLine"
             Write-Log -LogFile $LogFile -Message $msg
+            Write-Host ("✗ {0}s" -f [Math]::Round($sw.Elapsed.TotalSeconds,1)) -ForegroundColor Red
             if ($ContinueOnError) {
                 Write-Warning $msg
             } else {
@@ -143,6 +155,7 @@ function Invoke-NativeCommand {
             }
         } else {
             Write-Log -LogFile $LogFile -Message "[exit 0] OK in $([Math]::Round($sw.Elapsed.TotalSeconds,1)) s"
+            Write-Host ("✓ {0}s" -f [Math]::Round($sw.Elapsed.TotalSeconds,1)) -ForegroundColor Green
         }
     } finally {
         Remove-Item -Path $tmpOut, $tmpErr -ErrorAction SilentlyContinue
