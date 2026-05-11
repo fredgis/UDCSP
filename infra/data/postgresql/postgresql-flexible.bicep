@@ -60,6 +60,13 @@ param administratorLogin string = 'udcspadmin'
 @secure()
 param administratorLoginPassword string = ''
 
+@description('Storage size in GiB. Allowed values: 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768.')
+param storageSizeGB int = 32
+
+@description('Storage tier. Defaults align with size; explicit override only when needed.')
+@allowed(['P4','P6','P10','P15','P20','P30','P40','P50','P60','P70','P80'])
+param storageTier string = 'P10'
+
 var purpose = 'postgres'
 var serverName = toLower('udcsp-${country}-${env}-${purpose}')
 var keyVaultName = last(split(keyVaultId, '/'))
@@ -105,6 +112,11 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2026-01-01-preview' =
     backup: {
       backupRetentionDays: 7
       geoRedundantBackup: env == 'prod' ? 'Enabled' : 'Disabled'
+    }
+    storage: {
+      storageSizeGB: storageSizeGB
+      tier: storageTier
+      autoGrow: 'Enabled'
     }
     highAvailability: {
       mode: env == 'prod' ? 'ZoneRedundant' : 'Disabled'
