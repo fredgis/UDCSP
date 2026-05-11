@@ -2,11 +2,27 @@
 
 targetScope = 'subscription'
 
-param plans array = ['VirtualMachines', 'StorageAccounts', 'KeyVaults', 'Containers', 'AppServices', 'Api']
+@description('Defender plans to enable. Each entry: { name, subPlan? }. The "Api" plan requires a subPlan (P1..P5).')
+param plans array = [
+  { name: 'VirtualMachines' }
+  { name: 'StorageAccounts' }
+  { name: 'KeyVaults' }
+  { name: 'Containers' }
+  { name: 'AppServices' }
+  { name: 'Api', subPlan: 'P1' }
+]
 
-resource pricing 'Microsoft.Security/pricings@2023-01-01' = [for plan in plans: {
-  name: plan
-  properties: { pricingTier: 'Standard' }
+// Microsoft.Security/pricings resources are subscription-wide singletons.
+// Parallel apply across plans triggers "Another update operation is in
+// progress. Please retry in a few minutes" — serialize with batchSize=1.
+@batchSize(1)
+resource pricing 'Microsoft.Security/pricings@2024-01-01' = [for plan in plans: {
+  name: plan.name
+  properties: union(
+    { pricingTier: 'Standard' },
+    contains(plan, 'subPlan') ? { subPlan: plan.subPlan } : {}
+  )
 }]
 
-output enabledPlans array = plans
+output enabledPlans array = [for p in plans: p.name]
+
