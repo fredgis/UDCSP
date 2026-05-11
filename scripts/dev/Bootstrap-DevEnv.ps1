@@ -38,7 +38,20 @@ foreach ($t in 'node','python','git','az') {
 
 if ($IncludePowerPlatformCli) {
     if (-not (Get-Command pac -ErrorAction SilentlyContinue)) {
-        Write-Host "Install Power Platform CLI: dotnet tool install --global Microsoft.PowerApps.CLI.Tool" -ForegroundColor Yellow
+        if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+            Write-Host "Installing Power Platform CLI via dotnet tool…" -ForegroundColor Yellow
+            dotnet tool install --global Microsoft.PowerApps.CLI.Tool 2>&1 | Out-Host
+            $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+            if (Get-Command pac -ErrorAction SilentlyContinue) {
+                Write-Host "pac installed -> $((Get-Command pac).Source)" -ForegroundColor DarkGray
+            } else {
+                Write-Warning "pac install attempted but command still not on PATH. Open a new shell, or run: `$env:PATH += `";`$env:USERPROFILE\.dotnet\tools`""
+            }
+        } else {
+            Write-Warning "dotnet SDK not found. Install .NET 6+ then run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool"
+        }
+    } else {
+        Write-Host "pac -> $((Get-Command pac).Source)" -ForegroundColor DarkGray
     }
 }
 

@@ -54,22 +54,59 @@ Then install the two MSIs manually if not already present:
 <details>
 <summary><b>A2. Sign in to all control planes</b></summary>
 
+**Step 1 — Azure CLI**
+
 ```powershell
 az login                                                # Azure
 az account set --subscription <SharedPlatform-sub-id>   # default sub for shared deployments
-
-Connect-MgGraph -Scopes "Application.ReadWrite.All",`
-                        "Policy.ReadWrite.ConditionalAccess",`
-                        "Policy.ReadWrite.PermissionGrant",`
-                        "User.ReadWrite.All",`
-                        "Directory.ReadWrite.All",`
-                        "VerifiableCredential.Create.All",`
-                        "PrivacyManagement.ReadWrite.All"
-
-pac auth create --environment https://udcspdk.crm4.dynamics.com   # repeat for SE / NO
 ```
 
-> The installer pre-flights `az login` once at the top and refuses to start a real install if you are not authenticated. `Connect-MgGraph` / `pac` / `npm` / `swa` / `eas` / `func` are checked lazily.
+**Step 2 — Microsoft Graph PowerShell SDK**
+
+> ⚠️ On Windows, the default `Connect-MgGraph` flow uses **Web Account Manager (WAM)** which often fails with `InteractiveBrowserCredential authentication failed` in embedded terminals (VS Code, Windows Terminal pane, Warp, etc.) — the browser popup is hidden behind other windows or blocked by WAM. **Use device-code flow instead** — it prints a code to paste into <https://microsoft.com/devicelogin> and works in any shell:
+
+```powershell
+Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
+                                       "Policy.ReadWrite.ConditionalAccess",`
+                                       "Policy.ReadWrite.PermissionGrant",`
+                                       "User.ReadWrite.All",`
+                                       "Directory.ReadWrite.All",`
+                                       "VerifiableCredential.Create.All",`
+                                       "PrivacyManagement.ReadWrite.All"
+```
+
+> If you prefer the browser flow and it fails, run `Disconnect-MgGraph -ErrorAction SilentlyContinue` then retry — or drop `-UseDeviceCode` only after closing every other Microsoft-signed-in app.
+
+**Step 3 — Power Platform CLI (`pac`)**
+
+> The bootstrap script does **not** auto-install `pac` (it requires the .NET tools SDK and a `PATH` refresh). Install it once globally:
+
+```powershell
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+# Refresh PATH in current shell (no need to reboot):
+$env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+pac --version    # sanity check
+```
+
+Then authenticate against each country's D365 environment:
+
+```powershell
+pac auth create --name udcsp-dk --environment https://udcspdk.crm4.dynamics.com
+pac auth create --name udcsp-se --environment https://udcspse.crm4.dynamics.com
+pac auth create --name udcsp-no --environment https://udcspno.crm4.dynamics.com
+pac auth list    # confirms 3 profiles
+```
+
+**Step 4 — Quick sanity check** before moving on to A3:
+
+```powershell
+az account show --query '{sub:name,tenant:tenantId}' -o table
+(Get-MgContext).Account                                  # should print your UPN
+pac auth list                                            # should list 3 profiles
+```
+
+> The installer pre-flights `az login` once at the top and refuses to start a real install if you are not authenticated. `Connect-MgGraph` / `pac` / `npm` / `swa` / `eas` / `func` are checked lazily — a missing one produces a `[skip]` line rather than a hard failure, so a partial install is always restartable later.
 
 </details>
 
