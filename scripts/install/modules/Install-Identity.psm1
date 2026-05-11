@@ -56,8 +56,17 @@ function Install-Identity {
     # registration. Operators apply it manually with `az deployment sub
     # create` after collecting the federation metadata; the installer
     # intentionally skips it.
+    # `infra/identity/external-id/{dk,se,no}-external-id.bicep` are
+    # tenant-creation templates (Microsoft.AzureActiveDirectory/ciamDirectories).
+    # In practice, External ID (CIAM) tenants are provisioned manually via
+    # the Entra portal (operator's identity needs Tenant Creator role and
+    # tenant names must be globally unique — both reasons make automation
+    # fragile). The installer SKIPS *-external-id.bicep files; operators
+    # create the tenants in A3 then put the domains into ExternalIdTenants.
+    # Any OTHER *.bicep file dropped in this folder will still be deployed.
     $bicepFiles = @(
-        Get-ChildItem -Path (Join-Path $repo 'infra\identity\external-id') -Filter '*.bicep' -File -ErrorAction SilentlyContinue
+        Get-ChildItem -Path (Join-Path $repo 'infra\identity\external-id') -Filter '*.bicep' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notmatch '-external-id\.bicep$' }
     )
     foreach ($f in $bicepFiles) {
         foreach ($country in 'DK','SE','NO') {
