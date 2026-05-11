@@ -2,8 +2,8 @@
 
 targetScope = 'resourceGroup'
 
-@description('Federation hub region. Verified ID authority is shared because credentials are multi-tenant by design.')
-param location string = 'westeurope'
+@description('Federation hub region. Verified ID authority is shared because credentials are multi-tenant by design. Microsoft.VerifiedId/authorities is available in: northeurope, westus2, australiaeast, australiasoutheast, japaneast, japanwest.')
+param location string = 'northeurope'
 
 @description('Deployment environment name.')
 param env string = 'prod'
