@@ -29,7 +29,12 @@ param tags object = {
   sovereigntyScope: 'federation-hub'
 }
 
-var issuerName = 'udcsp-${env}-verified-id-issuer'
+// Microsoft.VerifiedId/authorities requires the resource name to be a
+// GUID (regex ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$).
+// We use a deterministic guid() so re-deploys hit the same authority.
+// Human-readable name lives in the displayName tag.
+var humanName = 'udcsp-${env}-verified-id-issuer'
+var issuerName = guid(resourceGroup().id, humanName)
 var effectiveDid = empty(did) ? 'did:${didMethod}:${linkedDomain}' : did
 
 // Microsoft Entra Verified ID is configured once in the federation hub and trusted by the
@@ -38,6 +43,7 @@ resource issuer 'Microsoft.VerifiedId/authorities@2024-01-26-preview' = {
   name: issuerName
   location: location
   tags: union(tags, {
+    displayName: humanName
     eidas2: 'active-issuer'
     didMethod: didMethod
     linkedDomain: linkedDomain
@@ -46,6 +52,7 @@ resource issuer 'Microsoft.VerifiedId/authorities@2024-01-26-preview' = {
 }
 
 output issuerName string = issuer.name
+output issuerDisplayName string = humanName
 output issuerDid string = effectiveDid
 output linkedDomain string = linkedDomain
 output credentialManifestRoot string = 'https://${linkedDomain}/.well-known/udcsp/verified-id'
