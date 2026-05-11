@@ -25,20 +25,21 @@ function Install-Postgres {
             -OutputDir $ReportDir `
             -Tag "postgres-$($country.ToLower())"
         if ($PSCmdlet.ShouldProcess("postgres-$country", 'az deployment group create')) {
-            # Skip if a deployment with the same name is already Running or
-            # Succeeded — avoids the ARM `DeploymentActive` error and keeps
-            # re-runs idempotent (Postgres Flex Server provisioning takes
-            # 5-15 minutes; we should not race with an in-flight run).
             $deployName = "udcsp-postgres-$($country.ToLower())"
             $existing = az deployment group show --subscription $sub --resource-group $rg --name $deployName --query "properties.provisioningState" -o tsv 2>$null
             if ($existing -eq 'Running' -or $existing -eq 'Succeeded') {
                 Write-Host "    ↳ skip postgres-$country (deployment $deployName is $existing)" -ForegroundColor DarkGray
                 continue
             }
+            # Generate a strong admin password (24 chars, alphanumeric+symbols).
+            $bytes = New-Object byte[] 18
+            [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+            $adminPwd = ([Convert]::ToBase64String($bytes) -replace '[/+=]','x') + '!Aa1'
             Invoke-AzGroupDeployment `
                 -Subscription $sub -ResourceGroup $rg -Location $region `
                 -TemplateFile $bicep `
                 -ParametersFile $resolvedParam `
+                -Parameters @{ administratorLoginPassword = $adminPwd } `
                 -LogFile $logFile `
                 -DeploymentName $deployName `
                 -Tags $Config.Tags `

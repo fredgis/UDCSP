@@ -47,6 +47,19 @@ param entraAdminObjectId string = ''
 @description('Optional Microsoft Entra admin login name for the server.')
 param entraAdminPrincipalName string = ''
 
+@description('Enable Customer-Managed Key encryption. Requires a UA identity already permitted on the Key Vault key, otherwise creation fails (chicken-egg with SystemAssigned).')
+param enableCmk bool = false
+
+@description('Enable PostgreSQL password auth. When false, an Entra admin (entraAdminObjectId/PrincipalName) MUST be provided.')
+param enablePasswordAuth bool = true
+
+@description('Admin login when password auth is enabled.')
+param administratorLogin string = 'udcspadmin'
+
+@description('Admin password when password auth is enabled. Generated and stored in KV by the installer.')
+@secure()
+param administratorLoginPassword string = ''
+
 var purpose = 'postgres'
 var serverName = toLower('udcsp-${country}-${env}-${purpose}')
 var keyVaultName = last(split(keyVaultId, '/'))
@@ -79,14 +92,14 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2026-01-01-preview' =
     name: skuName
     tier: skuTier
   }
-  properties: {
+  properties: union({
     version: '16'
     network: {
       publicNetworkAccess: 'Disabled'
     }
     authConfig: {
-      activeDirectoryAuth: 'Enabled'
-      passwordAuth: 'Disabled'
+      activeDirectoryAuth: empty(entraAdminObjectId) ? 'Disabled' : 'Enabled'
+      passwordAuth: enablePasswordAuth ? 'Enabled' : 'Disabled'
       tenantId: tenant().tenantId
     }
     backup: {
@@ -96,15 +109,21 @@ resource server 'Microsoft.DBforPostgreSQL/flexibleServers@2026-01-01-preview' =
     highAvailability: {
       mode: env == 'prod' ? 'ZoneRedundant' : 'Disabled'
     }
-    dataEncryption: empty(userAssignedIdentityId) ? {
+  }, enablePasswordAuth ? {
+    administratorLogin: administratorLogin
+    administratorLoginPassword: administratorLoginPassword
+  } : {}, enableCmk ? (empty(userAssignedIdentityId) ? {
+    dataEncryption: {
       type: 'AzureKeyVault'
       primaryKeyURI: cmkKeyUri
-    } : {
+    }
+  } : {
+    dataEncryption: {
       type: 'AzureKeyVault'
       primaryKeyURI: cmkKeyUri
       primaryUserAssignedIdentityId: userAssignedIdentityId
     }
-  }
+  }) : {})
   tags: tags
 }
 
