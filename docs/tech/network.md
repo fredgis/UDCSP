@@ -1,12 +1,32 @@
-# UDCSP — Network Architecture
+# 🌐 Network Architecture
 
-> **Owner:** Agent A1 (Landing Zone) · **Status:** Implemented in `infra/landing-zone/modules/networking.bicep` · **Last reviewed:** 2026-05-11
+> **Every packet's path, every private endpoint, every NSG, every public IP.** Companion to [`architecture.md`](./architecture.md) (the *what is built*) and [`data.md`](./data.md) (the *where bytes live*). This document is the **network truth**: 3 sovereign spokes, 1 optional federation hub, 18 named subnets, ~25 private endpoints, 1 public IP per country (Bastion only), 0 shared data path.
 
-This document describes the end-to-end network topology of the Unified Digital Citizen Services Platform (UDCSP) — VNet layout, subnetting, private connectivity, ingress/egress, peering, and the security controls that surround them.
+---
 
-The accompanying schematic is generated from `network.drawio` (same folder) and exported below as `network.png`. Re-render with the `drawio2png` skill if you edit the source.
+> [!IMPORTANT]
+> **TL;DR.** Each country (DK · SE · NO) runs in its own `/16` spoke VNet, in its own Azure region, in its own RG. Every PaaS that touches citizen data is reached via **Private Endpoint** with `publicNetworkAccess: Disabled`. The **only public IP per country** is the Azure Bastion PIP — all admin access funnels through it (no jump-box, no public NICs). The **LandingZone module is the single ARM owner of every subnet** (including `AzureBastionSubnet`); all downstream modules reference subnets via `existing` to keep redeploys idempotent. One **Azure DDoS Protection Standard** plan covers all 3 spokes via one association per VNet.
+>
+> 📐 The accompanying schematic is generated from [`network.drawio`](./network.drawio) and exported below as [`network.png`](./network.png). Re-render with the `drawio2png` skill if you edit the source.
+>
+> 🔧 **Owner:** Landing Zone module · **Implemented in:** `infra/landing-zone/modules/networking.bicep` · **Last reviewed:** 2026-05-11.
 
 ![UDCSP network topology](./network.png)
+
+---
+
+## 📑 Table of contents
+
+1. [Design principles](#1-design-principles)
+2. [Address plan](#2-address-plan)
+3. [Topology overview](#3-topology-overview)
+4. [Connectivity matrix](#4-connectivity-matrix)
+5. [Private Endpoint inventory](#5-private-endpoint-inventory)
+6. [Azure Bastion — sole admin shell path](#6-azure-bastion--sole-admin-shell-path)
+7. [DDoS protection](#7-ddos-protection)
+8. [Identity & cross-tenant flows](#8-identity--cross-tenant-flows)
+9. [Idempotency guardrails (lessons learned)](#9-idempotency-guardrails-lessons-learned)
+10. [References](#10-references)
 
 ---
 
@@ -133,7 +153,7 @@ All PE-fronted resources have `publicNetworkAccess: Disabled` enforced in their 
 
 ---
 
-## 6. Bastion (single public-IP exception)
+## 6. Azure Bastion — sole admin shell path
 
 - One Bastion **per country** (Standard SKU, IP Connect + native client tunneling enabled).
 - One **Standard public IP** per Bastion (`udcsp-{c}-prod-bastion-pip`) — this is the only public IP allowed outside Front Door / APIM.
@@ -164,7 +184,7 @@ External ID tenants are **separate Microsoft Entra tenants** with their own boun
 
 ---
 
-## 9. Idempotency & drift safety
+## 9. Idempotency guardrails (lessons learned)
 
 The most subtle network failure modes the installer has hit (and now guards against):
 
