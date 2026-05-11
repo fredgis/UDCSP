@@ -4,9 +4,10 @@ UDCSP uses one Recovery Services vault per country, deployed in that country's A
 
 ## Policies
 
-- `udcsp-postgres-daily`: daily backup with 12 weekly, 12 monthly and 5 yearly recovery points.
 - `udcsp-storage-daily`: daily backup aligned to the retention matrix in `data.md` for documents, transcripts and operational evidence.
 - `udcsp-vm-daily`: daily backup for any IaaS VM dependency.
+
+> PostgreSQL Flexible Server is **not** backed up via this RSV — Postgres uses native PITR (7–35 days) plus a separate Microsoft.DataProtection Backup Vault for long-term retention. See `infra/data/postgres/`.
 
 ## BCDR targets
 

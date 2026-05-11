@@ -19,7 +19,6 @@ $required = @(
     'GeoRedundant',
     'ZoneRedundant',
     'keyUri',
-    'udcsp-postgres-daily',
     'udcsp-storage-daily',
     'udcsp-vm-daily',
     'same-country',
