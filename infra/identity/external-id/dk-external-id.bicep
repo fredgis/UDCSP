@@ -5,15 +5,17 @@
 targetScope = 'resourceGroup'
 
 param env string = 'prod'
-param location string = 'europe'
+param location string = 'Europe'
 param displayName string = 'UDCSP DK External ID'
 
 // CIAM (Customer Identity & Access Management) tenant — the Microsoft Entra External ID successor to a (legacy) Azure AD B2C tenant.
+// NOTE: tenant resourceName (the part before .onmicrosoft.com) must be
+// alphanumeric only, 1-27 chars, starting with a letter. NO dashes.
 resource externalIdTenant 'Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview' = {
-  name: 'udcsp-dk-${env}.onmicrosoft.com'
+  name: 'udcspdk${env}.onmicrosoft.com'
   location: location
   sku: {
-    name: 'Standard'
+    name: 'Base'
     tier: 'A0'
   }
   properties: {
