@@ -40,7 +40,7 @@
 | 4 | **One public IP exception: Azure Bastion** | The only public IP per country is the Bastion `pip`. All admin sessions go through Bastion → no jump-box, no NIC-level public IPs anywhere else. Tagged `publicIpException: 'azure-bastion-only'` for Policy enforcement. |
 | 5 | **NSG per subnet, not per workload** | Each named subnet (web, app, data, integration, ai) gets its own NSG. Default-deny inbound from Internet; rules are added by capability modules. |
 | 6 | **LandingZone owns ALL subnets** | The LZ is the single ARM owner of subnet definitions including `AzureBastionSubnet`. Every other module (Bastion, future Postgres delegated subnet, APIM premium, etc.) references subnets via `existing` so re-deploying the LZ stays idempotent and cannot accidentally drop in-use subnets. |
-| 7 | **DDoS Protection Plan attached** | One Azure Standard DDoS Protection Plan covers all 3 spoke VNets (one association per VNet — `infra/security/ddos/vnet-association.bicep`). |
+| 7 | **DDoS Protection Plan attached** | One Azure Standard DDoS Protection Plan in the shared region covers all 3 spoke VNets. The attachment is performed by re-deploying the LandingZone with `ddosProtectionPlanId` set, so the VNet stays owned by a single Bicep module (no risk of subnet wipe). |
 
 ---
 
@@ -201,8 +201,10 @@ All PE-fronted resources have `publicNetworkAccess: Disabled` enforced in their 
 
 ## 7. DDoS protection
 
-- One Azure Standard DDoS Protection Plan in the shared platform RG.
-- Associated to each of the 3 spoke VNets via `infra/security/ddos/vnet-association.bicep`.
+- One Azure Standard DDoS Protection Plan in the shared platform RG (`infra/security/ddos/ddos-protection-plan.bicep`).
+- **Attachment goes through the LandingZone**, not a standalone module. `infra/landing-zone/modules/networking.bicep` exposes an optional `ddosProtectionPlanId` parameter; when set, the spoke VNet's `properties` are merged via `union()` to add `enableDdosProtection: true` + `ddosProtectionPlan.id`. Subnets are untouched.
+- `Install-Ddos.psm1` orchestrates: (1) deploy the plan once, (2) re-deploy each country's LandingZone with `--parameters ddosProtectionPlanId=<id>`. The re-deploy is idempotent — only the VNet PUT changes, every subnet/PE/NSG is a no-op.
+- Why not a standalone `vnet-association.bicep`? Because that would re-declare the VNet shape and any drift in `subnets[]` (default `[]`) would **delete every Private Endpoint subnet** of the spoke. Single-owner-per-resource is the iron rule of this LZ.
 - Covers the Bastion PIP and all future Front Door origin PIPs.
 
 ---
@@ -240,6 +242,6 @@ The most subtle network failure modes the installer has hit (and now guards agai
 - `infra/landing-zone/main.bicep` — orchestrates network + KV PE + Lake PE + ACR PE per country.
 - `infra/landing-zone/parameters/{dk,se,no}.bicepparam` — country CIDR + region.
 - `infra/identity/bastion/bastion.bicep` — Bastion host + PIP, references `AzureBastionSubnet` via `existing`.
-- `infra/security/ddos/{ddos-protection-plan,vnet-association}.bicep` — DDoS plan + per-spoke association.
+- `infra/security/ddos/ddos-protection-plan.bicep` — DDoS Protection Standard plan (per-spoke attachment lives in the LandingZone, see §7).
 - `docs/tech/architecture.md` — full platform architecture (this doc is the network-only deep dive).
 - `docs/tech/installation.md` — phase ordering and prerequisites; LandingZone is phase A1.
