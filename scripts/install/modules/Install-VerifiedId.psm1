@@ -17,15 +17,26 @@ function Install-VerifiedId {
 
     if ($PSCmdlet.ShouldProcess('verified-id-issuer', 'az deployment group create')) {
         $rg = "udcsp-shared-verified-id-rg"
-        Invoke-AzGroupDeployment `
-            -Subscription $Config.Subscriptions.SharedPlatform `
-            -ResourceGroup $rg `
-            -Location $Config.Regions.Shared `
-            -TemplateFile $bicep `
-            -LogFile $logFile `
-            -DeploymentName 'udcsp-verified-id-issuer' `
-            -Tags $Config.Tags `
-            -WhatIfFlag $whatIf
+        # Microsoft.VerifiedId/authorities ARM path is preview and currently
+        # rejects PUT with "ResourceCreationValidateFailed" when the Verified
+        # ID service has not been onboarded for the tenant via the portal
+        # wizard. Same pattern as External ID tenants — portal-only de facto.
+        # We attempt the deploy but treat failure as non-fatal: operators
+        # complete onboarding via Entra portal -> Verified ID -> Setup, then
+        # re-run Install-VerifiedId. Credential contracts still attempt below.
+        try {
+            Invoke-AzGroupDeployment `
+                -Subscription $Config.Subscriptions.SharedPlatform `
+                -ResourceGroup $rg `
+                -Location $Config.Regions.Shared `
+                -TemplateFile $bicep `
+                -LogFile $logFile `
+                -DeploymentName 'udcsp-verified-id-issuer' `
+                -Tags $Config.Tags `
+                -WhatIfFlag $whatIf
+        } catch {
+            Write-Log -LogFile $logFile -Message "[verified-id SKIP] authority bicep failed: $_. Complete Verified ID onboarding manually via Entra portal (Verified ID -> Setup), then re-run this phase. Continuing with credential contracts."
+        }
     }
 
     $contracts = Get-ChildItem (Join-Path $repo 'infra\identity\verified-id\credential-contracts') -Filter '*.json' -ErrorAction SilentlyContinue
