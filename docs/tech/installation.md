@@ -21,7 +21,9 @@ This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟦 A — PREREQUISITES (do this once)</h2></summary>
 
-> Run the **A1 → A4** steps top-to-bottom on your workstation. Stop at the end of A4 — do **not** start the installer yet, that's section B.
+> Run the **A1 → A5** steps top-to-bottom on your workstation. Stop at the end of A5 — do **not** start the installer yet, that's section B.
+>
+> **Why this order?** A1 installs the CLIs. A2 signs you into the things that exist on a fresh tenant (Azure + Microsoft Graph). A3 *creates* the missing tenants, subs and D365 environments — which gives you the URLs A4 needs. A4 signs `pac` into those new D365 URLs. A5 writes everything you just created into the installer config file.
 
 <details>
 <summary><b>A1. Install workstation tooling</b></summary>
@@ -38,7 +40,7 @@ Then install the two MSIs manually if not already present:
 |---|---|---|---|
 | **PowerShell 7+** | ✅ Always | Orchestrator + every module | <https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell> |
 | **Azure CLI (`az`) 2.60+** | ✅ Always | LandingZone, Bastion, CIEM, Security, DDoS, BackupAsr, ConfidentialLedger, ChaosStudio, Observability, Postgres, Redis, ConfidentialCompute, VerifiedId, Identity, Apim, LogicApps, Purview, Voice | <https://learn.microsoft.com/en-us/cli/azure/install-azure-cli> + `az bicep upgrade` |
-| **Power Platform CLI (`pac`)** | ⚠️ For D365 | D365 (solution import) | <https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction> |
+| **Power Platform CLI (`pac`)** | ⚠️ For D365 | D365 (solution import) | Install via `winget install --id Microsoft.PowerAppsCLI -e` *(see A2 step 3)* |
 | `Microsoft.Graph` PowerShell SDK 2.x | ⚠️ For Graph phases | Identity, VerifiedId, CIEM, Priva | Auto-installed by Bootstrap-DevEnv.ps1 |
 | Node.js 20 LTS + `npm` | ⚠️ For Apps | Apps (web build, mobile build) | Auto-installed by Bootstrap-DevEnv.ps1 |
 | Static Web Apps CLI (`swa`) | ⚠️ For web deploy | Apps | Auto-installed by Bootstrap-DevEnv.ps1 |
@@ -52,7 +54,9 @@ Then install the two MSIs manually if not already present:
 </details>
 
 <details>
-<summary><b>A2. Sign in to all control planes</b></summary>
+<summary><b>A2. Sign in to Azure + Microsoft Graph + install <code>pac</code></b></summary>
+
+> 🎯 **Goal:** authenticate against the things that already exist on a fresh tenant. **D365 sign-in is deferred to A4** because the D365 environments don't exist yet — A3 creates them.
 
 **Step 1 — Azure CLI**
 
@@ -61,14 +65,13 @@ az login                                                # Azure
 az account set --subscription <SharedPlatform-sub-id>   # default sub for shared deployments
 ```
 
-**Step 2 — Microsoft Graph PowerShell SDK**
+**Step 2 — Microsoft Graph PowerShell SDK (core scopes only)**
 
 > ⚠️ On Windows, the default `Connect-MgGraph` flow uses **Web Account Manager (WAM)** which often fails with `InteractiveBrowserCredential authentication failed` in embedded terminals (VS Code, Windows Terminal pane, Warp, etc.) — the browser popup is hidden behind other windows or blocked by WAM. **Use device-code flow instead** — it prints a code to paste into <https://microsoft.com/devicelogin> and works in any shell.
 
-> ⚠️ The two scopes `VerifiableCredential.Create.All` and `PrivacyManagement.ReadWrite.All` require **Microsoft Entra Verified ID** and **Microsoft Priva** to be already onboarded in the tenant. On a fresh tenant they don't exist yet (`AADSTS70011: scope … does not exist`). Run the **core connect first** — Verified ID and Priva phases of the installer will provision them, and you can re-`Connect-MgGraph` with the add-on scopes afterwards.
+> ⚠️ Run **only the 5 core scopes** below. The two add-on scopes `VerifiableCredential.Create.All` and `PrivacyManagement.ReadWrite.All` require **Microsoft Entra Verified ID** and **Microsoft Priva** to be already onboarded in the tenant — on a fresh tenant they don't exist yet (`AADSTS70011: scope … does not exist`). The installer's VerifiedId and Priva phases provision them later; you'll re-`Connect-MgGraph` with the add-on scopes at that point (see B section).
 
 ```powershell
-# Core scopes — work on any tenant, sufficient for phases A3..VerifiedId
 Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
                                        "Policy.ReadWrite.ConditionalAccess",`
                                        "Policy.ReadWrite.PermissionGrant",`
@@ -76,23 +79,7 @@ Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
                                        "Directory.ReadWrite.All"
 ```
 
-After the **VerifiedId** and **Priva** install phases have run (they create the missing service principals), reconnect with the add-on scopes to unlock the rest:
-
-```powershell
-# Add-on scopes — only after VerifiedId + Priva phases have completed
-Disconnect-MgGraph -ErrorAction SilentlyContinue
-Connect-MgGraph -UseDeviceCode -Scopes "Application.ReadWrite.All",`
-                                       "Policy.ReadWrite.ConditionalAccess",`
-                                       "Policy.ReadWrite.PermissionGrant",`
-                                       "User.ReadWrite.All",`
-                                       "Directory.ReadWrite.All",`
-                                       "VerifiableCredential.Create.All",`
-                                       "PrivacyManagement.ReadWrite.All"
-```
-
-> If you prefer the browser flow and it fails, run `Disconnect-MgGraph -ErrorAction SilentlyContinue` then retry — or drop `-UseDeviceCode` only after closing every other Microsoft-signed-in app.
-
-**Step 3 — Power Platform CLI (`pac`)**
+**Step 3 — Power Platform CLI (`pac`) install (no auth yet)**
 
 > The bootstrap script does **not** auto-install `pac`. Two reliable install paths on Windows — **prefer winget**, it pulls the MSI maintained by the Power Platform team and avoids the `DotnetToolSettings.xml`-not-found bug that plagues the dotnet-tool package on .NET 9:
 
@@ -130,21 +117,14 @@ pac --version
 >    ```
 > 3. Ask IT to add `%USERPROFILE%\.dotnet\tools` to Defender exclusions (admin only).
 
-Then authenticate against each country's D365 environment:
+> ❌ **Do NOT run `pac auth create` here.** The D365 environments don't exist yet — see A4.
 
-```powershell
-pac auth create --name udcsp-dk --environment https://udcspdk.crm4.dynamics.com
-pac auth create --name udcsp-se --environment https://udcspse.crm4.dynamics.com
-pac auth create --name udcsp-no --environment https://udcspno.crm4.dynamics.com
-pac auth list    # confirms 3 profiles
-```
-
-**Step 4 — Quick sanity check** before moving on to A3:
+**Step 4 — Sanity check before A3:**
 
 ```powershell
 az account show --query '{sub:name,tenant:tenantId}' -o table
 (Get-MgContext).Account                                  # should print your UPN
-pac auth list                                            # should list 3 profiles
+pac --version                                            # should print pac version
 ```
 
 > The installer pre-flights `az login` once at the top and refuses to start a real install if you are not authenticated. `Connect-MgGraph` / `pac` / `npm` / `swa` / `eas` / `func` are checked lazily — a missing one produces a `[skip]` line rather than a hard failure, so a partial install is always restartable later.
@@ -152,16 +132,18 @@ pac auth list                                            # should list 3 profile
 </details>
 
 <details>
-<summary><b>A3. Provision the Microsoft Cloud tenants & subscriptions</b></summary>
+<summary><b>A3. Provision the Microsoft Cloud tenants, subscriptions & D365 environments</b></summary>
 
-You need owner-level access to:
+> 🎯 **Goal:** create the missing tenants, Azure subscriptions and D365 environments. After this step you'll have all the GUIDs and URLs that A5 needs to fill into `udcsp.config.psd1`.
+
+You need owner-level access to create:
 
 1. **Microsoft Entra tenant** (workforce) — for caseworker / SOC / DPO identities.
 2. **Three Azure subscriptions** *(or three resource-group quotas in one subscription if running a demo)*, one per country — `udcsp-dk`, `udcsp-se`, `udcsp-no`.
 3. **One shared Azure subscription** for cross-zone analytics & governance.
-4. **Three D365 Customer Service environments** (one per country) — sandbox SKU is fine for the case study.
-5. **Three Microsoft Entra External ID tenants** — `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com` (or your own naming).
-6. **Microsoft Foundry workspace** with model quota for the agents listed in `foundry/agents/`.
+4. **Three Microsoft Entra External ID tenants** — `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com` (or your own naming).
+5. **Microsoft Foundry workspace** with model quota for the agents listed in `foundry/agents/`.
+6. **Three D365 Customer Service environments** (one per country) — created in step 3.5 below.
 
 **Capacity** to deploy: APIM Premium (multi-region), Microsoft Fabric F-SKU per country, ACS, AI Foundry hub & projects, AI Speech, Document Intelligence, Sentinel, Defender for Cloud, Key Vault Premium, ADLS Gen2.
 
@@ -175,15 +157,28 @@ You need owner-level access to:
 | Permission: Owner on the country resource group | Azure RBAC | Required for CMK linkage |
 | Permission: Power Platform admin per Dataverse env | Power Platform | Required to install D365 solutions |
 
-**Create the Power Platform environments now (the `D365` phase will fail if missing):**
+**Step 3.1 → 3.4 — Provision tenants & subs in the portals**
+
+| # | What | Where | Notes |
+|---|---|---|---|
+| 3.1 | 3 Azure subscriptions (or 3 RGs in one sub) + 1 shared sub | Azure portal → Subscriptions | Capture each subscription ID |
+| 3.2 | 3 Entra External ID tenants | <https://entra.microsoft.com> → External Identities → External tenant | Capture each tenant ID |
+| 3.3 | Foundry hub + project | <https://ai.azure.com> → Hubs | Verify model quota for `gpt-4o-realtime`, `gpt-4o-mini` in your region |
+| 3.4 | DNS zones `udcsp.{dk,se,no}` | Your registrar | Required for Front Door / APIM custom domains |
+
+**Step 3.5 — Create the 3 D365 / Power Platform environments**
+
+> The `Install-D365` phase will fail without these. Use `pac admin create` (CLI) **or** the Power Platform admin centre (<https://admin.powerplatform.microsoft.com>):
 
 ```powershell
 pac admin create --name UDCSP-DK --type Production --region europe   --currency DKK --language 1030
 pac admin create --name UDCSP-SE --type Production --region 'sweden' --currency SEK --language 1053
 pac admin create --name UDCSP-NO --type Production --region 'norway' --currency NOK --language 1044
+
+pac admin list                              # capture each environment URL — used in A4 + A5
 ```
 
-Capture each environment URL for the next step (A4).
+Each environment URL looks like `https://orgXXXXXXXX.crm4.dynamics.com` (the `XXXXXXXX` is auto-generated, NOT `udcspdk` — replace the placeholder URLs in A4 / A5 with these real values).
 
 > **DNS + TLS.** The Front Door + APIM phases assume you own `udcsp.{dk,se,no}` (or your equivalent) and have delegated NS records. The installer provisions Front-Door-managed certificates for `*.udcsp.{dk,se,no}` but **cannot delegate DNS for you** — register zones first.
 >
@@ -192,7 +187,23 @@ Capture each environment URL for the next step (A4).
 </details>
 
 <details>
-<summary><b>A4. Configure <code>udcsp.config.psd1</code></b></summary>
+<summary><b>A4. Sign <code>pac</code> into the 3 D365 environments</b></summary>
+
+> 🎯 **Goal:** authenticate `pac` against the URLs you captured in A3 step 3.5. Replace `https://orgXXXXXXXX.crm4.dynamics.com` with the real URL from `pac admin list`.
+
+```powershell
+pac auth create --name udcsp-dk --environment <DK-org-url-from-A3.5>
+pac auth create --name udcsp-se --environment <SE-org-url-from-A3.5>
+pac auth create --name udcsp-no --environment <NO-org-url-from-A3.5>
+pac auth list    # confirms 3 profiles
+```
+
+> ⚠️ If you get `NameResolutionFailure` it means the env URL doesn't resolve in DNS — you're using a placeholder URL (e.g. `udcspdk.crm4.dynamics.com`) instead of the real `orgXXXXXXXX.crm4.dynamics.com` produced in A3.5. Re-run `pac admin list` to get the right URL.
+
+</details>
+
+<details>
+<summary><b>A5. Configure <code>udcsp.config.psd1</code></b></summary>
 
 ```powershell
 Copy-Item scripts/install/config/udcsp.config.template.psd1 scripts/install/config/udcsp.config.psd1
@@ -466,7 +477,7 @@ Without `-Force`, a `prod` invocation prints a warning and exits without making 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Pre-flight aborts with `Azure CLI is not logged in` | `az login` not done in this shell | `az login` then `az account set --subscription <id>` |
-| `Install-D365` fails with `pac: command not found` | Power Platform CLI missing | Install per **A1**, then `pac auth create --environment <env-url>` for each country |
+| `Install-D365` fails with `pac: command not found` | Power Platform CLI missing | Install per **A2 step 3** (`winget install --id Microsoft.PowerAppsCLI -e`), then run the 3 `pac auth create` from **A4** |
 | `Install-LogicApps` fails with `func: command not found` | Azure Functions Core Tools v4 missing | `npm i -g azure-functions-core-tools@4 --unsafe-perm true` |
 | `Install-Apps` logs `[skip] swa CLI not found` / `[skip] eas CLI not found` | Static Web Apps / Expo CLIs missing | `npm i -g @azure/static-web-apps-cli eas-cli` then re-run `-Phase Apps` |
 | `Install-Identity` / `VerifiedId` / `Ciem` / `Priva` log `[skip] Microsoft.Graph not connected` | `Connect-MgGraph` not run in current shell | Run the `Connect-MgGraph -Scopes …` from **A2**, then re-run the affected phase. Bicep parts of these phases run regardless. |
