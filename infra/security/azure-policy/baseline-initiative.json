@@ -3,7 +3,7 @@
   "type": "Microsoft.Authorization/policySetDefinitions",
   "properties": {
     "displayName": "UDCSP NIST 800-53 + GDPR baseline",
-    "description": "Atomic preventive policies layered on top of the Azure built-in regulatory initiatives (assigned separately, see _referencedBuiltInInitiatives).",
+    "description": "Atomic preventive policies layered on top of the Azure built-in regulatory initiatives - see _referencedBuiltInInitiatives.",
     "metadata": {
       "category": "Regulatory Compliance",
       "standards": [

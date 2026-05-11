@@ -68,17 +68,21 @@ function Install-Security {
                 -WhatIfFlag $whatIf `
                 -ContinueOnError
 
-            # Azure built-in regulatory initiatives. They cannot be nested
+            # Built-in regulatory initiatives cannot be nested as references
             # inside our custom initiative (Azure rejects PolicySetDefinition
             # references inside policySetDefinitions.policyDefinitions),
             # so we assign them directly at subscription scope. Idempotent:
             # 'az policy assignment create' is a PUT, second call is a no-op.
+            # We pass the GUID short-name (not the full /providers/... path)
+            # because the Windows az.cmd shim mangles forward-slash arguments
+            # on some builds and returns InvalidRequestUri.
             foreach ($builtin in $initiative.properties._referencedBuiltInInitiatives) {
+                $guid = ($builtin.id -split '/')[-1]
                 Invoke-NativeCommand `
                     -Command @('az','policy','assignment','create',
                                '--name', "udcsp-$($builtin.name)-$($scope.ToLower())",
                                '--subscription', $sub,
-                               '--policy-set-definition', $builtin.id,
+                               '--policy-set-definition', $guid,
                                '--scope', "/subscriptions/$sub",
                                '--only-show-errors','--output','none') `
                     -LogFile $logFile `
