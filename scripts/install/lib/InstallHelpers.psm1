@@ -110,7 +110,18 @@ function Invoke-NativeCommand {
     }
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $exe = $Command[0]
-    $args = if ($Command.Count -gt 1) { $Command[1..($Command.Count - 1)] } else { @() }
+    $rawArgs = if ($Command.Count -gt 1) { $Command[1..($Command.Count - 1)] } else { @() }
+    # Start-Process -ArgumentList is broken for args containing whitespace:
+    # PS joins the array with single spaces, the child re-tokenises, and
+    # arguments like --description "foo bar" arrive as 2+ positional args.
+    # Quote-and-escape each arg that contains whitespace, double-quote, or
+    # is empty, so the child's CRT re-parsing reconstructs the original.
+    $args = $rawArgs | ForEach-Object {
+        $a = [string]$_
+        if ($a -eq '' -or $a -match '\s|"') {
+            '"' + ($a -replace '\\(?=("|$))','\\' -replace '"','\"') + '"'
+        } else { $a }
+    }
     $tmpOut = [IO.Path]::GetTempFileName()
     $tmpErr = [IO.Path]::GetTempFileName()
     try {
