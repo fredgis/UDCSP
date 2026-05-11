@@ -29,6 +29,7 @@ function Install-Bastion {
                 -ResourceGroup $rg `
                 -Location $region `
                 -TemplateFile $bicep `
+                -Parameters @{ country = $country.ToLower() } `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-bastion-$($country.ToLower())" `
                 -Tags $Config.Tags `
