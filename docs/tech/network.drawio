@@ -1,0 +1,303 @@
+<mxfile host="app.diagrams.net" modified="2026-05-11T16:50:00.000Z" agent="udcsp" version="24.0.0">
+  <diagram id="udcsp-net" name="UDCSP Network Topology">
+    <mxGraphModel dx="2400" dy="1600" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- =================== TITLE =================== -->
+        <mxCell id="title" value="UDCSP — Network Topology (DK / SE / NO sovereign spokes)" style="text;html=1;align=center;fontSize=20;fontStyle=1;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="2320" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Each country = isolated VNet in its own Azure region; Private Endpoints for every PaaS; Azure Bastion = only public IP per country" style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#555555;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="52" width="2320" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- =================== INTERNET / EXTERNAL =================== -->
+        <mxCell id="extZone" value="Internet &amp; External Identity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#999999;dashed=1;fontStyle=1;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="2280" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="citizen" value="Citizens&#10;(Web · Voice · Email · SMS · Chat)" style="shape=mxgraph.azure.user;html=1;fillColor=#0078D4;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="125" width="50" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="afd" value="Azure Front Door&#10;Premium + WAF" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#0072C6;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.azure.front_door;" vertex="1" parent="1">
+          <mxGeometry x="240" y="120" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apim" value="API Management&#10;Premium · External" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#0072C6;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.azure.api_management_services;" vertex="1" parent="1">
+          <mxGeometry x="380" y="120" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="acs" value="Azure Communication&#10;Services (ACS)" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#0072C6;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.azure.bastion;" vertex="1" parent="1">
+          <mxGeometry x="520" y="120" width="50" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ext-dk" value="External ID&#10;udcspdk.onmicrosoft.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="115" width="180" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-se" value="External ID&#10;udcspse.onmicrosoft.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1640" y="155" width="180" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-no" value="External ID&#10;udcspno.onmicrosoft.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1840" y="115" width="180" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="vid" value="Verified ID&#10;Issuer Authority (shared)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1840" y="155" width="180" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ddos" value="Azure DDoS&#10;Standard Protection Plan&#10;(1 plan, 3 VNet associations)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="2080" y="115" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- =================== HUB (optional) =================== -->
+        <mxCell id="hubZone" value="Federation Hub VNet (optional · hubVnetId param)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;dashed=1;fontStyle=2;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="230" width="2280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="hubLabel" value="Shared egress · Private DNS · Inter-country APIs (allow-listed)" style="text;html=1;align=center;fontSize=10;fontColor=#455A64;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="60" y="255" width="2280" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- =================== DK SPOKE (DETAILED) =================== -->
+        <mxCell id="dkVnet" value="DK · spoke VNet · 10.10.0.0/16 · region: northeurope · RG: udcsp-dk-prod-platform-rg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=2;fontStyle=1;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="320" width="2280" height="700" as="geometry" />
+        </mxCell>
+
+        <!-- web subnet -->
+        <mxCell id="dkWeb" value="subnet: web · 10.10.1.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="90" y="370" width="350" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dkWebNsg" value="NSG: web-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="100" y="395" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkSwa" value="Static Web App&#10;(PE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="105" y="430" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkAfdOrigin" value="AFD Origin&#10;PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="220" y="430" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimPe" value="APIM&#10;ingress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="335" y="430" width="95" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- app subnet -->
+        <mxCell id="dkApp" value="subnet: app · 10.10.2.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="460" y="370" width="350" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dkAppNsg" value="NSG: app-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="470" y="395" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkAca" value="Container Apps Env&#10;Voice runtime · Agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="475" y="425" width="155" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkFunc" value="Functions Premium&#10;VNet-integrated" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="640" y="425" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkLogic" value="Logic Apps Standard (VNet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="475" y="485" width="325" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- data subnet -->
+        <mxCell id="dkData" value="subnet: data · 10.10.3.0/24 · privateEndpointNetworkPolicies: Disabled" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="830" y="370" width="690" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dkDataNsg" value="NSG: data-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="840" y="395" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkKvPe" value="Key Vault PE&#10;privatelink.vaultcore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="845" y="425" width="135" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkLakePe" value="Storage Lake PE&#10;privatelink.dfs.core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="990" y="425" width="135" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkPgPe" value="PostgreSQL PE&#10;privatelink.postgres" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="425" width="135" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkRedisPe" value="Redis Enterprise PE&#10;privatelink.redisenterprise" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="425" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkRsvPe" value="Recovery Services Vault PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="845" y="485" width="290" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dkLedgerPe" value="Confidential Ledger PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="485" width="295" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- integration subnet -->
+        <mxCell id="dkInt" value="subnet: integration · 10.10.4.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="370" width="380" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dkIntNsg" value="NSG: integration-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="395" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkAcrPe" value="ACR Premium PE&#10;privatelink.azurecr.io" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1555" y="425" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkSbPe" value="Service Bus PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1735" y="425" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimInt" value="APIM Premium · internal mode (when enabled)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1555" y="485" width="350" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ai subnet -->
+        <mxCell id="dkAi" value="subnet: ai · 10.10.5.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="370" width="380" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dkAiNsg" value="NSG: ai-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1950" y="395" width="100" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkFoundryPe" value="Foundry / AI Services PE&#10;privatelink.cognitiveservices" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1955" y="425" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkCc" value="Confidential Compute&#10;VMSS (SEV-SNP / TDX)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1C4E9;strokeColor=#4527A0;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="2145" y="425" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dkSearchPe" value="AI Search PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1955" y="485" width="360" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- AzureBastionSubnet -->
+        <mxCell id="dkBs" value="subnet: AzureBastionSubnet · 10.10.250.0/26" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="90" y="580" width="500" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="dkBsHost" value="Azure Bastion Standard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="615" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dkBsPip" value="Public IP&#10;udcsp-dk-prod-bastion-pip&#10;(only public IP per country)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#B71C1C;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="615" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dkBsArrow" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#B71C1C;" edge="1" parent="1" source="dkBsHost" target="dkBsPip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Backing PaaS service callout — single legible band -->
+        <mxCell id="dkBackingTitle" value="Backing PaaS (publicNetworkAccess: Disabled — reachable only via the PEs above)" style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#555555;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="610" y="580" width="1710" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkBackingBand" value="Key Vault Premium HSM   ·   ADLS Gen2 Lake   ·   PostgreSQL Flexible   ·   Redis Enterprise   ·   ACR Premium   ·   Recovery Services Vault   ·   Confidential Ledger   ·   Service Bus Premium   ·   Foundry / AI Services   ·   AI Search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0072C6;fontColor=#FFFFFF;strokeColor=#005A9E;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="605" width="1690" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="dkSaaSBand" value="Dynamics 365 Customer Service   ·   Microsoft Purview   ·   Microsoft Priva   ·   Microsoft Entra Verified ID Issuer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1565C0;fontColor=#FFFFFF;strokeColor=#0D47A1;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="640" width="1690" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="dkSentinel" value="Cross-cutting observability &amp; security · Microsoft Sentinel · Defender for Cloud · Log Analytics workspace · Application Insights · Azure Monitor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="667" width="1690" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Ingress arrows -->
+        <mxCell id="afdToWeb" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1" source="afd" target="dkAfdOrigin">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="apimToWeb" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1" source="apim" target="dkApimPe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="acsToApp" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;strokeWidth=2;" edge="1" parent="1" source="acs" target="dkAca">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="citToBs" value="admin" style="endArrow=classic;html=1;rounded=0;strokeColor=#B71C1C;strokeWidth=2;dashed=1;fontSize=9;" edge="1" parent="1" source="citizen" target="dkBsPip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DDoS association -->
+        <mxCell id="ddosToDk" value="DDoS assoc" style="endArrow=none;html=1;rounded=0;strokeColor=#B71C1C;dashed=1;fontSize=8;" edge="1" parent="1" source="ddos" target="dkVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- =================== SE / NO COMPACT LANES =================== -->
+        <mxCell id="seVnet" value="SE · spoke VNet · 10.20.0.0/16 · region: swedencentral · RG: udcsp-se-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#006064;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1050" width="1140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="seVnetTitle" value="SE spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#006064;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1058" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="noVnet" value="NO · spoke VNet · 10.30.0.0/16 · region: norwayeast · RG: udcsp-no-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="1050" width="1140" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="noVnetTitle" value="NO spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#E65100;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="1058" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- DDoS to SE/NO -->
+        <mxCell id="ddosToSe" style="endArrow=none;html=1;rounded=0;strokeColor=#B71C1C;dashed=1;" edge="1" parent="1" source="ddos" target="seVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ddosToNo" style="endArrow=none;html=1;rounded=0;strokeColor=#B71C1C;dashed=1;" edge="1" parent="1" source="ddos" target="noVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Hub peering arrows -->
+        <mxCell id="hubToDk" value="optional peering" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;fontSize=8;" edge="1" parent="1" source="hubZone" target="dkVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hubToSe" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;" edge="1" parent="1" source="hubZone" target="seVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hubToNo" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;" edge="1" parent="1" source="hubZone" target="noVnet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- =================== LEGEND =================== -->
+        <mxCell id="legend" value="Legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontStyle=1;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1200" width="2280" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legSubnet" value="subnet" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1235" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legSubnetLbl" value="Subnet (LZ-owned)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="170" y="1238" width="180" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legNsg" value="NSG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="370" y="1235" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legNsgLbl" value="Network Security Group" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="440" y="1238" width="200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legPe" value="PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="660" y="1235" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legPeLbl" value="Private Endpoint (privatelink DNS)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="730" y="1238" width="240" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legWl" value="workload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="990" y="1235" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legWlLbl" value="VNet-integrated workload" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="1238" width="220" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legPub" value="public IP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1235" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legPubLbl" value="Public IP (Bastion only)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="1238" width="200" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legCc" value="confid." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1C4E9;strokeColor=#4527A0;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="1235" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legCcLbl" value="Confidential Compute (TEE)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="1238" width="220" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legHub" value="— — —" style="text;html=1;align=center;fontSize=12;fontColor=#607D8B;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="1235" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legHubLbl" value="Optional / dashed = optional path" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="2010" y="1238" width="280" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legNote" value="All PaaS services have publicNetworkAccess: Disabled — they are reachable only via the Private Endpoints shown above. Cross-country traffic only via the optional Federation Hub (allow-listed). External ID tenants are separate Microsoft Entra tenants — Graph/OIDC over public Microsoft endpoints, no VNet path." style="text;html=1;align=center;fontSize=10;fontStyle=2;fontColor=#555555;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1280" width="2240" height="32" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
