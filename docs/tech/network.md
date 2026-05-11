@@ -73,28 +73,65 @@ The Bastion subnet sits at `.250.0/26` (offset index `1000` in `cidrSubnet(addr,
 
 ## 3. Topology overview
 
+```mermaid
+flowchart TB
+    Internet(["🌍 Internet<br/>citizens · operators"]):::internet
+
+    subgraph Hub["🔗 Federation Hub VNet · optional · <code>hubVnetId</code> param"]
+        direction LR
+        HubDNS["🧭 Private DNS<br/>shared zones"]:::hub
+        HubEgress["🚪 Shared egress<br/>NAT / Firewall"]:::hub
+    end
+
+    subgraph DK["🇩🇰 DK spoke · northeurope · 10.10.0.0/16"]
+        direction TB
+        DKsubs["web · app · data · integration · ai<br/>10.10.{1..5}.0/24"]:::subnet
+        DKbas["🛡️ AzureBastionSubnet<br/>10.10.250.0/26"]:::bastion
+    end
+
+    subgraph SE["🇸🇪 SE spoke · swedencentral · 10.20.0.0/16"]
+        direction TB
+        SEsubs["web · app · data · integration · ai<br/>10.20.{1..5}.0/24"]:::subnet
+        SEbas["🛡️ AzureBastionSubnet<br/>10.20.250.0/26"]:::bastion
+    end
+
+    subgraph NO["🇳🇴 NO spoke · norwayeast · 10.30.0.0/16"]
+        direction TB
+        NOsubs["web · app · data · integration · ai<br/>10.30.{1..5}.0/24"]:::subnet
+        NObas["🛡️ AzureBastionSubnet<br/>10.30.250.0/26"]:::bastion
+    end
+
+    DDoS{{"🛡️ Azure DDoS Protection Standard<br/>1 plan · 3 associations"}}:::ddos
+
+    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> DK
+    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> SE
+    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> NO
+
+    Hub -. "peering<br/>(when deployed)" .-> DK
+    Hub -. "peering<br/>(when deployed)" .-> SE
+    Hub -. "peering<br/>(when deployed)" .-> NO
+
+    DDoS --- DK
+    DDoS --- SE
+    DDoS --- NO
+
+    DK x--x SE
+    SE x--x NO
+    DK x--x NO
+
+    classDef internet fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef hub fill:#FFF8E1,stroke:#F9A825,stroke-width:1.5px,color:#E65100
+    classDef subnet fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20
+    classDef bastion fill:#FCE4EC,stroke:#AD1457,stroke-width:1.5px,color:#880E4F
+    classDef ddos fill:#EDE7F6,stroke:#4527A0,stroke-width:2px,color:#311B92
+
+    style DK fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#B71C1C
+    style SE fill:#E1F5FE,stroke:#0277BD,stroke-width:2px,color:#01579B
+    style NO fill:#FFF3E0,stroke:#EF6C00,stroke-width:2px,color:#E65100
+    style Hub fill:#FFFDE7,stroke:#F9A825,stroke-width:2px,color:#F57F17
 ```
-                            ┌─────────────────────────┐
-                            │  Federation Hub VNet    │  (optional, hubVnetId param)
-                            │  Shared egress / DNS    │
-                            └────┬────────┬────────┬──┘
-                          peer   │        │        │   peer
-                                 │        │        │
-              ┌──────────────────┘        │        └──────────────────┐
-              ▼                           ▼                           ▼
-   ┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-   │ DK spoke VNet        │   │ SE spoke VNet        │   │ NO spoke VNet        │
-   │ 10.10.0.0/16         │   │ 10.20.0.0/16         │   │ 10.30.0.0/16         │
-   │ northeurope          │   │ swedencentral        │   │ norwayeast           │
-   │                      │   │                      │   │                      │
-   │ ┌──┬──┬──┬──┬──┬──┐  │   │ ┌──┬──┬──┬──┬──┬──┐  │   │ ┌──┬──┬──┬──┬──┬──┐  │
-   │ │w │a │d │i │ai│Bs│  │   │ │..│..│..│..│..│Bs│  │   │ │..│..│..│..│..│Bs│  │
-   │ └──┴──┴──┴──┴──┴──┘  │   │ └──┴──┴──┴──┴──┴──┘  │   │ └──┴──┴──┴──┴──┴──┘  │
-   └──────────────────────┘   └──────────────────────┘   └──────────────────────┘
-            ▲                          ▲                          ▲
-            │                          │                          │
-            └─── Azure DDoS Protection Plan (1 plan, 3 associations) ───┘
-```
+
+> **Legend** — solid arrows = Internet ingress; dashed arrows = optional hub peering (today `hubVnetId` is empty); `x--x` lines = **no** spoke-to-spoke peering (cross-country flows must traverse the hub when deployed, and are explicitly allow-listed by APIM policy).
 
 The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke peering. Cross-country flows always traverse the federation hub (when deployed) and are policy-controlled.
 
