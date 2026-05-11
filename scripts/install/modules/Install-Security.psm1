@@ -78,6 +78,7 @@ function Install-Security {
             # on some builds and returns InvalidRequestUri.
             foreach ($builtin in $initiative.properties._referencedBuiltInInitiatives) {
                 $guid = ($builtin.id -split '/')[-1]
+                $assignName = "udcsp-$($builtin.name)-$($scope.ToLower())"
                 # NIST 800-53 + ISO 27001 contain Modify / DeployIfNotExists
                 # policies, so ARM requires a managed identity on the
                 # assignment (Azure error: ResourceIdentityRequired).
@@ -86,7 +87,7 @@ function Install-Security {
                 # MI flag is set, even for sub-scoped assignments.
                 Invoke-NativeCommand `
                     -Command @('az','policy','assignment','create',
-                               '--name', "udcsp-$($builtin.name)-$($scope.ToLower())",
+                               '--name', $assignName,
                                '--subscription', $sub,
                                '--policy-set-definition', $guid,
                                '--scope', "/subscriptions/$sub",
@@ -96,6 +97,32 @@ function Install-Security {
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
+
+                # Grant the MI the roles it needs to remediate. Microsoft
+                # publishes the exact role per built-in initiative; we use
+                # the documented minimum (User Access Administrator is NOT
+                # required for these three).  Idempotent: az role assignment
+                # create returns 0 when the assignment already exists.
+                if (-not $whatIf) {
+                    $miPrincipalId = (& az policy assignment show --name $assignName --scope "/subscriptions/$sub" --subscription $sub --query identity.principalId -o tsv --only-show-errors 2>$null)
+                    if ($miPrincipalId) {
+                        # 'Contributor' = b24988ac-6180-42a0-ab88-20f7382dd24c
+                        # Broad but matches Microsoft's own remediation docs
+                        # for these regulatory initiatives. Tighten in a
+                        # follow-up if a customer requires least-privilege.
+                        Invoke-NativeCommand `
+                            -Command @('az','role','assignment','create',
+                                       '--assignee-object-id', $miPrincipalId.Trim(),
+                                       '--assignee-principal-type','ServicePrincipal',
+                                       '--role','b24988ac-6180-42a0-ab88-20f7382dd24c',
+                                       '--scope', "/subscriptions/$sub",
+                                       '--subscription', $sub,
+                                       '--only-show-errors','--output','none') `
+                            -LogFile $logFile `
+                            -WhatIfFlag $whatIf `
+                            -ContinueOnError
+                    }
+                }
             }
         }
     }
