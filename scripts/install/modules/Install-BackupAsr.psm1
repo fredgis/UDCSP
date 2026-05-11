@@ -68,6 +68,19 @@ function Install-BackupAsr {
                 @{name='vault';        file=$vault; params=$vaultParamsFile},
                 @{name='policies';     file=$pol;   params=$polParamsFile},
                 @{name='site-recovery';file=$asr;   params=$asrParamsFile})) {
+
+            if ($pair.name -eq 'policies') {
+                # RSV with immutability locked rejects ANY policy PUT (even no-op) as a "potential reduction".
+                # Skip when both managed policies already exist; first-deploy still runs because list returns empty.
+                $existing = az backup policy list --vault-name $vaultName --resource-group $rg `
+                    --subscription $sub --query "[?name=='udcsp-storage-daily' || name=='udcsp-vm-daily'].name" `
+                    -o tsv 2>$null
+                if ($existing -and ($existing -split "\s+" | Where-Object { $_ }).Count -ge 2) {
+                    Add-Content -Path $logFile -Value "[skip] policies-$cl already present on $vaultName (immutable vault)"
+                    continue
+                }
+            }
+
             if ($PSCmdlet.ShouldProcess("$($pair.name)-$country", 'az deployment group create')) {
                 Invoke-AzGroupDeployment `
                     -Subscription $sub -ResourceGroup $rg -Location $region `
