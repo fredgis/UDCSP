@@ -21,7 +21,9 @@ var subnetSpecs = [
 // AzureBastionSubnet must be a /26 minimum and is owned by the LandingZone
 // (not by the Bastion module) so that re-deploying the LandingZone is fully
 // idempotent. The Bastion module references this subnet via `existing`.
-var bastionSubnetPrefix = cidrSubnet(addressPrefix, 26, 224)
+// Index 1000 places the subnet at .250.0/26 (1000 * 64 IPs = third octet 250),
+// matching the historical layout the Bastion module originally used.
+var bastionSubnetPrefix = cidrSubnet(addressPrefix, 26, 1000)
 
 resource nsgs 'Microsoft.Network/networkSecurityGroups@2023-09-01' = [for s in subnetSpecs: {
   name: '${name}-${s.name}-nsg'
