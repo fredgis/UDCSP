@@ -4,8 +4,8 @@ targetScope = 'resourceGroup'
 
 param country string
 param env string = 'prod'
-param location string
-param tags object
+param location string = resourceGroup().location
+param tags object = {}
 
 resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: 'udcsp-${country}-${env}-sentinel-law'

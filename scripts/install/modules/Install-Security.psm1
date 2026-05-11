@@ -39,6 +39,7 @@ function Install-Security {
             Invoke-AzGroupDeployment `
                 -Subscription $sub -ResourceGroup $sentinelRg -Location $region `
                 -TemplateFile $sentinel `
+                -Parameters @{ country = $scope.ToLower() } `
                 -LogFile $logFile `
                 -DeploymentName "udcsp-sentinel-$($scope.ToLower())" `
                 -Tags $Config.Tags `
