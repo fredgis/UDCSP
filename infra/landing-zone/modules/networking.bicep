@@ -11,11 +11,11 @@ param tags object
 
 var name = 'udcsp-${country}-${env}'
 var subnetSpecs = [
-  { name: 'web', prefix: cidrSubnet(addressPrefix, 8, 1) }
-  { name: 'app', prefix: cidrSubnet(addressPrefix, 8, 2) }
-  { name: 'data', prefix: cidrSubnet(addressPrefix, 8, 3) }
-  { name: 'integration', prefix: cidrSubnet(addressPrefix, 8, 4) }
-  { name: 'ai', prefix: cidrSubnet(addressPrefix, 8, 5) }
+  { name: 'web', prefix: cidrSubnet(addressPrefix, 24, 1) }
+  { name: 'app', prefix: cidrSubnet(addressPrefix, 24, 2) }
+  { name: 'data', prefix: cidrSubnet(addressPrefix, 24, 3) }
+  { name: 'integration', prefix: cidrSubnet(addressPrefix, 24, 4) }
+  { name: 'ai', prefix: cidrSubnet(addressPrefix, 24, 5) }
 ]
 
 resource nsgs 'Microsoft.Network/networkSecurityGroups@2023-09-01' = [for s in subnetSpecs: {
