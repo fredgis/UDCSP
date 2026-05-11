@@ -19,7 +19,7 @@ function Install-Fabric {
     foreach ($country in 'DK','SE','NO') {
         if ($PSCmdlet.ShouldProcess("$country Fabric", 'Deploy-Fabric.ps1')) {
             Invoke-NativeCommand `
-                -Command @('pwsh','-File',$script,'-Environment',$envName) `
+                -Command @('pwsh','-NoProfile','-NoLogo','-NonInteractive','-File',$script,'-Environment',$envName) `
                 -LogFile $logFile `
                 -WhatIfFlag $whatIf `
                 -ContinueOnError

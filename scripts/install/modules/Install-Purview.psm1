@@ -35,7 +35,7 @@ function Install-Purview {
     $register = Join-Path $repo 'governance\purview\scripts\Register-PurviewSources.ps1'
     if ((Test-Path $register) -and $PSCmdlet.ShouldProcess($purview.Name, 'Register-PurviewSources.ps1')) {
         Invoke-NativeCommand `
-            -Command @('pwsh','-File',$register,'-PurviewAccountName',$purview.Name) `
+            -Command @('pwsh','-NoProfile','-NoLogo','-NonInteractive','-File',$register,'-PurviewAccountName',$purview.Name) `
             -LogFile $logFile `
             -WhatIfFlag $whatIf `
             -ContinueOnError
