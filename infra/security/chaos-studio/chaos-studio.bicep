@@ -37,7 +37,9 @@ var tags = {
   owner: 'A3'
 }
 
-resource experiment 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
+var validTargets = filter(targetResources, t => !empty(t.resourceId))
+
+resource experiment 'Microsoft.Chaos/experiments@2024-01-01' = if (!empty(validTargets)) {
   name: 'udcsp-chaos-target-registry'
   location: location
   tags: tags
@@ -49,7 +51,7 @@ resource experiment 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
       {
         name: 'registered-targets'
         type: 'List'
-        targets: [for target in targetResources: {
+        targets: [for target in validTargets: {
           type: 'ChaosTarget'
           id: target.resourceId
         }]
@@ -69,5 +71,5 @@ resource experiment 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
   }
 }
 
-output experimentId string = experiment.id
-output enabledTargetResourceIds array = [for target in targetResources: target.resourceId]
+output experimentId string = empty(validTargets) ? '' : experiment.id
+output enabledTargetResourceIds array = [for target in validTargets: target.resourceId]

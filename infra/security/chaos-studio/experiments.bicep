@@ -14,7 +14,7 @@ var tags = {
   owner: 'A3'
 }
 
-resource apimFailure 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
+resource apimFailure 'Microsoft.Chaos/experiments@2024-01-01' = {
   name: 'apim-region-failure'
   location: location
   tags: tags
@@ -54,7 +54,7 @@ resource apimFailure 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
   }
 }
 
-resource postgresFailover 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
+resource postgresFailover 'Microsoft.Chaos/experiments@2024-01-01' = {
   name: 'postgres-failover'
   location: location
   tags: tags
@@ -94,7 +94,7 @@ resource postgresFailover 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
   }
 }
 
-resource redisEviction 'Microsoft.Chaos/experiments@2023-11-01-preview' = {
+resource redisEviction 'Microsoft.Chaos/experiments@2024-01-01' = {
   name: 'redis-cache-eviction-storm'
   location: location
   tags: tags
