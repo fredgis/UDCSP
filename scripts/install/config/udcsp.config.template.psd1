@@ -28,10 +28,17 @@
         Shared = 'westeurope'
     }
 
+    # External ID tenants are SEPARATE Entra tenants. They cannot be
+    # created via API — provision them via the Azure portal first
+    # (Entra admin center -> External Identities -> Create tenant).
+    # Leave a value empty to skip Identity Graph calls for that country.
+    # Once a tenant exists, fill in the domain and run
+    # `Connect-MgGraph -TenantId <ext-id-tenant-id> -UseDeviceCode`
+    # before re-running Install-Identity.
     ExternalIdTenants = @{
-        DK = 'udcspdk.onmicrosoft.com'
-        SE = 'udcspse.onmicrosoft.com'
-        NO = 'udcspno.onmicrosoft.com'
+        DK = ''  # e.g. 'udcspdk.onmicrosoft.com'
+        SE = ''
+        NO = ''
     }
 
     D365EnvironmentUrls = @{
