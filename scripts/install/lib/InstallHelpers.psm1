@@ -355,7 +355,33 @@ function Invoke-MgGraphIfReady {
         }
         Write-Log -LogFile $LogFile -Message "[graph 200] $($resp | ConvertTo-Json -Depth 6 -Compress)"
     } catch {
-        Write-Log -LogFile $LogFile -Message "[graph FAIL] $_"
+        $msg = "$_"
+        # Auth/permission/tenant-missing failures are NOT fatal: many Graph
+        # payloads target separate Entra tenants (External ID, Verified ID
+        # issuer tenant) that operators provision manually via portal. If
+        # the current Graph context cannot reach the target tenant or
+        # lacks the right scope, log the call for manual replay and let
+        # the rest of the phase continue.
+        $skippable = @(
+            'DeviceCodeCredential authentication failed',
+            'InteractiveBrowserCredential authentication failed',
+            'Object reference not set to an instance of an object',
+            'AADSTS', # any AAD auth error (consent, scope, tenant)
+            'Authorization_RequestDenied',
+            'Insufficient privileges',
+            'Forbidden',
+            'NotFound',
+            'tenant cannot be found'
+        )
+        $isSkippable = $false
+        foreach ($needle in $skippable) {
+            if ($msg -like "*$needle*") { $isSkippable = $true; break }
+        }
+        if ($isSkippable) {
+            Write-Log -LogFile $LogFile -Message "[graph SKIP] $Method $Uri — $msg. Recorded for manual replay (likely target tenant not yet provisioned or current Graph token lacks scope/tenant access)."
+            return
+        }
+        Write-Log -LogFile $LogFile -Message "[graph FAIL] $msg"
         throw
     }
 }
