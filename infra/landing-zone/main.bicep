@@ -9,6 +9,8 @@ param env string = 'prod'
 param location string
 param addressPrefix string
 param hubVnetId string = ''
+@description('Optional Azure DDoS Protection Standard plan resource ID. Threaded into the networking module to attach the spoke VNet to the shared DDoS plan.')
+param ddosProtectionPlanId string = ''
 
 var tags = {
   costCenter: 'UDCSP'
@@ -34,6 +36,7 @@ module network 'modules/networking.bicep' = {
     location: location
     addressPrefix: addressPrefix
     hubVnetId: hubVnetId
+    ddosProtectionPlanId: ddosProtectionPlanId
     tags: tags
   }
 }
