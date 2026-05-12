@@ -12,37 +12,38 @@ function Install-Foundry {
     $repo = Resolve-Path (Join-Path $PSScriptRoot '..\..\..')
     $logFile = Join-Path $ReportDir 'install-foundry.log'
     $whatIf = [bool]$WhatIfPreference
-    $workspace = $Config.FoundryWorkspace.Name
-    if (-not $workspace) { throw "Config.FoundryWorkspace.Name not set" }
 
-    # Each agent dir contains agent.yaml; if the dir has its own scripts/Import-*.ps1
-    # invoke that, otherwise fall back to the topic-router pattern.
+    $fw = $Config.FoundryWorkspace
+    if (-not $fw) { throw "Config.FoundryWorkspace not set" }
+    foreach ($k in 'Subscription','ResourceGroup','Name') {
+        if (-not $fw.$k) { throw "Config.FoundryWorkspace.$k not set" }
+    }
+    $project = $fw.Project   # optional; importer auto-detects if omitted
+
+    $importer = Join-Path $repo 'foundry\scripts\Import-FoundryAgent.ps1'
+    if (-not (Test-Path $importer)) { throw "Generic importer not found at $importer" }
+
     $agentsRoot = Join-Path $repo 'foundry\agents'
     $agents = Get-ChildItem -Path $agentsRoot -Directory -ErrorAction SilentlyContinue
     foreach ($a in $agents) {
         $yaml = Join-Path $a.FullName 'agent.yaml'
         if (-not (Test-Path $yaml)) { continue }
 
-        # Look for an Import-*.ps1 helper. We accept any name pattern under
-        # <agent>/scripts/Import-*.ps1 — agents may use kebab-case or camel
-        # variants. If multiple are found we run the first.
-        $scriptsDir = Join-Path $a.FullName 'scripts'
-        $importer = $null
-        if (Test-Path $scriptsDir) {
-            $importer = Get-ChildItem -Path $scriptsDir -Filter 'Import-*.ps1' -File -ErrorAction SilentlyContinue | Select-Object -First 1
-        }
+        if ($PSCmdlet.ShouldProcess($a.Name, "Foundry agent deploy ($($fw.Name))")) {
+            $argList = @(
+                'pwsh','-NoProfile','-NoLogo','-NonInteractive','-File',$importer,
+                '-AgentDir',$a.FullName,
+                '-Subscription',$fw.Subscription,
+                '-ResourceGroup',$fw.ResourceGroup,
+                '-AccountName',$fw.Name
+            )
+            if ($project) { $argList += @('-ProjectName',$project) }
 
-        if ($PSCmdlet.ShouldProcess($a.Name, "Foundry agent deploy ($workspace)")) {
-            if ($importer) {
-                Invoke-NativeCommand `
-                    -Command @('pwsh','-NoProfile','-NoLogo','-NonInteractive','-File',$importer.FullName,'-FoundryWorkspace',$workspace) `
-                    -LogFile $logFile `
-                    -WhatIfFlag $whatIf `
-                    -ContinueOnError
-            } else {
-                Write-Host "    ⚠ agent '$($a.Name)' has no scripts/Import-*.ps1 — NOT deployed (placeholder)" -ForegroundColor Yellow
-                Write-Log -LogFile $logFile -Message "[skip] agent '$($a.Name)' has no scripts/Import-*.ps1 helper. Manual deploy: az ml online-endpoint create --workspace $workspace --file $yaml"
-            }
+            Invoke-NativeCommand `
+                -Command $argList `
+                -LogFile $logFile `
+                -WhatIfFlag $whatIf `
+                -ContinueOnError
         }
     }
 }
