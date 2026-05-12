@@ -40,7 +40,7 @@ function Install-Foundry {
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
             } else {
-                # Generic fallback: log the manual command an operator would run.
+                Write-Host "    ⚠ agent '$($a.Name)' has no scripts/Import-*.ps1 — NOT deployed (placeholder)" -ForegroundColor Yellow
                 Write-Log -LogFile $logFile -Message "[skip] agent '$($a.Name)' has no scripts/Import-*.ps1 helper. Manual deploy: az ml online-endpoint create --workspace $workspace --file $yaml"
             }
         }
