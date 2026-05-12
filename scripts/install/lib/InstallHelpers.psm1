@@ -122,6 +122,19 @@ function Invoke-NativeCommand {
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $exe = $Command[0]
     $rawArgs = if ($Command.Count -gt 1) { $Command[1..($Command.Count - 1)] } else { @() }
+    # Windows: Start-Process can't launch .cmd/.bat shims (npm, swa, eas, pac,
+    # func, etc.) directly — it tries to load them as PE images and fails with
+    # "%1 is not a valid Win32 application." Resolve the command via Get-Command
+    # and, when the resolved path is a script shim, run it through cmd.exe /c.
+    if ($IsWindows -or $env:OS -eq 'Windows_NT') {
+        $resolved = Get-Command $exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($resolved -and $resolved.Source -match '\.(cmd|bat)$') {
+            $rawArgs = @('/d','/c',$resolved.Source) + $rawArgs
+            $exe = 'cmd.exe'
+        } elseif ($resolved) {
+            $exe = $resolved.Source
+        }
+    }
     # Start-Process -ArgumentList is broken for args containing whitespace:
     # PS joins the array with single spaces, the child re-tokenises, and
     # arguments like --description "foo bar" arrive as 2+ positional args.
