@@ -13,13 +13,16 @@ var tags = {
 }
 
 resource ns 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
-  name: 'udcsp-${country}-${env}-sb'
+  name: 'udcsp-${country}-${env}-bus'
   location: location
   tags: tags
-  sku: {
+  sku: env == 'prod' ? {
     name: 'Premium'
     tier: 'Premium'
     capacity: 1
+  } : {
+    name: 'Standard'
+    tier: 'Standard'
   }
 }
 
