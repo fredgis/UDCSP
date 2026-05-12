@@ -44,6 +44,9 @@
 - ⏱️ **Estimated duration per demo: 5–10 minutes.** A complete walkthrough of all 10 takes roughly **75 minutes**.
 - 🗣️ **Languages shown** include Danish (DA), Swedish (SV), Norwegian Bokmål (NB), Polish (PL) and English (EN). The other seven languages (Norwegian Nynorsk, Sámi, German, French, Arabic, Ukrainian, Finnish) are exercised by the per-language eval suites in [Demo 7](#%EF%B8%8F-demo-7--hans-the-dpo-audits-a-six-month-old-ai-decision) and [Demo 9](#-demo-9--cio-reviews-per-country-per-language-outcomes--47-portal-sunset).
 
+> [!NOTE]
+> **Sandbox vs production for the Logic Apps demos.** In a sandbox / MCAPS subscription the installer deploys Logic Apps on the **Consumption** tier (no App Service VM quota required). The eight demos that need orchestration (1, 2, 3, 4, 7, 8, 9, 10) call the workflows over **HTTPS** — the Service Bus triggers used in production are auto-converted to HTTP `Request` triggers, so every demo trigger is reachable with `curl` or the in-portal *Run trigger* button. Functional behaviour is identical to production; the only visible difference is first-call cold start (~2 s). For prod, Standard tier with VNet integration is required — see [`datacompliance.md` — Logic Apps tier](./datacompliance.md#logic-apps-tier--production-vs-sandbox).
+
 > [!TIP]
 > Open the README evaluation matrix and this document side by side. Tick a row off as each demo lights it up — by Demo 10 every row is green.
 
