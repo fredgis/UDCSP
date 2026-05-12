@@ -1,8 +1,13 @@
 // =============================================================================
-// UDCSP - Azure Cache for Redis Enterprise per sovereign country zone
+// UDCSP - Azure Cache for Redis (Premium tier) per sovereign country zone
 //
 // Replaces the ephemeral Cosmos DB slice: slot filling, session state and
-// in-flight drafts before durable commit to PostgreSQL.
+// in-flight drafts before durable commit to PostgreSQL. Uses key prefixes
+// (slot:*, session:*, draft:*) to separate workloads on a single instance.
+//
+// Note: Azure Managed Redis (new Microsoft.Cache/redisEnterprise SKUs) is
+// preferred but requires zone capability that MCAPS sandboxes do not expose.
+// Classic Premium tier supports CMK, Private Endpoint, Entra auth, and zones.
 // =============================================================================
 
 targetScope = 'resourceGroup'
@@ -15,7 +20,7 @@ param country string
 @allowed(['dev','test','preprod','prod'])
 param env string = 'dev'
 
-@description('Primary Azure region for this Redis Enterprise cluster. MUST be the country EU region.')
+@description('Primary Azure region for this Redis cluster.')
 @allowed(['northeurope','swedencentral','norwayeast'])
 param location string
 
@@ -31,25 +36,23 @@ param logAnalyticsWorkspaceId string
 @description('Resource ID of the subnet to deploy the private endpoint into.')
 param privateEndpointSubnetId string
 
-@description('Redis SKU. Enterprise_E10 is required for CMK, Private Endpoint and Entra-enabled production; Basic_C0 is a dev override only.')
-@allowed(['Enterprise_E10','Basic_C0'])
-param skuName string = 'Enterprise_E10'
+@description('Premium SKU capacity (1=6GB, 2=13GB, 3=26GB, 4=53GB, 5=120GB).')
+@allowed([1,2,3,4,5])
+param capacity int = 1
 
-@description('Redis Enterprise capacity.')
-param capacity int = 2
+@description('Enable customer-managed key encryption. Requires a UA identity already permitted on the KV key; default off.')
+param enableCmk bool = false
 
-@description('Optional Microsoft Entra object IDs that receive Redis Data Owner access-policy assignments.')
+@description('Resource ID of a UA identity granted on the KV key (required when enableCmk=true).')
+param cmkUserAssignedIdentityId string = ''
+
+@description('Optional Microsoft Entra object IDs to grant Redis Data Owner via aadObjectIds policy.')
 param dataOwnerObjectIds array = []
 
 var purpose = 'redis'
 var clusterName = toLower('udcsp-${country}-${env}-${purpose}')
 var keyVaultName = last(split(keyVaultId, '/'))
 var cmkKeyUri = 'https://${keyVaultName}.${environment().suffixes.keyvaultDns}/keys/${cmkKeyName}'
-var databaseNames = [
-  'slot-filling-cache'
-  'session-state'
-  'application-drafts-ephemeral'
-]
 var tags = {
   country: country
   costCenter: 'UDCSP'
@@ -58,77 +61,49 @@ var tags = {
   owner: 'A4'
 }
 
-resource cluster 'Microsoft.Cache/redisEnterprise@2026-02-01-preview' = {
-  name: clusterName
-  location: location
-  identity: {
-    type: 'SystemAssigned'
-  }
+var redisPropsBase = {
   sku: {
-    name: skuName
+    name: 'Premium'
+    family: 'P'
     capacity: capacity
   }
-  properties: {
-    minimumTlsVersion: '1.2'
-    publicNetworkAccess: 'Disabled'
-    encryption: {
-      customerManagedKeyEncryption: {
-        keyEncryptionKeyUrl: cmkKeyUri
-        keyEncryptionKeyIdentity: {
-          identityType: 'systemAssignedIdentity'
-        }
-      }
-    }
-    highAvailability: env == 'prod' ? 'Enabled' : 'Disabled'
+  enableNonSslPort: false
+  minimumTlsVersion: '1.2'
+  publicNetworkAccess: 'Disabled'
+  redisConfiguration: {
+    'aad-enabled': 'true'
   }
+}
+var redisPropsCmk = enableCmk ? {
+  customerManagedKeyEncryption: {
+    keyEncryptionKeyUrl: cmkKeyUri
+    keyEncryptionKeyIdentity: {
+      identityType: 'userAssignedIdentity'
+      userAssignedIdentityResourceId: cmkUserAssignedIdentityId
+    }
+  }
+} : {}
+
+resource cluster 'Microsoft.Cache/redis@2024-11-01' = {
+  name: clusterName
+  location: location
+  identity: enableCmk ? {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${cmkUserAssignedIdentityId}': {} }
+  } : {
+    type: 'SystemAssigned'
+  }
+  properties: union(redisPropsBase, redisPropsCmk)
   tags: tags
 }
 
-resource databases 'Microsoft.Cache/redisEnterprise/databases@2026-02-01-preview' = [for databaseName in databaseNames: {
+resource accessPolicyAssignments 'Microsoft.Cache/redis/accessPolicyAssignments@2024-11-01' = [for objectId in dataOwnerObjectIds: {
   parent: cluster
-  name: databaseName
+  name: uniqueString(cluster.id, objectId)
   properties: {
-    accessKeysAuthentication: 'Disabled'
-    clientProtocol: 'Encrypted'
-    clusteringPolicy: 'EnterpriseCluster'
-    evictionPolicy: 'NoEviction'
-    persistence: {
-      aofEnabled: false
-      rdbEnabled: false
-    }
-  }
-}]
-
-resource slotAccessPolicyAssignments 'Microsoft.Cache/redisEnterprise/databases/accessPolicyAssignments@2026-02-01-preview' = [for objectId in dataOwnerObjectIds: {
-  parent: databases[0]
-  name: uniqueString(cluster.id, databaseNames[0], objectId)
-  properties: {
-    accessPolicyName: 'default'
-    user: {
-      objectId: objectId
-    }
-  }
-}]
-
-resource sessionAccessPolicyAssignments 'Microsoft.Cache/redisEnterprise/databases/accessPolicyAssignments@2026-02-01-preview' = [for objectId in dataOwnerObjectIds: {
-  parent: databases[1]
-  name: uniqueString(cluster.id, databaseNames[1], objectId)
-  properties: {
-    accessPolicyName: 'default'
-    user: {
-      objectId: objectId
-    }
-  }
-}]
-
-resource draftsAccessPolicyAssignments 'Microsoft.Cache/redisEnterprise/databases/accessPolicyAssignments@2026-02-01-preview' = [for objectId in dataOwnerObjectIds: {
-  parent: databases[2]
-  name: uniqueString(cluster.id, databaseNames[2], objectId)
-  properties: {
-    accessPolicyName: 'default'
-    user: {
-      objectId: objectId
-    }
+    accessPolicyName: 'Data Owner'
+    objectId: objectId
+    objectIdAlias: objectId
   }
 }]
 
@@ -153,10 +128,10 @@ resource pe 'Microsoft.Network/privateEndpoints@2023-11-01' = {
     subnet: { id: privateEndpointSubnetId }
     privateLinkServiceConnections: [
       {
-        name: 'redis-enterprise'
+        name: 'redis'
         properties: {
           privateLinkServiceId: cluster.id
-          groupIds: ['redisEnterprise']
+          groupIds: ['redisCache']
         }
       }
     ]
@@ -165,5 +140,4 @@ resource pe 'Microsoft.Network/privateEndpoints@2023-11-01' = {
 }
 
 output hostName string = cluster.properties.hostName
-output primaryEndpoint string = '${cluster.properties.hostName}:10000'
-output redisVersion string = cluster.properties.redisVersion
+output primaryEndpoint string = '${cluster.properties.hostName}:${cluster.properties.sslPort}'
