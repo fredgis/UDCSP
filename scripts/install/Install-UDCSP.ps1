@@ -288,6 +288,7 @@ if ($Environment -eq 'prod' -and -not $Force -and -not $WhatIfPreference -and -n
 }
 
 $config = Import-Config
+$config.Environment = $Environment
 $config.ZoneFilter = $Zone
 if ($TestOnly)   { $env:UDCSP_TESTONLY   = '1' } else { Remove-Item Env:UDCSP_TESTONLY   -ErrorAction SilentlyContinue }
 if ($SmokeOnly)  { $env:UDCSP_SMOKEONLY  = '1' } else { Remove-Item Env:UDCSP_SMOKEONLY  -ErrorAction SilentlyContinue }
