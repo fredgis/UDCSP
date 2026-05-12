@@ -101,7 +101,7 @@ function Install-Apim {
                     }
                     $bodyFile = Join-Path $ReportDir "apim-fragment-$($country.ToLower())-$fragId.json"
                     $body | ConvertTo-Json -Depth 6 | Set-Content $bodyFile -Encoding utf8
-                    $url = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/policyFragments/$fragId?api-version=$apiVersion"
+                    $url = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/policyFragments/${fragId}?api-version=$apiVersion"
                     Invoke-NativeCommand `
                         -Command @('az','rest','--method','PUT','--url',$url,'--body',"@$bodyFile",
                                    '--only-show-errors','--output','none') `
