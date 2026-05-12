@@ -314,7 +314,8 @@ function Invoke-AzGroupDeployment {
         [Parameter(Mandatory)][string]$LogFile,
         [string]$DeploymentName,
         [hashtable]$Tags,
-        [bool]$WhatIfFlag = $false
+        [bool]$WhatIfFlag = $false,
+        [switch]$ContinueOnError
     )
     if (-not (Test-Path $TemplateFile)) { throw "Template not found: $TemplateFile" }
     if (-not $DeploymentName) {
@@ -339,7 +340,7 @@ function Invoke-AzGroupDeployment {
             $args += "$k=$v"
         }
     }
-    Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag
+    Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag -ContinueOnError:$ContinueOnError
 }
 
 function Invoke-MgGraphIfReady {

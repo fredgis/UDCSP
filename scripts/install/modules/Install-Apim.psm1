@@ -18,30 +18,35 @@ function Install-Apim {
         $sub = $Config.Subscriptions[$country]
         $region = $Config.Regions[$country]
         $rg = "udcsp-$($country.ToLower())-apim-rg"
-        $apimName = "udcsp-$($country.ToLower())-apim"
-        $envName = if ($Config.ContainsKey('Environment')) { $Config.Environment } else { 'prod' }
+        $envName = 'prod'  # naming convention shared with postgres/redis bicepparam (resource name suffix)
+        $apimName = "udcsp-$($country.ToLower())-$envName-apim"
         $apimCfg = if ($Config.ContainsKey('Apim')) { $Config.Apim } else { @{ PublisherEmail = 'platform@udcsp.local'; PublisherName = 'UDCSP Platform' } }
         if ($PSCmdlet.ShouldProcess("apim-$country", 'az deployment group create')) {
-            $apimParams = [ordered]@{
-                '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
-                contentVersion = '1.0.0.0'
-                parameters = [ordered]@{
-                    country        = @{ value = $country.ToLower() }
-                    env            = @{ value = $envName }
-                    publisherEmail = @{ value = $apimCfg.PublisherEmail }
-                    publisherName  = @{ value = $apimCfg.PublisherName }
+            $existingState = az deployment group show --subscription $sub -g $rg -n "udcsp-apim-$($country.ToLower())" --query 'properties.provisioningState' -o tsv 2>$null
+            if ($existingState -eq 'Succeeded' -or $existingState -eq 'Running') {
+                Write-Host "    ↳ skip apim-$country (deployment udcsp-apim-$($country.ToLower()) is $existingState)"
+            } else {
+                $apimParams = [ordered]@{
+                    '$schema' = 'https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#'
+                    contentVersion = '1.0.0.0'
+                    parameters = [ordered]@{
+                        country        = @{ value = $country.ToLower() }
+                        env            = @{ value = $envName }
+                        publisherEmail = @{ value = $apimCfg.PublisherEmail }
+                        publisherName  = @{ value = $apimCfg.PublisherName }
+                    }
                 }
+                $apimParamsFile = Join-Path $ReportDir "apim-$($country.ToLower()).parameters.json"
+                $apimParams | ConvertTo-Json -Depth 6 | Set-Content $apimParamsFile -Encoding utf8
+                Invoke-AzGroupDeployment `
+                    -Subscription $sub -ResourceGroup $rg -Location $region `
+                    -TemplateFile $bicep `
+                    -ParametersFile $apimParamsFile `
+                    -LogFile $logFile `
+                    -DeploymentName "udcsp-apim-$($country.ToLower())" `
+                    -Tags $Config.Tags `
+                    -WhatIfFlag $whatIf
             }
-            $apimParamsFile = Join-Path $ReportDir "apim-$($country.ToLower()).parameters.json"
-            $apimParams | ConvertTo-Json -Depth 6 | Set-Content $apimParamsFile -Encoding utf8
-            Invoke-AzGroupDeployment `
-                -Subscription $sub -ResourceGroup $rg -Location $region `
-                -TemplateFile $bicep `
-                -ParametersFile $apimParamsFile `
-                -LogFile $logFile `
-                -DeploymentName "udcsp-apim-$($country.ToLower())" `
-                -Tags $Config.Tags `
-                -WhatIfFlag $whatIf
         }
 
         # Deploy named-values declared in services/apim/named-values/named-values.json
@@ -53,6 +58,10 @@ function Install-Apim {
             $nvDoc = Get-Content $nvFile -Raw | ConvertFrom-Json
             $apiVersion = '2022-08-01'
             foreach ($nv in $nvDoc.namedValues) {
+                if ($nv.keyVaultSecretIdentifier -like '*<*>*') {
+                    Write-Host "    ↳ skip named-value $($nv.name) (KV placeholder unresolved)"
+                    continue
+                }
                 if ($PSCmdlet.ShouldProcess("$($nv.name)@$apimName", 'az rest PUT namedValues')) {
                     $body = [ordered]@{
                         properties = [ordered]@{
@@ -156,7 +165,8 @@ function Install-Apim {
                     -ParametersFile $paramsFile `
                     -LogFile $logFile `
                     -DeploymentName "udcsp-defender-apis-onb-$($country.ToLower())" `
-                    -WhatIfFlag $whatIf
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
             }
         }
     }
