@@ -149,7 +149,8 @@ function Invoke-NativeCommand {
             Write-Log -LogFile $LogFile -Message $msg
             Write-Host ("✗ {0}s" -f [Math]::Round($sw.Elapsed.TotalSeconds,1)) -ForegroundColor Red
             if ($ContinueOnError) {
-                Write-Warning $msg
+                $shortMsg = "[exit $exit] $($Command[0]) $($Command[1]) (continued; see $LogFile)"
+                Write-Warning $shortMsg
             } else {
                 throw $msg
             }
