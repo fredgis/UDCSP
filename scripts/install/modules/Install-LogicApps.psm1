@@ -46,7 +46,8 @@ function Install-LogicApps {
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-ws-$($country.ToLower())" `
                     -Tags $Config.Tags `
-                    -WhatIfFlag $whatIf
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
             }
         }
         if (Test-Path $sbBicep) {
@@ -97,9 +98,20 @@ function Install-LogicApps {
         }
 
         # Publish each workflow folder via func core tools (idempotent).
+        # Skip entirely if the Logic App site doesn't exist (e.g. workspace
+        # deployment was skipped due to missing VM quota in dev sandbox).
+        $appName = "udcsp-$($country.ToLower())-$envName-logic"
+        $siteExists = $false
+        try {
+            $null = az webapp show --subscription $sub --resource-group $rg --name $appName --only-show-errors --output none 2>$null
+            $siteExists = ($LASTEXITCODE -eq 0)
+        } catch { $siteExists = $false }
+        if (-not $siteExists) {
+            Write-Host "    ↳ skip workflow publish ($appName not found — workspace bicep failed, likely missing VM quota)"
+            continue
+        }
         $workflows = Get-ChildItem (Join-Path $repo 'services\logic-apps\workflows') -Directory -ErrorAction SilentlyContinue
         foreach ($w in $workflows) {
-            $appName = "udcsp-$($country.ToLower())-logicapps"
             if ($PSCmdlet.ShouldProcess("$($w.Name)@$appName", 'func azure logicapp publish')) {
                 Push-Location $w.FullName
                 try {

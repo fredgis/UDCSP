@@ -57,11 +57,10 @@ function Install-Apim {
         if (Test-Path $nvFile) {
             $nvDoc = Get-Content $nvFile -Raw | ConvertFrom-Json
             $apiVersion = '2022-08-01'
+            $stubCount = 0
             foreach ($nv in $nvDoc.namedValues) {
                 $useStub = ($nv.keyVaultSecretIdentifier -like '*<*>*')
-                if ($useStub) {
-                    Write-Host "    ↳ stub named-value $($nv.name) (KV placeholder unresolved → plain-text)"
-                }
+                if ($useStub) { $stubCount++ }
                 if ($PSCmdlet.ShouldProcess("$($nv.name)@$apimName", 'az rest PUT namedValues')) {
                     if ($useStub) {
                         # Per-NV stub values that satisfy APIM validators (CORS origin
@@ -95,11 +94,15 @@ function Install-Apim {
                     $bodyFile = Join-Path $ReportDir "apim-nv-$($country.ToLower())-$($nv.name).json"
                     $body | ConvertTo-Json -Depth 6 | Set-Content $bodyFile -Encoding utf8
                     $url = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/namedValues/$($nv.name)?api-version=$apiVersion"
+                    $sink = Join-Path $ReportDir "apim-nv-$($country.ToLower())-$($nv.name).resp"
                     Invoke-NativeCommand `
                         -Command @('az','rest','--method','PUT','--url',$url,'--body',"@$bodyFile",
-                                   '--only-show-errors','--output','none') `
+                                   '--only-show-errors','--output-file',$sink) `
                         -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 }
+            }
+            if ($stubCount -gt 0) {
+                Write-Host "    ↳ $stubCount named-values published as plain-text stubs (KV placeholders unresolved — expected in dev)"
             }
         }
 
@@ -124,9 +127,10 @@ function Install-Apim {
                     $bodyFile = Join-Path $ReportDir "apim-fragment-$($country.ToLower())-$fragId.json"
                     $body | ConvertTo-Json -Depth 6 | Set-Content $bodyFile -Encoding utf8
                     $url = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/policyFragments/${fragId}?api-version=$apiVersion"
+                    $sink = Join-Path $ReportDir "apim-fragment-$($country.ToLower())-$fragId.resp"
                     Invoke-NativeCommand `
                         -Command @('az','rest','--method','PUT','--url',$url,'--body',"@$bodyFile",
-                                   '--only-show-errors','--output','none') `
+                                   '--only-show-errors','--output-file',$sink) `
                         -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 }
             }
@@ -163,9 +167,10 @@ function Install-Apim {
                         $policyBodyFile = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).json"
                         $policyBody | ConvertTo-Json -Depth 6 | Set-Content $policyBodyFile -Encoding utf8
                         $policyUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/apis/$($a.Name)/policies/policy?api-version=2022-08-01"
+                        $policySink = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).resp"
                         Invoke-NativeCommand `
                             -Command @('az','rest','--method','PUT','--url',$policyUrl,'--body',"@$policyBodyFile",
-                                       '--only-show-errors','--output','none') `
+                                       '--only-show-errors','--output-file',$policySink) `
                             -LogFile $logFile `
                             -WhatIfFlag $whatIf `
                             -ContinueOnError
