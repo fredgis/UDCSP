@@ -454,6 +454,41 @@ The "right" exists in the regulation; the **delivery** is operational. UDCSP com
 | Withdraw consent (Art. 7) | "As easy as giving" | One-click in cookie preferences; opt-out via SMS `STOP` / email link | Web portal + SMS workflow | Per-release |
 | Lodge complaint with DPA (Art. 77) | At all times | DPA contact in every privacy notice + every channel notice | All channels | — |
 
+### Logic Apps tier — production vs sandbox
+
+The orchestration workflows that fulfil several of these citizen-rights
+SLAs (Art. 17 erasure, archive-handover, GDPR data export, cross-border
+residency, escalation to human) run on **Azure Logic Apps Standard
+(Workflow Standard WS1)** in production. Standard is *single-tenant*
+and *VNet-integrated*, which keeps citizen PII inside each country's
+sovereign trust boundary while a workflow is running — a requirement
+for the per-country data-residency commitments in section 4.
+
+In **dev / test** environments (notably MCAPS sandbox subscriptions
+where App Service `Total VMs` quota is `0` and cannot be raised), the
+installer falls back to **Azure Logic Apps Consumption**
+(`Microsoft.Logic/workflows`). Consumption is multitenant, has no VM
+quota, and works in any sub. The same workflow definitions are
+deployed, but with two trade-offs that **must not ship to production**:
+
+1. **No VNet integration.** Consumption workflows traverse the public
+   Azure backbone between actions. Acceptable for sandbox demos with
+   synthetic data only; not acceptable for real citizen PII.
+2. **Managed connectors only.** Service Bus triggers are converted to
+   HTTP `Request` triggers in Consumption (the in-app Service Bus
+   ServiceProvider connector is Standard-only). The original queue name
+   is preserved in workflow metadata so prod migration can re-wire the
+   managed Service Bus connection without re-authoring the workflow.
+
+**Pre-production action required.** Before the first prod release, the
+operator must request `Workflow Standard – Total VMs ≥ 1` per country
+resource group (`udcsp-{dk,se,no}-logicapps-rg`) on the target
+subscription and re-run the installer with `-Environment prod`. The
+installer's tier selection logic is in
+[`scripts/install/modules/Install-LogicApps.psm1`](../../scripts/install/modules/Install-LogicApps.psm1);
+the architectural rationale is in
+[`docs/tech/architecture.md` — Logic Apps tier choice](../tech/architecture.md#logic-apps-tier-choice--standard-prod-vs-consumption-devtest).
+
 ---
 
 ## 13. Evidence and audit pack — what a regulator can demand and we hand over

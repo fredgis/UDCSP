@@ -633,6 +633,33 @@ graph TB
 - **Event Grid** carries domain events (e.g. *application submitted*, *eligibility recomputed*) for analytics & cross-service reactions.
 - Each integration to a partner legacy system is wrapped in a **dedicated Logic App + Function** and exposed through API Management with its own facade contract.
 
+### Logic Apps tier choice — Standard (prod) vs Consumption (dev/test)
+
+| Tier | When | Quota requirement | Reason |
+|---|---|---|---|
+| **Standard** (Workflow Standard WS1+) | `env=prod` | App Service `Total VMs ≥ 1` per region | VNet integration, stateful workflows, no cold start, in-app Service Bus / SQL connectors (data stays inside the trust boundary). Required for the EU data-residency guarantee. |
+| **Consumption** (`Microsoft.Logic/workflows`) | `env=dev` / `env=test` | None | Multitenant Azure runtime, no VM quota — works in MCAPS sandbox subs that have `Total VMs = 0`. Pay-per-execution, ~€5/month for demos. Trade-off: cold start (1–2 s on first execution), no native VNet, managed connectors only. |
+
+The installer chooses the tier from the `-Environment` flag
+(`scripts/install/Install-UDCSP.ps1`). The same `workflow.json` files in
+`services/logic-apps/workflows/<name>/` feed both tiers; the installer
+strips `_comment` keys, rewrites the `$schema` to the 2016-06-01
+Consumption schema, and converts Service Bus `ServiceProvider` triggers
+(in-app connector, Standard only) to HTTP `Request` triggers before
+PUT-ing the resource via `az rest` against
+`Microsoft.Logic/workflows@2019-05-01`. The original Service Bus queue
+name is preserved in workflow metadata (`x-udcsp-original-sb-queue`) so
+prod migration can wire a managed Service Bus connection without
+re-authoring the workflow.
+
+**Production deployment requires App Service quota.** Before promoting
+to `env=prod`, open a quota ticket on the target subscription requesting
+`Workflow Standard – Total VMs ≥ 1` per regional resource group
+(`udcsp-{dk,se,no}-logicapps-rg`). Without it, the workspace bicep
+deploy in `Install-LogicApps.psm1` fails with
+`InternalSubscriptionIsOverQuotaForSku`, and the platform falls back to
+Consumption with the cold-start and VNet caveats above.
+
 **Lifecycle workflows.** Two symmetric *closed-loop* Logic Apps pairs cover the
 end-of-data-life journey:
 
