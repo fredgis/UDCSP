@@ -1,9 +1,20 @@
 <#
 .SYNOPSIS
-    Install-D365 — Solutions (UDCSP_Core then UDCSP_<country>), BPFs,
-    queues, SLAs, Copilot for Service via Power Platform CLI.
+    Install-D365 — packs unmanaged solution folders into zips and imports
+    them via Power Platform CLI for each country Dataverse environment.
 #>
 Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
+
+function Test-PacStdoutForError {
+    # pac CLI returns exit 0 even on usage / runtime errors. Surface them.
+    param([string]$LogFile, [string]$Label)
+    $tail = Get-Content $LogFile -Tail 80 -ErrorAction SilentlyContinue
+    if (-not $tail) { return }
+    $errLine = $tail | Where-Object { $_ -match '^\s*Error:' } | Select-Object -First 1
+    if ($errLine) {
+        Write-Warning "[$Label] pac reported error despite exit 0: $($errLine.Trim())"
+    }
+}
 
 function Install-D365 {
     [CmdletBinding(SupportsShouldProcess)]
@@ -15,32 +26,63 @@ function Install-D365 {
 
     if (-not (Test-CliAvailable -Name 'pac')) {
         Write-Log -LogFile $logFile -Message "[skip] Power Platform CLI ('pac') not on PATH. Install: https://learn.microsoft.com/en-us/power-platform/developer/cli/introduction. Operations recorded for manual replay."
+        return
     }
 
     $d365Urls = if ($Config.ContainsKey('D365EnvironmentUrls')) { $Config.D365EnvironmentUrls } else { @{} }
+    if (-not $d365Urls -or $d365Urls.Count -eq 0) {
+        Write-Log -LogFile $logFile -Message "[skip] D365EnvironmentUrls not configured. Provision Dataverse environments per country (DK/SE/NO) and add URLs to scripts/install/config/udcsp.config.psd1."
+        Write-Warning "D365 skipped: no D365EnvironmentUrls in config."
+        return
+    }
+
+    $packDir = Join-Path $ReportDir 'd365-packed'
+    New-Item -ItemType Directory -Path $packDir -Force | Out-Null
 
     foreach ($country in 'DK','SE','NO') {
         $url = $d365Urls[$country]
-        if (-not $url) { continue }
-        if ($PSCmdlet.ShouldProcess($url, 'pac auth select')) {
+        if (-not $url) {
+            Write-Log -LogFile $logFile -Message "[skip] no D365 URL for $country"
+            continue
+        }
+        # Switch the active connection to this org. `pac auth select` only
+        # accepts --index/--name; the URL switch is done via `pac org select`.
+        if ($PSCmdlet.ShouldProcess($url, 'pac org select')) {
             Invoke-NativeCommand `
-                -Command @('pac','auth','select','--environment',$url) `
+                -Command @('pac','org','select','--environment',$url) `
                 -LogFile $logFile `
                 -WhatIfFlag $whatIf `
                 -ContinueOnError
+            Test-PacStdoutForError -LogFile $logFile -Label "org-select-$country"
         }
         foreach ($sln in @('UDCSP_Core',"UDCSP_$country")) {
-            $path = Join-Path $solutionsRoot $sln
-            if (-not (Test-Path $path)) {
-                Write-Log -LogFile $logFile -Message "[skip] solution path not found: $path"
+            $srcPath = Join-Path $solutionsRoot $sln
+            if (-not (Test-Path $srcPath)) {
+                Write-Log -LogFile $logFile -Message "[skip] solution path not found: $srcPath"
+                continue
+            }
+            # `pac solution import --path` requires a zip; pack the folder first.
+            $zipPath = Join-Path $packDir "$sln.zip"
+            if ($PSCmdlet.ShouldProcess($srcPath, "pac solution pack -> $zipPath")) {
+                Invoke-NativeCommand `
+                    -Command @('pac','solution','pack','--zipfile',$zipPath,'--folder',$srcPath,'--packagetype','Unmanaged') `
+                    -LogFile $logFile `
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
+                Test-PacStdoutForError -LogFile $logFile -Label "pack-$sln"
+            }
+            if (-not (Test-Path $zipPath)) {
+                Write-Log -LogFile $logFile -Message "[skip] solution pack failed for $sln (no zip produced)"
+                Write-Warning "D365 [$country/$sln]: pack failed — likely scaffold solution.xml is incomplete. Skipping import."
                 continue
             }
             if ($PSCmdlet.ShouldProcess("$sln@$url", 'pac solution import')) {
                 Invoke-NativeCommand `
-                    -Command @('pac','solution','import','--path',$path,'--publish-changes','--environment',$url) `
+                    -Command @('pac','solution','import','--path',$zipPath,'--publish-changes','--environment',$url) `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
+                Test-PacStdoutForError -LogFile $logFile -Label "import-$sln-$country"
             }
         }
     }
