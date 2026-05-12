@@ -69,7 +69,8 @@ function Install-LogicApps {
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-sb-$($country.ToLower())" `
                     -Tags $Config.Tags `
-                    -WhatIfFlag $whatIf
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
             }
         }
         if (Test-Path $egBicep) {
@@ -93,7 +94,8 @@ function Install-LogicApps {
                     -LogFile $logFile `
                     -DeploymentName "udcsp-logicapps-eg-$($country.ToLower())" `
                     -Tags $Config.Tags `
-                    -WhatIfFlag $whatIf
+                    -WhatIfFlag $whatIf `
+                    -ContinueOnError
             }
         }
 
