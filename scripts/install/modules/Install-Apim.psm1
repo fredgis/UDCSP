@@ -58,16 +58,26 @@ function Install-Apim {
             $nvDoc = Get-Content $nvFile -Raw | ConvertFrom-Json
             $apiVersion = '2022-08-01'
             foreach ($nv in $nvDoc.namedValues) {
-                if ($nv.keyVaultSecretIdentifier -like '*<*>*') {
-                    Write-Host "    ↳ skip named-value $($nv.name) (KV placeholder unresolved)"
-                    continue
+                $useStub = ($nv.keyVaultSecretIdentifier -like '*<*>*')
+                if ($useStub) {
+                    Write-Host "    ↳ stub named-value $($nv.name) (KV placeholder unresolved → plain-text)"
                 }
                 if ($PSCmdlet.ShouldProcess("$($nv.name)@$apimName", 'az rest PUT namedValues')) {
-                    $body = [ordered]@{
-                        properties = [ordered]@{
-                            displayName = $nv.name
-                            secret      = $true
-                            keyVault    = [ordered]@{ secretIdentifier = $nv.keyVaultSecretIdentifier }
+                    if ($useStub) {
+                        $body = [ordered]@{
+                            properties = [ordered]@{
+                                displayName = $nv.name
+                                secret      = $false
+                                value       = "https://placeholder.local/$($nv.name)"
+                            }
+                        }
+                    } else {
+                        $body = [ordered]@{
+                            properties = [ordered]@{
+                                displayName = $nv.name
+                                secret      = $true
+                                keyVault    = [ordered]@{ secretIdentifier = $nv.keyVaultSecretIdentifier }
+                            }
                         }
                     }
                     $bodyFile = Join-Path $ReportDir "apim-nv-$($country.ToLower())-$($nv.name).json"
@@ -184,7 +194,7 @@ function Test-Apim {
     } else {
         try {
             foreach ($country in 'DK','SE','NO') {
-                $apimName = "udcsp-$($country.ToLower())-apim"
+                $apimName = "udcsp-$($country.ToLower())-prod-apim"
                 $gatewayUrl = "https://$apimName.azure-api.net"
                 & $script -GatewayUrl $gatewayUrl 2>&1 | Out-Null
             }
