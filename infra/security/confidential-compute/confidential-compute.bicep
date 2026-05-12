@@ -2,14 +2,15 @@
 
 targetScope = 'resourceGroup'
 
-param country string
+param country string = 'shared'
 param env string = 'prod'
-param location string
-param infrastructureSubnetId string
-param logAnalyticsWorkspaceId string
-param workloadProfileType string = 'Confidential-Standard-NC8as-T4-v5'
-param minimumCount int = 1
+param location string = resourceGroup().location
+param infrastructureSubnetId string = ''
+param logAnalyticsWorkspaceId string = ''
+param workloadProfileType string = 'Consumption'
+param minimumCount int = 0
 param maximumCount int = 3
+param zoneRedundant bool = false
 
 var tags = {
   purpose: 'eligibility-tee'
@@ -22,12 +23,13 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: 'udcsp-${country}-${env}-eligibility-tee-env'
   location: location
   tags: tags
-  properties: {
-    vnetConfiguration: {
-      infrastructureSubnetId: infrastructureSubnetId
-      internal: true
-    }
-    workloadProfiles: [
+  properties: union({
+    workloadProfiles: workloadProfileType == 'Consumption' ? [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ] : [
       {
         name: 'eligibility-tee'
         workloadProfileType: workloadProfileType
@@ -35,11 +37,16 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
         maximumCount: maximumCount
       }
     ]
-    zoneRedundant: true
-  }
+    zoneRedundant: zoneRedundant
+  }, empty(infrastructureSubnetId) ? {} : {
+    vnetConfiguration: {
+      infrastructureSubnetId: infrastructureSubnetId
+      internal: true
+    }
+  })
 }
 
-resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(logAnalyticsWorkspaceId)) {
   name: 'send-to-log-analytics'
   scope: environment
   properties: {

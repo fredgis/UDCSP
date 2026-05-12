@@ -16,19 +16,40 @@ function Install-ConfidentialCompute {
     $whatIf = [bool]$WhatIfPreference
     foreach ($f in @($envBicep,$app)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
-    foreach ($pair in @(@{name='env'; file=$envBicep}, @{name='app'; file=$app})) {
-        $rg = "udcsp-shared-conf-compute-rg"
-        if ($PSCmdlet.ShouldProcess("confidential-$($pair.name)", 'az deployment group create')) {
-            Invoke-AzGroupDeployment `
-                -Subscription $Config.Subscriptions.SharedPlatform `
-                -ResourceGroup $rg `
-                -Location $Config.Regions.Shared `
-                -TemplateFile $pair.file `
-                -LogFile $logFile `
-                -DeploymentName "udcsp-conf-compute-$($pair.name)" `
-                -Tags $Config.Tags `
-                -WhatIfFlag $whatIf
-        }
+    $rg = "udcsp-shared-conf-compute-rg"
+    $envDeploymentName = 'udcsp-conf-compute-env'
+
+    if ($PSCmdlet.ShouldProcess('confidential-env', 'az deployment group create')) {
+        Invoke-AzGroupDeployment `
+            -Subscription $Config.Subscriptions.SharedPlatform `
+            -ResourceGroup $rg `
+            -Location $Config.Regions.Shared `
+            -TemplateFile $envBicep `
+            -LogFile $logFile `
+            -DeploymentName $envDeploymentName `
+            -Tags $Config.Tags `
+            -WhatIfFlag $whatIf
+    }
+
+    $envId = $null
+    if (-not $whatIf) {
+        $envId = az deployment group show --subscription $Config.Subscriptions.SharedPlatform `
+            -g $rg -n $envDeploymentName --query 'properties.outputs.environmentId.value' -o tsv 2>$null
+    }
+
+    if ($PSCmdlet.ShouldProcess('confidential-app', 'az deployment group create')) {
+        $appParams = @{}
+        if ($envId) { $appParams['managedEnvironmentId'] = $envId }
+        Invoke-AzGroupDeployment `
+            -Subscription $Config.Subscriptions.SharedPlatform `
+            -ResourceGroup $rg `
+            -Location $Config.Regions.Shared `
+            -TemplateFile $app `
+            -LogFile $logFile `
+            -DeploymentName 'udcsp-conf-compute-app' `
+            -Parameters $appParams `
+            -Tags $Config.Tags `
+            -WhatIfFlag $whatIf
     }
 }
 
