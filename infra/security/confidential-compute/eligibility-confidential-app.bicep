@@ -5,10 +5,10 @@ targetScope = 'resourceGroup'
 param appName string = 'udcsp-eligibility-tee'
 param location string = resourceGroup().location
 param managedEnvironmentId string
-param workloadProfileName string = 'eligibility-tee'
-param image string = 'udcspacr.azurecr.io/eligibility-tee:latest'
+param workloadProfileName string = 'Consumption'
+param image string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 @secure()
-param foundryEndpoint string
+param foundryEndpoint string = ''
 param tags object = {
   purpose: 'eligibility-tee'
   costCenter: 'UDCSP'
@@ -32,7 +32,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
       }
-      secrets: [
+      secrets: empty(foundryEndpoint) ? [] : [
         {
           name: 'foundry-endpoint'
           value: foundryEndpoint
@@ -44,7 +44,12 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'eligibility-tee'
           image: image
-          env: [
+          env: empty(foundryEndpoint) ? [
+            {
+              name: 'REQUIRE_ATTESTATION'
+              value: 'true'
+            }
+          ] : [
             {
               name: 'FOUNDRY_ENDPOINT'
               secretRef: 'foundry-endpoint'
@@ -70,5 +75,5 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
 
 output appId string = app.id
 output principalId string = app.identity.principalId
-output latestRevisionFqdn string = app.properties.configuration.ingress.fqdn
+output latestRevisionFqdn string = app.properties.latestRevisionFqdn
 
