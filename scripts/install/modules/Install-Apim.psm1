@@ -64,11 +64,23 @@ function Install-Apim {
                 }
                 if ($PSCmdlet.ShouldProcess("$($nv.name)@$apimName", 'az rest PUT namedValues')) {
                     if ($useStub) {
+                        # Per-NV stub values that satisfy APIM validators (CORS origin
+                        # forbids paths; OIDC discovery must resolve; audience can be
+                        # any string). Use realistic public endpoints where remote
+                        # validation kicks in.
+                        $stubValue = switch -Wildcard ($nv.name) {
+                            'portal-origin'                       { 'https://localhost:3000' }
+                            'entra-openid-config-url'             { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
+                            'external-id-openid-config-url'       { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
+                            'entra-api-audience'                  { 'api://udcsp-stub' }
+                            'external-id-api-audience'            { 'api://udcsp-stub' }
+                            default                               { 'https://placeholder.local' }
+                        }
                         $body = [ordered]@{
                             properties = [ordered]@{
                                 displayName = $nv.name
                                 secret      = $false
-                                value       = "https://placeholder.local/$($nv.name)"
+                                value       = $stubValue
                             }
                         }
                     } else {
@@ -140,17 +152,24 @@ function Install-Apim {
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
                 if (Test-Path $policy) {
-                    Invoke-NativeCommand `
-                        -Command @('az','apim','api','policy','create',
-                                   '--subscription',$sub,
-                                   '--resource-group',$rg,
-                                   '--service-name',$apimName,
-                                   '--api-id',$a.Name,
-                                   '--xml-path',$policy,
-                                   '--only-show-errors','--output','none') `
-                        -LogFile $logFile `
-                        -WhatIfFlag $whatIf `
-                        -ContinueOnError
+                    if ($PSCmdlet.ShouldProcess("policy@$($a.Name)@$apimName", 'az rest PUT api policy')) {
+                        $policyXml = Get-Content $policy -Raw
+                        $policyBody = [ordered]@{
+                            properties = [ordered]@{
+                                format = 'rawxml'
+                                value  = $policyXml
+                            }
+                        }
+                        $policyBodyFile = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).json"
+                        $policyBody | ConvertTo-Json -Depth 6 | Set-Content $policyBodyFile -Encoding utf8
+                        $policyUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/apis/$($a.Name)/policies/policy?api-version=2022-08-01"
+                        Invoke-NativeCommand `
+                            -Command @('az','rest','--method','PUT','--url',$policyUrl,'--body',"@$policyBodyFile",
+                                       '--only-show-errors','--output','none') `
+                            -LogFile $logFile `
+                            -WhatIfFlag $whatIf `
+                            -ContinueOnError
+                    }
                 }
             }
         }
