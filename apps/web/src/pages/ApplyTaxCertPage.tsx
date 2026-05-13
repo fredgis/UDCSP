@@ -65,11 +65,11 @@ export function ApplyTaxCertPage() {
         </p>
       </header>
 
-      <form onSubmit={onSubmit} className="apply-form" noValidate>
+      <form onSubmit={onSubmit} className="apply-form">
         <fieldset className="apply-card">
           <legend>1. Certificate details</legend>
           <div className="apply-grid">
-            <label className="field">
+            <label className="field field--required">
               <span>Tax year</span>
               <input
                 type="number"
@@ -87,7 +87,7 @@ export function ApplyTaxCertPage() {
                 <option value="xml">Machine-readable XML</option>
               </select>
             </label>
-            <label className="field apply-grid__wide">
+            <label className="field field--required apply-grid__wide">
               <span>Purpose (helps the issuing office)</span>
               <textarea name="purpose" rows={3} required placeholder="e.g. apply for a mortgage in Spain, prove residency for an EU tax treaty…" />
             </label>
@@ -97,7 +97,7 @@ export function ApplyTaxCertPage() {
         <fieldset className="apply-card">
           <legend>2. Delivery</legend>
           <div className="apply-grid">
-            <label className="field">
+            <label className="field field--required">
               <span>Delivery email</span>
               <input type="email" name="email" required defaultValue={acc?.username || ''} />
             </label>

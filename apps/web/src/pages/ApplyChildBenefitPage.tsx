@@ -178,11 +178,11 @@ export function ApplyChildBenefitPage() {
 
       <ConsentNotice keys={['crossBorder', 'notifications', 'aiAssistant']} />
 
-      <form onSubmit={onSubmit} className="apply-form" noValidate>
+      <form onSubmit={onSubmit} className="apply-form">
         <fieldset className="apply-card">
           <legend>1. About you</legend>
           <div className="apply-grid">
-            <label className="field">
+            <label className="field field--required">
               <span>Parent / guardian name</span>
               <input
                 type="text"
@@ -193,7 +193,7 @@ export function ApplyChildBenefitPage() {
                 onChange={(e) => setParentName(e.target.value)}
               />
             </label>
-            <label className="field">
+            <label className="field field--required">
               <span>Email for confirmations</span>
               <input
                 type="email"
@@ -203,7 +203,7 @@ export function ApplyChildBenefitPage() {
                 defaultValue={acc?.username || ''}
               />
             </label>
-            <label className="field">
+            <label className="field field--required">
               <span>Country of residence</span>
               <select name="residence" defaultValue={country} required>
                 <option value="dk">Denmark</option>
@@ -211,7 +211,7 @@ export function ApplyChildBenefitPage() {
                 <option value="no">Norway</option>
               </select>
             </label>
-            <label className="field">
+            <label className="field field--required">
               <span>Preferred contact language</span>
               <select name="language" defaultValue={'en'} required>
                 <option value="en">English</option>
@@ -229,11 +229,11 @@ export function ApplyChildBenefitPage() {
         <fieldset className="apply-card">
           <legend>2. Your children</legend>
           <div className="apply-grid">
-            <label className="field">
+            <label className="field field--required">
               <span>Number of dependent children</span>
               <input type="number" name="children" min={1} max={20} required defaultValue={1} />
             </label>
-            <label className="field">
+            <label className="field field--required">
               <span>Date of birth — youngest child</span>
               <input type="date" name="youngestDob" required />
             </label>
@@ -281,7 +281,7 @@ export function ApplyChildBenefitPage() {
             </div>
           )}
           <div className="apply-grid">
-            <label className="field">
+            <label className="field field--required">
               <span>Monthly net income (EUR)</span>
               <input
                 type="number"
@@ -292,7 +292,7 @@ export function ApplyChildBenefitPage() {
                 defaultValue={extracted?.fields?.monthlyIncome ?? ''}
               />
             </label>
-            <label className="field">
+            <label className="field field--required">
               <span>Number of adults in household</span>
               <input type="number" name="adultsInHousehold" min={1} max={6} required defaultValue={2} />
             </label>
@@ -309,7 +309,7 @@ export function ApplyChildBenefitPage() {
             <input type="checkbox" name="consentNotifications" defaultChecked />
             <span>Send me email and SMS updates about the status of this case.</span>
           </label>
-          <label className="checkbox">
+          <label className="checkbox checkbox--required">
             <input type="checkbox" name="declaration" required />
             <span>I declare the information above is correct to the best of my knowledge. False statements may lead to recovery of payments.</span>
           </label>
