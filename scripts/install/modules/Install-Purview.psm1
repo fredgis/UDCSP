@@ -29,7 +29,10 @@ function Install-Purview {
             -LogFile $logFile `
             -DeploymentName "udcsp-purview" `
             -Tags $Config.Tags `
-            -WhatIfFlag $whatIf
+            -WhatIfFlag $whatIf `
+            -NoWait `
+            -PollTimeoutMinutes 75 `
+            -PollIntervalSeconds 30
     }
 
     $register = Join-Path $repo 'governance\purview\scripts\Register-PurviewSources.ps1'
