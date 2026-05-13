@@ -52,7 +52,7 @@ function Install-Apps {
                 if ([string]::IsNullOrWhiteSpace($deployToken)) {
                     Write-Log -LogFile $logFile -Message "[warn] Could not fetch SWA deployment token for $swaName/$swaRg — skipping swa deploy. Run 'az staticwebapp secrets list --name $swaName --resource-group $swaRg' manually then re-run."
                 } else {
-                    Invoke-NativeCommand -Command @('swa','deploy','./dist','--env',$envName,'--deployment-token',$deployToken,'--no-use-keychain') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                    Invoke-NativeCommand -Command @('swa','deploy','./dist','--env','production','--deployment-token',$deployToken,'--no-use-keychain') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 }
             } else {
                 Write-Log -LogFile $logFile -Message "[skip] swa CLI not on PATH. Install: npm install -g @azure/static-web-apps-cli."
