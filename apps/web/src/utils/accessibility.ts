@@ -6,6 +6,7 @@ export function loadAccessibility(): AccessibilityPreferences {
 }
 export function applyAccessibility(prefs: AccessibilityPreferences) {
   localStorage.setItem(key, JSON.stringify(prefs));
+  document.documentElement.style.fontSize = `${Math.round(16 * prefs.fontScale)}px`;
   document.documentElement.style.setProperty('--user-font-scale', String(prefs.fontScale));
   document.documentElement.classList.toggle('high-contrast', prefs.highContrast);
   document.documentElement.classList.toggle('reduce-motion', prefs.reduceMotion);
