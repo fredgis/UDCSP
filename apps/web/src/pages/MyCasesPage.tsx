@@ -102,7 +102,7 @@ export function MyCasesPage() {
         );
       } else {
         setError(
-          'Showing your locally cached submissions — the server listing endpoint is not yet wired, but your applications are stored in the country backend.',
+          'Showing your locally cached submissions. The intake API received your application — the listing endpoint isn\'t exposed yet, so we\'re reading from local cache until it ships.',
         );
       }
     } finally {
