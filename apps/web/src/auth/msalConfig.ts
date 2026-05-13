@@ -6,14 +6,13 @@ export const countries: { code: Country; label: string; flag: string; tenantDoma
   { code: 'se', label: 'Sverige',  flag: '🇸🇪', tenantDomain: 'udcspse.onmicrosoft.com', locale: 'sv' },
   { code: 'no', label: 'Norge',    flag: '🇳🇴', tenantDomain: 'udcspno.onmicrosoft.com', locale: 'nb' },
 ];
-const userFlow = 'SignUpSignIn';
 const COUNTRY_KEY = 'udcsp.country';
 const PLACEHOLDER = '00000000-0000-0000-0000-000000000000';
 
 export const getCountry = (): Country => ((localStorage.getItem(COUNTRY_KEY) as Country) || 'dk');
 export const setCountry = (c: Country) => localStorage.setItem(COUNTRY_KEY, c);
 export const authorityForCountry = (country: Country) =>
-  `https://udcsp${country}.ciamlogin.com/udcsp${country}.onmicrosoft.com/${userFlow}`;
+  `https://udcsp${country}.ciamlogin.com/udcsp${country}.onmicrosoft.com`;
 
 export const clientIdForCountry = (country: Country): string => {
   const env = import.meta.env as Record<string, string | undefined>;
