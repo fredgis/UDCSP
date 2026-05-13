@@ -47,6 +47,9 @@
 > [!NOTE]
 > **Sandbox vs production for the Logic Apps demos.** In a sandbox / MCAPS subscription the installer deploys Logic Apps on the **Consumption** tier (no App Service VM quota required). The eight demos that need orchestration (1, 2, 3, 4, 7, 8, 9, 10) call the workflows over **HTTPS** — the Service Bus triggers used in production are auto-converted to HTTP `Request` triggers, so every demo trigger is reachable with `curl` or the in-portal *Run trigger* button. Functional behaviour is identical to production; the only visible difference is first-call cold start (~2 s). For prod, Standard tier with VNet integration is required — see [`datacompliance.md` — Logic Apps tier](./datacompliance.md#logic-apps-tier--production-vs-sandbox).
 
+> [!NOTE]
+> **D365 / Dataverse in sandbox.** The installer imports four unmanaged solutions (`UDCSPCore`, `UDCSPDK/SE/NO`) into the Dataverse environments configured in `D365EnvironmentUrls`. These solutions register the `udcsp` publisher prefix but are intentionally empty of components — the shipped scaffold under `apps/d365/solutions/<name>/customizations/` is descriptive only and is **not** in canonical Dataverse XML format. To run the demos that touch Dynamics (caseworker case management, BPFs, queues, Copilot for Service prompts), provision the `udcsp_application`, `udcsp_eligibility_assessment`, `udcsp_consent_record` and `udcsp_country_zone` tables manually in the Power Apps maker UI for one environment, then run `pac solution export --name UDCSPCore --path apps/d365/solutions/UDCSP_Core --managed false` to capture the real XML, and re-run the installer to propagate to the other countries. Until then, the Logic Apps workflows that talk to D365 will succeed as REST stubs and the demo flows complete end-to-end without the Dynamics UI surface.
+
 > [!TIP]
 > Open the README evaluation matrix and this document side by side. Tick a row off as each demo lights it up — by Demo 10 every row is green.
 
