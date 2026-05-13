@@ -38,10 +38,13 @@ export function ApplyResidencyPage() {
   useEffect(() => upd('fromCountry', country), [country]);
 
   function next() {
-    if (step === 0 && !form.destination) return;
+    if (step === 0 && (!form.destination || !form.moveDate)) return;
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
   function back() { setStep((s) => Math.max(s - 1, 0)); }
+
+  const step0Valid = Boolean(form.destination && form.moveDate);
+  const canSubmit = step0Valid;
 
   async function submit() {
     setBusy(true);
@@ -104,7 +107,7 @@ export function ApplyResidencyPage() {
           <fieldset className="apply-card">
             <legend>Your move</legend>
             <div className="apply-grid">
-              <label className="field">
+              <label className="field field--required">
                 <span>Destination country</span>
                 <select value={form.destination} onChange={(e) => upd('destination', e.target.value)} required>
                   <option value="">Select…</option>
@@ -113,7 +116,7 @@ export function ApplyResidencyPage() {
                   <option value="no" disabled={country === 'no'}>Norway</option>
                 </select>
               </label>
-              <label className="field">
+              <label className="field field--required">
                 <span>Planned move date</span>
                 <input type="date" value={form.moveDate} onChange={(e) => upd('moveDate', e.target.value)} required />
               </label>
@@ -179,11 +182,11 @@ export function ApplyResidencyPage() {
         <div className="apply-stepper__actions">
           <button type="button" className="button-secondary" onClick={back} disabled={step === 0 || busy}>← Back</button>
           {step < STEPS.length - 1 ? (
-            <button type="button" className="button-primary" onClick={next} disabled={step === 0 && !form.destination}>
+            <button type="button" className="button-primary" onClick={next} disabled={step === 0 && !step0Valid}>
               Continue →
             </button>
           ) : (
-            <button type="button" className="button-primary" onClick={submit} disabled={busy}>
+            <button type="button" className="button-primary" onClick={submit} disabled={busy || !canSubmit}>
               {busy ? 'Submitting…' : 'Submit application'}
             </button>
           )}
