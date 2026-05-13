@@ -43,7 +43,7 @@ function Install-Apps {
         Push-Location $mobDir
         try {
             if ($PSCmdlet.ShouldProcess('apps/mobile', 'npm install')) {
-                Invoke-NativeCommand -Command @('npm','install','--no-audit','--no-fund') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                Invoke-NativeCommand -Command @('npm','install','--no-audit','--no-fund','--legacy-peer-deps') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
             }
             if ((Test-CliAvailable -Name 'eas') -and $PSCmdlet.ShouldProcess('apps/mobile', 'eas build')) {
                 Invoke-NativeCommand -Command @('eas','build','--profile','production','--non-interactive') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError

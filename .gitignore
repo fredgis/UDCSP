@@ -46,3 +46,5 @@ apps/d365/.pac/
 
 # Resolved bicepparam files written next to source so bicep using-path resolves
 *.resolved.bicepparam
+
+apps/**/tsconfig.tsbuildinfo
