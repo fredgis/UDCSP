@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 
 type Case = { id: string; title: string; status: string; updatedAt: string };
 
 export function MyCasesPage() {
   const isAuth = useIsAuthenticated();
-  const { accounts } = useMsal();
+  const { instance, accounts } = useMsal();
   const [cases, setCases] = useState<Case[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,21 +16,37 @@ export function MyCasesPage() {
     let cancelled = false;
     (async () => {
       try {
-        const apim = (import.meta.env.VITE_APIM_BASE_URL as string) || '';
+        const country = getCountry();
+        const apim = apimBaseUrlForCountry(country);
         if (!apim) { setCases([]); return; }
-        const res = await fetch(`${apim}/cases?upn=${encodeURIComponent(accounts[0]?.username || '')}`);
+        let bearer = '';
+        if (accounts[0]) {
+          try {
+            const tok = await instance.acquireTokenSilent({
+              account: accounts[0],
+              scopes: [apiScopeForCountry(country)],
+            });
+            bearer = tok.accessToken;
+          } catch {
+            // fall through with no bearer — APIM will 401 and we show banner
+          }
+        }
+        const res = await fetch(`${apim}/citizen-applications/`, {
+          method: 'GET',
+          headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+        });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as Case[];
         if (!cancelled) setCases(data);
       } catch (e) {
         if (!cancelled) {
           setCases([]);
-          setError('No live case backend reachable yet — your applications will show here once D365 + APIM are wired.');
+          setError('No applications returned yet — submit one via /apply, or the API scope may not yet be exposed on the SPA app registration.');
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [isAuth, accounts]);
+  }, [isAuth, accounts, instance]);
 
   if (cases === null) return <section><h1>My cases</h1><p>Loading…</p></section>;
 
@@ -63,3 +80,4 @@ export function MyCasesPage() {
     </section>
   );
 }
+
