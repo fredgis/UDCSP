@@ -100,28 +100,44 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 **No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
 
-## Demo 3 (Maria · SE · PL) — gap vs script
+## Demo 3 (Maria · DK · PL · NVDA) — current state
 
-Reference script: `docs/biz/demos.md` Demo 3 (Maria Kowalska, NVDA, PL UI in Sweden).
+Reference script: `docs/biz/uses.md` Demo 3 (Maria Kowalska, NVDA, Polish UI in Denmark).
 
-The DK/SE/NO code paths are now identical — pick any country profile and play the script. The remaining gaps are **content**, not infrastructure.
+Everything required by the script is shipped. The DK / SE / NO code paths are identical — pick any country profile and play the same script.
 
-| Script element | State | What's missing |
-|---|:-:|---|
-| External ID sign-in (DK · SE · NO tenants) | 🟢 | — |
-| PL locale (ICU MessageFormat) | 🟡 EN/FR/DA | Add `pl.json` in `apps/web/src/locales/` (EN strings still satisfy axe + NVDA) |
-| axe-core CI gate (zero serious WCAG 2.1 AA) | 🟡 | Add `@axe-core/cli` step in SWA build workflow |
-| NVDA-friendly form (landmarks/labels/focus) | 🟢 | Manual NVDA pass on `/apply/*` recommended |
-| Citizen Assistant (contextual help) | 🟢 | Consent-gated; PL contextual overrides optional |
-| Document Extractor on lease/payslip | 🟢 | Upload → blob (country lake) → extractor → fields shown for confirmation |
-| Translator (PL → SV for KB / caseworker) | 🟡 agent exists | Insert in LA after extractor (one HTTP action) |
-| Eligibility reasoning visible to citizen | 🟢 | Confidence + decision shown on confirmation card and case detail |
-| Submit → country D365 queue (DK/SE/NO) | 🟢 | LA `Create_D365_case` writes to `tasks` activity in `org939d8f07` |
-| Confirmation: estimated decision date + tracking | 🟢 | Card + `/cases/:id` deep link with workflow timeline |
-| GDPR Art. 17 erasure | 🟢 | Stub certificate; real Priva connector pending |
-| Per-language post-submission CSAT | 🔴 | Out of scope until D6 evolves |
+| Script element | State |
+|---|:-:|
+| External ID sign-in (DK · SE · NO tenants) | 🟢 |
+| Polish UI (`pl.json`, 38 keys translated, no `[PL]` stubs) | 🟢 |
+| axe-core CI gate (WCAG 2.1 AA, fails on serious / critical) | 🟢 `.github/workflows/web-axe.yml` |
+| Keyboard-only navigation + landmarks + visible focus | 🟢 |
+| Citizen Assistant (consent-gated contextual help) | 🟢 |
+| Document Extractor on lease / payslip (MI-proxy upload to country lake) | 🟢 |
+| Translator agent in the LA (PL → DA · SV · NB for caseworker) | 🟢 `Call_translator_to_caseworker_locale` |
+| Eligibility reasoning visible to citizen | 🟢 |
+| Submit → country D365 queue (DK / SE / NO) | 🟢 LA `Create_D365_case` writes to `tasks` |
+| Confirmation: estimated decision date + tracking deep link | 🟢 |
+| GDPR Art. 17 erasure | 🟢 stub certificate; real Priva connector pending |
+| Live walk-through with NVDA recorded | 🟡 |
 
-**Caseworker UI strategy** — see § below; not required to play the script.
+**Only blocker before flipping the demo to 🟢: one recorded NVDA pass.**
+
+### How to test Demo 3 with NVDA (10 min)
+
+NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader from NV Access. It speaks aloud what is on the screen and lets you navigate the page with the keyboard.
+
+1. **Install NVDA** — https://www.nvaccess.org/download/ (~40 MB, 1-min install). No restart needed.
+2. **Add the Polish voice** — *NVDA menu (`Insert + N`) → Preferences → Settings → Speech → Synthesizer = Windows OneCore voices → Voice = Polish (Paulina or Zofia)*. If the Polish voice isn't listed, install it once via *Windows Settings → Time & Language → Language → Add a language → Polish → Speech*.
+3. **Open the portal** — https://icy-dune-01c23d903.7.azurestaticapps.net.
+4. **Switch the UI to Polish** — language switcher in the top-right header → "Polski".
+5. **Sign in as a Danish resident** — country card *Danmark* → *Sign in / Create account* → CIAM hosted page → return.
+6. **Run the apply flow** — `Tab` to *"Apply for child benefit"*, `Enter` → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse / focus mode.
+7. **What you should hear in Polish**: page title, every form label, the AI-disclosure banner, the document-extractor result card, the eligibility reasoning, the confirmation card and the case-reference number.
+8. **Verify the AI / data path** — Azure portal → Logic App `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ *Succeeded*; the new `Call_translator_to_caseworker_locale` step is green; `Create_D365_case` returns 204. Dataverse (`https://org939d8f07.crm4.dynamics.com`) → *Tasks* → new row with subject `[UDCSP-DK] …`.
+9. **Trigger the axe-core CI run** — push any change under `apps/web/**` (or run the workflow manually from the *Actions* tab → *web-axe* → *Run workflow*). Confirm 0 serious + 0 critical violations across `/`, `/login`, `/demos`, `/consent`.
+
+Once steps 6 and 9 pass, this demo is 🟢.
 
 ## D3 wiring decisions (resolved 2026-05-13)
 

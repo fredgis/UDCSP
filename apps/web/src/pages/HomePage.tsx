@@ -46,22 +46,22 @@ const services = [
 const principles = [
   {
     title: 'Your data stays in your country',
-    body: 'Each Nordic country runs its own Entra External ID tenant, its own APIM front door, its own Logic Apps and its own Dataverse environment. The portal selects the right backend automatically based on the country you signed in with — there is no shared cross-border data store.',
+    body: 'When you sign in as a Danish, Swedish or Norwegian resident, the portal talks only to that country\'s public-service systems. Nothing about you is copied or stored in another country.',
     icon: '🇪🇺',
   },
   {
-    title: 'AI assists, humans decide',
-    body: 'Eligibility pre-assessment, document extraction and topic routing run on Foundry agents. Every AI suggestion carries a confidence score and a plain-language explanation, and a caseworker reviews any decision the model is unsure about. The full prompt → response chain is logged for audit (EU AI Act, Annex IV).',
+    title: 'AI helps, a person decides',
+    body: 'AI can pre-read your documents, suggest the right form and give a first opinion on whether you\'re eligible — but a real caseworker reviews every decision and signs it off. You always see, in plain language, what the AI suggested and why.',
     icon: '🤖',
   },
   {
-    title: 'Built for everyone',
-    body: 'Twelve UI languages including Polish, Arabic, Sámi, Ukrainian and Finnish. Every screen is keyboard-navigable and screen-reader-tested against WCAG 2.1 AA. A high-contrast theme and a dyslexic font are one click away.',
+    title: 'Made for everyone',
+    body: 'The portal is available in twelve languages, including Polish, Arabic, Sámi, Ukrainian and Finnish. You can use it entirely with a keyboard, with a screen reader, in high-contrast mode or with a dyslexia-friendly font.',
     icon: '♿',
   },
   {
-    title: 'You stay in control of your data',
-    body: 'Cross-border agency checks, SMS reminders and data export to a third party only happen if you opted in. You can review and revoke every consent from the Consent page; revocations propagate to APIM and Logic Apps within seconds.',
+    title: 'You stay in charge',
+    body: 'You decide what we may do with your data — share with another Nordic country, send you SMS reminders, forward a copy to a third party. You can change your mind at any time on the Consent page, and the change takes effect immediately.',
     icon: '🔐',
   },
 ];
@@ -126,7 +126,7 @@ export function HomePage(_: { locale?: string }) {
       <div className="section-heading">
         <div>
           <h2>How the platform works for you</h2>
-          <p>Four guarantees behind every screen — sovereign infrastructure, accountable AI, accessibility for every resident, and consent that you stay in charge of.</p>
+          <p>Four simple promises behind every screen — your data stays at home, AI helps but never decides alone, the portal is usable by everyone, and you stay in charge of your information.</p>
         </div>
       </div>
       <ul className="principles-grid" role="list">
