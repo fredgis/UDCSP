@@ -753,6 +753,115 @@ For **production** tenants, additionally:
 
 ---
 
+<details open>
+<summary><h2>🪪 POST CONFIGURATION — External ID app registrations (DK / SE / NO)</h2></summary>
+
+The installer creates the **3 CIAM tenants** (`udcspdk` / `udcspse` / `udcspno`) but cannot create the **user flow** or the **SPA app registration** inside them — both of those are portal-only operations on a CIAM tenant (Graph application API is gated and the user flow polymorphic schema is not supported by `Microsoft.Graph` PowerShell as of May 2026).
+
+Until you run the steps below, the citizen portal renders correctly but the **Sign in** and **Create an account** buttons return `AADSTS700016: Application not found in the directory` — the LoginPage shows this warning explicitly when `VITE_EXTERNAL_ID_CLIENT_ID` is unset.
+
+> **Repeat the procedure 3 times — once per country tenant.** The same redirect URI is used for all three; only the clientId differs.
+
+### Prerequisites
+
+- Your MCAPS admin account (`admin@MngEnvMCAP*.onmicrosoft.com`) must be a **Guest** with at least the **Application Administrator** role in each of the 3 CIAM tenants.
+  - If you created the tenants yourself you are already Global Admin.
+  - Otherwise: ask the tenant owner to invite you via *Entra → Users → New user → Invite external user*, then *Roles and administrators → Application Administrator → Add assignments*.
+
+### Step 1 — Create the `SignUpSignIn` user flow
+
+For each of `udcspdk.onmicrosoft.com`, `udcspse.onmicrosoft.com`, `udcspno.onmicrosoft.com`:
+
+1. Open https://entra.microsoft.com → **Settings (top-right)** → **Switch directory** → pick the country tenant.
+2. **External Identities → User flows → + New user flow**.
+3. Name: **`SignUpSignIn`** (exact case — the portal code references this string).
+4. Identity providers → check **Email with password**.
+5. User attributes & token claims — at minimum collect: *Display Name*, *Country/Region*, *Given Name*, *Surname*. Return them as token claims so the portal can greet by first name.
+6. **Create**.
+
+### Step 2 — Register the SPA app
+
+Still inside the country tenant:
+
+1. **App registrations → + New registration**.
+2. Name: **`UDCSP Citizen Portal`**.
+3. Supported account types: **Accounts in this organizational directory only** (single-tenant on the CIAM tenant).
+4. Redirect URI → platform **Single-page application (SPA)** → URL exactly:
+   ```
+   https://icy-dune-01c23d903.7.azurestaticapps.net
+   ```
+   *(replace with your own SWA hostname if you redeployed the portal)*
+5. **Register**.
+6. Copy the **Application (client) ID** — this is the value you'll inject as `VITE_EXTERNAL_ID_CLIENT_ID_<COUNTRY>`.
+
+### Step 3 — Link the app to the user flow
+
+1. Inside the same tenant: **External Identities → User flows → SignUpSignIn → Applications → + Add application** → select `UDCSP Citizen Portal`.
+2. *(Optional but recommended)* Open the app → **Authentication** → enable **ID tokens** (used for implicit and hybrid flows). Leave *Access tokens* unchecked unless you front a custom API.
+3. *(Optional)* Open the app → **API permissions** → add **`openid`** and **`profile`** (Microsoft Graph delegated). Click *Grant admin consent for udcsp\<country\>*.
+
+### Step 4 — Rebuild and redeploy the portal with the 3 client IDs
+
+Once you have the 3 client IDs, set them in `apps/web/.env` (or the SWA app settings if you deploy via GitHub Actions) and rebuild.
+
+```powershell
+cd apps/web
+
+# Single client id (all 3 tenants share the same SPA app reg if you mirrored them):
+@'
+VITE_EXTERNAL_ID_CLIENT_ID=<paste-client-id>
+VITE_APIM_BASE_URL=https://<your-apim>.azure-api.net
+VITE_APIM_SCOPE=https://<your-apim>.azure-api.net/.default
+'@ | Set-Content .env.production
+
+# Or per-country (recommended — keeps each tenant isolated):
+# VITE_EXTERNAL_ID_CLIENT_ID_DK=<dk-client-id>
+# VITE_EXTERNAL_ID_CLIENT_ID_SE=<se-client-id>
+# VITE_EXTERNAL_ID_CLIENT_ID_NO=<no-client-id>
+
+npm run build
+$token = az staticwebapp secrets list --name udcsp-web-dev --resource-group udcsp-shared-apps-rg --query 'properties.apiKey' -o tsv
+npx --yes @azure/static-web-apps-cli@latest deploy ./dist --env production --deployment-token $token --no-use-keychain
+```
+
+### Step 5 — Smoke test (per country)
+
+1. Open the portal → header **Sign in** button.
+2. Pick the country card you want to test.
+3. **Sign in** → expect a redirect to `https://udcsp<c>.ciamlogin.com/.../SignUpSignIn` showing email + password.
+4. Click **Sign up now** on the hosted page → fill the form → return to the portal authenticated. The header should now show your **initial + name + country flag** instead of *Sign in*.
+5. **Create an account** in the portal goes straight to the signup tab (`prompt=create`).
+6. Click **Sign out** in the header badge → MSAL `logoutRedirect` → you land back on `/`.
+
+### Step 6 — Seed demo personas (optional but useful for the demos)
+
+For each country tenant (still in the portal):
+- **DK** (D1, D4): create `anna.kristensen@udcspdk.onmicrosoft.com`, `erik.nielsen@udcspdk.onmicrosoft.com`.
+- **SE** (D3): create `maria.kowalski@udcspse.onmicrosoft.com` (or let her self-register live during the demo for extra wow).
+- **NO** (D2): create `lars.haugen@udcspno.onmicrosoft.com`.
+
+Use **Users → New user → Create new user**, set initial password, share credentials offline.
+
+### What this fixes
+
+| Symptom | Cause | After this section |
+|---|---|---|
+| `AADSTS700016 Application not found` on Sign in | No SPA app reg in the country tenant | ✅ Resolved |
+| Hosted page returns "Invalid user flow" | User flow `SignUpSignIn` missing | ✅ Resolved |
+| Header shows generic `Sign in` even after redirect back | MSAL token never issued (clientId placeholder) | ✅ Header switches to `<initial> <name> <flag>` |
+| `/cases`, `/apply/*`, `/consent` show "Sign in to continue" forever | AuthGate sees no MSAL account | ✅ Pages render once authenticated |
+| ChatWidget badge stays `🌐 Public` | `useIsAuthenticated()` returns false | ✅ Becomes `🔒 Personalised`, sends Bearer to APIM |
+
+### What this does NOT fix (separate sections)
+
+- **APIM `agent-topic-router` returns "Service temporarily unavailable"** — the backend named-value `foundry-topic-router-agent-endpoint` is still `https://placeholder.local`. Replace with the real Foundry agent endpoint (`Install-Foundry.psm1` output) and add a CORS policy allowing `https://icy-dune-01c23d903.7.azurestaticapps.net`.
+- **`/cases` empty even after sign in** — APIM `/cases` route isn't wired to D365 yet. Implement the bridge or run *D5 Astrid* in the D365 caseworker app for end-to-end case visibility.
+- **Federated MitID / BankID** — out of scope of the SignUpSignIn flow. Add per-country social/saml IdP under *External Identities → All identity providers* once eID enrolment is granted by the country authority.
+
+</details>
+
+---
+
 <details>
 <summary><h2>📎 Appendix 1 — The 25 phases, in install order</h2></summary>
 

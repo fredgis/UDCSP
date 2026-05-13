@@ -11,7 +11,6 @@ export function UserBadge() {
   if (!isAuth) {
     return (
       <Link to="/login" className="user-badge user-badge--anon" aria-label="Sign in">
-        <span aria-hidden="true">{flag}</span>
         <span>Sign in</span>
       </Link>
     );
