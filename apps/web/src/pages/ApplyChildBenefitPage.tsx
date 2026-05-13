@@ -165,8 +165,8 @@ export function ApplyChildBenefitPage() {
   return (
     <section aria-labelledby="cb-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country" aria-label={`Submitting to ${country.toUpperCase()}`}>
-          <span aria-hidden="true">{flag}</span> {country.toUpperCase()} — {RESIDENCE_LABEL[country]}
+        <span className="apply-page__country" aria-label={`Submitting to ${RESIDENCE_LABEL[country]}`}>
+          <span aria-hidden="true">{flag}</span> Submitting to {RESIDENCE_LABEL[country]}
         </span>
         <h1 id="cb-title">Apply for child benefit</h1>
         <p>

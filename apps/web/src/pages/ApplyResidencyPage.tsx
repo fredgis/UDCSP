@@ -76,8 +76,8 @@ export function ApplyResidencyPage() {
   return (
     <section aria-labelledby="res-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country">
-          <span aria-hidden="true">{flag}</span> Filing from {country.toUpperCase()} — {COUNTRY_LABEL[country]}
+        <span className="apply-page__country" aria-label={`Filing from ${COUNTRY_LABEL[country]}`}>
+          <span aria-hidden="true">{flag}</span> Filing from {COUNTRY_LABEL[country]}
         </span>
         <h1 id="res-title">Residency transfer</h1>
         <p>
