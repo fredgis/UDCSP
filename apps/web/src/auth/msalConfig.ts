@@ -46,7 +46,7 @@ export function createMsalConfig(country: Country = getCountry()): Configuration
       authority: authorityForCountry(country),
       knownAuthorities: knownAll,
       redirectUri: window.location.origin,
-      postLogoutRedirectUri: `${window.location.origin}/logout-callback`,
+      postLogoutRedirectUri: window.location.origin,
     },
     cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: false },
   };

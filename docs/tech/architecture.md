@@ -391,30 +391,37 @@ graph TB
 
 ## 4. Identity Federation Detail
 
+Two layers separate the citizen-facing portal from the national eID hubs:
+
+1. **Microsoft Entra External ID (CIAM)** is the per-country tenant the SPA talks to (one tenant per country: DK, SE, NO). Each tenant exposes a `SignUpSignIn` user flow that supports email + password (returning users) **and** a federated *External Identity Provider* — the citizen's national eID.
+2. **OIDC Broker (Criipto / Signicat / Nets eID)** is what bridges External ID and the eID hubs. The eID hubs (MitID, BankID, BankID Norge / MinID) are not exposed as public OIDC providers; a certified broker handles the contracts, certificates, eIDAS assurance levels, and exposes a single OIDC endpoint to External ID.
+
 ```mermaid
 graph TB
-    CITIZEN["Citizen"]
-    DEVICE["Device — web · mobile · phone"]
-    CHANNEL["Channel app"]
-    EXTID_LOCAL["Microsoft Entra External ID — local country"]
-    EID_LOCAL["National eID — MitID (DK) · BankID (SE) · Vipps (NO)"]
-    ENTRA_HUB["Microsoft Entra ID — federation hub"]
-    EIDAS["eIDAS Node"]
-    APIM["API Management — token validation"]
-    APP["Backend service"]
+    CITIZEN["Citizen — Anna in Copenhagen"]
+    SPA["UDCSP SPA — Static Web App"]
+    EXTID_DK["Entra External ID — DK tenant<br/><i>SignUpSignIn user flow</i>"]
+    BROKER["OIDC Broker — Criipto / Signicat<br/><i>certified national eID gateway</i>"]
+    MITID["🆔 MitID — DK national eID<br/><i>app push · face ID</i>"]
+    BANKID_SE["🆔 BankID — SE national eID"]
+    BANKID_NO["🆔 BankID Norge / MinID — NO"]
+    APIM["APIM — JWT validation, country claim"]
+    APP["Backend services"]
 
-    CITIZEN --> DEVICE
-    DEVICE --> CHANNEL
-    CHANNEL -->|OIDC| EXTID_LOCAL
-    EXTID_LOCAL -->|SAML / OIDC| EID_LOCAL
-    EXTID_LOCAL -->|federation| ENTRA_HUB
-    ENTRA_HUB <-->|cross-border| EIDAS
-    CHANNEL -->|access token + ID token| APIM
-    APIM -->|JWT validation, scopes, country claim| APP
+    CITIZEN --> SPA
+    SPA -->|OIDC redirect| EXTID_DK
+    EXTID_DK -->|email + password<br/>returning users| EXTID_DK
+    EXTID_DK -->|External Identity Provider — OIDC| BROKER
+    BROKER -->|SAML / OIDC| MITID
+    BROKER -.->|same broker, different flow| BANKID_SE
+    BROKER -.->|same broker, different flow| BANKID_NO
+    EXTID_DK -->|id_token + access_token<br/>cpr / pid claim| SPA
+    SPA -->|Bearer access_token| APIM
+    APIM -->|country claim, scopes| APP
 
     subgraph WORKFORCE["Caseworker workforce identity"]
         WUSER["Caseworker"]
-        ENTRA_WF["Microsoft Entra ID — workforce tenant"]
+        ENTRA_WF["Entra ID — workforce tenant"]
         PIM["Privileged Identity Management"]
         WUSER --> ENTRA_WF
         ENTRA_WF --> PIM
@@ -423,19 +430,57 @@ graph TB
 
     classDef cit fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
     classDef ident fill:#EDE7F6,stroke:#5E35B1,color:#311B92
+    classDef eid fill:#FFF3E0,stroke:#E65100,color:#BF360C
     classDef gw fill:#E0F2F1,stroke:#00796B,color:#004D40
     classDef wf fill:#FCE4EC,stroke:#AD1457,color:#880E4F
 
-    class CITIZEN,DEVICE,CHANNEL cit
-    class EXTID_LOCAL,EID_LOCAL,ENTRA_HUB,EIDAS ident
+    class CITIZEN,SPA cit
+    class EXTID_DK,BROKER ident
+    class MITID,BANKID_SE,BANKID_NO eid
     class APIM,APP gw
     class WUSER,ENTRA_WF,PIM wf
 ```
 
-- **Citizens** authenticate locally (national eID) → External ID → Entra hub → API Management.
-- **Caseworkers** authenticate against the Entra workforce tenant with **PIM** for sensitive actions (e.g. eligibility override).
-- **Cross-border** is achieved by *claim mapping* in the Entra hub: a citizen authenticated in DK can be authorised for an SE service if and only if the SE policy accepts the DK eIDAS assurance level.
-- **Per-country IdP wiring** is documented in [`governance/identity/identity-providers.md`](../../governance/identity/identity-providers.md) (MitID for DK, BankID for SE, Vipps for NO).
+### How a citizen actually signs in (Anna, DK example — Demo 1 step 1)
+
+1. Anna opens `udcsp.dk` (Static Web App) and clicks **Sign in / Create account**.
+2. The SPA picks her country (DK) and redirects to `udcspdk.ciamlogin.com` (External ID DK).
+3. The hosted page offers two methods:
+   - **Email & password** — for returning users who registered without an eID (used by the prototype today).
+   - **Sign in with MitID** — federates to the OIDC broker (`broker.criipto.id` or equivalent), which redirects Anna to her **MitID app** (face ID + code).
+4. The broker returns an OIDC `id_token` to External ID containing Anna's `pid` (pseudonymised CPR) and assurance level (eIDAS High).
+5. External ID maps the broker claims onto its CIAM user object (creating it on first sign-in) and issues its own `access_token` to the SPA.
+6. The SPA calls APIM with that `access_token`; APIM validates the JWT, extracts the `country` claim (`dk`), and routes to the DK backend.
+
+### Choice of OIDC broker (production)
+
+| Broker | Coverage | Why we picked it for the platform reference design |
+|--------|----------|----------------------------------------------------|
+| **Criipto Verify** | MitID, BankID SE, BankID Norge, NemLog-in, Vipps, eIDAS | Single contract covers all three Nordic countries; OpenID Connect out of the box; sandbox with test users included. |
+| Signicat | All Nordic + ~20 EU eIDs | Equivalent feature set, larger footprint outside Nordics. |
+| Nets eID Broker | DK / SE / NO Nordic-only | Nets-operated, narrower scope. |
+
+The platform documents Criipto as the default integration. Switching brokers is a configuration change inside External ID (External Identity Provider definition) — no SPA code change.
+
+### Why not call MitID / BankID directly?
+
+The national eID hubs are not exposed as public OIDC providers. They require:
+- A signed contract with the operator (Nets, Finansiell ID-Teknik, Vipps).
+- Service certificates issued per environment.
+- Per-country eIDAS conformance audits.
+- SAML 2.0 (DK MitID) or proprietary protocol (BankID NO/SE) on the wire.
+
+A certified broker absorbs all of that and exposes a single OIDC interface. This is the same approach used by `borger.dk`, `skatteverket.se` and `nav.no` for any third-party that integrates a national eID.
+
+### Caseworker identity (separate plane)
+
+Caseworkers do **not** use External ID. They authenticate against the workforce **Entra ID** tenant with **PIM** for sensitive actions (eligibility override, AI Act registry write). This is why the diagram has two distinct subgraphs.
+
+### Cross-border claim mapping
+
+When Anna initiates a residency transfer DK → SE, the SPA does **not** ask her to sign in to SE. Instead, the cross-border Logic App takes Anna's DK access token, mints a **signed claims-only token** (Key Vault), posts it to the SE-side Logic App, which then writes the case into the SE Dataverse environment. No DK PII crosses the border — only the signed claims (`citizenPidHash`, `intent`, `destinationAddress`, `eligibilityVerdict`, `traceId`).
+
+- **Per-country IdP wiring** is documented in [`governance/identity/identity-providers.md`](../../governance/identity/identity-providers.md) (MitID for DK, BankID for SE, BankID Norge for NO).
 - **EUDI Wallet readiness** (eIDAS-2, Reg. (EU) 2024/1183) is captured in [`governance/identity/eudi-wallet-readiness.md`](../../governance/identity/eudi-wallet-readiness.md): the platform accepts OpenID4VP `vp_token` once member-state wallets land, with no back-end code change.
 
 ---
