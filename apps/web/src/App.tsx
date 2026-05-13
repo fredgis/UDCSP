@@ -1,11 +1,13 @@
 import { FluentProvider, webLightTheme } from '@fluentui/react-components';
-import { MsalProvider } from '@azure/msal-react';
+import { MsalProvider, useIsAuthenticated } from '@azure/msal-react';
 import { IntlProvider } from 'react-intl';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { msalInstance } from './auth/msalConfig';
 import { AuthGate } from './auth/AuthGate';
 import { AccessibilityMenu } from './components/AccessibilityMenu';
+import { ChatLauncher } from './components/ChatLauncher';
 import { CookieBanner } from './components/CookieBanner';
+import { CountryFlags } from './components/CountryFlags';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { SkipNav } from './components/SkipNav';
 import { UserBadge } from './components/UserBadge';
@@ -22,6 +24,23 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutCallbackPage } from './pages/LogoutCallbackPage';
 import { MyCasesPage } from './pages/MyCasesPage';
+
+function HeaderTools({
+  locale,
+  onLocaleChange,
+}: {
+  locale: SupportedLanguage;
+  onLocaleChange: (l: SupportedLanguage) => void;
+}) {
+  const isAuth = useIsAuthenticated();
+  return (
+    <div className="header-tools">
+      <CountryFlags disabled={isAuth} />
+      <LanguageSwitcher value={locale} onChange={onLocaleChange} />
+      <UserBadge />
+    </div>
+  );
+}
 
 export function App({ locale, messages, onLocaleChange }: { locale: SupportedLanguage; messages: Record<string, string>; onLocaleChange: (l: SupportedLanguage) => void }) {
   return (
@@ -43,10 +62,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Link to="/consent">Consent</Link>
                 <Link to="/accessibility">Accessibility</Link>
               </nav>
-              <div className="header-tools">
-                <LanguageSwitcher value={locale} onChange={onLocaleChange} />
-                <UserBadge />
-              </div>
+              <HeaderTools locale={locale} onLocaleChange={onLocaleChange} />
             </header>
             <main id="main-content" tabIndex={-1}>
               <Routes>
@@ -64,6 +80,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/demo/:id" element={<DemoScenarioPage />} />
               </Routes>
             </main>
+            <ChatLauncher locale={locale} />
             <footer className="site-footer">
               <div className="site-footer__inner">
                 <div className="site-footer__brand">
