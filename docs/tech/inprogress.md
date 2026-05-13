@@ -30,6 +30,22 @@ Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 2. **D3 DK auth path**: pick Danmark → Sign in / Create account → CIAM hosted page on `udcspdk.ciamlogin.com` → return to portal authenticated.
 3. Multi-tenant gating: ✓/⚠ markers per country card on `/login` show governance posture.
 
+## How to test D3 end-to-end on the portal
+
+1. Open https://icy-dune-01c23d903.7.azurestaticapps.net in an **InPrivate / Incognito** window (forces a fresh token).
+2. On `/login`, click the **Danmark 🇩🇰** card → **Create account** (first run) or **Sign in**.
+3. You land on `udcspdk.ciamlogin.com` hosted page → sign up with any email + OTP, or sign in with an existing local user. Accept the consent prompt the first time.
+4. You're redirected to the portal authenticated. Header shows `Hi {firstName} 🇩🇰`.
+5. Go to **Apply for Child Benefit** (or `/apply/child-benefit`). Fill the form (child name, DOB, etc.) and **Submit**.
+   - Expect a green confirmation toast with a `caseId` (`UDCSP-DK-…`).
+6. Open **My cases** (`/my-cases`). The new case appears in the list with status **Open** within ~10 s.
+7. (Optional verification — Azure portal)
+   - **Logic App** `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ Succeeded, all 3 Foundry agent actions green, `Create_D365_case` returns 204.
+   - **Dataverse** `https://org939d8f07.crm4.dynamics.com` → *Advanced find* on **Tasks** filtered by `Subject begins with [UDCSP-` → new row present.
+
+If step 5 returns 401 → token expired, sign out + sign in again.
+If step 6 is empty → check APIM trace on `GET /case-management` for the Dataverse error.
+
 ## Unblock backlog (in suggested order)
 
 1. **APIM**
