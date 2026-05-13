@@ -1,0 +1,84 @@
+<policies>
+  <inbound>
+    <base />
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>{{portal-origin}}</origin>
+        <origin>http://localhost:5173</origin>
+      </allowed-origins>
+      <allowed-methods><method>POST</method><method>OPTIONS</method></allowed-methods>
+      <allowed-headers><header>*</header></allowed-headers>
+    </cors>
+    <rate-limit-by-key calls="60" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+    <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+    <return-response>
+      <set-status code="200" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+        var b = (JObject)context.Variables["reqBody"];
+        var filename = (string)(b["filename"] ?? "upload.bin");
+        var contentType = (string)(b["contentType"] ?? "application/octet-stream");
+        var safeName = System.Text.RegularExpressions.Regex.Replace(filename, "[^A-Za-z0-9._-]", "_");
+        var blobName = DateTime.UtcNow.ToString("yyyyMMdd") + "/" + Guid.NewGuid().ToString("N") + "_" + safeName;
+        var account = "{{storage-account-name}}";
+        var key = "{{storage-account-key}}";
+        var container = "citizen-uploads";
+        var startTime = DateTime.UtcNow.AddMinutes(-5).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var expiryTime = DateTime.UtcNow.AddMinutes(15).ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var permissions = "cw";
+        var resource = "b";
+        var canonicalizedResource = "/blob/" + account + "/" + container + "/" + blobName;
+        var signedVersion = "2021-06-08";
+        var signedProtocol = "https";
+        var stringToSign = string.Join("\n", new string[] {
+          permissions,
+          startTime,
+          expiryTime,
+          canonicalizedResource,
+          "",
+          "",
+          "",
+          signedProtocol,
+          signedVersion,
+          resource,
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        });
+        var hmac = new System.Security.Cryptography.HMACSHA256(System.Convert.FromBase64String(key));
+        var sig = System.Convert.ToBase64String(hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(stringToSign)));
+        var sas = "sv=" + signedVersion +
+          "&amp;st=" + System.Uri.EscapeDataString(startTime) +
+          "&amp;se=" + System.Uri.EscapeDataString(expiryTime) +
+          "&amp;sr=" + resource +
+          "&amp;sp=" + permissions +
+          "&amp;spr=" + signedProtocol +
+          "&amp;sig=" + System.Uri.EscapeDataString(sig);
+        var blobUrl = "https://" + account + ".blob.core.windows.net/" + container + "/" + blobName;
+        var uploadUrl = blobUrl + "?" + sas;
+        return new JObject(
+          new JProperty("uploadUrl", uploadUrl),
+          new JProperty("blobUrl", blobUrl),
+          new JProperty("blobName", blobName),
+          new JProperty("container", container),
+          new JProperty("contentType", contentType),
+          new JProperty("expiresAt", expiryTime),
+          new JProperty("storageAccount", account)
+        ).ToString();
+      }</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error>
+    <base />
+    <return-response>
+      <set-status code="500" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@(new JObject(new JProperty("error", "internal_error"), new JProperty("message", context.LastError?.Message ?? "unknown")).ToString())</set-body>
+    </return-response>
+  </on-error>
+</policies>

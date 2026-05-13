@@ -1,0 +1,65 @@
+<policies>
+  <inbound>
+    <base />
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>{{portal-origin}}</origin>
+        <origin>http://localhost:5173</origin>
+      </allowed-origins>
+      <allowed-methods><method>POST</method><method>OPTIONS</method></allowed-methods>
+      <allowed-headers><header>*</header></allowed-headers>
+    </cors>
+    <rate-limit-by-key calls="60" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+    <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+    <set-variable name="blobName" value="@(DateTime.UtcNow.ToString(&quot;yyyyMMdd&quot;) + &quot;/&quot; + Guid.NewGuid().ToString(&quot;N&quot;) + &quot;_&quot; + System.Text.RegularExpressions.Regex.Replace((string)((JObject)context.Variables[&quot;reqBody&quot;])[&quot;filename&quot;] ?? &quot;upload.bin&quot;, &quot;[^A-Za-z0-9._-]&quot;, &quot;_&quot;))" />
+    <authentication-managed-identity resource="https://storage.azure.com/" output-token-variable-name="storageToken" ignore-error="false" />
+    <send-request mode="new" response-variable-name="putResp" timeout="60" ignore-error="true">
+      <set-url>@("https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/" + (string)context.Variables["blobName"])</set-url>
+      <set-method>PUT</set-method>
+      <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["storageToken"])</value></set-header>
+      <set-header name="x-ms-version" exists-action="override"><value>2021-12-02</value></set-header>
+      <set-header name="x-ms-blob-type" exists-action="override"><value>BlockBlob</value></set-header>
+      <set-header name="x-ms-blob-content-type" exists-action="override"><value>@{
+        var b = (JObject)context.Variables["reqBody"];
+        return (string)(b["contentType"] ?? "application/octet-stream");
+      }</value></set-header>
+      <set-header name="x-ms-meta-citizen" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Authorization","")?.Length.ToString() ?? "0")</value></set-header>
+      <set-body>@{
+        var b = (JObject)context.Variables["reqBody"];
+        var b64 = (string)(b["contentBase64"] ?? "");
+        return System.Convert.FromBase64String(b64);
+      }</set-body>
+    </send-request>
+    <return-response>
+      <set-status code="200" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+        var pr = (IResponse)context.Variables["putResp"];
+        var status = (int)pr.StatusCode;
+        var blob = (string)context.Variables["blobName"];
+        var url = "https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/" + blob;
+        if (status &gt;= 400) {
+          var raw = pr.Body.As&lt;string&gt;(preserveContent: true);
+          return new JObject(new JProperty("error", "upload_failed"), new JProperty("status", status), new JProperty("raw", raw)).ToString();
+        }
+        return new JObject(
+          new JProperty("blobUrl", url),
+          new JProperty("blobName", blob),
+          new JProperty("container", "citizen-uploads"),
+          new JProperty("storageAccount", "{{storage-account-name}}"),
+          new JProperty("status", status)
+        ).ToString();
+      }</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error>
+    <base />
+    <return-response>
+      <set-status code="500" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@(new JObject(new JProperty("error", "internal_error"), new JProperty("message", context.LastError?.Message ?? "unknown")).ToString())</set-body>
+    </return-response>
+  </on-error>
+</policies>

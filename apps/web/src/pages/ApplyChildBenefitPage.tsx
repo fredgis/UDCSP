@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
+import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
 
 type SubmitResult = {
   correlationId?: string;
@@ -57,6 +58,9 @@ export function ApplyChildBenefitPage() {
   const [docBusy, setDocBusy] = useState(false);
   const [extracted, setExtracted] = useState<ExtractResult | null>(null);
   const [extractError, setExtractError] = useState<string | null>(null);
+  const [docBlobUrl, setDocBlobUrl] = useState<string | null>(null);
+  const [docBlobName, setDocBlobName] = useState<string | null>(null);
+  const [docStorageAccount, setDocStorageAccount] = useState<string | null>(null);
 
   // Pre-fill the parent name from the citizen's signed-in identity claims.
   const [parentName, setParentName] = useState('');
@@ -71,26 +75,27 @@ export function ApplyChildBenefitPage() {
     setDocBusy(true);
     setExtractError(null);
     setExtracted(null);
+    setDocBlobUrl(null);
+    setDocBlobName(null);
+    setDocStorageAccount(null);
     try {
-      // Read up to ~1.5 MB of the file as base64 — anything larger is
-      // rejected with a friendly message (the demo doesn't need to ship
-      // a streaming uploader).
-      if (file.size > 1.5 * 1024 * 1024) {
-        throw new Error('File is too large for this demo (max 1.5 MB).');
-      }
-      const b64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-        reader.onerror = () => reject(new Error('Could not read the file.'));
-        reader.readAsDataURL(file);
-      });
+      // 1) Persist the document to the citizen's country Storage account
+      //    (DK→udcspdkprodlake, SE→udcspseprodlake, NO→udcspnoprodlake) via
+      //    APIM MI proxy. The blob URL is stored alongside the case so the
+      //    binary survives the session — needed for caseworker review.
+      const upload = await uploadDocument(file);
+      setDocBlobUrl(upload.blobUrl);
+      setDocBlobName(upload.blobName);
+      setDocStorageAccount(upload.storageAccount);
+      // 2) Extract structured fields by calling Foundry doc-extractor through APIM
+      const b64 = await readFileAsBase64(file);
       const r = await apiFetch<ExtractResult>('/agent-doc-extractor/extract', {
         method: 'POST',
         body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream', contentBase64: b64 }),
       });
       setExtracted(r);
     } catch (err) {
-      setExtractError(err instanceof Error ? err.message : 'Extraction failed.');
+      setExtractError(err instanceof Error ? err.message : 'Document handling failed.');
     } finally {
       setDocBusy(false);
     }
@@ -104,6 +109,9 @@ export function ApplyChildBenefitPage() {
     const payload: Record<string, unknown> = Object.fromEntries(fd);
     if (extracted?.fields) payload.extractedFields = extracted.fields;
     if (docName) payload.attachedDocument = docName;
+    if (docBlobUrl) payload.documentBlobUrl = docBlobUrl;
+    if (docBlobName) payload.documentBlobName = docBlobName;
+    if (docStorageAccount) payload.storageAccount = docStorageAccount;
     payload.applicationType = 'child-benefit';
     payload.country = country;
     if (acc?.username) payload.citizenUpn = acc.username;
@@ -129,6 +137,18 @@ export function ApplyChildBenefitPage() {
         confidence: r.confidence,
         estimatedDecisionDate,
         extractedFields: extracted?.fields,
+        documentBlobUrl: docBlobUrl ?? undefined,
+        documentBlobName: docBlobName ?? undefined,
+        storageAccount: docStorageAccount ?? undefined,
+        workflowSteps: [
+          { name: 'intake', label: 'Application received via APIM', status: 'done', at: new Date().toISOString() },
+          { name: 'classifier', label: 'Foundry Classifier agent', status: 'done', detail: 'Routed to child-benefit queue' },
+          { name: 'extractor', label: 'Document Extractor agent', status: docBlobUrl ? 'done' : 'skipped', detail: docName ?? 'no document' },
+          { name: 'eligibility', label: 'Eligibility Pre-Assessor', status: 'done', detail: typeof r.confidence === 'number' ? `confidence ${(r.confidence*100).toFixed(0)}%` : (decision ?? '—') },
+          { name: 'd365', label: 'D365 case created', status: 'done', detail: r.caseId ?? r.correlationId ?? '—' },
+          { name: 'lineage', label: 'Lineage published (Purview)', status: 'done' },
+          { name: 'review', label: 'Caseworker review', status: 'in-progress', detail: estimatedDecisionDate ? `ETA ${estimatedDecisionDate}` : undefined },
+        ],
       });
       // Bring focus to the result card so screen-reader users hear the outcome.
       window.requestAnimationFrame(() => {
