@@ -150,11 +150,11 @@
   box-shadow:0 0 0 4px rgba(22,163,74,.2);
 }
 .chat-log {
-  list-style:none; padding:0; margin:0;
-  min-height: 9rem; max-height: 18rem; overflow-y:auto;
+  list-style:none; padding:.25rem; margin:0;
+  min-height: 9rem; max-height: 18rem; overflow-y:auto; overflow-x: hidden;
   display:flex; flex-direction:column; gap:.55rem;
 }
-.chat-msg { padding:.6rem .85rem; border-radius:var(--radius-md); max-width:88%; line-height:1.45; font-size:.95rem; }
+.chat-msg { padding:.6rem .85rem; border-radius:var(--radius-md); max-width:92%; min-width:0; line-height:1.45; font-size:.95rem; overflow-wrap: anywhere; word-break: break-word; box-sizing: border-box; }
 .chat-msg--user { align-self:flex-end; background:var(--color-primary); color:#fff; }
 .chat-msg--user strong { color:rgba(255,255,255,.85); }
 .chat-msg--assistant { align-self:flex-start; background:var(--color-surface-alt); color:var(--color-fg); }
@@ -617,13 +617,15 @@
 }
 .apply-grid__wide { grid-column: 1 / -1; }
 
-.field { display: flex; flex-direction: column; gap: .4rem; }
+.field { display: flex; flex-direction: column; gap: .4rem; align-self: stretch; }
 .field > span {
   font-size: .78rem;
   font-weight: 600;
   color: var(--color-fg-soft);
   text-transform: uppercase;
   letter-spacing: .06em;
+  min-height: 1.1rem;
+  line-height: 1.1rem;
 }
 .field input, .field select, .field textarea {
   padding: .7rem .85rem;

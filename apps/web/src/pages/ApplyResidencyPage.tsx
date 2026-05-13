@@ -118,7 +118,7 @@ export function ApplyResidencyPage() {
                 <input type="date" value={form.moveDate} onChange={(e) => upd('moveDate', e.target.value)} required />
               </label>
               <label className="field">
-                <span>Number of dependents moving with you</span>
+                <span>Dependents moving with you</span>
                 <input type="number" min={0} max={10} value={form.dependents} onChange={(e) => upd('dependents', Number(e.target.value))} />
               </label>
               <label className="field">
