@@ -176,6 +176,34 @@ function Install-Apim {
                             -ContinueOnError
                     }
                 }
+                # Per-operation policies — convention: services/apim/apis/<api>/operations/<operationId>.xml
+                # Each file is PUT to .../apis/<api>/operations/<operationId>/policies/policy. Used today
+                # for the MI-proxy `post-documents-upload-url` and the Priva-stub `post-gdpr-erasure-request`.
+                $opsDir = Join-Path $a.FullName 'operations'
+                if (Test-Path $opsDir) {
+                    foreach ($opFile in (Get-ChildItem $opsDir -Filter '*.xml' -ErrorAction SilentlyContinue)) {
+                        $opId = $opFile.BaseName
+                        if ($PSCmdlet.ShouldProcess("op-policy@$opId@$($a.Name)@$apimName", 'az rest PUT operation policy')) {
+                            $opXml = Get-Content $opFile.FullName -Raw
+                            $opBody = [ordered]@{
+                                properties = [ordered]@{
+                                    format = 'rawxml'
+                                    value  = $opXml
+                                }
+                            }
+                            $opBodyFile = Join-Path $ReportDir "apim-oppolicy-$($country.ToLower())-$($a.Name)-$opId.json"
+                            $opBody | ConvertTo-Json -Depth 6 | Set-Content $opBodyFile -Encoding utf8
+                            $opUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/apis/$($a.Name)/operations/$opId/policies/policy?api-version=2022-08-01"
+                            $opSink = Join-Path $ReportDir "apim-oppolicy-$($country.ToLower())-$($a.Name)-$opId.resp"
+                            Invoke-NativeCommand `
+                                -Command @('az','rest','--method','PUT','--url',$opUrl,'--body',"@$opBodyFile",
+                                           '--only-show-errors','--output-file',$opSink) `
+                                -LogFile $logFile `
+                                -WhatIfFlag $whatIf `
+                                -ContinueOnError
+                        }
+                    }
+                }
             }
         }
         # Defender for APIs onboarding: register all imported APIs as Microsoft.Security/apiCollections.
@@ -202,6 +230,48 @@ function Install-Apim {
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
             }
+        }
+
+        # D3 document-upload wiring — APIM MI proxy onto the country lake.
+        # Bicep provisions storage with publicNetworkAccess=Disabled (production-correct).
+        # For dev/test we flip it to Enabled with Allow + AzureServices bypass so APIM
+        # (without Premium VNet integration) can reach the blob endpoint over the MI auth path.
+        # In prod, leave PNA Disabled and front the storage with a private endpoint reachable
+        # from the APIM Premium VNet — same MI grant, same operation policy.
+        $envMode = if ($Config.ContainsKey('Environment')) { [string]$Config.Environment } else { 'dev' }
+        $lakeRg = "udcsp-$($country.ToLower())-storage-rg"
+        $lakeName = "udcsp$($country.ToLower())prodlake"
+        $lakeId = az storage account show --subscription $sub -n $lakeName -g $lakeRg --query id -o tsv 2>$null
+        if ($lakeId) {
+            if ($envMode -ne 'prod') {
+                if ($PSCmdlet.ShouldProcess("$lakeName PNA=Enabled", 'az storage account update')) {
+                    Invoke-NativeCommand `
+                        -Command @('az','storage','account','update','--subscription',$sub,'-n',$lakeName,'-g',$lakeRg,
+                                   '--public-network-access','Enabled','--default-action','Allow','--bypass','AzureServices',
+                                   '--only-show-errors','--output','none') `
+                        -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                }
+            }
+            $apimMi = az resource show --subscription $sub --ids "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName" --query identity.principalId -o tsv 2>$null
+            if ($apimMi) {
+                if ($PSCmdlet.ShouldProcess("$lakeName Storage Blob Data Contributor → $apimMi", 'az role assignment create')) {
+                    Invoke-NativeCommand `
+                        -Command @('az','role','assignment','create','--subscription',$sub,
+                                   '--assignee-object-id',$apimMi,'--assignee-principal-type','ServicePrincipal',
+                                   '--role','Storage Blob Data Contributor','--scope',$lakeId,
+                                   '--only-show-errors','--output','none') `
+                        -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                }
+            }
+            if ($PSCmdlet.ShouldProcess("$lakeName/citizen-uploads", 'az storage container create')) {
+                Invoke-NativeCommand `
+                    -Command @('az','storage','container','create','--subscription',$sub,
+                               '--account-name',$lakeName,'-n','citizen-uploads','--auth-mode','login',
+                               '--only-show-errors','--output','none') `
+                    -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+            }
+        } else {
+            Write-Host "    ↳ skip D3 lake wiring for $country (storage account $lakeName not found yet — re-run Install-Apim after LandingZone)"
         }
     }
 }

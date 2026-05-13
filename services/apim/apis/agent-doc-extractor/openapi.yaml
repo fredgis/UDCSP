@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Document Extractor Agent (Foundry)
+  version: 1.0.0
+  description: |
+    Synchronous wrapper over the Foundry `udcsp-doc-extractor` agent. APIM
+    authenticates to Foundry with its system-assigned managed identity
+    (`audience=https://ai.azure.com`). Used by the SPA after a citizen drops
+    a payslip or lease so the form can be pre-filled with confirmable values.
+servers:
+  - url: https://{gateway-host}/agent-doc-extractor
+paths:
+  /extract:
+    post:
+      summary: Extract structured fields from a citizen-uploaded document
+      operationId: post-agent-doc-extractor-extract
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blobUrl]
+              properties:
+                blobUrl:     { type: string, format: uri }
+                documentKind:{ type: string, enum: [payslip, lease, id, other] }
+                language:    { type: string, example: en }
+      responses:
+        '200':
+          description: Extraction result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:     { type: object, additionalProperties: true }
+                  confidence: { type: number, format: float }
+                  reasoning:  { type: string }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
