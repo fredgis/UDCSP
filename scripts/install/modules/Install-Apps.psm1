@@ -39,7 +39,13 @@ function Install-Apps {
                 $swaLoc  = 'westeurope'
                 # Ensure subscription, RG, and SWA exist before deploy.
                 Invoke-NativeCommand -Command @('az','account','set','--subscription',$swaSub) -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
-                Invoke-NativeCommand -Command @('az','group','create','--name',$swaRg,'--location',$swaLoc,'--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                # Idempotent RG creation: skip if RG exists in any location to avoid 'InvalidResourceGroupLocation'.
+                $rgExists = (& az group exists --name $swaRg 2>$null) -eq 'true'
+                if (-not $rgExists) {
+                    Invoke-NativeCommand -Command @('az','group','create','--name',$swaRg,'--location',$swaLoc,'--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                } else {
+                    Write-Log -LogFile $logFile -Message "[skip] resource group $swaRg already exists, reusing."
+                }
                 Invoke-NativeCommand -Command @('az','staticwebapp','create','--name',$swaName,'--resource-group',$swaRg,'--location',$swaLoc,'--sku','Free','--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 $deployTokenRaw = & az staticwebapp secrets list --name $swaName --resource-group $swaRg --query 'properties.apiKey' -o tsv 2>$null
                 $deployToken = if ($deployTokenRaw) { ([string]$deployTokenRaw).Trim() } else { '' }
