@@ -315,7 +315,10 @@ function Invoke-AzGroupDeployment {
     <#
     .SYNOPSIS
         Idempotent resource-group-scope Bicep deployment. Ensures the RG
-        exists first.
+        exists first. With -NoWait, submits the deployment async and polls
+        ARM directly (avoids the long-running az CLI process zombieing on a
+        stdio pipe — observed on Purview accounts which take 30-60 min and
+        sometimes hung the az client at ~1 thread / 0 network forever).
     #>
     [CmdletBinding()]
     param(
@@ -329,7 +332,10 @@ function Invoke-AzGroupDeployment {
         [string]$DeploymentName,
         [hashtable]$Tags,
         [bool]$WhatIfFlag = $false,
-        [switch]$ContinueOnError
+        [switch]$ContinueOnError,
+        [switch]$NoWait,
+        [int]$PollTimeoutMinutes = 75,
+        [int]$PollIntervalSeconds = 30
     )
     if (-not (Test-Path $TemplateFile)) { throw "Template not found: $TemplateFile" }
     if (-not $DeploymentName) {
@@ -354,7 +360,36 @@ function Invoke-AzGroupDeployment {
             $args += "$k=$v"
         }
     }
+    if ($NoWait) { $args += '--no-wait' }
     Invoke-NativeCommand -Command (@('az') + $args) -LogFile $LogFile -WhatIfFlag $WhatIfFlag -ContinueOnError:$ContinueOnError
+    if ($NoWait -and -not $WhatIfFlag) {
+        $deadline = (Get-Date).AddMinutes($PollTimeoutMinutes)
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        Write-Host ("    ↳ polling deployment '{0}' (timeout {1} min, every {2}s) " -f $DeploymentName, $PollTimeoutMinutes, $PollIntervalSeconds) -NoNewline -ForegroundColor DarkGray
+        Write-Log -LogFile $LogFile -Message "[poll] waiting for $DeploymentName, timeout=$PollTimeoutMinutes min"
+        do {
+            Start-Sleep -Seconds $PollIntervalSeconds
+            $state = (& az deployment group show --subscription $Subscription --resource-group $ResourceGroup --name $DeploymentName --query 'properties.provisioningState' -o tsv 2>$null) | Select-Object -First 1
+            $state = if ($state) { [string]$state.Trim() } else { '' }
+            Write-Host '.' -NoNewline -ForegroundColor DarkGray
+            if ($state -in @('Succeeded','Failed','Canceled')) { break }
+        } while ((Get-Date) -lt $deadline)
+        $sw.Stop()
+        $secs = [Math]::Round($sw.Elapsed.TotalSeconds, 0)
+        if ($state -eq 'Succeeded') {
+            Write-Host (" ✓ {0}s" -f $secs) -ForegroundColor Green
+            Write-Log -LogFile $LogFile -Message "[poll] $DeploymentName Succeeded in $secs s"
+        } elseif ($state -in @('Failed','Canceled')) {
+            $err = & az deployment group show --subscription $Subscription --resource-group $ResourceGroup --name $DeploymentName --query 'properties.error' -o json 2>$null
+            Write-Host (" ✗ {0} after {1}s" -f $state, $secs) -ForegroundColor Red
+            Write-Log -LogFile $LogFile -Message "[poll] $DeploymentName $state in $secs s : $err"
+            if (-not $ContinueOnError) { throw "Deployment $DeploymentName $state : $err" }
+        } else {
+            Write-Host (" ✗ timeout (state={0}) after {1}s" -f $state, $secs) -ForegroundColor Red
+            Write-Log -LogFile $LogFile -Message "[poll] $DeploymentName timed out after $secs s, last state=$state"
+            if (-not $ContinueOnError) { throw "Deployment $DeploymentName timed out after $PollTimeoutMinutes min (last state=$state)" }
+        }
+    }
 }
 
 function Invoke-MgGraphIfReady {
