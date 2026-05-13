@@ -55,8 +55,8 @@ export function ApplyTaxCertPage() {
   return (
     <section aria-labelledby="tax-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country">
-          <span aria-hidden="true">{flag}</span> {country.toUpperCase()} — {COUNTRY_LABEL[country]}
+        <span className="apply-page__country" aria-label={`Filing in ${COUNTRY_LABEL[country]}`}>
+          <span aria-hidden="true">{flag}</span> Filing in {COUNTRY_LABEL[country]}
         </span>
         <h1 id="tax-title">Tax residency certificate</h1>
         <p>
