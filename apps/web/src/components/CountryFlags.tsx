@@ -30,7 +30,7 @@ export function CountryFlags({ disabled = false }: { disabled?: boolean }) {
 
   return (
     <div
-      className="country-flags"
+      className={`country-flags${disabled ? ' country-flags--locked' : ''}`}
       role="radiogroup"
       aria-label="Choose country"
       title={disabled ? 'Country is locked to your signed-in tenant' : 'Switch country (resets context)'}
@@ -41,12 +41,13 @@ export function CountryFlags({ disabled = false }: { disabled?: boolean }) {
           type="button"
           role="radio"
           aria-checked={active === c.code}
-          aria-label={c.label}
-          className={`country-flags__btn${active === c.code ? ' country-flags__btn--active' : ''}`}
+          aria-label={`${c.label}${disabled && active === c.code ? ' (signed in)' : ''}`}
+          className={`country-flags__btn${active === c.code ? ' country-flags__btn--active' : ''}${disabled ? ' country-flags__btn--locked' : ''}`}
           disabled={disabled}
           onClick={() => pick(c.code)}
         >
-          <span aria-hidden="true">{c.flag}</span>
+          <span className="country-flags__flag" aria-hidden="true">{c.flag}</span>
+          <span className="country-flags__code">{c.code.toUpperCase()}</span>
         </button>
       ))}
     </div>
