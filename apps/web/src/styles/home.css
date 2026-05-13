@@ -926,3 +926,27 @@
 .consent-notice ul { margin:.4rem 0; padding-left:1.2rem; }
 .consent-notice li { margin:.15rem 0; }
 .chat-launcher__consent-hint { font-size:.72rem; color:var(--color-fg-soft); margin:0 0 .35rem; padding:0 .15rem; }
+
+/* ------ Subtle color/transparency pass (let the ambient mesh tint surfaces) ------ */
+.persona-card,
+.demo-card,
+.principle-card,
+.case-list li,
+.login-help,
+.login-fieldset,
+.apply-card,
+.cards li {
+  background: rgba(255,255,255,.72);
+  backdrop-filter: saturate(140%) blur(6px);
+  -webkit-backdrop-filter: saturate(140%) blur(6px);
+}
+.apply-page > header,
+.empty-state {
+  background: linear-gradient(135deg, rgba(255,255,255,.78), rgba(238,242,248,.6));
+  backdrop-filter: saturate(140%) blur(6px);
+  -webkit-backdrop-filter: saturate(140%) blur(6px);
+}
+.persona-card { border-left:4px solid rgba(10,77,140,.55); }
+.demo-card    { border-top:3px solid rgba(0,137,123,.45); }
+.principle-card { border-top:3px solid rgba(124,58,237,.4); }
+.principle-diagram { background: rgba(255,255,255,.7); backdrop-filter: saturate(140%) blur(6px); }
