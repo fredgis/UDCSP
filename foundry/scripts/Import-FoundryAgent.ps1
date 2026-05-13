@@ -4,8 +4,21 @@
 
 .DESCRIPTION
     Reads an agent.yaml + its referenced system-prompt.md, then upserts the
-    agent (assistant) in the target Foundry project via the Assistants v1
-    REST API. Idempotent: looks up the assistant by name, updates if found,
+    agent in the target Foundry project via the new **Foundry Agents API
+    (v1)** — NOT the legacy Assistants API. The new API uses Entra
+    authentication only (no API keys), identifies agents by name, and
+    auto-versions them on update.
+
+    REST contract:
+      - POST /api/projects/<project>/agents?api-version=v1
+            body: { name, description, definition: { kind, model,
+                    instructions, temperature, tools }, metadata }
+            -> creates agent at version "1"
+      - POST /api/projects/<project>/agents/<name>/versions?api-version=v1
+            body: { definition, description, metadata }
+            -> appends a new version when the agent already exists
+
+    Idempotent: looks up the agent by name; appends a version if found,
     creates otherwise.
 
     Tools listed in agent.yaml are registered as `function`-typed
@@ -93,7 +106,7 @@ if (-not $ProjectName) {
 Write-Host "  ↳ Foundry project: $ProjectName" -ForegroundColor DarkGray
 
 $projectBase = "$accountEndpoint/api/projects/$ProjectName"
-$apiVersion = '2025-05-15-preview'
+$apiVersion = 'v1'
 
 # --- Acquire token -------------------------------------------------------------
 $token = az account get-access-token --resource 'https://ai.azure.com' --query accessToken -o tsv
@@ -103,18 +116,16 @@ $headers = @{
     'Content-Type' = 'application/json'
 }
 
-# --- Build assistant body ------------------------------------------------------
+# --- Build agent definition ----------------------------------------------------
 $tools = @()
 if ($agent.tools) {
     foreach ($t in $agent.tools) {
         $toolName = if ($t -is [hashtable]) { $t.Keys | Select-Object -First 1 } else { [string]$t }
         $tools += @{
-            type     = 'function'
-            function = @{
-                name        = ($toolName -replace '[^a-zA-Z0-9_-]', '_')
-                description = "UDCSP tool placeholder for '$toolName' (real wiring in APIM/Logic Apps)"
-                parameters  = @{ type = 'object'; properties = @{} }
-            }
+            type        = 'function'
+            name        = ($toolName -replace '[^a-zA-Z0-9_-]', '_')
+            description = "UDCSP tool placeholder for '$toolName' (real wiring in APIM/Logic Apps)"
+            parameters  = @{ type = 'object'; properties = @{} }
         }
     }
 }
@@ -127,44 +138,57 @@ $metadata = @{
     udcsp_sla          = [string]$agent.sla
 }
 
-$body = @{
-    name         = [string]$agent.name
-    description  = [string]$agent.description
+$definition = @{
+    kind         = 'prompt'
     model        = [string]$agent.model
     instructions = $instructions
-    tools        = $tools
     temperature  = if ($null -ne $agent.temperature) { [double]$agent.temperature } else { 0.7 }
-    metadata     = $metadata
+}
+if ($tools.Count -gt 0) { $definition.tools = $tools }
+
+# --- Idempotent upsert (new agents API) ----------------------------------------
+$agentName = [string]$agent.name
+$getUrl = "$projectBase/agents/$agentName`?api-version=$apiVersion"
+$exists = $false
+try {
+    $existing = Invoke-RestMethod -Uri $getUrl -Method Get -Headers $headers
+    if ($existing) { $exists = $true }
+} catch {
+    if ($_.Exception.Response.StatusCode.value__ -ne 404) {
+        Write-Warning "GET agent failed at $getUrl : $($_.Exception.Message)"
+    }
+}
+
+if ($exists) {
+    $url = "$projectBase/agents/$agentName/versions?api-version=$apiVersion"
+    $body = @{
+        definition  = $definition
+        description = [string]$agent.description
+        metadata    = $metadata
+    }
+    $action = "append new version to agent '$agentName'"
+} else {
+    $url = "$projectBase/agents`?api-version=$apiVersion"
+    $body = @{
+        name        = $agentName
+        description = [string]$agent.description
+        definition  = $definition
+        metadata    = $metadata
+    }
+    $action = "create agent '$agentName'"
 }
 
 $bodyJson = $body | ConvertTo-Json -Depth 12 -Compress
 
-# --- Idempotent upsert ---------------------------------------------------------
-$listUrl = "$projectBase/assistants?api-version=$apiVersion&limit=100"
-$existing = $null
-try {
-    $listResp = Invoke-RestMethod -Uri $listUrl -Method Get -Headers $headers
-    $existing = $listResp.data | Where-Object { $_.name -eq $agent.name } | Select-Object -First 1
-} catch {
-    Write-Warning "List assistants failed at $listUrl : $($_.Exception.Message)"
-}
-
-if ($existing) {
-    $url = "$projectBase/assistants/$($existing.id)?api-version=$apiVersion"
-    $action = "update assistant '$($agent.name)' (id=$($existing.id))"
-} else {
-    $url = "$projectBase/assistants?api-version=$apiVersion"
-    $action = "create assistant '$($agent.name)'"
-}
-
 if ($PSCmdlet.ShouldProcess($url, $action)) {
     try {
         $resp = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -Body $bodyJson
-        Write-Host "  ✓ Foundry $action -> id=$($resp.id)" -ForegroundColor Green
+        $idOut = if ($resp.versions.latest.id) { $resp.versions.latest.id } elseif ($resp.id) { $resp.id } else { '<unknown>' }
+        Write-Host "  ✓ Foundry $action -> $idOut" -ForegroundColor Green
     } catch {
         $err = $_.Exception.Message
         $detail = ''
         if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $detail = $_.ErrorDetails.Message }
-        throw "Foundry assistant upsert failed for '$($agent.name)': $err`n$detail"
+        throw "Foundry agent upsert failed for '$agentName': $err`n$detail"
     }
 }

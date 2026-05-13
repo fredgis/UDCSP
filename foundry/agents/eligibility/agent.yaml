@@ -1,6 +1,6 @@
 name: udcsp-eligibility
 description: High-risk residency, tax and benefit pre-assessment that recommends, never decides, with deterministic rule checks.
-model: gpt-5.5
+model: gpt-5.4
 systemPromptFile: system-prompt.md
 tools:
   - deterministic-rules-engine
