@@ -6,41 +6,81 @@
         <origin>{{portal-origin}}</origin>
         <origin>http://localhost:5173</origin>
       </allowed-origins>
-      <allowed-methods><method>POST</method><method>GET</method><method>OPTIONS</method></allowed-methods>
+      <allowed-methods><method>POST</method><method>OPTIONS</method></allowed-methods>
       <allowed-headers><header>*</header></allowed-headers>
       <expose-headers><header>x-correlation-id</header></expose-headers>
     </cors>
     <set-variable name="correlationId" value="@(Guid.NewGuid().ToString())" />
     <rate-limit-by-key calls="120" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
-    <set-method>POST</set-method>
-    <rewrite-uri template="/openai/v1/responses" />
-    <set-backend-service base-url="{{foundry-project-base}}" />
-    <authentication-managed-identity resource="https://ai.azure.com" />
-    <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
-    <set-body>@{
-      var src = context.Request.Body.As&lt;JObject&gt;(preserveContent: false);
-      var text = (string)(src["text"] ?? "");
-      var locale = (string)(src["locale"] ?? "en");
-      var input = "[locale=" + locale + "] " + text;
-      var payload = new JObject(
-        new JProperty("model", "gpt-5.4"),
-        new JProperty("agent", new JObject(new JProperty("name", "topic-router"))),
-        new JProperty("input", input)
-      );
-      return payload.ToString();
-    }</set-body>
+    <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+    <authentication-managed-identity resource="https://ai.azure.com" output-token-variable-name="aiToken" ignore-error="false" />
+    <send-request mode="new" response-variable-name="foundryResp" timeout="60" ignore-error="true">
+      <set-url>{{foundry-project-base}}/openai/v1/responses</set-url>
+      <set-method>POST</set-method>
+      <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["aiToken"])</value></set-header>
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+        var b = (JObject)context.Variables["reqBody"];
+        var text = (string)(b["text"] ?? "");
+        var locale = (string)(b["locale"] ?? "en");
+        var session = (string)(b["sessionId"] ?? "");
+        var channel = (string)(b["channel"] ?? "web");
+        var input = "[locale=" + locale + "][channel=" + channel + "][session=" + session + "] " + text;
+        var payload = new JObject(
+          new JProperty("model", "gpt-5.4"),
+          new JProperty("agent_reference", new JObject(new JProperty("type","agent_reference"), new JProperty("name","udcsp-citizen-assistant"))),
+          new JProperty("input", input),
+          new JProperty("tool_choice", "none")
+        );
+        return payload.ToString();
+      }</set-body>
+    </send-request>
+    <return-response>
+      <set-status code="200" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
+      <set-body>@{
+        var fr = (IResponse)context.Variables["foundryResp"];
+        var status = (int)fr.StatusCode;
+        if (status >= 400) {
+          var errRaw = fr.Body.As&lt;string&gt;(preserveContent: true);
+          return new JObject(new JProperty("reply", "Sorry, I am having trouble reaching the assistant."), new JProperty("error_status", status), new JProperty("error_raw", errRaw)).ToString();
+        }
+        var jo = fr.Body.As&lt;JObject&gt;(preserveContent: true);
+        var reply = "";
+        var output = jo["output"] as JArray;
+        if (output != null) {
+          foreach (var item in output) {
+            var itemType = (string)item["type"];
+            if (itemType != "message") { continue; }
+            var content = item["content"] as JArray;
+            if (content != null) {
+              foreach (var c in content) {
+                var t = (string)c["text"];
+                if (!string.IsNullOrEmpty(t)) { reply += t; }
+              }
+            }
+          }
+        }
+        var finalReply = reply;
+        try {
+          var parsed = JObject.Parse(reply);
+          var answer = (string)parsed["answer"];
+          if (!string.IsNullOrEmpty(answer)) { finalReply = answer; }
+        } catch (Exception) { }
+        if (string.IsNullOrEmpty(finalReply)) { finalReply = "I am sorry, I could not produce a useful answer. Please rephrase your question."; }
+        return new JObject(new JProperty("reply", finalReply), new JProperty("agent", "udcsp-citizen-assistant")).ToString();
+      }</set-body>
+    </return-response>
   </inbound>
   <backend><base /></backend>
-  <outbound>
-    <base />
-    <set-header name="x-correlation-id" exists-action="override">
-      <value>@((string)context.Variables["correlationId"])</value>
-    </set-header>
-  </outbound>
+  <outbound><base /></outbound>
   <on-error>
     <base />
-    <set-header name="x-correlation-id" exists-action="override">
-      <value>@(context.RequestId.ToString())</value>
-    </set-header>
+    <return-response>
+      <set-status code="500" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@(new JObject(new JProperty("reply", "Sorry, an internal error occurred."), new JProperty("error", context.LastError?.Message ?? "unknown")).ToString())</set-body>
+    </return-response>
   </on-error>
 </policies>
