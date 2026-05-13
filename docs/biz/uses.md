@@ -24,7 +24,7 @@
 5. [The 10 Scenarios](#the-10-scenarios)
    - [🌐 Demo 1 — Anna moves from Copenhagen to Stockholm (flagship)](#-demo-1--anna-moves-from-copenhagen-to-stockholm-flagship)
    - [🌐 Demo 2 — Lars asks the voice assistant about his tax refund (Norwegian)](#-demo-2--lars-asks-the-voice-assistant-about-his-tax-refund-norwegian)
-   - [🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Sweden)](#-demo-3--maria-submits-a-benefit-application-with-a-screen-reader-polish-in-sweden)
+   - [🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Denmark)](#-demo-3--maria-submits-a-benefit-application-with-a-screen-reader-polish-in-Denmark)
    - [🌐 Demo 4 — Erik snaps a payslip for an income-based benefit (Danish, mobile)](#-demo-4--erik-snaps-a-payslip-for-an-income-based-benefit-danish-mobile)
    - [🛠️ Demo 5 — Astrid the caseworker triages a queue with Copilot for Service](#%EF%B8%8F-demo-5--astrid-the-caseworker-triages-a-queue-with-copilot-for-service)
    - [🛠️ Demo 6 — Eligibility model proposes, caseworker disposes (human in the loop)](#%EF%B8%8F-demo-6--eligibility-model-proposes-caseworker-disposes-human-in-the-loop)
