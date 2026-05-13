@@ -1,13 +1,42 @@
 import { useCallback, useRef, useState } from 'react';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { generateTraceparent } from '../utils/traceparent';
-import { loginRequest } from '../auth/msalConfig';
+import { apiScopeForCountry, apimBaseUrlForCountry, getCountry } from '../auth/msalConfig';
 
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
+function extractReply(data: unknown): string {
+  if (!data || typeof data !== 'object') return '';
+  const d = data as Record<string, unknown>;
+  if (typeof d.reply === 'string') return d.reply;
+  if (typeof d.output_text === 'string') return d.output_text;
+  if (typeof d.response === 'string') return d.response;
+  // Foundry /openai/v1/responses shape: { output: [ { content: [ { text } ] } ] }
+  const output = d.output as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(output)) {
+    const parts: string[] = [];
+    for (const msg of output) {
+      const content = msg.content as Array<Record<string, unknown>> | undefined;
+      if (Array.isArray(content)) {
+        for (const c of content) {
+          const t = (c.text ?? c.output_text) as unknown;
+          if (typeof t === 'string') parts.push(t);
+          else if (t && typeof t === 'object' && 'value' in (t as Record<string, unknown>)) {
+            const v = (t as Record<string, unknown>).value;
+            if (typeof v === 'string') parts.push(v);
+          }
+        }
+      }
+    }
+    if (parts.length) return parts.join('');
+  }
+  return '';
+}
+
 export function ChatWidget({ channel = 'web', locale }: Props) {
-  const apimBase = (import.meta.env.VITE_APIM_BASE_URL as string) || '';
+  const country = getCountry();
+  const apimBase = apimBaseUrlForCountry(country);
   const sessionId = useRef<string>(crypto.randomUUID());
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
@@ -30,7 +59,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
 
     if (isAuth && accounts[0]) {
       try {
-        const tok = await instance.acquireTokenSilent({ ...loginRequest, account: accounts[0] });
+        const tok = await instance.acquireTokenSilent({ scopes: [apiScopeForCountry(country)], account: accounts[0] });
         if (tok.accessToken) headers.authorization = `Bearer ${tok.accessToken}`;
       } catch {
         // fall through anonymously — APIM may still allow
@@ -45,7 +74,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
         body: JSON.stringify({ sessionId: sessionId.current, channel, locale, text, authenticated: isAuth }),
       });
       const data = await res.json().catch(() => ({}));
-      const reply = typeof data?.reply === 'string' ? data.reply : '';
+      const reply = extractReply(data);
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: reply || 'Service temporarily unavailable.' }]);
     } catch {
       setMessages((prev) => [
@@ -55,7 +84,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
     } finally {
       setBusy(false);
     }
-  }, [accounts, apimBase, busy, channel, draft, instance, isAuth, locale]);
+  }, [accounts, apimBase, busy, channel, country, draft, instance, isAuth, locale]);
 
   const greeting = isAuth
     ? `Hi ${accounts[0]?.name?.split(' ')[0] || 'there'} — ask me about your applications, your case status, or how to start a new service.`
