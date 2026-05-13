@@ -4,7 +4,7 @@ Live state of every end-to-end demo against the deployed sandbox.
 Update one row at a time as we wire each demo.
 
 - **Web SWA** — https://icy-dune-01c23d903.7.azurestaticapps.net
-- **Last bundle deployed** — `D3-end-to-end` (Logic App MI → Foundry direct + Dataverse `tasks`; APIM POST /citizen-applications wired to LA; APIM GET /case-management → Dataverse with MI)
+- **Last bundle deployed** — `D3-SPA-rework + chat-wired` (functional forms with stepper / file upload / reasoning panel / consent toggles; Citizen Assistant wired to Foundry topic-router via APIM MI; country flags in header)
 
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
@@ -12,7 +12,7 @@ Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
 | #  | Demo                                  | State | What works today                                                                 | What blocks full E2E                                                                 |
 |----|---------------------------------------|:-----:|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| D1 | Citizen public chat                   | 🟡    | Widget renders, anonymous greeting, sends message                                 | APIM `agent-topic-router` backend = `placeholder.local`, no SWA CORS                 |
+| D1 | Citizen public chat                   | 🟢    | APIM `agent-topic-router` rewritten to call Foundry `/openai/v1/responses` with MI; CORS open for SWA + localhost. ChatLauncher (floating 💬) for authenticated users routes to per-country APIM. | Add SE + NO once their app reg + APIM exist. |
 | D2 | NO citizen sign-in                    | 🔴    | Country card shows ⚠                                                              | App reg on `udcspno.onmicrosoft.com` not created (no `VITE_EXTERNAL_ID_CLIENT_ID_NO`) |
 | D3 | DK citizen sign-up + sign-in          | 🟢    | Full chain: SPA sign-in → APIM `POST /citizen-applications` (JWT validated, UPN extracted from token) → Logic App `udcsp-dk-dev-application-intake` → 3 Foundry agents (classifier / eligibility / doc-extractor) via MI on `https://ai.azure.com` → Dataverse `tasks` row created via MI. Verified end-to-end 2026-05-13 (run `08584229100…`). | Production hardening: replace `task` entity with custom `gps_case` table; add error-handling for agent JSON; persist correlationId. |
 | D3-SE | SE citizen sign-in                  | 🔴    | Country card shows ⚠                                                              | App reg on `udcspse.onmicrosoft.com` not created                                      |
