@@ -355,6 +355,20 @@ flowchart LR
 - 💬 *"AI **assists**, never auto-submits. Maria is in control at every step. That is the EU AI Act in spirit and letter."*
 - 💬 *"Open the axe report — zero serious violations across all 18 portal screens."*
 
+#### 🧪 How to test Demo 3 with NVDA (10 min)
+
+NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader from NV Access. It speaks aloud what is on the screen and lets you navigate the page with the keyboard.
+
+1. **Install NVDA** — https://www.nvaccess.org/download/ (~40 MB, 1-min install). No restart needed.
+2. **Add the Polish voice** — NVDA menu (`Insert + N`) → *Preferences → Settings → Speech → Synthesizer = Windows OneCore voices → Voice = Polish (Paulina or Zofia)*. If the Polish voice isn't listed, install it once via *Windows Settings → Time & Language → Language → Add a language → Polish → Speech*.
+3. **Open the portal** — https://icy-dune-01c23d903.7.azurestaticapps.net.
+4. **Switch the UI to Polish** — language switcher in the top-right header → *"Polski"*.
+5. **Sign in as a Danish resident** — country card *Danmark* → *Sign in / Create account* → CIAM hosted page → return.
+6. **Run the apply flow** — `Tab` to *"Apply for child benefit"*, `Enter` → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse / focus mode.
+7. **What you should hear in Polish**: page title, every form label, the AI-disclosure banner, the document-extractor result card, the eligibility reasoning, the confirmation card and the case-reference number.
+8. **Verify the AI / data path** — Azure portal → Logic App `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ *Succeeded*; the new `Call_translator_to_caseworker_locale` step is green; `Create_D365_case` returns 204. Dataverse (`https://org939d8f07.crm4.dynamics.com`) → *Tasks* → new row with subject `[UDCSP-DK] …`.
+9. **Trigger the axe-core CI run** — push any change under `apps/web/**` (or run the workflow manually from the *Actions* tab → *web-axe* → *Run workflow*). Confirm 0 serious + 0 critical violations across `/`, `/login`, `/demos`, `/consent`.
+
 ---
 
 ### 🌐 Demo 4 — Erik snaps a payslip for an income-based benefit (Danish, mobile)
