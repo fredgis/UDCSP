@@ -21,9 +21,9 @@ This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 <details>
 <summary><h2>🟦 A — PREREQUISITES (do this once)</h2></summary>
 
-> Run the **A1 → A5** steps top-to-bottom on your workstation. Stop at the end of A5 — do **not** start the installer yet, that's section B.
+> Run the **A1 → A6** steps top-to-bottom on your workstation. Stop at the end of A6 — do **not** start the installer yet, that's section B.
 >
-> **Why this order?** A1 installs the CLIs. A2 signs you into the things that exist on a fresh tenant (Azure + Microsoft Graph). A3 *creates* the missing tenants, subs and D365 environments — which gives you the URLs A4 needs. A4 signs `pac` into those new D365 URLs. A5 writes everything you just created into the installer config file.
+> **Why this order?** A1 installs the CLIs. A2 signs you into the things that exist on a fresh tenant (Azure + Microsoft Graph). A3 *creates* the missing tenants, subs and D365 environments — which gives you the URLs A4 needs. A4 signs `pac` into those new D365 URLs. **A5 installs the `Dynamics 365 Customer Service` first-party app into each env** (without it the env is a bare Dataverse and demo #5 cannot run). A6 writes everything you just created — including the Customer Service `appid` — into the installer config file.
 
 <details>
 <summary><b>A1. Install workstation tooling</b></summary>
@@ -224,7 +224,60 @@ pac auth list    # confirms 3 profiles
 </details>
 
 <details>
-<summary><b>A5. Configure <code>udcsp.config.psd1</code></b></summary>
+<summary><b>A5. Install <code>Dynamics 365 Customer Service</code> first-party app in each D365 environment</b></summary>
+
+> 🎯 **Goal:** add the Microsoft-provided **Customer Service** application package (Customer Service Hub UI, `incident` table, BPF, queues, SLA timers, Copilot for Service) to each of the 3 environments created in A3. Without this, the env is a bare Dataverse and demo #5 (back-office caseworker) cannot run — you would only see `Solution Health Hub`, `Power Pages Administration`, and `Power Platform environment settings` on the apps page.
+>
+> **Why manual?** First-party D365 app installation requires a service principal with the BAP `Global Administrator` role; on a sandbox tenant it's faster to do it through the admin portal. The installer cannot do this for you.
+
+#### A5.1 — Verify or assign a Customer Service license
+
+1. Open <https://admin.microsoft.com> → **Billing → Your products** (or **Licenses → Your products**).
+2. Look for one of:
+   - `Dynamics 365 Customer Service Enterprise`
+   - `Dynamics 365 Customer Service Professional`
+   - `Dynamics 365 Customer Service Trial` *(free 30 days, sufficient for the demos)*
+
+**If the license is not in your tenant** (common on a fresh MCAPS sandbox where only Power Apps Developer Plan was provisioned), there are two ways to get a trial:
+
+- **Self-service trial (recommended, 1 minute):**
+  1. Sign in to <https://trials.dynamics.com> with your tenant admin account (`admin@MngEnvMCAP294737.onmicrosoft.com` in the example).
+  2. Pick **Customer Service**, language `English`, fill the short form.
+  3. Microsoft drops a **`Dynamics 365 Customer Service Trial`** license into your tenant within ~2 minutes — you'll see it appear in `admin.microsoft.com → Billing → Your products`.
+- **Admin-driven trial via M365 admin center:**
+  1. <https://admin.microsoft.com> → **Billing → Purchase services** → search "Customer Service".
+  2. On the `Dynamics 365 Customer Service Enterprise` tile click **Details → Start free trial** (25 user trial, 30 days).
+
+Then assign the license to **at least one user** (your admin account is fine):
+- <https://admin.microsoft.com> → **Users → Active users** → pick the user → **Licenses and apps** → tick `Dynamics 365 Customer Service [Trial|Enterprise]` → **Save changes**.
+
+> ⚠️ MCAPS sandbox subscriptions sometimes block paid SKUs but always allow trials. If `trials.dynamics.com` redirects you back to the home page without offering the trial, your tenant is likely flagged "internal Microsoft" — in that case open a `aka.ms/MCAPS` ticket asking for a Customer Service trial license to be provisioned, or use a different MCAPS sandbox.
+
+#### A5.2 — Install the Customer Service app into each environment
+
+Repeat for **DK, SE, NO**:
+
+1. Open <https://admin.powerplatform.microsoft.com/environments>.
+2. Click the environment row (e.g. the one matching `org939d8f07.crm4.dynamics.com`).
+3. Top tab **Resources → Dynamics 365 apps** → **+ Install app** (top-right).
+4. Find **`Dynamics 365 Customer Service`** in the catalog → **Next** → accept terms → **Install**.
+5. Status goes `Installation pending → Installing → Installed`. Allow ~10–30 min.
+6. (Optional, recommended) Repeat for **`Dynamics 365 Customer Service – Customer Service Historical Analytics`** if you want the out-of-box dashboards used by demo #9 (analytics).
+
+**Verification:** browse to `https://<orgXXXX>.crmN.dynamics.com/main.aspx?forceUCI=1&pagetype=apps` — you should now see **Customer Service Hub** and **Customer Service workspace** alongside the 3 system apps. Click Customer Service Hub once to materialise its `appid` GUID, copy it from the URL bar, and paste it into `udcsp.config.psd1` as `D365CustomerServiceAppId.<DK|SE|NO>` so the demo scripts can deep-link.
+
+#### A5.3 — Side-effects in Dataverse
+
+After the install, your env contains:
+- Native tables: `incident` (Case), `account`, `contact`, `kbarticle`, `queue`, `sla`, `entitlement`, etc. — these are what our `customizations/` scaffold extends.
+- Default BPF: `Phone to Case Process`, `Inquiry to Resolution`.
+- Out-of-box queues, routing rules, and SLA timer engine.
+- The `udcsp` publisher prefix imported in phase D365 of the installer can now reference `incident` to add custom fields (e.g. `udcsp_aiassessmentscore`).
+
+</details>
+
+<details>
+<summary><b>A6. Sign <code>pac</code> into the 3 D365 environments</b></summary>
 
 ```powershell
 Copy-Item scripts/install/config/udcsp.config.template.psd1 scripts/install/config/udcsp.config.psd1
