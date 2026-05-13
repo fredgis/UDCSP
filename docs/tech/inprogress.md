@@ -97,43 +97,22 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 ## 🔔 Reminder — when D365 Customer Service licence is acquired
 
-Today's demo persists cases in the generic Dataverse `task` activity entity because `org939d8f07.crm4.dynamics.com` has **no `incident` table** (Customer Service is not installed). Once the licence is provisioned and Customer Service is installed in this environment, swap the demo back to the proper case model.
+Today the demo writes cases to the generic `task` activity entity (no `incident` table in this env). Once Customer Service is installed, swap back:
 
-**Where to verify / install:**
+1. **Logic App `udcsp-{c}-dev-application-intake` → `Create_D365_case`**
+   - URL: `…/api/data/v9.2/tasks` → `…/api/data/v9.2/incidents`
+   - Body: `{subject, description, prioritycode}` → `{title, description, caseorigincode:3, customerid_contact@odata.bind:"/contacts(<guid>)"}`
+   - Param `d365CasesEndpoint` value updated accordingly.
 
-| What | URL |
-|---|---|
-| Power Platform admin centre (envs, licences, install Customer Service) | https://admin.powerplatform.microsoft.com/environments |
-| This env's detail page | https://admin.powerplatform.microsoft.com/manage/environments/4e78b019-9c4a-f111-b31f-000d3a67b66d |
-| Power Apps maker (apps + solutions list) | https://make.powerapps.com (top-right env picker → select `org939d8f07`) |
-| Solutions in this env | https://make.powerapps.com/environments/4e78b019-9c4a-f111-b31f-000d3a67b66d/solutions |
-| Tables in this env | https://make.powerapps.com/environments/4e78b019-9c4a-f111-b31f-000d3a67b66d/entities |
-| Dataverse model-driven apps for this env | https://org939d8f07.crm4.dynamics.com/main.aspx?forceUCI=1&pagetype=apps |
-| Dynamics 365 home (app launcher) | https://home.dynamics.com |
-| Web API root (sanity check `incidents` shows up after install) | https://org939d8f07.crm4.dynamics.com/api/data/v9.2/ |
+2. **APIM `case-management` policies**
+   - `post-case-management-cases`: `rewrite-uri /tasks` → `/incidents`; rebuild body to incident schema.
+   - `get-case-management-cases`: `rewrite-uri /tasks` → `/incidents`; replace `$filter=startswith(subject,'[UDCSP-')` with per-citizen filter `_customerid_value eq <contactId>` (resolved from JWT `preferred_username`); `$select` → `incidentid,title,ticketnumber,statecode,statuscode,createdon,prioritycode`.
 
-**Install Customer Service:** Power Platform admin → *Resources → Dynamics 365 apps → Install app → Customer Service Hub* (target env `org939d8f07`). After install, `incident`, `case`, `customerservicestakeholder`, `queueitem`, etc. become available.
+3. **SPA `apps/web/src/pages/MyCasesPage.tsx`**
+   - Field map: `activityid` → `incidentid`, `subject` → `title`, surface `ticketnumber`.
+   - `STATE_LABEL` → `{0:'Active', 1:'Resolved', 2:'Cancelled'}`.
 
-**Changes to revert/upgrade once `incident` is available:**
-
-1. **Logic App `udcsp-dk-dev-application-intake`** — `Create_D365_case` action:
-   - URL `…/api/data/v9.2/tasks` → `…/api/data/v9.2/incidents`
-   - Body: replace `{subject, description, prioritycode}` with `{title, description, caseorigincode:3, customercontacted:false, customerid_contact@odata.bind:"/contacts(<guid>)"}` (resolve contact by `citizenUpn` first, fall back to a default demo contact).
-   - Stored param `d365CasesEndpoint` → `https://org939d8f07.crm4.dynamics.com/api/data/v9.2/incidents`.
-
-2. **APIM `case-management` policies**:
-   - `post-case-management-cases`: `rewrite-uri /tasks` → `/incidents`; rebuild body to incident schema (drop the `[UDCSP-…] ` subject prefix — replaced by `caseorigincode` + `customerid`).
-   - `get-case-management-cases`: `rewrite-uri /tasks` → `/incidents`; `$filter` `startswith(subject,'[UDCSP-')` → real per-citizen filter `_customerid_value eq <contactId>` (resolved from the JWT `preferred_username` claim via a `send-request` to `/contacts?$filter=emailaddress1 eq '<upn>'`); `$select` updated to `incidentid,title,ticketnumber,statecode,statuscode,createdon,prioritycode`.
-
-3. **SPA `MyCasesPage.tsx`**:
-   - Field map: `activityid` → `incidentid`; `subject` → `title`; add `ticketnumber` (the human-readable case number) to the displayed row.
-   - State labels: `STATE_LABEL` for incident is `{0:'Active', 1:'Resolved', 2:'Cancelled'}`.
-
-4. **Custom table option (preferred over OOB `incident`)** — if you want UDCSP-specific columns, create a custom `gps_case` table in a UDCSP solution with: `gps_citizenupn`, `gps_country` (DK/SE/NO option set), `gps_topic`, `gps_status`, `gps_classifierscore`, `gps_eligibilityverdict`, `gps_extracteddocs` (json), `gps_correlationid`. Then point all of the above at `/gps_cases` instead of `/incidents`. Lets us keep the demo isolated from Customer Service business rules.
-
-5. **Documentation sync** — update `docs/tech/architecture.md` §7 (Case Management) and `docs/tech/installation.md` POST CONFIGURATION Step 7 to mention `incident` (or `gps_case`) instead of the placeholder `task`. Bump `inprogress.md` *Last bundle deployed* line.
-
-6. **Per-country roll-out** — repeat the LA + APIM rewrites on SE (`udcsp-se-prod-apim` + `udcsp-se-dev-application-intake`) and NO (`udcsp-no-…`).
+4. Apply the same on SE + NO once their Logic Apps are wired.
 
 ## Maintenance rule
 
