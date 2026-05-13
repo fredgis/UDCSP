@@ -125,6 +125,40 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
         </div>
       </div>
 
+      <div className="section-heading">
+        <div>
+          <h2>Run a demonstration scenario</h2>
+          <p>10 end-to-end demos exercising every row of the README evaluation matrix — citizen journeys, back-office, governance, insights, DevOps.</p>
+        </div>
+        <Link to="/demos" className="button-secondary">See all 10 demos →</Link>
+      </div>
+      <ul className="persona-grid" role="list">
+        <li className="persona-card persona-card--anna">
+          <span className="persona-card__id">D1</span>
+          <h3>Anna · DK → SE</h3>
+          <p>The flagship: federated eID, omnichannel, multilingual, eligibility pre-assessment.</p>
+          <Link to="/apply/residency">Try residency transfer →</Link>
+        </li>
+        <li className="persona-card persona-card--maria">
+          <span className="persona-card__id">D3</span>
+          <h3>Maria · PL on SE</h3>
+          <p>Polish UI on Swedish portal, NVDA-friendly, AI assistant in PL, human-in-the-loop eligibility.</p>
+          <Link to="/apply/child-benefit">Try housing/child benefit →</Link>
+        </li>
+        <li className="persona-card persona-card--erik">
+          <span className="persona-card__id">D4</span>
+          <h3>Erik · DK · mobile</h3>
+          <p>Snap a payslip with your phone — Document Extractor autofills the income field.</p>
+          <Link to="/apply/child-benefit">Try mobile flow →</Link>
+        </li>
+        <li className="persona-card persona-card--ingrid">
+          <span className="persona-card__id">D8</span>
+          <h3>Ingrid · SecOps</h3>
+          <p>Prompt-injection contained: try sending malicious input to the assistant — Content Safety blocks it.</p>
+          <a href="#chat-title">Try the chat ↓</a>
+        </li>
+      </ul>
+
       <div className="featured">
         <div className="featured-card">
           <h2>How it works</h2>
