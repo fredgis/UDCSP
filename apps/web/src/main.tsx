@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import './styles/tokens.css';
+import './styles/home.css';
 import './styles/accessibility.css';
 import './styles/dyslexic-font.css';
 import { applyAccessibility, loadAccessibility } from './utils/accessibility';
