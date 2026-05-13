@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { generateTraceparent } from '../utils/traceparent';
 import { apiScopeForCountry, apimBaseUrlForCountry, getCountry } from '../auth/msalConfig';
@@ -43,6 +43,18 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
   const [busy, setBusy] = useState(false);
   const isAuth = useIsAuthenticated();
   const { instance, accounts } = useMsal();
+  const logEndRef = useRef<HTMLLIElement | null>(null);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const last = logEndRef.current;
+    if (!last) return;
+    last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (messages[messages.length - 1].role === 'assistant') {
+      last.setAttribute('tabindex', '-1');
+      last.focus({ preventScroll: true });
+    }
+  }, [messages]);
 
   const send = useCallback(async () => {
     const text = draft.trim();
@@ -100,8 +112,12 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
       </header>
       <p className="chat-widget__greeting">{greeting}</p>
       <ul role="log" aria-live="polite" aria-relevant="additions" className="chat-log">
-        {messages.map((m) => (
-          <li key={m.id} className={`chat-msg chat-msg--${m.role}`}>
+        {messages.map((m, i) => (
+          <li
+            key={m.id}
+            ref={i === messages.length - 1 ? logEndRef : undefined}
+            className={`chat-msg chat-msg--${m.role}`}
+          >
             <strong>{m.role === 'user' ? 'You' : 'Assistant'}:</strong> {m.text}
           </li>
         ))}
