@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { appendCase } from '../utils/caseStore';
 
 type SubmitResult = {
   correlationId?: string;
@@ -116,6 +117,19 @@ export function ApplyChildBenefitPage() {
       const estimatedDecisionDate =
         r.estimatedDecisionDate ?? (decision === 'likely-eligible' ? estimatedDate(4) : estimatedDate(7));
       setResult({ ...r, decision, estimatedDecisionDate });
+      appendCase({
+        id: r.caseId || r.correlationId || `cb-${Date.now()}`,
+        title: 'Child benefit application',
+        status: r.status || (decision === 'likely-eligible' ? 'AI-pre-approved · awaiting caseworker' : 'Submitted · awaiting review'),
+        updatedAt: new Date().toISOString(),
+        country,
+        citizenUpn: acc?.username,
+        applicationType: 'child-benefit',
+        decision,
+        confidence: r.confidence,
+        estimatedDecisionDate,
+        extractedFields: extracted?.fields,
+      });
       // Bring focus to the result card so screen-reader users hear the outcome.
       window.requestAnimationFrame(() => {
         document.getElementById('cb-result')?.focus();

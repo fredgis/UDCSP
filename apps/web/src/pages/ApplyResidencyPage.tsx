@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { appendCase } from '../utils/caseStore';
 
 type SubmitResult = { correlationId?: string; caseId?: string; status?: string; error?: string };
 
@@ -56,6 +57,15 @@ export function ApplyResidencyPage() {
         }),
       });
       setResult(r);
+      appendCase({
+        id: r.caseId || r.correlationId || `res-${Date.now()}`,
+        title: `Residency transfer to ${COUNTRY_LABEL[form.destination] ?? form.destination?.toUpperCase() ?? '—'}`,
+        status: r.status || 'Submitted · awaiting review',
+        updatedAt: new Date().toISOString(),
+        country,
+        citizenUpn: acc?.username,
+        applicationType: 'residency-transfer',
+      });
     } catch (e) {
       setResult({ error: e instanceof Error ? e.message : String(e) });
     } finally {

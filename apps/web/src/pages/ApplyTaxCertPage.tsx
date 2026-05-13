@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { appendCase } from '../utils/caseStore';
 
 type Result = { correlationId?: string; caseId?: string; error?: string };
 
@@ -34,6 +35,16 @@ export function ApplyTaxCertPage() {
         }),
       });
       setResult(r);
+      const fields = Object.fromEntries(fd) as Record<string, string>;
+      appendCase({
+        id: r.caseId || r.correlationId || `tax-${Date.now()}`,
+        title: `Tax residency certificate ${fields.year ?? currentYear}`,
+        status: 'Submitted · awaiting issuance',
+        updatedAt: new Date().toISOString(),
+        country,
+        citizenUpn: acc?.username,
+        applicationType: 'tax-certificate',
+      });
     } catch (err) {
       setResult({ error: err instanceof Error ? err.message : String(err) });
     } finally {
