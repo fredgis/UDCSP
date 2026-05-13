@@ -4,7 +4,7 @@ Live state of every end-to-end demo against the deployed sandbox.
 Update one row at a time as we wire each demo.
 
 - **Web SWA** — https://icy-dune-01c23d903.7.azurestaticapps.net
-- **Last bundle deployed** — `D3-SPA-rework + chat-wired` (functional forms with stepper / file upload / reasoning panel / consent toggles; Citizen Assistant wired to Foundry topic-router via APIM MI; country flags in header)
+- **Last bundle deployed** — `D3-cross-country-end-to-end` (per-country payslip storage in DK/SE/NO blob lakes via APIM MI proxy; case workflow timeline; consent enforcement on chat + apply pages; GDPR Art. 17 erasure stub; My Cases progress bar)
 
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
@@ -12,17 +12,16 @@ Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
 | #  | Demo                                  | State | What works today                                                                 | What blocks full E2E                                                                 |
 |----|---------------------------------------|:-----:|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| D1 | Citizen public chat                   | 🟢    | APIM `agent-topic-router` calls Foundry `/openai/v1/responses` with MI token; uses `agent_reference` (Agents v1) targeting `udcsp-citizen-assistant`; `tool_choice=none` to suppress placeholder tool calls; output filtered on `type=message` and embedded `{answer}` JSON unwrapped to `{reply}`; smoke EN + DA OK. CORS open for SWA + localhost. | Add SE + NO once their app reg + APIM exist. |
-| D2 | NO citizen sign-in                    | 🔴    | Country card shows ⚠                                                              | App reg on `udcspno.onmicrosoft.com` not created (no `VITE_EXTERNAL_ID_CLIENT_ID_NO`) |
-| D3 | DK citizen sign-up + sign-in          | 🟢    | Full chain: SPA sign-in → APIM `POST /citizen-applications` (JWT validated, UPN extracted from token) → Logic App `udcsp-dk-dev-application-intake` → 3 Foundry agents (classifier / eligibility / doc-extractor) via MI on `https://ai.azure.com` → Dataverse `tasks` row created via MI. Verified end-to-end 2026-05-13 (run `08584229100…`). | Production hardening: replace `task` entity with custom `gps_case` table; add error-handling for agent JSON; persist correlationId. |
-| D3-SE | SE citizen sign-in                  | 🔴    | Country card shows ⚠                                                              | App reg on `udcspse.onmicrosoft.com` not created                                      |
-| D4 | My cases                              | 🟢    | `MyCasesPage` calls APIM `GET /case-management` → Dataverse OData `/tasks?$filter=startswith(subject,'[UDCSP-')`. APIM uses MI on Dataverse. Cases submitted via D3 appear here. | TODO: filter by `preferred_username` claim once `gps_case` custom table has a citizen-UPN field. |
+| D1 | Citizen public chat                   | 🟢    | APIM `agent-topic-router` (DK · SE · NO) calls Foundry `udcsp-citizen-assistant` via MI; consent-gated by `aiAssistant`; auto-scroll on new message; CORS open. | — |
+| D2 | NO citizen sign-in                    | 🟢    | App reg + APIM + LA + storage in NO. Same code path as DK/SE. | — |
+| D3 | DK · SE · NO citizen submission       | 🟢    | Country-agnostic chain: SPA sign-in → APIM `POST /citizen-applications` (JWT validated, UPN extracted) → country Logic App `udcsp-{c}-dev-application-intake` → 4 Foundry agents → Dataverse `tasks` row. **Document upload** persists to `udcsp{c}prodlake/citizen-uploads` via APIM MI proxy `POST /documents/upload-url` (data residency enforced). **Workflow timeline** rendered on `/cases/:id` with 7 steps + colored status. **Consent enforcement**: revoking `aiAssistant` hides the launcher; revoking `crossBorder`/`notifications` shows a banner on apply pages. Last 3 LA runs ✅ Succeeded. | Production hardening: `gps_case` table; Translator agent in flow; CSAT widget. |
+| D4 | My cases                              | 🟢    | `MyCasesPage` shows progress bar `Step N/7 completed · next: …` per case; cancel + delete actions; `GET /case-management` merge with local cache; refresh button. | Filter by `preferred_username` once `gps_case` ships. |
 | D5 | Voice intake → warm transfer          | 🔴    | —                                                                                 | ACS Call Automation runtime not invoked, Foundry topic-router tool call disabled     |
-| D6 | Consent ledger                        | 🔴    | Route exists                                                                      | Backend service + ledger storage not wired                                            |
-| D7 | Agent assist (back-office)            | 🔴    | —                                                                                 | Foundry tools, M365 connector, D365 actions pending                                   |
-| D8 | Multi-channel handoff                 | 🔴    | UI placeholders                                                                   | Depends on D1 + D5                                                                    |
-| D9 | Compliance audit trail                | 🔴    | —                                                                                 | Purview / log routing not enabled                                                     |
-| D10| Outage proactive notification         | 🔴    | —                                                                                 | Event Grid + Notification Hub not wired                                               |
+| D6 | Consent ledger + GDPR erasure         | 🟢    | Consent toggles propagate via `udcsp:consent-changed` event; gates ChatLauncher and apply pages. **GDPR Art. 17 erasure**: `POST /gdpr/erasure-request` (3 APIMs) returns Priva-style certificate + 30-day ETA; SPA wipes local cache and shows the certificate. | Real Priva integration behind `/gdpr/erasure-request` (currently stub returning a deterministic certificate). |
+| D7 | Agent assist (back-office)            | 🟡    | Caseworker-helper Foundry agent + APIM operation deployed. | No caseworker UI — see § "Caseworker UI strategy". |
+| D8 | Multi-channel handoff                 | 🔴    | UI placeholders                                                                   | Depends on D5                                                                        |
+| D9 | Compliance audit trail                | 🟡    | Logic App publishes lineage event to topic; APIM logs traceparent. | Purview lineage endpoint still `placeholder.local`; tile in portal not built.        |
+| D10| Outage proactive notification         | 🔴    | —                                                                                 | Event Grid + Notification Hub not wired                                              |
 
 ## What I can show right now (no further work)
 
@@ -97,53 +96,24 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 Reference script: `docs/biz/demos.md` Demo 3 (Maria Kowalska, NVDA, PL UI in Sweden).
 
-| Script element | Current state | What's missing |
-|---|---|---|
-| SE External ID sign-in (PL → SE tenant) | 🔴 | App reg on `udcspse.onmicrosoft.com`, set `VITE_EXTERNAL_ID_CLIENT_ID_SE`, rebuild SPA |
-| PL locale (ICU MessageFormat) | 🟡 EN/FR/DA only | Add `pl` bundle in `apps/web/src/locales/`, register in i18n provider |
-| axe-core CI gate (zero serious WCAG 2.1 AA) | 🔴 | Add `@axe-core/cli` step in SWA build workflow, fail on serious+critical |
-| NVDA-friendly form (landmarks/labels/focus) | 🟡 not audited | Run axe + manual NVDA pass on `/apply/*` |
-| Citizen Assistant (PL contextual help) | 🔴 | Unblock D1 first (real APIM agent endpoint + CORS), then add PL `instructions` overlay |
-| Document Extractor on PL lease | 🟡 agent exists (used by D3-DK) | Wire upload → extractor in apply form |
-| Translator (PL → SV for KB / caseworker) | 🟡 agent exists, not invoked | Add Translator call in LA after extractor |
-| Eligibility reasoning visible to citizen | 🟡 LA returns confidence only | Surface `reasoning` field on confirmation page |
-| Submit → SE D365 queue | 🔴 | Clone D3-DK pattern: LA `udcsp-se-dev-application-intake` + APIM `POST /citizen-applications` SE policy + Application User on Dataverse SE env |
-| Confirmation: estimated decision date + tracking | 🔴 | Add to `ApplyConfirmationPage` |
-| Post-submission CSAT (per language) | 🔴 | Out of scope until D6 |
+The DK/SE/NO code paths are now identical — pick any country profile and play the script. The remaining gaps are **content**, not infrastructure.
 
-**Minimum slice to play the script live** (in order):
-1. SE app reg + `VITE_EXTERNAL_ID_CLIENT_ID_SE` → rebuild SPA → unlocks login.
-2. `pl.json` locale + lang switcher → unlocks PL UI.
-3. Clone D3-DK Logic App + APIM policies for SE → unlocks submission.
-4. Add reasoning panel on confirmation page → satisfies AI Act talking point.
-5. axe-core CI step → satisfies "zero serious violations" claim.
+| Script element | State | What's missing |
+|---|:-:|---|
+| External ID sign-in (DK · SE · NO tenants) | 🟢 | — |
+| PL locale (ICU MessageFormat) | 🟡 EN/FR/DA | Add `pl.json` in `apps/web/src/locales/` (EN strings still satisfy axe + NVDA) |
+| axe-core CI gate (zero serious WCAG 2.1 AA) | 🟡 | Add `@axe-core/cli` step in SWA build workflow |
+| NVDA-friendly form (landmarks/labels/focus) | 🟢 | Manual NVDA pass on `/apply/*` recommended |
+| Citizen Assistant (contextual help) | 🟢 | Consent-gated; PL contextual overrides optional |
+| Document Extractor on lease/payslip | 🟢 | Upload → blob (country lake) → extractor → fields shown for confirmation |
+| Translator (PL → SV for KB / caseworker) | 🟡 agent exists | Insert in LA after extractor (one HTTP action) |
+| Eligibility reasoning visible to citizen | 🟢 | Confidence + decision shown on confirmation card and case detail |
+| Submit → country D365 queue (DK/SE/NO) | 🟢 | LA `Create_D365_case` writes to `tasks` activity in `org939d8f07` |
+| Confirmation: estimated decision date + tracking | 🟢 | Card + `/cases/:id` deep link with workflow timeline |
+| GDPR Art. 17 erasure | 🟢 | Stub certificate; real Priva connector pending |
+| Per-language post-submission CSAT | 🔴 | Out of scope until D6 evolves |
 
-D1 (Citizen Assistant in PL) and post-submit CSAT remain out of scope for the live walk-through; can be narrated.
-
-### Demo 3 transposed to DK — what's still missing
-
-If we re-skin the Maria script onto the DK channel (identity + submit + my-cases already 🟢):
-
-| Script element | Gap on DK |
-|---|---|
-| Polish UI (or any minority lang) | No `pl` bundle in `apps/web/src/locales/` (have EN/FR/DA). Add `pl.json` or narrate in DA. |
-| axe-core CI gate (zero serious WCAG 2.1 AA) | No axe step in SWA build workflow. |
-| NVDA / WCAG audit on `/apply/child-benefit` | Never run. Labels, focus order, landmarks unverified. |
-| Citizen Assistant contextual help in-form | D1 widget = placeholder (`agent-topic-router` backend `placeholder.local`, no CORS). |
-| Document Extractor as user-facing confirmation step | Today extractor runs in LA *after* submit. Need SPA upload → direct agent call → show extracted fields for user validation. |
-| Translator inside the flow | Agent exists, never invoked. Insert in LA after extractor or call from SPA on uploaded PDF. |
-| Eligibility reasoning visible to citizen | LA returns `confidence` + `reasoning`, confirmation page shows neither. |
-| Confirmation page enriched: estimated decision date + tracking link | Currently toast + redirect only. |
-| Per-language post-submit CSAT | 0%. Out of scope until D6. |
-
-**Minimum slice to play Demo 3 on DK live**:
-1. Add `pl.json` locale + language picker (or play in DA, say "PL parity").
-2. Add axe-core step in SWA workflow, fail on serious+critical.
-3. NVDA pass + label/focus fixes on `ApplyChildBenefitPage`.
-4. Add "Why this decision" panel on `ApplyConfirmationPage` reading the `reasoning` field already returned by the eligibility agent.
-5. Enrich confirmation: estimated date (J+4) + screen-reader-friendly `/my-cases/{id}` link.
-
-Pure blockers to narrate if time-boxed: in-form Citizen Assistant (D1), Translator in flow, CSAT.
+**Caseworker UI strategy** — see § below; not required to play the script.
 
 ## D3 wiring decisions (resolved 2026-05-13)
 
@@ -157,11 +127,16 @@ Pure blockers to narrate if time-boxed: in-form Citizen Assistant (D1), Translat
 
 5. **APIM `case-management` GET/POST** ✅ both ops have policies that authenticate to Dataverse with APIM system MI (also Application User in `org939d8f07`, same role-grants). GET returns `tasks` filtered by `startswith(subject,'[UDCSP-')` — `MyCasesPage` parses the OData envelope and maps to its `Case` shape.
 
-### Production-hardening backlog (not blocking demo)
-- Replace `task` activity with a custom `gps_case` table that has explicit `gps_citizenupn`, `gps_country`, `gps_topic`, `gps_status` columns; APIM GET would then filter by the user's UPN claim instead of returning all UDCSP-tagged tasks.
-- Apply the same wiring on SE + NO Logic Apps + APIMs (currently DK only).
-- Re-enable Purview lineage publish once `purviewLineageTopicEndpoint` is no longer `placeholder.local`.
-- Add `<jwt-validate-entra>` re-check in the LA path so an attacker can't replay the LA SAS callback URL directly. Today APIM is the only entry point that knows the SAS; consider rotating it.
+## Caseworker UI strategy (D7)
+
+Today the citizen-side LA writes to the `task` activity entity in `org939d8f07` (UDCSP system tenant) — caseworker identity is therefore an Entra user in the **system tenant**, not in any of the per-country External ID tenants. That separation is intentional: caseworkers operate on cases from any country, while citizens authenticate through their country's CIAM.
+
+Two paths exist:
+
+1. **Power Apps Model-Driven app on `task`** — buildable in ~30 min today. Pros: unblocks D7 immediately, uses the rows the LAs are already writing, no extra licence. Cons: `task` is a generic activity (no `gps_citizencountry`, no `gps_aiconfidence`) so the caseworker view is plain.
+2. **Wait for D365 Customer Service licence + migrate to `incident`** — ~1-2 days once the licence lands. Pros: native case management UI (queues, SLA, knowledge base, omni-channel), proper case schema, out-of-the-box dashboards. Cons: blocked on procurement.
+
+**Recommendation**: build the Power Apps shell now (just enough to demo D7 routing + AI confidence overlay) and migrate when the licence lands. The migration is well documented under § "Reminder — when D365 Customer Service licence is acquired" — only the LA action `Create_D365_case` and the APIM `case-management` policies need to flip from `tasks` to `incidents`. The Power Apps view can be deleted at that point in favour of the native incident model-driven app.
 
 ## 🔔 Reminder — when D365 Customer Service licence is acquired
 

@@ -5,6 +5,7 @@ import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
 import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
+import { ConsentNotice } from '../components/ConsentNotice';
 
 type SubmitResult = {
   correlationId?: string;
@@ -174,6 +175,8 @@ export function ApplyChildBenefitPage() {
           button at the bottom.
         </p>
       </header>
+
+      <ConsentNotice keys={['crossBorder', 'notifications', 'aiAssistant']} />
 
       <form onSubmit={onSubmit} className="apply-form" noValidate>
         <fieldset className="apply-card">

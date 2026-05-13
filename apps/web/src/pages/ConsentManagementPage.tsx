@@ -3,6 +3,7 @@ import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { getCountry } from '../auth/msalConfig';
 import { wipeAllForCitizen } from '../utils/caseStore';
+import { notifyConsentChanged } from '../utils/consent';
 
 type Consent = {
   id: string;
@@ -91,6 +92,7 @@ export function ConsentManagementPage() {
   function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    notifyConsentChanged();
     setSaved(true);
   }
 
