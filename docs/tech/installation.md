@@ -800,6 +800,57 @@ Still inside the country tenant:
 2. *(Optional but recommended)* Open the app → **Authentication** → enable **ID tokens** (used for implicit and hybrid flows). Leave *Access tokens* unchecked unless you front a custom API.
 3. *(Optional)* Open the app → **API permissions** → add **`openid`** and **`profile`** (Microsoft Graph delegated). Click *Grant admin consent for udcsp\<country\>*.
 
+### Step 3.5 — Expose the `access_as_user` API scope (required for APIM bearer)
+
+The portal calls APIM with `Authorization: Bearer <jwt>` and APIM (`citizen-applications`, `agent-topic-router`, …) validates that the JWT was issued for `aud = api://<spa-clientId>` and contains `scp = access_as_user`. Without the scope below, MSAL `acquireTokenSilent` fails with `endpoints_resolution_error` or APIM returns `401 invalid_token`.
+
+**Two options.**
+
+**A) Azure CLI (30 s, recommended)** — replace `<APP_ID>` and `<TENANT_ID>` with your country values:
+
+```powershell
+$AppId    = "<APP_ID>"          # e.g. DK = 2f69440c-f6c8-49f2-847f-e2f63e376102
+$TenantId = "<TENANT_ID>"        # e.g. DK = 448429d1-7367-4b84-a7b3-1896352226cd
+az login --tenant $TenantId --allow-no-subscriptions --use-device-code
+$ObjId   = (az ad app show --id $AppId --query id -o tsv)
+$ScopeId = [guid]::NewGuid().ToString()
+
+# 1) Set Application ID URI + add the scope
+$body1 = @{
+  identifierUris = @("api://$AppId")
+  api = @{
+    requestedAccessTokenVersion = 2
+    oauth2PermissionScopes = @(@{
+      id = $ScopeId; value = "access_as_user"; type = "User"; isEnabled = $true
+      adminConsentDisplayName  = "Access UDCSP API as user"
+      adminConsentDescription  = "Allows the portal to call UDCSP APIs on behalf of the signed-in user."
+      userConsentDisplayName   = "Access UDCSP on your behalf"
+      userConsentDescription   = "Lets the portal call UDCSP APIs as you."
+    })
+  }
+} | ConvertTo-Json -Depth 10 -Compress
+$body1 | Out-File "$env:TEMP\app-patch1.json" -Encoding utf8 -NoNewline
+az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/$ObjId" `
+  --headers "Content-Type=application/json" --body "@$env:TEMP\app-patch1.json"
+
+# 2) Pre-authorise the SPA itself (skips the consent prompt)
+$body2 = @{ api = @{ preAuthorizedApplications = @(@{ appId = $AppId; delegatedPermissionIds = @($ScopeId) }) } } | ConvertTo-Json -Depth 10 -Compress
+$body2 | Out-File "$env:TEMP\app-patch2.json" -Encoding utf8 -NoNewline
+az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/$ObjId" `
+  --headers "Content-Type=application/json" --body "@$env:TEMP\app-patch2.json"
+
+# 3) Make sure a service principal exists in the tenant
+az ad sp show --id $AppId 2>$null || az ad sp create --id $AppId
+```
+
+**B) Portal** — same tenant, same SPA app reg:
+1. **Manage → Expose an API → Set** *Application ID URI* → keep the proposed `api://<clientId>` → **Save**.
+2. **+ Add a scope** → name `access_as_user`, who can consent **Admins and users**, admin display name `Access UDCSP API as user`, state **Enabled** → **Add scope**.
+3. **+ Add a client application** → paste the **same SPA clientId** → tick the new scope → **Add application**. (This is the "preAuthorize self" trick — no consent prompt for end users.)
+4. **Manage → API permissions → + Add a permission → My APIs** → pick the same app → delegated `access_as_user` → **Add permissions** → **Grant admin consent for udcsp\<country\>**.
+
+**Verify**: sign in via the portal, open DevTools → *Network* → look for `https://login.microsoftonline.com/.../oauth2/v2.0/token` returning `access_token` + `scope = access_as_user`, then any `apiFetch` call to APIM returning `2xx` instead of `401 invalid_token`. If you still see `401`, double-check the APIM named value `external-id-api-audience-<country>` matches `<APP_ID>` exactly (no `api://` prefix on this one — APIM expects the GUID alone).
+
 ### Step 4 — Rebuild and redeploy the portal with the 3 client IDs
 
 Once you have the 3 client IDs, set them in `apps/web/.env` (or the SWA app settings if you deploy via GitHub Actions) and rebuild.
