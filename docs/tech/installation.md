@@ -906,7 +906,9 @@ Use **Users → New user → Create new user**, set initial password, share cred
 ### What this does NOT fix (separate sections)
 
 - **APIM `agent-topic-router` returns "Service temporarily unavailable"** — the backend named-value `foundry-topic-router-agent-endpoint` is still `https://placeholder.local`. Replace with the real Foundry agent endpoint (`Install-Foundry.psm1` output) and add a CORS policy allowing `https://icy-dune-01c23d903.7.azurestaticapps.net`.
-- **`/cases` empty even after sign in** — APIM `/cases` route isn't wired to D365 yet. Implement the bridge or run *D5 Astrid* in the D365 caseworker app for end-to-end case visibility.
+- **`/cases` empty even after sign in** — covered by Step 7 below (APIM `case-management` GET wired to Dataverse `tasks`).
+- **Document upload returns 403 / 404** — covered by Step 8 below (storage public network access + APIM MI proxy).
+- **GDPR Art. 17 "Delete my data" returns 404** — covered by Step 9 below (`gdpr/erasure-request` operation).
 ### Step 7 — APIM ↔ Foundry + Dataverse via Managed Identity (D3 / D4 backend)
 
 Once the SPA can sign in, the back-end pipeline still needs to talk to Microsoft Foundry (agents) and to Dataverse (case write/read). We use **system-assigned managed identities** end-to-end — no client secrets — so a fresh tenant requires only role grants and one Application User per identity. This was completed for DK on 2026-05-13; repeat per country.
@@ -954,6 +956,95 @@ Invoke-RestMethod -Uri $cb -Method POST -Body (@{topic="child-benefit"; text="Sm
 ```
 
 Then in the SPA: sign in, **Apply → child benefit → Submit**, navigate to **My cases** — the row created above (and any new submission) should be listed. APIM enforces the JWT (`scp=access_as_user`).
+
+### Step 8 — Document upload via APIM MI proxy (D3 payslip / lease)
+
+Demo 3 lets the citizen drop a payslip or lease before submitting. The file must land in the **country lake** (`udcspdkprodlake` / `udcspseprodlake` / `udcspnoprodlake`) under the `citizen-uploads` container — never cross the residency boundary.
+
+The SPA does **not** hold a SAS or storage key. It POSTs the file (base64 + name + mime) to APIM `POST /documents/upload-url`, which proxies to Blob REST using its system-assigned managed identity:
+
+```powershell
+# A. Storage public network access must be Enabled with Allow + AzureServices bypass
+foreach ($c in 'dk','se','no') {
+  az storage account update -n "udcsp${c}prodlake" -g "udcsp-${c}-storage-rg" `
+    --public-network-access Enabled `
+    --default-action Allow `
+    --bypass AzureServices
+}
+
+# B. Grant the APIM MI 'Storage Blob Data Contributor' on each lake
+$apimMi = az resource show --ids "/subscriptions/<sub>/resourceGroups/udcsp-<c>-apim-rg/providers/Microsoft.ApiManagement/service/udcsp-<c>-prod-apim" --query identity.principalId -o tsv
+$lake = az storage account show -n "udcsp<c>prodlake" -g "udcsp-<c>-storage-rg" --query id -o tsv
+az role assignment create --assignee-object-id $apimMi --assignee-principal-type ServicePrincipal `
+    --role "Storage Blob Data Contributor" --scope $lake
+
+# C. Ensure the container exists
+az storage container create -n citizen-uploads --account-name "udcsp<c>prodlake" --auth-mode login
+
+# D. Apply the MI-proxy operation policy
+az apim api operation policy create -g udcsp-<c>-apim-rg -n udcsp-<c>-prod-apim `
+    --api-id documents --operation-id upload-url `
+    --xml-path services/apim/apis/documents/upload-url-policy-mi-proxy.xml
+```
+
+Verify:
+
+```powershell
+$tok = az account get-access-token --resource api://<spa-app-id> --query accessToken -o tsv
+$body = @{ filename='payslip.pdf'; contentType='application/pdf'; contentBase64='JVBERi0xLjQK' } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://udcsp-<c>-prod-apim.azure-api.net/documents/upload-url" `
+  -Method POST -Headers @{Authorization="Bearer $tok"} -ContentType application/json -Body $body
+# Expected: { blobUrl: "https://udcsp<c>prodlake.blob.core.windows.net/citizen-uploads/<guid>-payslip.pdf", ... }
+```
+
+> ⚠ **Why we proxy** — the citizen never gets a SAS token; the MI hop keeps tenant secrets out of the browser and lets us add Content Safety / size limits in APIM later. The earlier approach (SPA-issued SAS) was abandoned after the first run; see `docs/biz/inprogress.md` checkpoint *SAS upload pivot to MI-proxy*.
+
+### Step 9 — GDPR Article 17 erasure endpoint (D6)
+
+The Consent & privacy page exposes a "Delete my data" button. It POSTs to APIM `POST /gdpr/erasure-request` which returns a Priva-style certificate with a 30-day SLA. Today the operation is a deterministic stub (no real Priva connector); it will be migrated to the real Priva DSR API once the Microsoft 365 E5 licence is provisioned (see § E3).
+
+```powershell
+# A. Apply the operation policy in DK / SE / NO
+foreach ($c in 'dk','se','no') {
+  az apim api operation policy create -g "udcsp-${c}-apim-rg" -n "udcsp-${c}-prod-apim" `
+      --api-id gdpr --operation-id erasure-request `
+      --xml-path services/apim/apis/gdpr/erasure-request-policy.xml
+}
+
+# B. Smoke test
+$tok = az account get-access-token --resource api://<spa-app-id> --query accessToken -o tsv
+Invoke-RestMethod -Uri "https://udcsp-dk-prod-apim.azure-api.net/gdpr/erasure-request" `
+  -Method POST -Headers @{Authorization="Bearer $tok"} `
+  -Body (@{reason='right-to-be-forgotten'} | ConvertTo-Json) -ContentType application/json
+# Expected: { certificateId, status:'accepted', etaIso:'<+30d>', controller:'UDCSP <C>', ... }
+```
+
+When the SPA receives the certificate it also wipes its own local cache (`localStorage`/`indexedDB` keyed on `udcsp.*`), so that even if Priva is mocked, the browser-side state goes away immediately.
+
+### Step 10 — Caseworker UI (D7) — Power Apps now, D365 incident later
+
+Caseworkers are **not** citizens — their identity lives in the **main Entra tenant** `MngEnvMCAP575658.onmicrosoft.com`, not in the per-country External ID tenants. A single caseworker can be granted access to the DK / SE / NO Dataverse environments and triage cases from any country.
+
+Two options exist; we recommend **A** today:
+
+| | A. Power Apps Model-Driven app on `task` (now) | B. D365 Customer Service on `incident` (later) |
+|---|---|---|
+| Setup time | ~30 min | 1-2 days once licence acquired |
+| Cost | Free with the existing Dataverse env | Customer Service per-user licence |
+| Schema | Generic activity (`task`) — Subject + Description + State only | Native case schema with SLA, queues, KB, omni-channel |
+| Migration cost | When you flip to B, only **two** things change: the LA action `Create_D365_case` (`/tasks` → `/incidents`) and the APIM `case-management` policies. The caseworker MDA can be deleted in favour of the native incident MDA. | n/a |
+
+Build path A (PowerShell stub — finalise in the [Power Apps maker UI](https://make.powerapps.com)):
+
+```powershell
+# 1. Create a model-driven app called "UDCSP Caseworker" against the existing task entity
+pac solution init --publisher-name UDCSP --publisher-prefix udcsp --outputDirectory ./pa-caseworker
+# 2. In the maker UI: add the `task` table, build a view filtered on subject startswith '[UDCSP-',
+#    and a form showing Subject / Description / State. Publish.
+# 3. Share the app with the caseworker security group.
+```
+
+Path B blueprint lives in § A5 above and in `docs/tech/inprogress.md` § *Reminder when D365 Customer Service licence is acquired*.
 
 </details>
 
