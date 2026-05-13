@@ -120,6 +120,31 @@ Reference script: `docs/biz/demos.md` Demo 3 (Maria Kowalska, NVDA, PL UI in Swe
 
 D1 (Citizen Assistant in PL) and post-submit CSAT remain out of scope for the live walk-through; can be narrated.
 
+### Demo 3 transposed to DK — what's still missing
+
+If we re-skin the Maria script onto the DK channel (identity + submit + my-cases already 🟢):
+
+| Script element | Gap on DK |
+|---|---|
+| Polish UI (or any minority lang) | No `pl` bundle in `apps/web/src/locales/` (have EN/FR/DA). Add `pl.json` or narrate in DA. |
+| axe-core CI gate (zero serious WCAG 2.1 AA) | No axe step in SWA build workflow. |
+| NVDA / WCAG audit on `/apply/child-benefit` | Never run. Labels, focus order, landmarks unverified. |
+| Citizen Assistant contextual help in-form | D1 widget = placeholder (`agent-topic-router` backend `placeholder.local`, no CORS). |
+| Document Extractor as user-facing confirmation step | Today extractor runs in LA *after* submit. Need SPA upload → direct agent call → show extracted fields for user validation. |
+| Translator inside the flow | Agent exists, never invoked. Insert in LA after extractor or call from SPA on uploaded PDF. |
+| Eligibility reasoning visible to citizen | LA returns `confidence` + `reasoning`, confirmation page shows neither. |
+| Confirmation page enriched: estimated decision date + tracking link | Currently toast + redirect only. |
+| Per-language post-submit CSAT | 0%. Out of scope until D6. |
+
+**Minimum slice to play Demo 3 on DK live**:
+1. Add `pl.json` locale + language picker (or play in DA, say "PL parity").
+2. Add axe-core step in SWA workflow, fail on serious+critical.
+3. NVDA pass + label/focus fixes on `ApplyChildBenefitPage`.
+4. Add "Why this decision" panel on `ApplyConfirmationPage` reading the `reasoning` field already returned by the eligibility agent.
+5. Enrich confirmation: estimated date (J+4) + screen-reader-friendly `/my-cases/{id}` link.
+
+Pure blockers to narrate if time-boxed: in-form Citizen Assistant (D1), Translator in flow, CSAT.
+
 ## D3 wiring decisions (resolved 2026-05-13)
 
 1. **DK SPA app reg — `access_as_user` scope** ✅ exposed + self-pre-authorised. See `installation.md` Step 3.5.
