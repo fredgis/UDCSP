@@ -1,6 +1,6 @@
 import { FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { MsalProvider, useIsAuthenticated } from '@azure/msal-react';
-import { IntlProvider } from 'react-intl';
+import { FormattedMessage, IntlProvider } from 'react-intl';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { msalInstance } from './auth/msalConfig';
 import { AuthGate } from './auth/AuthGate';
@@ -56,11 +56,11 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <span>UDCSP<span style={{ color: 'var(--color-fg-soft)', fontWeight: 500, marginLeft: '.4rem', fontSize: '.85rem' }}>Citizen Portal</span></span>
               </Link>
               <nav className="site-nav" aria-label="Main">
-                <Link to="/">Home</Link>
-                <Link to="/cases">My cases</Link>
-                <Link to="/demos">Demos</Link>
-                <Link to="/consent">Consent</Link>
-                <Link to="/accessibility">Accessibility</Link>
+                <Link to="/"><FormattedMessage id="nav.home" defaultMessage="Home" /></Link>
+                <Link to="/cases"><FormattedMessage id="nav.cases" defaultMessage="My cases" /></Link>
+                <Link to="/demos"><FormattedMessage id="nav.demos" defaultMessage="Demos" /></Link>
+                <Link to="/consent"><FormattedMessage id="nav.consent" defaultMessage="Consent" /></Link>
+                <Link to="/accessibility"><FormattedMessage id="nav.accessibility" defaultMessage="Accessibility" /></Link>
               </nav>
               <HeaderTools locale={locale} onLocaleChange={onLocaleChange} />
             </header>

@@ -1,6 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { FormattedMessage } from 'react-intl';
 import { countries, getCountry } from '../auth/msalConfig';
+
+const COUNTRY_NAME_LOCALIZED: Record<string, string> = {
+  dk: 'Danmark', se: 'Sverige', no: 'Norge',
+};
 
 export function UserBadge() {
   const { instance, accounts } = useMsal();
@@ -13,7 +18,7 @@ export function UserBadge() {
     return (
       <Link to="/login" className="user-badge user-badge--anon" aria-label="Sign in or create an account">
         <span aria-hidden="true">→</span>
-        <span>Sign in</span>
+        <span><FormattedMessage id="header.signin" defaultMessage="Sign in" /></span>
       </Link>
     );
   }
@@ -37,12 +42,21 @@ export function UserBadge() {
       >
         <span className="user-badge__avatar" aria-hidden="true">{initial}</span>
         <span className="user-badge__meta">
-          <span className="user-badge__name">Hi {first} <span className="user-badge__flag" aria-hidden="true">{flag}</span></span>
-          <span className="user-badge__country">{country.toUpperCase()} citizen</span>
+          <span className="user-badge__name">
+            <FormattedMessage id="header.greeting" defaultMessage="Hi {name}" values={{ name: first }} />{' '}
+            <span className="user-badge__flag" aria-hidden="true">{flag}</span>
+          </span>
+          <span className="user-badge__country">
+            <FormattedMessage
+              id="header.country.citizen"
+              defaultMessage="{country} citizen"
+              values={{ country: COUNTRY_NAME_LOCALIZED[country] || country.toUpperCase() }}
+            />
+          </span>
         </span>
       </button>
-      <button type="button" className="user-badge__signout" onClick={signOut} aria-label="Sign out">
-        Sign out
+      <button type="button" className="user-badge__signout" onClick={signOut}>
+        <FormattedMessage id="header.signout" defaultMessage="Sign out" />
       </button>
     </div>
   );

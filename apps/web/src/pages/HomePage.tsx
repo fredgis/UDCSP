@@ -138,14 +138,6 @@ export function HomePage(_: { locale?: string }) {
           </li>
         ))}
       </ul>
-
-      <div className="home-cta">
-        <div>
-          <h2>Curious about how it&rsquo;s built?</h2>
-          <p>The <Link to="/demos">Demos</Link> page walks through ten end-to-end scenarios — citizen journeys, back-office, governance, observability — with the architecture diagram and the technology stack behind each one.</p>
-        </div>
-        <Link to="/demos" className="button-secondary">Explore the demos →</Link>
-      </div>
     </>
   );
 }

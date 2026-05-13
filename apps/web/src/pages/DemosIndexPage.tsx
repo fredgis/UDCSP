@@ -82,103 +82,123 @@ const tag: Record<Demo['category'], { label: string; color: string }> = {
 };
 
 function PrincipleDiagram() {
-  // Functional architecture diagram. Three swim lanes (citizen, platform, country).
+  // Clean three-tier functional architecture: channels → sovereign platform → country backends.
+  // Two-column legend, generous spacing, soft drop shadows, no overlapping arrows.
   return (
     <figure className="principle-diagram" aria-labelledby="diagram-caption">
-      <svg viewBox="0 0 960 360" role="img" aria-labelledby="diagram-title">
-        <title id="diagram-title">UDCSP functional architecture</title>
+      <svg viewBox="0 0 1100 560" role="img" aria-labelledby="diagram-title" preserveAspectRatio="xMidYMid meet">
+        <title id="diagram-title">UDCSP functional architecture — channels, platform, country backends</title>
         <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#1e3a8a" />
+          <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#1d4ed8" />
           </marker>
-          <linearGradient id="gradPlatform" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#dbeafe" />
-            <stop offset="100%" stopColor="#bfdbfe" />
+          <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#15803d" />
+          </marker>
+          <linearGradient id="lane-channels" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#fef9c3" />
+            <stop offset="100%" stopColor="#fef3c7" />
           </linearGradient>
+          <linearGradient id="lane-platform" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#eff6ff" />
+            <stop offset="100%" stopColor="#dbeafe" />
+          </linearGradient>
+          <linearGradient id="lane-backend" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#f0fdf4" />
+            <stop offset="100%" stopColor="#dcfce7" />
+          </linearGradient>
+          <filter id="card-shadow" x="-10%" y="-20%" width="120%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.12" />
+          </filter>
         </defs>
 
-        {/* Swim lane labels */}
-        <text x="20" y="35" fontSize="14" fontWeight="700" fill="#475569">Citizen</text>
-        <text x="20" y="155" fontSize="14" fontWeight="700" fill="#475569">Platform (per country)</text>
-        <text x="20" y="305" fontSize="14" fontWeight="700" fill="#475569">Country backend</text>
+        {/* Lane backgrounds */}
+        <rect x="20" y="20"  width="1060" height="140" rx="14" fill="url(#lane-channels)" stroke="#fbbf24" strokeWidth="1" opacity="0.6" />
+        <rect x="20" y="200" width="1060" height="140" rx="14" fill="url(#lane-platform)" stroke="#93c5fd" strokeWidth="1" opacity="0.6" />
+        <rect x="20" y="380" width="1060" height="160" rx="14" fill="url(#lane-backend)"  stroke="#86efac" strokeWidth="1" opacity="0.6" />
 
-        {/* Citizen channels */}
-        <g>
-          <rect x="120" y="15" width="110" height="46" rx="8" fill="#fef3c7" stroke="#d97706" />
-          <text x="175" y="44" fontSize="13" textAnchor="middle" fill="#78350f">Web (SWA)</text>
+        {/* Lane titles */}
+        <text x="40" y="48" fontSize="13" fontWeight="700" fill="#92400e" letterSpacing="0.08em">CHANNELS — how citizens reach UDCSP</text>
+        <text x="40" y="228" fontSize="13" fontWeight="700" fill="#1e3a8a" letterSpacing="0.08em">SOVEREIGN PLATFORM LAYER — same in every country</text>
+        <text x="40" y="408" fontSize="13" fontWeight="700" fill="#14532d" letterSpacing="0.08em">COUNTRY BACKEND — data and processing stay in-country</text>
 
-          <rect x="250" y="15" width="110" height="46" rx="8" fill="#fef3c7" stroke="#d97706" />
-          <text x="305" y="44" fontSize="13" textAnchor="middle" fill="#78350f">Mobile (PWA)</text>
-
-          <rect x="380" y="15" width="110" height="46" rx="8" fill="#fef3c7" stroke="#d97706" />
-          <text x="435" y="44" fontSize="13" textAnchor="middle" fill="#78350f">Voice (ACS)</text>
-
-          <rect x="510" y="15" width="110" height="46" rx="8" fill="#fef3c7" stroke="#d97706" />
-          <text x="565" y="44" fontSize="13" textAnchor="middle" fill="#78350f">Email / SMS</text>
-
-          <rect x="640" y="15" width="110" height="46" rx="8" fill="#fef3c7" stroke="#d97706" />
-          <text x="695" y="44" fontSize="13" textAnchor="middle" fill="#78350f">Chat assistant</text>
+        {/* Country selector pills */}
+        <g transform="translate(880,30)">
+          <text x="100" y="14" fontSize="11" fontWeight="600" fill="#64748b" textAnchor="end">Active per country</text>
+          <g transform="translate(0,22)">
+            <circle cx="20" cy="14" r="14" fill="#fff" stroke="#cbd5e1" /><text x="20" y="19" fontSize="14" textAnchor="middle">🇩🇰</text>
+            <circle cx="60" cy="14" r="14" fill="#fff" stroke="#cbd5e1" /><text x="60" y="19" fontSize="14" textAnchor="middle">🇸🇪</text>
+            <circle cx="100" cy="14" r="14" fill="#fff" stroke="#cbd5e1" /><text x="100" y="19" fontSize="14" textAnchor="middle">🇳🇴</text>
+          </g>
         </g>
 
-        {/* Identity gate */}
-        <rect x="120" y="90" width="160" height="50" rx="8" fill="#dbeafe" stroke="#1d4ed8" />
-        <text x="200" y="115" fontSize="13" fontWeight="600" textAnchor="middle" fill="#1e3a8a">Entra External ID</text>
-        <text x="200" y="131" fontSize="11" textAnchor="middle" fill="#1e3a8a">DK · SE · NO tenants</text>
+        {/* CHANNELS — 5 cards evenly spaced */}
+        {[
+          { x: 60,  icon: '💻', label: 'Web', sub: 'Static Web App' },
+          { x: 250, icon: '📱', label: 'Mobile',   sub: 'PWA' },
+          { x: 440, icon: '☎️', label: 'Voice',    sub: 'ACS Call Automation' },
+          { x: 630, icon: '✉️', label: 'Email · SMS', sub: 'Logic Apps' },
+          { x: 820, icon: '💬', label: 'Chat',     sub: 'Citizen Assistant' },
+        ].map((c) => (
+          <g key={c.label} transform={`translate(${c.x},70)`} filter="url(#card-shadow)">
+            <rect width="160" height="74" rx="10" fill="#fffbeb" stroke="#d97706" strokeWidth="1.4" />
+            <text x="14" y="34" fontSize="22">{c.icon}</text>
+            <text x="46" y="34" fontSize="14" fontWeight="700" fill="#78350f">{c.label}</text>
+            <text x="14" y="58" fontSize="11" fill="#92400e">{c.sub}</text>
+          </g>
+        ))}
 
-        {/* APIM */}
-        <rect x="320" y="90" width="160" height="50" rx="8" fill="url(#gradPlatform)" stroke="#1d4ed8" />
-        <text x="400" y="115" fontSize="13" fontWeight="600" textAnchor="middle" fill="#1e3a8a">APIM</text>
-        <text x="400" y="131" fontSize="11" textAnchor="middle" fill="#1e3a8a">JWT · CORS · routing · audit</text>
+        {/* PLATFORM — Identity + APIM + Foundry + Logic Apps */}
+        {[
+          { x: 60,  icon: '🪪', label: 'Entra External ID', sub: 'DK · SE · NO tenants' },
+          { x: 290, icon: '🔐', label: 'APIM gateway',       sub: 'JWT · CORS · routing · audit' },
+          { x: 540, icon: '🤖', label: 'Foundry agents',      sub: 'classifier · eligibility · extractor' },
+          { x: 820, icon: '⚙️', label: 'Logic Apps',          sub: 'orchestration · MI to backends' },
+        ].map((c) => (
+          <g key={c.label} transform={`translate(${c.x},250)`} filter="url(#card-shadow)">
+            <rect width={c.label === 'Foundry agents' ? 250 : 220} height="74" rx="10" fill="#ffffff" stroke="#1d4ed8" strokeWidth="1.4" />
+            <text x="14" y="34" fontSize="22">{c.icon}</text>
+            <text x="46" y="34" fontSize="14" fontWeight="700" fill="#1e3a8a">{c.label}</text>
+            <text x="14" y="58" fontSize="11" fill="#1e40af">{c.sub}</text>
+          </g>
+        ))}
 
-        {/* Foundry */}
-        <rect x="520" y="90" width="180" height="50" rx="8" fill="url(#gradPlatform)" stroke="#1d4ed8" />
-        <text x="610" y="115" fontSize="13" fontWeight="600" textAnchor="middle" fill="#1e3a8a">Foundry agents</text>
-        <text x="610" y="131" fontSize="11" textAnchor="middle" fill="#1e3a8a">classifier · eligibility · extractor</text>
+        {/* BACKENDS — D365, Dataverse/Lakehouse, Purview/Sentinel, Power BI */}
+        {[
+          { x: 60,  icon: '🛠️', label: 'D365 Customer Service', sub: 'cases · queues · Copilot' },
+          { x: 320, icon: '🗄️', label: 'Dataverse · Lakehouse',  sub: 'cases · documents · evals' },
+          { x: 580, icon: '🛡️', label: 'Purview · Sentinel',     sub: 'audit · DLP · incidents' },
+          { x: 840, icon: '📊', label: 'Power BI',                sub: 'CIO outcomes · KPIs' },
+        ].map((c) => (
+          <g key={c.label} transform={`translate(${c.x},430)`} filter="url(#card-shadow)">
+            <rect width="240" height="80" rx="10" fill="#ffffff" stroke="#15803d" strokeWidth="1.4" />
+            <text x="14" y="36" fontSize="22">{c.icon}</text>
+            <text x="46" y="36" fontSize="14" fontWeight="700" fill="#14532d">{c.label}</text>
+            <text x="14" y="60" fontSize="11" fill="#166534">{c.sub}</text>
+          </g>
+        ))}
 
-        {/* Logic Apps */}
-        <rect x="740" y="90" width="180" height="50" rx="8" fill="url(#gradPlatform)" stroke="#1d4ed8" />
-        <text x="830" y="115" fontSize="13" fontWeight="600" textAnchor="middle" fill="#1e3a8a">Logic Apps</text>
-        <text x="830" y="131" fontSize="11" textAnchor="middle" fill="#1e3a8a">orchestration · MI to backends</text>
-
-        {/* Country backends */}
-        <rect x="120" y="240" width="200" height="60" rx="8" fill="#dcfce7" stroke="#15803d" />
-        <text x="220" y="265" fontSize="13" fontWeight="600" textAnchor="middle" fill="#14532d">D365 Customer Service</text>
-        <text x="220" y="285" fontSize="11" textAnchor="middle" fill="#14532d">cases · queues · Copilot</text>
-
-        <rect x="350" y="240" width="200" height="60" rx="8" fill="#dcfce7" stroke="#15803d" />
-        <text x="450" y="265" fontSize="13" fontWeight="600" textAnchor="middle" fill="#14532d">Dataverse / Lakehouse</text>
-        <text x="450" y="285" fontSize="11" textAnchor="middle" fill="#14532d">cases · documents · evals</text>
-
-        <rect x="580" y="240" width="200" height="60" rx="8" fill="#dcfce7" stroke="#15803d" />
-        <text x="680" y="265" fontSize="13" fontWeight="600" textAnchor="middle" fill="#14532d">Purview · Sentinel</text>
-        <text x="680" y="285" fontSize="11" textAnchor="middle" fill="#14532d">audit · DLP · incident</text>
-
-        <rect x="810" y="240" width="120" height="60" rx="8" fill="#dcfce7" stroke="#15803d" />
-        <text x="870" y="265" fontSize="13" fontWeight="600" textAnchor="middle" fill="#14532d">Power BI</text>
-        <text x="870" y="285" fontSize="11" textAnchor="middle" fill="#14532d">CIO outcomes</text>
-
-        {/* Arrows from channels down to APIM */}
-        <line x1="175" y1="62" x2="200" y2="89" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="305" y1="62" x2="380" y2="89" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="435" y1="62" x2="400" y2="89" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="565" y1="62" x2="420" y2="89" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="695" y1="62" x2="610" y2="89" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
-
+        {/* Channels → Identity (single converging arrow) */}
+        {[140, 330, 520, 710, 900].map((x) => (
+          <line key={x} x1={x} y1="144" x2="170" y2="249" stroke="#1d4ed8" strokeWidth="1.4" opacity="0.55" />
+        ))}
         {/* Identity → APIM */}
-        <line x1="280" y1="115" x2="319" y2="115" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        <line x1="280" y1="287" x2="290" y2="287" stroke="#1d4ed8" strokeWidth="2" markerEnd="url(#arrow-blue)" />
         {/* APIM → Foundry */}
-        <line x1="480" y1="115" x2="519" y2="115" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        <line x1="510" y1="287" x2="540" y2="287" stroke="#1d4ed8" strokeWidth="2" markerEnd="url(#arrow-blue)" />
         {/* APIM → Logic Apps */}
-        <line x1="480" y1="125" x2="739" y2="125" stroke="#1e3a8a" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        <path d="M 510 297 C 600 350 700 350 820 297" stroke="#1d4ed8" strokeWidth="2" fill="none" markerEnd="url(#arrow-blue)" />
+        {/* Foundry → Logic Apps */}
+        <line x1="790" y1="287" x2="820" y2="287" stroke="#1d4ed8" strokeWidth="2" markerEnd="url(#arrow-blue)" />
 
-        {/* Logic Apps to country backends */}
-        <line x1="800" y1="142" x2="220" y2="239" stroke="#15803d" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="830" y1="142" x2="450" y2="239" stroke="#15803d" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="860" y1="142" x2="680" y2="239" stroke="#15803d" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        <line x1="890" y1="142" x2="870" y2="239" stroke="#15803d" strokeWidth="1.5" markerEnd="url(#arrow)" />
+        {/* Logic Apps → backends */}
+        <line x1="900" y1="324" x2="180" y2="429" stroke="#15803d" strokeWidth="1.4" opacity="0.55" markerEnd="url(#arrow-green)" />
+        <line x1="920" y1="324" x2="440" y2="429" stroke="#15803d" strokeWidth="1.4" opacity="0.55" markerEnd="url(#arrow-green)" />
+        <line x1="940" y1="324" x2="700" y2="429" stroke="#15803d" strokeWidth="1.4" opacity="0.55" markerEnd="url(#arrow-green)" />
+        <line x1="960" y1="324" x2="960" y2="429" stroke="#15803d" strokeWidth="1.4" opacity="0.55" markerEnd="url(#arrow-green)" />
       </svg>
       <figcaption id="diagram-caption">
-        Each country runs its own copy of the platform stack — Entra External ID tenant, APIM gateway, Foundry agents, Logic Apps, D365, Dataverse and Purview. The portal selects the right backend automatically based on the tenant the citizen signed in with, so data stays inside the country&rsquo;s sovereignty boundary at every step.
+        Channels feed a single sovereign platform layer (identity, gateway, AI agents, orchestration) that talks to the country&rsquo;s own backend. Each country runs its own copy of every tier — there is no shared cross-border data store. The portal selects the right backend automatically based on the tenant the citizen signed in with, so data residency and EU AI Act traceability are enforced end-to-end.
       </figcaption>
     </figure>
   );
