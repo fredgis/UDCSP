@@ -4,7 +4,7 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 import { listCases, removeCase, updateCase } from '../utils/caseStore';
 
-type Case = { id: string; title: string; status: string; updatedAt: string };
+type Case = { id: string; title: string; status: string; updatedAt: string; progress?: { done: number; total: number; current?: string } };
 
 type IntakeApplication = {
   id?: string;
@@ -50,12 +50,19 @@ export function MyCasesPage() {
     setError(null);
     const country = getCountry();
     const upn = accounts[0]?.username;
-    const local: Case[] = listCases(country, upn).map((c) => ({
-      id: c.id,
-      title: c.title,
-      status: c.status,
-      updatedAt: c.updatedAt,
-    }));
+    const local: Case[] = listCases(country, upn).map((c) => {
+      const steps = c.workflowSteps ?? [];
+      const total = steps.length || 7;
+      const done = steps.filter((s) => s.status === 'done').length;
+      const current = steps.find((s) => s.status === 'in-progress')?.label ?? steps.find((s) => s.status === 'pending')?.label;
+      return {
+        id: c.id,
+        title: c.title,
+        status: c.status,
+        updatedAt: c.updatedAt,
+        progress: steps.length ? { done, total, current } : undefined,
+      };
+    });
     try {
       const apim = apimBaseUrlForCountry(country);
       if (!apim) {
@@ -147,12 +154,28 @@ export function MyCasesPage() {
         <ul className="case-list">
           {cases.map((c) => {
             const isCanceled = /cancel/i.test(c.status);
+            const pct = c.progress ? Math.round((c.progress.done / c.progress.total) * 100) : null;
             return (
-              <li key={c.id}>
-                <Link to={`/cases/${c.id}`}><strong>{c.id}</strong> · {c.title}</Link>
-                <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
-                <time>{c.updatedAt}</time>
-                <span className="case-actions">
+              <li key={c.id} className="case-row">
+                <div className="case-row__main">
+                  <Link to={`/cases/${c.id}`} className="case-row__title">
+                    <strong>{c.id}</strong> · {c.title}
+                  </Link>
+                  <div className="case-row__meta">
+                    <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
+                    <time>{c.updatedAt ? new Date(c.updatedAt).toLocaleString() : ''}</time>
+                  </div>
+                  {c.progress && (
+                    <div className="case-row__progress" aria-label={`Step ${c.progress.done} of ${c.progress.total} completed`}>
+                      <div className="case-row__progress-bar"><div className="case-row__progress-fill" style={{ width: `${pct}%` }} /></div>
+                      <span className="case-row__progress-label">
+                        Step {c.progress.done}/{c.progress.total} completed
+                        {c.progress.current && !isCanceled ? <> · next: <em>{c.progress.current}</em></> : null}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="case-row__actions">
                   <button
                     type="button"
                     className="button-secondary case-actions__btn"
@@ -177,7 +200,7 @@ export function MyCasesPage() {
                   >
                     Delete
                   </button>
-                </span>
+                </div>
               </li>
             );
           })}

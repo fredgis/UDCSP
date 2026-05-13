@@ -99,68 +99,25 @@ export function CaseDetailPage() {
 
   return (
     <article className="apply-page case-detail">
-      <header className="apply-page__head">
-        <p style={{ marginBottom: '.25rem' }}><Link to="/cases">← Back to my cases</Link></p>
-        <h1>{c.title}</h1>
-        <p style={{ color: 'var(--color-fg-soft)' }}>
-          Case <strong>{c.id}</strong> · country <strong>{c.country.toUpperCase()}</strong> · last update {c.updatedAt}
-        </p>
-        <p>
-          <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
-          {typeof c.confidence === 'number' && (
-            <span style={{ marginLeft: '.5rem', color: 'var(--color-fg-soft)' }}>
-              AI confidence {(c.confidence * 100).toFixed(0)}%
-            </span>
-          )}
-          {c.estimatedDecisionDate && (
-            <span style={{ marginLeft: '.5rem', color: 'var(--color-fg-soft)' }}>
-              · ETA {c.estimatedDecisionDate}
-            </span>
-          )}
-        </p>
-      </header>
-
-      <section aria-labelledby="wf-title" className="case-section">
-        <h2 id="wf-title">Workflow timeline</h2>
-        <p style={{ color: 'var(--color-fg-soft)' }}>
-          Live view of the country intake Logic App
-          {' '}<code>udcsp-{c.country}-dev-application-intake</code>{' '}
-          orchestrating Foundry agents, D365 case creation and Purview lineage publication.
-        </p>
-        <WorkflowDiagram steps={steps} />
-      </section>
-
-      {c.documentBlobUrl && (
-        <section aria-labelledby="doc-title" className="case-section">
-          <h2 id="doc-title">Attached document</h2>
-          <p>
-            Stored in country blob container <code>citizen-uploads</code> on
-            {' '}<code>{c.storageAccount ?? `udcsp${c.country}prodlake`}</code>.
+      <p className="case-detail__back"><Link to="/cases">← Back to my cases</Link></p>
+      <header className="case-detail__head">
+        <div>
+          <h1>{c.title}</h1>
+          <p className="case-detail__sub">
+            Case <code>{c.id}</code> · country <strong>{c.country.toUpperCase()}</strong>
+            {c.updatedAt && <> · updated {new Date(c.updatedAt).toLocaleString()}</>}
           </p>
-          <p style={{ wordBreak: 'break-all', fontSize: '.85rem', color: 'var(--color-fg-soft)' }}>
-            {c.documentBlobName ?? c.documentBlobUrl}
-          </p>
-          <p>Caseworkers retrieve it via APIM with managed-identity Storage Blob Data Reader on the country lake.</p>
-        </section>
-      )}
-
-      {c.extractedFields && Object.keys(c.extractedFields).length > 0 && (
-        <section aria-labelledby="ex-title" className="case-section">
-          <h2 id="ex-title">Extracted fields</h2>
-          <table className="case-fields-table">
-            <thead><tr><th>Field</th><th>Value</th></tr></thead>
-            <tbody>
-              {Object.entries(c.extractedFields).map(([k, v]) => (
-                <tr key={k}><th scope="row">{k}</th><td>{fmt(v)}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      <section aria-labelledby="act-title" className="case-section">
-        <h2 id="act-title">Actions</h2>
-        <p>
+          <div className="case-detail__pills">
+            <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
+            {typeof c.confidence === 'number' && (
+              <span className="pill pill--confidence">AI confidence {(c.confidence * 100).toFixed(0)}%</span>
+            )}
+            {c.estimatedDecisionDate && (
+              <span className="pill pill--eta">ETA {c.estimatedDecisionDate}</span>
+            )}
+          </div>
+        </div>
+        <div className="case-detail__actions">
           <button
             type="button"
             className="button-secondary"
@@ -173,7 +130,7 @@ export function CaseDetailPage() {
             }}
           >
             Cancel case
-          </button>{' '}
+          </button>
           <button
             type="button"
             className="button-danger"
@@ -183,10 +140,49 @@ export function CaseDetailPage() {
               navigate('/cases');
             }}
           >
-            Remove from local cache
+            Remove from cache
           </button>
-        </p>
-      </section>
+        </div>
+      </header>
+
+      <div className="case-detail__grid">
+        <section aria-labelledby="wf-title" className="case-section case-section--wide">
+          <h2 id="wf-title">Workflow timeline</h2>
+          <p className="case-detail__hint">
+            Live view of the country intake Logic App
+            {' '}<code>udcsp-{c.country}-dev-application-intake</code>{' '}
+            orchestrating Foundry agents, D365 case creation and Purview lineage publication.
+          </p>
+          <WorkflowDiagram steps={steps} />
+        </section>
+
+        {c.documentBlobUrl && (
+          <section aria-labelledby="doc-title" className="case-section">
+            <h2 id="doc-title">Attached document</h2>
+            <dl className="case-detail__dl">
+              <dt>File</dt><dd>{c.documentBlobName ?? '—'}</dd>
+              <dt>Storage account</dt><dd><code>{c.storageAccount ?? `udcsp${c.country}prodlake`}</code></dd>
+              <dt>Container</dt><dd><code>citizen-uploads</code></dd>
+              <dt>Region</dt><dd>{c.country.toUpperCase()} (data residency)</dd>
+            </dl>
+            <p className="case-detail__hint">Caseworkers retrieve it via APIM with managed-identity Storage Blob Data Reader on the country lake.</p>
+          </section>
+        )}
+
+        {c.extractedFields && Object.keys(c.extractedFields).length > 0 && (
+          <section aria-labelledby="ex-title" className="case-section">
+            <h2 id="ex-title">Extracted fields</h2>
+            <table className="case-fields-table">
+              <thead><tr><th>Field</th><th>Value</th></tr></thead>
+              <tbody>
+                {Object.entries(c.extractedFields).map(([k, v]) => (
+                  <tr key={k}><th scope="row">{k}</th><td>{fmt(v)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+      </div>
     </article>
   );
 }

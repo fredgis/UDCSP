@@ -420,3 +420,34 @@
 .gdpr-erasure h2 { margin-top:0; color:#b3261e; }
 .gdpr-erasure p { margin:.4rem 0; }
 .gdpr-erasure__cert { margin-top:1rem; padding:.9rem; border:1px solid #1f6f43; background:#f0f9f3; border-radius:6px; color:#155232; }
+
+/* My Cases — rich row with progress bar */
+.case-list { list-style:none; padding:0; margin:1rem 0 0; display:flex; flex-direction:column; gap:.75rem; }
+.case-row { display:flex; gap:1rem; padding:1rem 1.1rem; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); align-items:flex-start; flex-wrap:wrap; }
+.case-row__main { flex:1 1 60%; min-width:0; display:flex; flex-direction:column; gap:.4rem; }
+.case-row__title { font-size:1rem; }
+.case-row__meta { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; color:var(--color-fg-soft); font-size:.85rem; }
+.case-row__progress { display:flex; flex-direction:column; gap:.25rem; margin-top:.25rem; }
+.case-row__progress-bar { height:6px; background:#e6ecf3; border-radius:999px; overflow:hidden; }
+.case-row__progress-fill { height:100%; background:linear-gradient(90deg, #1f6f43, #2e9663); transition:width .4s; }
+.case-row__progress-label { font-size:.78rem; color:var(--color-fg-soft); }
+.case-row__progress-label em { font-style:normal; color:#1a3a5c; font-weight:600; }
+.case-row__actions { display:flex; gap:.4rem; align-items:flex-start; flex:0 0 auto; }
+
+/* Case detail — 2-col grid */
+.case-detail__back { margin:0 0 .5rem; }
+.case-detail__head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap; padding:1.1rem 1.2rem; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); margin-bottom:1rem; }
+.case-detail__head h1 { margin:0 0 .35rem; font-size:1.45rem; }
+.case-detail__sub { margin:0 0 .55rem; color:var(--color-fg-soft); font-size:.9rem; }
+.case-detail__pills { display:flex; gap:.4rem; flex-wrap:wrap; }
+.case-detail__pills .pill { font-size:.78rem; }
+.pill--confidence { background:#fff3cd; color:#7a4d00; }
+.pill--eta { background:#e6f3ff; color:#1a3a5c; }
+.case-detail__actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.case-detail__grid { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; }
+.case-section--wide { grid-column: 1 / -1; }
+.case-detail__hint { color:var(--color-fg-soft); font-size:.88rem; margin:.4rem 0 .8rem; }
+.case-detail__dl { display:grid; grid-template-columns: max-content 1fr; gap:.35rem .9rem; margin:.5rem 0 0; font-size:.9rem; }
+.case-detail__dl dt { color:var(--color-fg-soft); font-weight:600; }
+.case-detail__dl dd { margin:0; }
+@media (max-width: 720px) { .case-detail__grid { grid-template-columns: 1fr; } }
