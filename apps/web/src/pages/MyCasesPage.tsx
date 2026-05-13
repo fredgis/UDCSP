@@ -1,77 +1,111 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 
 type Case = { id: string; title: string; status: string; updatedAt: string };
 
-type DataverseTask = {
-  activityid: string;
-  subject: string;
-  description?: string;
-  createdon: string;
-  statecode: number;
-  statuscode: number;
-  prioritycode?: number;
+type IntakeApplication = {
+  id?: string;
+  applicationId?: string;
+  caseId?: string;
+  activityid?: string;
+  applicationType?: string;
+  subject?: string;
+  title?: string;
+  status?: string;
+  state?: string;
+  statecode?: number;
+  createdOn?: string;
+  createdon?: string;
+  submittedAt?: string;
+  updatedAt?: string;
 };
 
 const STATE_LABEL: Record<number, string> = { 0: 'Open', 1: 'Completed', 2: 'Canceled' };
+
+function normalize(items: IntakeApplication[]): Case[] {
+  return items.map((t, i) => ({
+    id: t.id || t.applicationId || t.caseId || t.activityid || `app-${i}`,
+    title: t.title || t.subject || t.applicationType || 'Application',
+    status:
+      t.status ||
+      t.state ||
+      (typeof t.statecode === 'number' ? STATE_LABEL[t.statecode] ?? `state ${t.statecode}` : 'Submitted'),
+    updatedAt: t.updatedAt || t.submittedAt || t.createdOn || t.createdon || '',
+  }));
+}
 
 export function MyCasesPage() {
   const isAuth = useIsAuthenticated();
   const { instance, accounts } = useMsal();
   const [cases, setCases] = useState<Case[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!isAuth) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const country = getCountry();
-        const apim = apimBaseUrlForCountry(country);
-        if (!apim) { setCases([]); return; }
-        let bearer = '';
-        if (accounts[0]) {
-          try {
-            const tok = await instance.acquireTokenSilent({
-              account: accounts[0],
-              scopes: [apiScopeForCountry(country)],
-            });
-            bearer = tok.accessToken;
-          } catch {
-            // fall through with no bearer — APIM will 401 and we show banner
-          }
-        }
-        const res = await fetch(`${apim}/case-management`, {
-          method: 'GET',
-          headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload = (await res.json()) as { value?: DataverseTask[] } | DataverseTask[];
-        const items = Array.isArray(payload) ? payload : payload.value ?? [];
-        const data: Case[] = items.map((t) => ({
-          id: t.activityid,
-          title: t.subject,
-          status: STATE_LABEL[t.statecode] ?? `state ${t.statecode}`,
-          updatedAt: t.createdon,
-        }));
-        if (!cancelled) setCases(data);
-      } catch (e) {
-        if (!cancelled) {
-          setCases([]);
-          setError('No applications returned yet — submit one via /apply, or the API scope may not yet be exposed on the SPA app registration.');
+    setLoading(true);
+    setError(null);
+    try {
+      const country = getCountry();
+      const apim = apimBaseUrlForCountry(country);
+      if (!apim) {
+        setCases([]);
+        return;
+      }
+      let bearer = '';
+      if (accounts[0]) {
+        try {
+          const tok = await instance.acquireTokenSilent({
+            account: accounts[0],
+            scopes: [apiScopeForCountry(country)],
+          });
+          bearer = tok.accessToken;
+        } catch {
+          // continue without bearer; APIM will likely 401 and we surface a banner
         }
       }
-    })();
-    return () => { cancelled = true; };
-  }, [isAuth, accounts, instance]);
+      const res = await fetch(`${apim}/citizen-applications/`, {
+        method: 'GET',
+        headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const payload = (await res.json()) as { value?: IntakeApplication[] } | IntakeApplication[];
+      const items = Array.isArray(payload) ? payload : payload.value ?? [];
+      setCases(normalize(items));
+    } catch (e) {
+      setCases([]);
+      setError(
+        e instanceof Error && e.message.startsWith('HTTP ')
+          ? `Backend returned ${e.message}. The intake Logic App may not yet expose a GET listing — your submission is stored, but listing requires the case-management read API to be wired.`
+          : 'No applications returned yet — submit one via /apply, or the API scope may not yet be exposed on the SPA app registration.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [accounts, instance, isAuth]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (cases === null) return <section><h1>My cases</h1><p>Loading…</p></section>;
 
   return (
     <section aria-labelledby="cases-title">
-      <h1 id="cases-title">My cases</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <h1 id="cases-title" style={{ marginBottom: 0 }}>My cases</h1>
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={() => void load()}
+          disabled={loading}
+          aria-label="Refresh case list"
+        >
+          {loading ? '⟳ Refreshing…' : '⟳ Refresh'}
+        </button>
+      </div>
       <p style={{ color: 'var(--color-fg-soft)' }}>
         Every application you submit appears here with its real-time status, secure messages from your caseworker, and the audit trail of AI suggestions vs human decisions.
       </p>
