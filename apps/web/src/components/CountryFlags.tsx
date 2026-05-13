@@ -47,7 +47,6 @@ export function CountryFlags({ disabled = false }: { disabled?: boolean }) {
           onClick={() => pick(c.code)}
         >
           <span className="country-flags__flag" aria-hidden="true">{c.flag}</span>
-          <span className="country-flags__code">{c.code.toUpperCase()}</span>
         </button>
       ))}
     </div>
