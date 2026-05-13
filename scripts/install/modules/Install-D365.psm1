@@ -7,10 +7,31 @@ Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -Dis
 
 function Test-PacStdoutForError {
     # pac CLI returns exit 0 even on usage / runtime errors. Surface them.
-    param([string]$LogFile, [string]$Label)
-    $tail = Get-Content $LogFile -Tail 80 -ErrorAction SilentlyContinue
-    if (-not $tail) { return }
-    $errLine = $tail | Where-Object { $_ -match '^\s*Error:' } | Select-Object -First 1
+    # Use byte-offset tracking so we only scan content appended by the most
+    # recent pac command, otherwise stale errors bleed into the next call's
+    # warning. Caller passes a [ref] holding the prior log length.
+    param(
+        [string]$LogFile,
+        [string]$Label,
+        [ref]$Offset
+    )
+    if (-not (Test-Path $LogFile)) { return }
+    $current = (Get-Item $LogFile).Length
+    $prior = if ($Offset) { [int64]$Offset.Value } else { 0 }
+    if ($current -le $prior) {
+        if ($Offset) { $Offset.Value = $current }
+        return
+    }
+    $stream = [IO.File]::Open($LogFile, 'Open', 'Read', 'ReadWrite')
+    try {
+        [void]$stream.Seek($prior, 'Begin')
+        $reader = [IO.StreamReader]::new($stream)
+        $delta = $reader.ReadToEnd()
+    } finally {
+        $stream.Dispose()
+    }
+    if ($Offset) { $Offset.Value = $current }
+    $errLine = ($delta -split "`n") | Where-Object { $_ -match '^\s*Error:' } | Select-Object -First 1
     if ($errLine) {
         Write-Warning "[$Label] pac reported error despite exit 0: $($errLine.Trim())"
     }
@@ -38,6 +59,9 @@ function Install-D365 {
 
     $packDir = Join-Path $ReportDir 'd365-packed'
     New-Item -ItemType Directory -Path $packDir -Force | Out-Null
+    # Initialize log offset to current end of file so Test-PacStdoutForError
+    # only scans content appended by each subsequent pac command.
+    $logOffset = if (Test-Path $logFile) { (Get-Item $logFile).Length } else { [int64]0 }
 
     foreach ($country in 'DK','SE','NO') {
         $url = $d365Urls[$country]
@@ -53,7 +77,7 @@ function Install-D365 {
                 -LogFile $logFile `
                 -WhatIfFlag $whatIf `
                 -ContinueOnError
-            Test-PacStdoutForError -LogFile $logFile -Label "org-select-$country"
+            Test-PacStdoutForError -LogFile $logFile -Label "org-select-$country" -Offset ([ref]$logOffset)
         }
         foreach ($sln in @('UDCSP_Core',"UDCSP_$country")) {
             $srcPath = Join-Path $solutionsRoot $sln
@@ -63,15 +87,18 @@ function Install-D365 {
             }
             # `pac solution import --path` requires a zip; pack the folder first.
             $zipPath = Join-Path $packDir "$sln.zip"
+            $packOk = $false
             if ($PSCmdlet.ShouldProcess($srcPath, "pac solution pack -> $zipPath")) {
+                if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
                 Invoke-NativeCommand `
                     -Command @('pac','solution','pack','--zipfile',$zipPath,'--folder',$srcPath,'--packagetype','Unmanaged') `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
-                Test-PacStdoutForError -LogFile $logFile -Label "pack-$sln"
+                Test-PacStdoutForError -LogFile $logFile -Label "pack-$sln" -Offset ([ref]$logOffset)
+                $packOk = Test-Path $zipPath
             }
-            if (-not (Test-Path $zipPath)) {
+            if (-not $packOk) {
                 Write-Log -LogFile $logFile -Message "[skip] solution pack failed for $sln (no zip produced)"
                 Write-Warning "D365 [$country/$sln]: pack failed — likely scaffold solution.xml is incomplete. Skipping import."
                 continue
@@ -82,7 +109,7 @@ function Install-D365 {
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
-                Test-PacStdoutForError -LogFile $logFile -Label "import-$sln-$country"
+                Test-PacStdoutForError -LogFile $logFile -Label "import-$sln-$country" -Offset ([ref]$logOffset)
             }
         }
     }
