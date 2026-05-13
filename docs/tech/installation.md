@@ -7,7 +7,7 @@
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
 
-This guide is split into **4 collapsible sections**. Click any ▶ to expand.
+This guide is split into **5 collapsible sections**. Click any ▶ to expand.
 
 | Section | What it is | When to use |
 |---|---|---|
@@ -15,6 +15,7 @@ This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 | **🟩 B — Mandatory install** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
 | **🟨 C — Optional** | Things you can skip for a basic install (PSTN, evaluator HTML, conversational smoke, tear-down). | Demos & audits. |
 | **🟪 D — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
+| **🟧 E — Post-install checklist** | What the installer covers vs. what stays manual on a real MCAPS sandbox tenant — gaps, licences to obtain, follow-up actions. | After a green install run. |
 
 ---
 
@@ -578,6 +579,175 @@ Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|
 ```
 
 </details>
+
+</details>
+
+---
+
+<details>
+<summary><h2>🟧 E — POST-INSTALL CHECKLIST (what's done, what's still manual)</h2></summary>
+
+> Read this **after** your first successful end-to-end install run on a sandbox tenant. The installer is honest: when an Azure resource type, M365 SKU or first-party app is **not procurable via API**, the corresponding phase logs `[skip]` and the orchestrator marks the phase ✅ on the basis of the validation script (which only checks that source artefacts exist, not that Azure/M365 actually accepted them). This section lists the gaps and how to close them.
+
+---
+
+### E1 — Lessons learned from real runs (May 2026 sandbox campaign)
+
+These are the issues we hit on a fresh `MngEnvMCAP294737.onmicrosoft.com` MCAPS sandbox and the fixes now baked into the installer. **You should not have to redo these** — they are documented so you understand the `[skip]` lines you will see in the logs.
+
+| # | What we hit | Root cause | Fix shipped |
+|--:|---|---|---|
+| 1 | `pac solution import` exit 1 with `Solution manifest cannot be parsed` | `Solution.xml` had `<RootComponents></RootComponents>` self-close + missing `<Versions>` block | Per-country `Solution.xml` files now author the canonical layout (`<RootComponents />` + `<MissingDependencies />` + valid `<Versions>` block), publisher `udcsp_` reserved at version `1.0.0.0` |
+| 2 | `az staticwebapp create` failed `LocationNotAvailableForResourceType` in `swedencentral` | SWA Free SKU only available in `centralus / eastus2 / westus2 / westeurope / eastasia` | `Install-Apps.psm1` hardcodes `westeurope` for SWA Free (still EU-residency compliant — SWA is a global edge CDN, content origin stays in our SWA region) |
+| 3 | `swa deploy` hung on interactive auth picker | `swa deploy` opens a browser when no `--deployment-token` is given | Installer now `az staticwebapp secrets list` → passes `--deployment-token <key> --no-use-keychain` |
+| 4 | `staticwebapp.config.json` rejected with `AnyOfError` schema validation | Invalid `routes[]` entry combining `route + serve + statusCode` | Removed redundant `/*` route; `navigationFallback.rewrite` already handles SPA fallback |
+| 5 | `npm install` exit 1 — package not found on registry | `@azure/msal-react-native@^0.4.0` was a placeholder, **does not exist** on npmjs | Replaced with canonical Expo OIDC stack: `expo-auth-session ~6.0.2`, `expo-crypto ~14.0.1`, `expo-web-browser ~14.0.1` (PKCE flow with Microsoft Entra External ID) |
+| 6 | `az group create` exit 1 | RG already existed in a different location (re-run after region change) | `New-AzResourceGroupIfNeeded` now `az group exists` pre-check, idempotent across location changes |
+| 7 | `az deployment group create udcsp-purview` **silently zombied** for 40+ min (1 thread, 0 CPU, 0 network connections, **no deployment ever registered in ARM**) | MCAPS / Enterprise tenants are limited to **one tenant-level Purview account** (validation error 35001). In `westeurope` ARM returns the error in ~4 s; in `swedencentral` ARM hangs the az client silently (regional ARM bug) | `Install-Purview.psm1` pre-checks `az resource list --resource-type Microsoft.Purview/accounts` across the tenant — if any exists, skips the create and runs `Register-PurviewSources` against the existing account instead |
+| 8 | `Install-Purview` long deployment risk | Purview accounts take 30–60 min to provision the managed RG (SQL + Storage + EventHub) | `Invoke-AzGroupDeployment` now supports `-NoWait` + ARM polling every 30 s with 75 min timeout; opt-in for slow phases |
+
+---
+
+### E2 — Status matrix: what you have vs. what's still manual
+
+After a green run on a clean MCAPS sandbox using the `dev` config, the table below is what a reviewer should expect.
+
+**Legend**: ✅ provisioned by installer • ⚠️ provisioned but with gaps • 🟡 manual one-time action required • ❌ not procurable on this tenant (needs licence/SKU/ticket)
+
+#### Azure infrastructure (Bicep / ARM)
+
+| Phase | Resource | Sandbox status | Action needed |
+|---|---|---|---|
+| `LandingZone` | Mgmt-group hierarchy, RGs, hub-spoke VNets, Key Vault, ACR, Storage | ✅ | — |
+| `Identity` | Microsoft Entra External ID tenants, user flows, Conditional Access, PIM | ⚠️ | One External ID tenant per country must be created **manually** (no Bicep provider for tenant-creation) |
+| `VerifiedId` | Verified ID issuer + verifier (eIDAS 2.0 / EUDI bridge) | 🟡 | Verified ID needs to be **enabled per tenant** in Entra portal once; installer registers the issuer/verifier via Graph |
+| `Bastion`, `Ddos`, `BackupAsr`, `Observability`, `ConfidentialLedger`, `ChaosStudio`, `Fabric`, `Postgres`, `Redis`, `ConfidentialCompute` | All Azure-native | ✅ | — |
+| `Foundry` | Azure AI Foundry projects, hosted/prompt agents, evaluators, datasets | ✅ | — |
+| `Apim` | API Management Developer tier, agent-topic-router API, products, policies | ✅ | — |
+| `LogicApps` | 10 Consumption workflows × 3 countries (citizen onboarding, SRR, breach, etc.) | ✅ | — |
+| `Apps` | SWA `udcsp-web-dev` (westeurope), web build, mobile npm install | ✅ | EAS build for mobile binaries skipped (`eas` not on PATH) — install `eas-cli` and run separately for iOS/Android |
+| `Purview` (account) | Tenant-level Purview Enterprise account | ❌ if a tenant-level Purview already exists (1-per-tenant limit) → installer reuses it | If no Purview exists, installer creates it. Otherwise edit `scripts/install/config/udcsp.config.psd1` `PurviewAccount = @{ ... }` to point to the existing one |
+| `Purview` (sources) | Register Dataverse + Storage + Postgres + Fabric as scan sources | ⚠️ | Source registration requires Purview Data Curator role on the SP — assign it manually (`az purview account add-root-collection-admin` or via portal) |
+| `SyntheticData` | Faker pipelines + scrubbed datasets uploaded to Storage | ✅ | — |
+| `Voice` | ACS Call Automation + GPT-4o Realtime tool wiring | ✅ | PSTN inbound number purchase is **manual** (see C1) |
+| `Ciem` | Microsoft Entra Permissions Management onboarding | ⚠️ | Permissions Management standalone licence required **per tenant** (CSP order on real tenants; trial on sandbox may not exist) |
+
+#### Microsoft 365 / Power Platform / Dynamics 365
+
+| Component | Sandbox status | Action needed |
+|---|---|---|
+| **Dataverse environments** (UDCSP-DK / UDCSP-SE / UDCSP-NO) | ⚠️ | Created **manually** in Power Platform Admin Center (production-type, EU region, Dynamics-enabled) before running `D365` phase. Installer cannot create them — no public API for first-party env creation. See A4. |
+| **Solutions** (`UDCSPCore` + `UDCSP{DK\|SE\|NO}`) | ✅ | Installer imports both per env. Currently publisher-only (RootComponents empty) — author tables/forms in maker UI then `pac solution export` to commit. See `apps/d365/README.md`. |
+| **Dynamics 365 Customer Service first-party app** | 🟡 | **Not installed by default** on MCAPS sandbox — only Solution Health Hub / Power Pages Admin / PP Env Settings appear. **Manual step (per env)** — see A5: Power Platform Admin Center → env → Resources → Dynamics 365 apps → Install Customer Service. Without it, no `Customer Service Hub` app, no SLA engine, no queues UI. **Licence prereq:** Dynamics 365 Customer Service trial via [trials.dynamics.com](https://trials.dynamics.com) (~2 min, 25 seats, 30 days). |
+| **Power Pages portal** (citizen self-service) | 🟡 | Provision manually if you want a portal in addition to SWA — not in installer scope. |
+| **Power Automate flows** (Dataverse → Logic Apps webhook bridges) | ✅ | Imported via `pac solution`. |
+
+#### Microsoft Purview & Compliance suite
+
+| Component | Sandbox status | Action needed |
+|---|---|---|
+| **Purview Data Map** | See Azure table above | Register sources after install (E2 row above) |
+| **Purview Information Protection** (sensitivity labels, DLP) | 🟡 | Labels published via Graph in `Install-Purview` — but **publishing requires E5 Compliance / E5 Information Protection licence**. On sandbox without licence: `[graph SKIP]` is logged, no harm. |
+| **Microsoft Priva** (Privacy Risk + SRR policies) | ❌ on sandbox | **No Priva licence on default MCAPS tenant.** Required: `Microsoft 365 E5` OR `Microsoft 365 E5 Compliance` OR `Microsoft Priva Privacy Risk Management` standalone. See E3 below for how to obtain. Without it, `Install-Priva` logs `[graph SKIP]` for every policy — that's expected, not a failure. |
+| **Microsoft Defender for Cloud Apps / IRM / Communication Compliance** | ❌ on sandbox | E5 Compliance required, same path as Priva |
+
+#### Identity & access (Microsoft Entra)
+
+| Component | Sandbox status | Action needed |
+|---|---|---|
+| **Microsoft Entra External ID** (CIAM tenant per country) | 🟡 | One tenant per country must be created manually (entra.microsoft.com → External Identities → Create new external tenant). Installer wires user flows + custom auth extensions via Graph after. |
+| **Microsoft Entra Verified ID** | 🟡 | Enable per tenant in portal once (Verified ID → Setup), then installer registers the issuer + credential contracts |
+| **Microsoft Entra Permissions Management (CIEM)** | ❌ on sandbox | Standalone Permissions Management licence required (CSP/EA only — no sandbox trial as of 2026). Documented `[skip]`. |
+
+---
+
+### E3 — How to close the licence gaps (sandbox tenant)
+
+#### Microsoft 365 E5 (unlocks Priva + Information Protection + Defender for Cloud Apps)
+
+1. **Trial — self-service (~2 min, recommended on MCAPS):**
+   - https://www.microsoft.com/microsoft-365/business/microsoft-365-e5 → **Try free for 1 month** → sign in with `admin@<tenant>.onmicrosoft.com`
+   - 25 seats, 30 days, renewable once (60 days total)
+2. **Trial via admin center** (alternative):
+   - https://admin.microsoft.com → **Billing → Purchase services** → search **Microsoft 365 E5** → **Start free trial**
+3. **MCAPS ticket fallback** if both refuse:
+   - https://aka.ms/MCAPS → **Onboard a license / SKU** → request `Microsoft 365 E5 Trial`. SLA ~24–48 h.
+
+**Then assign to your admin user:**
+```powershell
+Connect-MgGraph -Scopes "User.ReadWrite.All","Organization.Read.All" -NoWelcome
+$sku = Get-MgSubscribedSku | Where-Object { $_.SkuPartNumber -in 'SPE_E5','ENTERPRISEPREMIUM' } | Select-Object -First 1
+$upn = 'admin@MngEnvMCAP294737.onmicrosoft.com'
+Update-MgUser -UserId $upn -UsageLocation 'FR'   # required before licence assignment
+Set-MgUserLicense -UserId $upn -AddLicenses @(@{SkuId=$sku.SkuId}) -RemoveLicenses @()
+```
+
+**Activate Priva** after licence propagation (~5–10 min):
+- https://purview.microsoft.com/privacy → **Get started** (provisions the Priva service tenant-side, ~15 min)
+
+#### Dynamics 365 Customer Service (per env)
+
+- https://trials.dynamics.com → **Customer Service Trial** → ~2 min, 25 seats, 30 days
+- Then assign the licence to your admin user (same Set-MgUserLicense flow with the Customer Service SKU GUID)
+- Then install the first-party app in each Dataverse env (see A5)
+
+#### Permissions Management (CIEM)
+
+- No public trial as of 2026 — needs CSP/EA order. On sandbox: leave `Ciem` phase to log `[skip]`, document the gap in your Definition-of-Done.
+
+---
+
+### E4 — Verification commands
+
+After closing licence gaps + re-running the installer, verify each layer:
+
+```powershell
+# Azure resources per phase
+az resource list --resource-group udcsp-shared-apps-rg -o table
+az resource list --resource-group udcsp-shared-governance -o table
+
+# Static Web App health
+az staticwebapp show --name udcsp-web-dev --resource-group udcsp-shared-apps-rg --query "{state:provisioningState,url:defaultHostname,location:location}"
+
+# Logic Apps per country
+az logic workflow list --resource-group udcsp-dk-prod-logicapps-rg -o table
+
+# Foundry agents
+az ml online-endpoint list --resource-group udcsp-shared-foundry-rg -o table
+
+# D365 solutions per env
+pac org select --environment <UDCSP-DK url> ; pac solution list
+
+# Purview sources registered
+# (use the portal at https://<account>.purview.azure.com → Data Map → Sources)
+
+# Priva policies (requires E5)
+Connect-MgGraph -Scopes "PrivacyManagement.ReadWrite.All" -NoWelcome
+Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/beta/privacy/subjectRightsRequests/policies" | ConvertTo-Json -Depth 4
+
+# All phase logs — find anything skipped or errored
+Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|\[skip\]|\[graph SKIP\]'
+```
+
+---
+
+### E5 — Definition of Done for a clean install
+
+A reviewer should consider the installation **complete on a sandbox** when:
+
+- [ ] All phases in `install-report.json` show `status:OK`
+- [ ] Section E2 status matrix has been walked through and each ❌/🟡 either closed or **explicitly waived** with a note in `install-report.json`
+- [ ] At least one E5 trial or equivalent licence has been requested (so Priva / IP / DLP are not silently skipped)
+- [ ] Customer Service first-party app installed in **at least one** Dataverse env (DK recommended, the demo env)
+- [ ] Web SWA URL serves the citizen portal (CSP / HSTS headers present)
+- [ ] One end-to-end smoke (`-Phase QA -SmokeOnly`) passes — see C2
+
+For **production** tenants, additionally:
+
+- [ ] Purview Enterprise account is in the EU region (not `westus`) — if not, file a Microsoft Support ticket to delete the existing tenant-level Purview, then re-run `Install-Purview`
+- [ ] All licences purchased via CSP/EA, not trials
+- [ ] Permissions Management onboarded
+- [ ] Verified ID issuer rooted to a country-issued credential authority (not the default test signer)
 
 </details>
 
