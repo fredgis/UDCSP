@@ -302,6 +302,53 @@ Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal
 - **Foundry agents:** Classifier, Translator, Citizen Assistant, Document Extractor, Eligibility Pre-Assessor.
 - **Synthetic data (A15):** persona "Maria Kowalska", PL lease document, PL/SV KB pair.
 
+#### 🗺️ How it's wired
+
+```mermaid
+flowchart LR
+    Maria([👩 Maria · NVDA · PL])
+    SWA[Static Web App<br/>PL locale · WCAG 2.1 AA]
+    APIM{{APIM SE<br/>JWT validate · MI}}
+
+    subgraph SE [🇸🇪 Sweden data residency boundary]
+        direction TB
+        LA[Logic App<br/>application-intake]
+        LAKE[(Storage lake<br/>citizen-uploads)]
+        DV[(Dataverse<br/>tasks → incidents)]
+    end
+
+    subgraph FOUNDRY [Foundry agents · MI]
+        DOC[Document Extractor]
+        TR[Translator PL→SV]
+        ELIG[Eligibility Pre-Assessor]
+        ASSIST[Citizen Assistant PL]
+    end
+
+    PUR[(Purview<br/>lineage)]
+
+    Maria -- "PL eID via SE External ID" --> SWA
+    SWA -- "Bearer JWT · scp=access_as_user" --> APIM
+    SWA <-- "consent-gated chat" --> ASSIST
+    APIM -- "POST /documents/upload-url<br/>(MI proxy)" --> LAKE
+    APIM -- "POST /citizen-applications" --> LA
+    LA --> DOC --> TR --> ELIG --> DV
+    LA -. "lineage event" .-> PUR
+
+    classDef citizen fill:#dae8fc,stroke:#6c8ebf,color:#0b3a73;
+    classDef app fill:#d5e8d4,stroke:#82b366,color:#1b5e20;
+    classDef ai fill:#e1d5e7,stroke:#9673a6,color:#4a148c;
+    classDef store fill:#ffe6cc,stroke:#d79b00,color:#7f4f00;
+    classDef gov fill:#f8cecc,stroke:#b85450,color:#7b1f1a;
+
+    class Maria citizen;
+    class SWA,APIM,LA app;
+    class DOC,TR,ELIG,ASSIST ai;
+    class LAKE,DV store;
+    class PUR gov;
+```
+
+> 🇩🇰🇸🇪🇳🇴 **Country-agnostic implementation** — the same SPA, APIM operations, Logic App template and Foundry agents are deployed in DK, SE and NO. Routing happens on the citizen's identity token (`tid` → country) so data never crosses the residency boundary above.
+
 #### 💡 Talking points
 
 - 💬 *"Polish is not one of Sweden's official languages — but it is one of the **most-spoken minority languages** in Sweden. UDCSP treats it as a first-class citizen."*

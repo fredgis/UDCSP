@@ -451,3 +451,9 @@
 .case-detail__dl dt { color:var(--color-fg-soft); font-weight:600; }
 .case-detail__dl dd { margin:0; }
 @media (max-width: 720px) { .case-detail__grid { grid-template-columns: 1fr; } }
+
+/* Consent notice (revocations on apply pages) */
+.consent-notice { margin:1rem 0; padding:.85rem 1rem; border:1px solid #d6b656; background:#fff8e1; border-radius:var(--radius-md); }
+.consent-notice ul { margin:.4rem 0; padding-left:1.2rem; }
+.consent-notice li { margin:.15rem 0; }
+.chat-launcher__consent-hint { font-size:.72rem; color:var(--color-fg-soft); margin:0 0 .35rem; padding:0 .15rem; }
