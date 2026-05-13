@@ -14,7 +14,7 @@ Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 |----|---------------------------------------|:-----:|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | D1 | Citizen public chat                   | 🟡    | Widget renders, anonymous greeting, sends message                                 | APIM `agent-topic-router` backend = `placeholder.local`, no SWA CORS                 |
 | D2 | NO citizen sign-in                    | 🔴    | Country card shows ⚠                                                              | App reg on `udcspno.onmicrosoft.com` not created (no `VITE_EXTERNAL_ID_CLIENT_ID_NO`) |
-| D3 | DK citizen sign-up + sign-in          | 🟡    | Country picker → CIAM hosted page → callback → badge `Hi {first} 🇩🇰`. Apply form POSTs to APIM `citizen-applications`, CORS OK, JWT validation active. | Need: (1) Expose `access_as_user` scope on DK SPA app reg + grant admin consent; (2) Logic App downstream agent calls — see §"Known gaps"; (3) D365 connection in Logic App for `Create_D365_case`. |
+| D3 | DK citizen sign-up + sign-in          | 🟡    | Country picker → CIAM hosted page → callback → badge `Hi {first} 🇩🇰`. Apply form POSTs to APIM `citizen-applications`, CORS OK, JWT validation active. **`access_as_user` scope exposed + self-pre-authorised on DK SPA.** | Need: (1) Logic App downstream agent calls — see §"Known gaps"; (2) D365 connection in Logic App for `Create_D365_case`. |
 | D3-SE | SE citizen sign-in                  | 🔴    | Country card shows ⚠                                                              | App reg on `udcspse.onmicrosoft.com` not created                                      |
 | D4 | My cases                              | 🟡    | Page protected by AuthGate, fetches `${VITE_APIM_BASE_URL}/cases`, empty-state OK | APIM `/cases` route + D365 bridge missing                                             |
 | D5 | Voice intake → warm transfer          | 🔴    | —                                                                                 | ACS Call Automation runtime not invoked, Foundry topic-router tool call disabled     |
@@ -79,13 +79,7 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 ## Known gaps to push D3 to 🟢
 
-1. **DK SPA app reg** (portal action — required, ~5 min):
-   - Azure portal → Entra → App registrations → DK SPA app `2f69440c-f6c8-49f2-847f-e2f63e376102`
-   - **Expose an API** → set Application ID URI → `api://2f69440c-f6c8-49f2-847f-e2f63e376102`
-   - **Add a scope** → name `access_as_user`, who can consent: Admins and users, admin consent display name "Access UDCSP API as user"
-   - **Add a client application** → enter the SPA's own clientId `2f69440c-…` and tick the new scope
-   - **API permissions** → Add a permission → My APIs → pick the same app → delegated `access_as_user` → Grant admin consent
-   - Without this, `acquireTokenSilent` returns `null` and APIM 401s with "JWT not present".
+1. **DK SPA app reg — `access_as_user` scope** ✅ **DONE 2026-05-13** (via `az rest` PATCH on Graph application, scope id `bbdeffa6-6bd0-49a2-ac62-08e50ace69ee`, SPA pre-authorised against itself so no end-user consent prompt). Procedure documented in `installation.md` Step 3.5 for SE/NO. Verify by signing in DK → DevTools → token endpoint returns `scope=access_as_user`.
 
 2. **Logic App agent invocations** — the `application-intake` workflow has 3 `Call_X_agent` HTTP actions that POST raw JSON to the Foundry endpoint. With the **new Agents v1 API**, agents are invoked via the OpenAI-compatible Responses API at `POST /api/projects/<project>/openai/v1/responses` with body `{ model: "<deployment>", input: "<text>", … }`. Two viable patterns:
    - **(a) Inline in the Logic App** — call `/openai/v1/responses` directly, but you lose the agent's stored `instructions`/`tools` (you'd have to re-pass them in the request → defeats the point of the agent registry).
