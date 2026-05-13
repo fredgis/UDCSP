@@ -254,53 +254,53 @@ Lars dials the national tax-administration toll-free number. He is greeted in No
 
 ---
 
-### 🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Sweden)
+### 🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Denmark)
 
 > **Accessibility (WCAG 2.1 AA) + minority language + AI helps without taking control.**
 > 📖 *For the full architecture of this channel — landmarks, focus management, axe-core CI, contrast tokens, dyslexic font, accessibility statement — see* 🌐 [`web.md`](./web.md). *AI assistance side: see* 💬 [`chat.md`](./chat.md).
 
 | | |
 |---|---|
-| 👤 **Persona** | Maria Kowalska, 41, lives in Malmö, Polish citizen, low vision, uses NVDA screen reader. |
+| 👤 **Persona** | Maria Kowalska, 41, lives in Copenhagen, Polish citizen, low vision, uses NVDA screen reader. |
 | 🌐 **Channels** | Web (Static Web App) with assistive technology. |
-| 🌍 **Languages** | PL (Polish) for UI; SV for KB; EN as fallback. |
+| 🌍 **Languages** | PL (Polish) for UI; DA for KB; EN as fallback. |
 | ⏱️ **Duration** | ~ 7 min |
 | 🎯 **Audience** | Accessibility reviewers, ombudsperson, disability-rights advocates. |
 
 #### 📖 Story
 
-Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal is fully keyboard-navigable, every form field is properly labelled, the AI Citizen Assistant offers help in PL but never auto-fills without consent, and the eligibility pre-assessor flags her case for human review with full transparency.
+Maria applies for a Danish housing benefit. She uses NVDA in Polish. The portal is fully keyboard-navigable, every form field is properly labelled, the AI Citizen Assistant offers help in PL but never auto-fills without consent, and the eligibility pre-assessor flags her case for human review with full transparency.
 
 #### 🎞️ Walk-through
 
-1. Maria opens the SE portal in PL locale; NVDA reads the page in Polish (ICU MessageFormat resolves PL strings).
+1. Maria opens the DK portal in PL locale; NVDA reads the page in Polish (ICU MessageFormat resolves PL strings).
 2. **axe-core** in CI has already gated the build — no critical or serious WCAG 2.1 AA violations.
 3. Maria starts the housing-benefit application; the **Citizen Assistant** offers contextual help in PL and explains in plain language what each field means.
 4. Maria uploads her lease (PL); **Document Extractor** + **Translator** extract structured data and present it back to her **for confirmation** before submission.
 5. **Eligibility Pre-Assessor** returns "likely eligible — confidence 0.78"; the UI shows the reasoning **in PL**, including the data points it relied on.
-6. Maria submits; the application enters the SE D365 queue with the AI assessment attached.
+6. Maria submits; the application enters the DK D365 queue with the AI assessment attached.
 7. A confirmation page shows estimated decision date (4 days) and provides a screen-reader-friendly tracking link.
 
 #### ✅ Points demonstrated
 
 | Case-study requirement | Eval row | How it shows up |
 |---|:-:|---|
-| Cross-border identity federation | #2 | Maria authenticates via her Polish eID through the SE External ID tenant. |
+| Cross-border identity federation | #2 | Maria authenticates via her Polish eID through the DK External ID tenant. |
 | 28d → 4d processing | #3 | The same SLA path; AI pre-assessment shaves time off the queue. |
 | +38 % satisfaction | #4 | Post-submission CSAT captured per language. |
-| AI classification in 12 languages | #5 | Classifier handles PL → routes to SV caseworker queue. |
+| AI classification in 12 languages | #5 | Classifier handles PL → routes to DA caseworker queue. |
 | GenAI assistant | #6 | Polish-language assistance throughout the form. |
 | Eligibility pre-assessment | #7 | Visible to Maria, **including reasoning** — required by EU AI Act for high-risk. |
 | WCAG 2.1 AA | #8 | Live demo with NVDA; axe report shown. |
 | Channels | #12 | Web channel with assistive technology. |
-| Multilingual | #13 | PL UI, SV KB, EN fallback — all working at parity. |
-| Synthetic data | #17 | Persona "Maria Kowalska", PL lease, SV KB articles. |
+| Multilingual | #13 | PL UI, DA KB, EN fallback — all working at parity. |
+| Synthetic data | #17 | Persona "Maria Kowalska", PL lease, DA KB articles. |
 
 #### 🧰 Stack exercised
-- **Mandatory:** External ID (SE tenant), Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
+- **Mandatory:** External ID (DK tenant), Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
 - **Additional:** Microsoft Foundry, Static Web Apps, AI Document Intelligence, AI Translator, AI Content Safety, design system.
 - **Foundry agents:** Classifier, Translator, Citizen Assistant, Document Extractor, Eligibility Pre-Assessor.
-- **Synthetic data (A15):** persona "Maria Kowalska", PL lease document, PL/SV KB pair.
+- **Synthetic data (A15):** persona "Maria Kowalska", PL lease document, PL/DA KB pair.
 
 #### 🗺️ How it's wired
 
@@ -308,9 +308,9 @@ Maria applies for a Swedish housing benefit. She uses NVDA in Polish. The portal
 flowchart LR
     Maria([👩 Maria · NVDA · PL])
     SWA[Static Web App<br/>PL locale · WCAG 2.1 AA]
-    APIM{{APIM SE<br/>JWT validate · MI}}
+    APIM{{APIM DK<br/>JWT validate · MI}}
 
-    subgraph SE [🇸🇪 Sweden data residency boundary]
+    subgraph DK [🇩🇰 Denmark data residency boundary]
         direction TB
         LA[Logic App<br/>application-intake]
         LAKE[(Storage lake<br/>citizen-uploads)]
@@ -319,14 +319,14 @@ flowchart LR
 
     subgraph FOUNDRY [Foundry agents · MI]
         DOC[Document Extractor]
-        TR[Translator PL→SV]
+        TR[Translator PL→DA]
         ELIG[Eligibility Pre-Assessor]
         ASSIST[Citizen Assistant PL]
     end
 
     PUR[(Purview<br/>lineage)]
 
-    Maria -- "PL eID via SE External ID" --> SWA
+    Maria -- "PL eID via DK External ID" --> SWA
     SWA -- "Bearer JWT · scp=access_as_user" --> APIM
     SWA <-- "consent-gated chat" --> ASSIST
     APIM -- "POST /documents/upload-url<br/>(MI proxy)" --> LAKE
@@ -351,7 +351,7 @@ flowchart LR
 
 #### 💡 Talking points
 
-- 💬 *"Polish is not one of Sweden's official languages — but it is one of the **most-spoken minority languages** in Sweden. UDCSP treats it as a first-class citizen."*
+- 💬 *"Polish is not one of Denmark's official languages — but it is one of the most-spoken minority languages in the Copenhagen metropolitan area. UDCSP treats it as a first-class citizen."*
 - 💬 *"AI **assists**, never auto-submits. Maria is in control at every step. That is the EU AI Act in spirit and letter."*
 - 💬 *"Open the axe report — zero serious violations across all 18 portal screens."*
 
