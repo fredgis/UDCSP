@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: GDPR Subject Rights API
+  version: 1.0.0
+  description: |
+    Citizen-facing GDPR subject-rights operations. Today the erasure-request
+    operation returns a Priva-style certificate and a 30-day SLA via an
+    APIM-only stub; once the Microsoft 365 E5 licence is provisioned, the
+    backend will be repointed at the real Microsoft Priva DSR API.
+servers:
+  - url: https://{gateway-host}/gdpr
+paths:
+  /erasure-request:
+    post:
+      summary: Request erasure of all personal data (GDPR Article 17)
+      operationId: post-gdpr-erasure-request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+                scope:  { type: string, enum: [right-to-be-forgotten, account-closure, data-minimisation] }
+      responses:
+        '202':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  certificateId: { type: string }
+                  status:        { type: string, enum: [accepted] }
+                  etaIso:        { type: string, format: date-time }
+                  controller:    { type: string }
+                  legalBasis:    { type: string }
+        '401': { description: Unauthorized }
+        '429': { description: Too many requests }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
