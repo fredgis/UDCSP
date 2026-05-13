@@ -4,7 +4,7 @@ Live state of every end-to-end demo against the deployed sandbox.
 Update one row at a time as we wire each demo.
 
 - **Web SWA** — https://icy-dune-01c23d903.7.azurestaticapps.net
-- **Last bundle deployed** — `option-B-D3-wiring + foundry-v1-migration` (classic assistants deleted, agents recreated via new Agents v1 API; importer rewritten)
+- **Last bundle deployed** — `D3-end-to-end` (Logic App MI → Foundry direct + Dataverse `tasks`; APIM POST /citizen-applications wired to LA; APIM GET /case-management → Dataverse with MI)
 
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
@@ -14,9 +14,9 @@ Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 |----|---------------------------------------|:-----:|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | D1 | Citizen public chat                   | 🟡    | Widget renders, anonymous greeting, sends message                                 | APIM `agent-topic-router` backend = `placeholder.local`, no SWA CORS                 |
 | D2 | NO citizen sign-in                    | 🔴    | Country card shows ⚠                                                              | App reg on `udcspno.onmicrosoft.com` not created (no `VITE_EXTERNAL_ID_CLIENT_ID_NO`) |
-| D3 | DK citizen sign-up + sign-in          | 🟡    | Country picker → CIAM hosted page → callback → badge `Hi {first} 🇩🇰`. Apply form POSTs to APIM `citizen-applications`, CORS OK, JWT validation active. **`access_as_user` scope exposed + self-pre-authorised on DK SPA.** | Need: (1) Logic App downstream agent calls — see §"Known gaps"; (2) D365 connection in Logic App for `Create_D365_case`. |
+| D3 | DK citizen sign-up + sign-in          | 🟢    | Full chain: SPA sign-in → APIM `POST /citizen-applications` (JWT validated, UPN extracted from token) → Logic App `udcsp-dk-dev-application-intake` → 3 Foundry agents (classifier / eligibility / doc-extractor) via MI on `https://ai.azure.com` → Dataverse `tasks` row created via MI. Verified end-to-end 2026-05-13 (run `08584229100…`). | Production hardening: replace `task` entity with custom `gps_case` table; add error-handling for agent JSON; persist correlationId. |
 | D3-SE | SE citizen sign-in                  | 🔴    | Country card shows ⚠                                                              | App reg on `udcspse.onmicrosoft.com` not created                                      |
-| D4 | My cases                              | 🟡    | Page protected by AuthGate, fetches `${VITE_APIM_BASE_URL}/cases`, empty-state OK | APIM `/cases` route + D365 bridge missing                                             |
+| D4 | My cases                              | 🟢    | `MyCasesPage` calls APIM `GET /case-management` → Dataverse OData `/tasks?$filter=startswith(subject,'[UDCSP-')`. APIM uses MI on Dataverse. Cases submitted via D3 appear here. | TODO: filter by `preferred_username` claim once `gps_case` custom table has a citizen-UPN field. |
 | D5 | Voice intake → warm transfer          | 🔴    | —                                                                                 | ACS Call Automation runtime not invoked, Foundry topic-router tool call disabled     |
 | D6 | Consent ledger                        | 🔴    | Route exists                                                                      | Backend service + ledger storage not wired                                            |
 | D7 | Agent assist (back-office)            | 🔴    | —                                                                                 | Foundry tools, M365 connector, D365 actions pending                                   |
@@ -77,17 +77,23 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 **No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
 
-## Known gaps to push D3 to 🟢
+## D3 wiring decisions (resolved 2026-05-13)
 
-1. **DK SPA app reg — `access_as_user` scope** ✅ **DONE 2026-05-13** (via `az rest` PATCH on Graph application, scope id `bbdeffa6-6bd0-49a2-ac62-08e50ace69ee`, SPA pre-authorised against itself so no end-user consent prompt). Procedure documented in `installation.md` Step 3.5 for SE/NO. Verify by signing in DK → DevTools → token endpoint returns `scope=access_as_user`.
+1. **DK SPA app reg — `access_as_user` scope** ✅ exposed + self-pre-authorised. See `installation.md` Step 3.5.
 
-2. **Logic App agent invocations** — the `application-intake` workflow has 3 `Call_X_agent` HTTP actions that POST raw JSON to the Foundry endpoint. With the **new Agents v1 API**, agents are invoked via the OpenAI-compatible Responses API at `POST /api/projects/<project>/openai/v1/responses` with body `{ model: "<deployment>", input: "<text>", … }`. Two viable patterns:
-   - **(a) Inline in the Logic App** — call `/openai/v1/responses` directly, but you lose the agent's stored `instructions`/`tools` (you'd have to re-pass them in the request → defeats the point of the agent registry).
-   - **(b) Wrap each agent in an Azure Function or APIM operation that uses the Foundry SDK** — the SDK resolves agent name → version → instructions → model deployment server-side. The Logic App then calls the wrapper with `{agent: "udcsp-classifier", input: "..."}`. **Recommended.**
+2. **Logic App agent invocations** ✅ Resolved with **pattern (a) hybrid**: agent `instructions` and `model` are stored as workflow parameters (auto-synced from `foundry/agents/*/system-prompt.md` + `agent.yaml`) and the Logic App POSTs directly to `https://udcspai.services.ai.azure.com/api/projects/udcsp/openai/v1/responses` with MI auth (audience `https://ai.azure.com`). No separate wrapper Function or APIM op needed for the LA path. APIM agent-* APIs (still configured for the SPA-facing chat path) use the same pattern with named values.
 
-3. **D365 connection**: `Create_D365_case` action needs a Dataverse API connection (or service principal + bearer to `https://org939d8f07.crm4.dynamics.com/api/data/v9.2`). The `d365-dataverse-url` named value is set but the Logic App still uses the old HTTP action with no auth.
+3. **D365 case write** ✅ Logic App system-assigned MI granted **System Customizer + Basic User** in Dataverse (Application User with `applicationid = 8596ea8e-…`). HTTP action posts to `/api/data/v9.2/tasks` (NOT `/incidents` — Customer Service is not installed in `org939d8f07`). Body shape: `{subject:"[UDCSP-DK] <topic>", description:"citizenUpn: … | text: …", prioritycode:1}`.
 
-4. **APIM `citizen-applications` GET path**: currently routes to the Logic App POST URL. We need a separate route that queries D365 for cases by UPN claim. Options: add a new APIM operation backed by Dataverse OData with policy `set-backend-service` + `set-header Authorization`, or a Function.
+4. **APIM `citizen-applications` POST** ✅ policy on `post-citizen-applications-submit` decodes the bearer JWT inline, extracts `preferred_username`, calls the LA callback URL (stored as secret named value `logicapp-intake-dk-callback`), returns `202 {correlationId, status, laStatus}`.
+
+5. **APIM `case-management` GET/POST** ✅ both ops have policies that authenticate to Dataverse with APIM system MI (also Application User in `org939d8f07`, same role-grants). GET returns `tasks` filtered by `startswith(subject,'[UDCSP-')` — `MyCasesPage` parses the OData envelope and maps to its `Case` shape.
+
+### Production-hardening backlog (not blocking demo)
+- Replace `task` activity with a custom `gps_case` table that has explicit `gps_citizenupn`, `gps_country`, `gps_topic`, `gps_status` columns; APIM GET would then filter by the user's UPN claim instead of returning all UDCSP-tagged tasks.
+- Apply the same wiring on SE + NO Logic Apps + APIMs (currently DK only).
+- Re-enable Purview lineage publish once `purviewLineageTopicEndpoint` is no longer `placeholder.local`.
+- Add `<jwt-validate-entra>` re-check in the LA path so an attacker can't replay the LA SAS callback URL directly. Today APIM is the only entry point that knows the SAS; consider rotating it.
 
 ## Maintenance rule
 

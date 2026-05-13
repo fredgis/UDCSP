@@ -907,7 +907,53 @@ Use **Users → New user → Create new user**, set initial password, share cred
 
 - **APIM `agent-topic-router` returns "Service temporarily unavailable"** — the backend named-value `foundry-topic-router-agent-endpoint` is still `https://placeholder.local`. Replace with the real Foundry agent endpoint (`Install-Foundry.psm1` output) and add a CORS policy allowing `https://icy-dune-01c23d903.7.azurestaticapps.net`.
 - **`/cases` empty even after sign in** — APIM `/cases` route isn't wired to D365 yet. Implement the bridge or run *D5 Astrid* in the D365 caseworker app for end-to-end case visibility.
-- **Federated MitID / BankID** — out of scope of the SignUpSignIn flow. Add per-country social/saml IdP under *External Identities → All identity providers* once eID enrolment is granted by the country authority.
+### Step 7 — APIM ↔ Foundry + Dataverse via Managed Identity (D3 / D4 backend)
+
+Once the SPA can sign in, the back-end pipeline still needs to talk to Microsoft Foundry (agents) and to Dataverse (case write/read). We use **system-assigned managed identities** end-to-end — no client secrets — so a fresh tenant requires only role grants and one Application User per identity. This was completed for DK on 2026-05-13; repeat per country.
+
+**A. APIM system MI (covers SPA-facing chat + case lookup)**
+
+```powershell
+$apim = az resource show --ids "/subscriptions/<sub>/resourceGroups/udcsp-<c>-apim-rg/providers/Microsoft.ApiManagement/service/udcsp-<c>-prod-apim" -o json | ConvertFrom-Json
+$apimMi = $apim.identity.principalId   # ensure az resource update --set identity.type=SystemAssigned was run at deploy
+$foundry = az resource list --resource-type Microsoft.CognitiveServices/accounts --query "[?name=='udcspai'].id|[0]" -o tsv
+az role assignment create --assignee-object-id $apimMi --assignee-principal-type ServicePrincipal --role "Cognitive Services OpenAI User" --scope $foundry
+az role assignment create --assignee-object-id $apimMi --assignee-principal-type ServicePrincipal --role "Azure AI User"                  --scope $foundry
+```
+
+Then create the APIM MI as a Dataverse Application User (one-time, per environment). Use the appId of the MI (`az ad sp show --id <principalId> --query appId -o tsv`), POST it to `/api/data/v9.2/systemusers` with the root business unit, and attach **System Customizer** + **Basic User** roles. Full snippet is in `scripts/install/Configure-Dataverse-AppUser.ps1` (committed today).
+
+**B. Logic App `udcsp-<c>-dev-application-intake` system MI (covers D3 backend)**
+
+```powershell
+$la = "udcsp-<c>-dev-application-intake"
+$rg = "udcsp-<c>-logicapps-rg"
+az resource update --ids "/subscriptions/<sub>/resourceGroups/$rg/providers/Microsoft.Logic/workflows/$la" --set identity.type=SystemAssigned
+$laMi = az resource show --ids "/subscriptions/<sub>/resourceGroups/$rg/providers/Microsoft.Logic/workflows/$la" --query identity.principalId -o tsv
+az role assignment create --assignee-object-id $laMi --assignee-principal-type ServicePrincipal --role "Cognitive Services OpenAI User" --scope $foundry
+az role assignment create --assignee-object-id $laMi --assignee-principal-type ServicePrincipal --role "Azure AI User"                  --scope $foundry
+# Then: same Application User creation in Dataverse for $laMi.
+```
+
+**C. APIM operation policies wired**
+- `agent-classifier / agent-eligibility / agent-doc-extractor` — `set-backend-service` to `{{foundry-project-base}}/openai/v1`, `authentication-managed-identity resource="https://ai.azure.com"`, body transformed to `{model, instructions, input}` (instructions stored as named values from `foundry/agents/*/system-prompt.md`).
+- `case-management POST/GET` — backend `{{d365-dataverse-url}}api/data/v9.2`, MI auth `resource="{{d365-dataverse-url}}"`. POST writes a `task` row (`incidents` table is absent in this Dataverse env), GET filters by `startswith(subject,'[UDCSP-')`.
+- `citizen-applications POST` — decodes the SPA bearer JWT inline to extract `preferred_username`, then `send-request` to the LA callback URL stored as secret named value `logicapp-intake-dk-callback`, returns `202 {correlationId, status, laStatus}`.
+
+**D. Logic App workflow definition**
+- 3 `Call_X_agent` HTTP actions point directly at `https://udcspai.services.ai.azure.com/api/projects/udcsp/openai/v1/responses` with `authentication.type=ManagedServiceIdentity`, `audience=https://ai.azure.com`. Body = `{model, instructions, input}` where instructions+model come from workflow parameters (synced from `foundry/agents/*`).
+- `Create_D365_case` HTTP action posts to `/tasks` with MI audience `https://org939d8f07.crm4.dynamics.com`.
+- `Publish_application_submitted_lineage` is currently a no-op `Compose` until the Purview topic is provisioned.
+
+**E. Verify end-to-end**
+
+```powershell
+$cb = (Invoke-RestMethod "https://management.azure.com/subscriptions/<sub>/resourceGroups/udcsp-dk-logicapps-rg/providers/Microsoft.Logic/workflows/udcsp-dk-dev-application-intake/triggers/When_HTTP_request_received/listCallbackUrl?api-version=2019-05-01" -Method POST -Headers @{Authorization="Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)"}).value
+Invoke-RestMethod -Uri $cb -Method POST -Body (@{topic="child-benefit"; text="Smoke test"; country="dk"; citizenUpn="anna.kristensen@udcspdk.onmicrosoft.com"} | ConvertTo-Json) -ContentType application/json
+# Expected: a few seconds later, a `task` row appears in Dataverse with subject "[UDCSP-DK] child-benefit".
+```
+
+Then in the SPA: sign in, **Apply → child benefit → Submit**, navigate to **My cases** — the row created above (and any new submission) should be listed. APIM enforces the JWT (`scp=access_as_user`).
 
 </details>
 

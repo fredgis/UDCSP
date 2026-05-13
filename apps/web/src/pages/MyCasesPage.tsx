@@ -5,6 +5,18 @@ import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/m
 
 type Case = { id: string; title: string; status: string; updatedAt: string };
 
+type DataverseTask = {
+  activityid: string;
+  subject: string;
+  description?: string;
+  createdon: string;
+  statecode: number;
+  statuscode: number;
+  prioritycode?: number;
+};
+
+const STATE_LABEL: Record<number, string> = { 0: 'Open', 1: 'Completed', 2: 'Canceled' };
+
 export function MyCasesPage() {
   const isAuth = useIsAuthenticated();
   const { instance, accounts } = useMsal();
@@ -31,12 +43,19 @@ export function MyCasesPage() {
             // fall through with no bearer — APIM will 401 and we show banner
           }
         }
-        const res = await fetch(`${apim}/citizen-applications/`, {
+        const res = await fetch(`${apim}/case-management`, {
           method: 'GET',
           headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as Case[];
+        const payload = (await res.json()) as { value?: DataverseTask[] } | DataverseTask[];
+        const items = Array.isArray(payload) ? payload : payload.value ?? [];
+        const data: Case[] = items.map((t) => ({
+          id: t.activityid,
+          title: t.subject,
+          status: STATE_LABEL[t.statecode] ?? `state ${t.statecode}`,
+          updatedAt: t.createdon,
+        }));
         if (!cancelled) setCases(data);
       } catch (e) {
         if (!cancelled) {
