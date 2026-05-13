@@ -21,7 +21,7 @@ export function ChatLauncher({ locale }: { locale: string }) {
 
   useEffect(() => onConsentChange(() => setAllowed(isAllowed('aiAssistant'))), []);
 
-  const blocked = ['/login', '/logout-callback', '/'].includes(loc.pathname);
+  const blocked = ['/login', '/logout-callback'].includes(loc.pathname);
   if (blocked || !isAuth || !allowed) return null;
 
   return (

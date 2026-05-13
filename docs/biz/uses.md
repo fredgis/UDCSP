@@ -151,6 +151,9 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 #### 🎞️ Walk-through
 
 1. Anna lands on `borger.dk`-style **DK portal** (Static Web App), authenticates via **Microsoft Entra External ID (DK tenant)** + national eID.
+
+   > 🔐 **What "+ national eID" means in practice.** External ID DK exposes two sign-in methods on its hosted page: **email & password** (returning users who registered without an eID) and **MitID** — Denmark's mandatory national digital identity (~5M users, operated by Nets/Digitaliseringsstyrelsen, used on every public service from `borger.dk` to online banking). MitID itself is **not** a public OIDC provider; the platform federates External ID to a **certified OIDC broker** (default: **Criipto Verify** — single contract covering MitID, BankID SE, BankID Norge), which handles the SAML/proprietary protocol and eIDAS assurance levels. When Anna picks "Sign in with MitID" she is redirected from External ID → Criipto → her MitID app (face ID + 6-digit code) → back, with an `id_token` containing her pseudonymised CPR (`pid`) and assurance level **eIDAS High**. External ID maps that to its CIAM user object and returns its own access token to the SPA. Same broker, three different country flows (MitID / BankID / BankID Norge) — switching brokers is an External Identity Provider config change with no SPA code change. Full diagram and choice rationale in [`docs/tech/architecture.md` §4](../tech/architecture.md#4-identity-federation-detail).
+
 2. She selects **"Move to another Nordic country"** — the portal calls the **Foundry Classifier** through APIM; intent detected as `cross-border-residency-transfer`.
 3. The portal pre-fills the form with claims-based data from DK agencies — **Once-Only Principle (OOP)**. Anna only adds destination address and employer.
 4. She uploads her employment contract; **Document Extractor** (Foundry + AI Document Intelligence) confirms employer and salary.

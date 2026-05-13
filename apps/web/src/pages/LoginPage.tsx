@@ -64,7 +64,33 @@ export function LoginPage() {
       </fieldset>
 
       <fieldset className="login-fieldset">
-        <legend>2. Sign in or register</legend>
+        <legend>2. Choose how to sign in</legend>
+        <p style={{ color: 'var(--color-fg-soft)', marginTop: 0, fontSize: '.92rem' }}>
+          In production, residents authenticate either with email & password (returning users) or with their <strong>national eID</strong>{' '}
+          ({selected === 'dk' ? 'MitID' : selected === 'se' ? 'BankID' : 'BankID Norge / MinID'}). The eID button is shown here for clarity but is
+          intentionally disabled in this prototype — the real wiring goes through a certified <strong>OIDC broker</strong> (Criipto / Signicat) federated
+          to External ID. See <a href="https://github.com/fredgis/UDCSP/blob/main/docs/tech/architecture.md#4-identity-federation-detail">architecture §4</a>.
+        </p>
+        <div className="auth-method-grid" role="group" aria-label="Authentication method (preview)">
+          <button type="button" className="auth-method auth-method--active" disabled aria-pressed="true" title="Active in this prototype">
+            <span className="auth-method__icon" aria-hidden="true">📧</span>
+            <span className="auth-method__body">
+              <strong>Email &amp; password</strong>
+              <span className="auth-method__hint">Active — prototype default</span>
+            </span>
+          </button>
+          <button type="button" className="auth-method" disabled title="Disabled in prototype — Criipto OIDC broker required">
+            <span className="auth-method__icon" aria-hidden="true">🆔</span>
+            <span className="auth-method__body">
+              <strong>{selected === 'dk' ? 'MitID' : selected === 'se' ? 'BankID' : 'BankID Norge'}</strong>
+              <span className="auth-method__hint">Production · via OIDC broker</span>
+            </span>
+          </button>
+        </div>
+      </fieldset>
+
+      <fieldset className="login-fieldset">
+        <legend>3. Sign in or register</legend>
         <p style={{ color: 'var(--color-fg-soft)', marginTop: 0 }}>
           You will be redirected to <strong>udcsp{selected}.ciamlogin.com</strong> · user flow <code>SignUpSignIn</code>.
           {' '}New residents register; returning users sign in.
