@@ -261,4 +261,5 @@
 .section-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:var(--space-5) 0 var(--space-3); flex-wrap:wrap; }
 .section-heading > div { flex:1; min-width:240px; }
 .section-heading h2 { margin:0 0 .3rem; }
-.section-heading p { margin:0; color:var(--color-fg-soft); }
+.section-heading p { margin:0; color:var(--color-fg-soft); }.country-card--unconfigured { opacity:.6; border-style:dashed; }
+.country-card--unconfigured.country-card--selected { opacity:1; background:#fb923c; border-color:#c2410c; }

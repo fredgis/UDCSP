@@ -8,16 +8,28 @@ export const countries: { code: Country; label: string; flag: string; tenantDoma
 ];
 const userFlow = 'SignUpSignIn';
 const COUNTRY_KEY = 'udcsp.country';
+const PLACEHOLDER = '00000000-0000-0000-0000-000000000000';
+
 export const getCountry = (): Country => ((localStorage.getItem(COUNTRY_KEY) as Country) || 'dk');
 export const setCountry = (c: Country) => localStorage.setItem(COUNTRY_KEY, c);
 export const authorityForCountry = (country: Country) =>
   `https://udcsp${country}.ciamlogin.com/udcsp${country}.onmicrosoft.com/${userFlow}`;
+
+export const clientIdForCountry = (country: Country): string => {
+  const env = import.meta.env as Record<string, string | undefined>;
+  const perCountry = env[`VITE_EXTERNAL_ID_CLIENT_ID_${country.toUpperCase()}`];
+  const generic = env.VITE_EXTERNAL_ID_CLIENT_ID;
+  return perCountry || generic || PLACEHOLDER;
+};
+export const isCountryConfigured = (country: Country): boolean =>
+  clientIdForCountry(country) !== PLACEHOLDER;
+
 const knownAll = countries.map((c) => `udcsp${c.code}.ciamlogin.com`);
 
 export function createMsalConfig(country: Country = getCountry()): Configuration {
   return {
     auth: {
-      clientId: import.meta.env.VITE_EXTERNAL_ID_CLIENT_ID || '00000000-0000-0000-0000-000000000000',
+      clientId: clientIdForCountry(country),
       authority: authorityForCountry(country),
       knownAuthorities: knownAll,
       redirectUri: window.location.origin,

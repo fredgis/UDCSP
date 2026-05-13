@@ -1,32 +1,36 @@
-import { useMsal } from '@azure/msal-react';
 import { useState } from 'react';
-import { authorityForCountry, countries, Country, getCountry, loginRequest, setCountry } from '../auth/msalConfig';
-
-const PLACEHOLDER_CLIENT_ID = '00000000-0000-0000-0000-000000000000';
+import { PublicClientApplication } from '@azure/msal-browser';
+import { authorityForCountry, countries, Country, createMsalConfig, getCountry, isCountryConfigured, loginRequest, setCountry } from '../auth/msalConfig';
 
 export function LoginPage() {
-  const { instance } = useMsal();
   const [selected, setSelected] = useState<Country>(getCountry());
   const [error, setError] = useState<string | null>(null);
-  const clientId = (import.meta.env.VITE_EXTERNAL_ID_CLIENT_ID as string) || PLACEHOLDER_CLIENT_ID;
-  const configured = clientId !== PLACEHOLDER_CLIENT_ID;
+  const configured = isCountryConfigured(selected);
 
   const choose = (c: Country) => { setSelected(c); setCountry(c); setError(null); };
 
-  const start = (mode: 'signin' | 'signup') => {
+  const start = async (mode: 'signin' | 'signup') => {
     if (!configured) {
-      setError('No app registration is configured for this country tenant yet. Ask your DevOps to register a SPA app on udcsp' + selected + '.onmicrosoft.com and set VITE_EXTERNAL_ID_CLIENT_ID in apps/web/.env.');
+      setError(`No app registration is configured for ${selected.toUpperCase()}. Set VITE_EXTERNAL_ID_CLIENT_ID_${selected.toUpperCase()} (or VITE_EXTERNAL_ID_CLIENT_ID) in apps/web/.env then rebuild + redeploy the portal.`);
       return;
     }
     setCountry(selected);
-    instance.loginRedirect({
-      ...loginRequest,
-      authority: authorityForCountry(selected),
-      ...(mode === 'signup' ? { prompt: 'create' as const } : {}),
-    }).catch((e: unknown) => {
+    // Always build a fresh MSAL instance for the chosen country: each CIAM tenant
+    // has its own clientId, so a single app-wide msalInstance can't target all 3.
+    // The redirect causes a full page reload — main.tsx then re-creates the
+    // app-wide instance from localStorage country, which now matches.
+    try {
+      const pca = new PublicClientApplication(createMsalConfig(selected));
+      await pca.initialize();
+      await pca.loginRedirect({
+        ...loginRequest,
+        authority: authorityForCountry(selected),
+        ...(mode === 'signup' ? { prompt: 'create' as const } : {}),
+      });
+    } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(`Sign-${mode === 'signup' ? 'up' : 'in'} failed: ${msg}`);
-    });
+    }
   };
 
   return (
@@ -39,6 +43,7 @@ export function LoginPage() {
         <div role="radiogroup" aria-label="Country" className="country-grid">
           {countries.map((c) => {
             const isSelected = selected === c.code;
+            const ok = isCountryConfigured(c.code);
             return (
               <button
                 key={c.code}
@@ -46,10 +51,11 @@ export function LoginPage() {
                 role="radio"
                 aria-checked={isSelected}
                 onClick={() => choose(c.code)}
-                className={`country-card${isSelected ? ' country-card--selected' : ''}`}
+                className={`country-card${isSelected ? ' country-card--selected' : ''}${!ok ? ' country-card--unconfigured' : ''}`}
+                title={ok ? `${c.label} ready` : `${c.label} — app registration not configured in this build`}
               >
                 <span className="country-card__flag" aria-hidden="true">{c.flag}</span>
-                <strong className="country-card__name">{c.label}</strong>
+                <strong className="country-card__name">{c.label} {ok ? '✓' : '⚠'}</strong>
                 <span className="country-card__tenant">{c.tenantDomain}</span>
               </button>
             );
@@ -64,13 +70,14 @@ export function LoginPage() {
           {' '}New residents register; returning users sign in.
         </p>
         <div className="login-actions">
-          <button type="button" className="button-primary" onClick={() => start('signin')}>Sign in</button>
-          <button type="button" className="button-secondary" onClick={() => start('signup')}>Create an account</button>
+          <button type="button" className="button-primary" onClick={() => void start('signin')} disabled={!configured}>Sign in</button>
+          <button type="button" className="button-secondary" onClick={() => void start('signup')} disabled={!configured}>Create an account</button>
         </div>
         {!configured && (
           <p role="alert" className="login-warning">
-            ⚠ App registration is not set for this build (<code>VITE_EXTERNAL_ID_CLIENT_ID</code> is the placeholder).
-            The redirect will fail with <em>AADSTS700016</em> until DevOps registers a SPA app on the country tenant and rebuilds the portal.
+            ⚠ <strong>{selected.toUpperCase()}</strong> is not configured in this build — pick a country marked ✓, or follow{' '}
+            <a href="https://github.com/fredgis/UDCSP/blob/main/docs/tech/installation.md#-post-configuration--external-id-app-registrations-dk--se--no">POST CONFIGURATION</a>{' '}
+            to register the SPA app on <code>udcsp{selected}.onmicrosoft.com</code> and rebuild.
           </p>
         )}
         {error && <p role="alert" className="login-error">{error}</p>}
@@ -80,9 +87,9 @@ export function LoginPage() {
         <summary>How does this work?</summary>
         <ol>
           <li>Each country runs its own <strong>Entra External ID (CIAM)</strong> tenant — DK, SE, NO. Citizen data stays in that country.</li>
-          <li>The portal is a single-page app. When you choose a country, MSAL points at that tenant's <code>SignUpSignIn</code> user flow and redirects you there.</li>
+          <li>The portal is a single-page app. When you choose a country, MSAL is rebuilt with that tenant's <code>SignUpSignIn</code> user flow and matching SPA client ID, then redirects you there.</li>
           <li>The hosted page handles password reset, MFA, and (when federated) MitID / BankID / BankID Norge.</li>
-          <li>After redirect back, you land on the page you came from with a session valid for that country tenant only.</li>
+          <li>After redirect back, you land authenticated for that country tenant only.</li>
         </ol>
       </details>
     </section>
