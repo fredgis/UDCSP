@@ -31,7 +31,22 @@ function Install-Apps {
                 Invoke-NativeCommand -Command @('npm','run','build') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
             }
             if ((Test-CliAvailable -Name 'swa') -and $PSCmdlet.ShouldProcess('apps/web', 'swa deploy')) {
-                Invoke-NativeCommand -Command @('swa','deploy','./dist','--env',$envName) -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                $swaSub  = $Config.Subscriptions.SharedPlatform
+                $swaRg   = 'udcsp-shared-apps-rg'
+                $swaName = "udcsp-web-$envName"
+                $swaLoc  = if ($Config.Regions.Shared) { $Config.Regions.Shared } else { 'westeurope' }
+                # SWA Free SKU is only allowed in a subset of regions; westeurope is OK.
+                # Ensure subscription, RG, and SWA exist before deploy.
+                Invoke-NativeCommand -Command @('az','account','set','--subscription',$swaSub) -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                Invoke-NativeCommand -Command @('az','group','create','--name',$swaRg,'--location',$swaLoc,'--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                Invoke-NativeCommand -Command @('az','staticwebapp','create','--name',$swaName,'--resource-group',$swaRg,'--location',$swaLoc,'--sku','Free','--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                $deployToken = (& az staticwebapp secrets list --name $swaName --resource-group $swaRg --query 'properties.apiKey' -o tsv 2>$null).Trim()
+                if ([string]::IsNullOrWhiteSpace($deployToken)) {
+                    Write-Log -LogFile $logFile -Message "[warn] Could not fetch SWA deployment token for $swaName/$swaRg — skipping swa deploy. Run 'az staticwebapp secrets list' manually then re-run."
+                } else {
+                    # --deployment-token + --no-use-keychain bypasses interactive auth + macOS/Win keychain prompts.
+                    Invoke-NativeCommand -Command @('swa','deploy','./dist','--env',$envName,'--deployment-token',$deployToken,'--no-use-keychain') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                }
             } else {
                 Write-Log -LogFile $logFile -Message "[skip] swa CLI not on PATH. Install: npm install -g @azure/static-web-apps-cli."
             }
