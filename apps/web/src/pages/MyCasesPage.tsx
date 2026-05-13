@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
+import { listCases } from '../utils/caseStore';
 
 type Case = { id: string; title: string; status: string; updatedAt: string };
 
@@ -47,11 +48,18 @@ export function MyCasesPage() {
     if (!isAuth) return;
     setLoading(true);
     setError(null);
+    const country = getCountry();
+    const upn = accounts[0]?.username;
+    const local: Case[] = listCases(country, upn).map((c) => ({
+      id: c.id,
+      title: c.title,
+      status: c.status,
+      updatedAt: c.updatedAt,
+    }));
     try {
-      const country = getCountry();
       const apim = apimBaseUrlForCountry(country);
       if (!apim) {
-        setCases([]);
+        setCases(local);
         return;
       }
       let bearer = '';
@@ -73,14 +81,30 @@ export function MyCasesPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const payload = (await res.json()) as { value?: IntakeApplication[] } | IntakeApplication[];
       const items = Array.isArray(payload) ? payload : payload.value ?? [];
-      setCases(normalize(items));
+      const remote = normalize(items);
+      // dedupe by id, prefer remote (more authoritative)
+      const seen = new Set<string>();
+      const merged: Case[] = [];
+      for (const r of [...remote, ...local]) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        merged.push(r);
+      }
+      setCases(merged);
     } catch (e) {
-      setCases([]);
-      setError(
-        e instanceof Error && e.message.startsWith('HTTP ')
-          ? `Backend returned ${e.message}. The intake Logic App may not yet expose a GET listing — your submission is stored, but listing requires the case-management read API to be wired.`
-          : 'No applications returned yet — submit one via /apply, or the API scope may not yet be exposed on the SPA app registration.',
-      );
+      // server unreachable or no GET listing yet — show local cache
+      setCases(local);
+      if (local.length === 0) {
+        setError(
+          e instanceof Error && e.message.startsWith('HTTP ')
+            ? `Backend returned ${e.message}. Submit an application to populate this list.`
+            : 'No applications yet. Submit one via /apply.',
+        );
+      } else {
+        setError(
+          'Showing your locally cached submissions — the server listing endpoint is not yet wired, but your applications are stored in the country backend.',
+        );
+      }
     } finally {
       setLoading(false);
     }
