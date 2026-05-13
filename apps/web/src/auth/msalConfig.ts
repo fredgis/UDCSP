@@ -23,6 +23,20 @@ export const clientIdForCountry = (country: Country): string => {
 export const isCountryConfigured = (country: Country): boolean =>
   clientIdForCountry(country) !== PLACEHOLDER;
 
+export const apimBaseUrlForCountry = (country: Country): string => {
+  const env = import.meta.env as Record<string, string | undefined>;
+  return (
+    env[`VITE_APIM_BASE_URL_${country.toUpperCase()}`] ||
+    env.VITE_APIM_BASE_URL ||
+    ''
+  );
+};
+
+export const apiScopeForCountry = (country: Country): string => {
+  const cid = clientIdForCountry(country);
+  return `api://${cid}/access_as_user`;
+};
+
 const knownAll = countries.map((c) => `udcsp${c.code}.ciamlogin.com`);
 
 export function createMsalConfig(country: Country = getCountry()): Configuration {
