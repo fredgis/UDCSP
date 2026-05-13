@@ -93,6 +93,33 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 **No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
 
+## Demo 3 (Maria · SE · PL) — gap vs script
+
+Reference script: `docs/biz/demos.md` Demo 3 (Maria Kowalska, NVDA, PL UI in Sweden).
+
+| Script element | Current state | What's missing |
+|---|---|---|
+| SE External ID sign-in (PL → SE tenant) | 🔴 | App reg on `udcspse.onmicrosoft.com`, set `VITE_EXTERNAL_ID_CLIENT_ID_SE`, rebuild SPA |
+| PL locale (ICU MessageFormat) | 🟡 EN/FR/DA only | Add `pl` bundle in `apps/web/src/locales/`, register in i18n provider |
+| axe-core CI gate (zero serious WCAG 2.1 AA) | 🔴 | Add `@axe-core/cli` step in SWA build workflow, fail on serious+critical |
+| NVDA-friendly form (landmarks/labels/focus) | 🟡 not audited | Run axe + manual NVDA pass on `/apply/*` |
+| Citizen Assistant (PL contextual help) | 🔴 | Unblock D1 first (real APIM agent endpoint + CORS), then add PL `instructions` overlay |
+| Document Extractor on PL lease | 🟡 agent exists (used by D3-DK) | Wire upload → extractor in apply form |
+| Translator (PL → SV for KB / caseworker) | 🟡 agent exists, not invoked | Add Translator call in LA after extractor |
+| Eligibility reasoning visible to citizen | 🟡 LA returns confidence only | Surface `reasoning` field on confirmation page |
+| Submit → SE D365 queue | 🔴 | Clone D3-DK pattern: LA `udcsp-se-dev-application-intake` + APIM `POST /citizen-applications` SE policy + Application User on Dataverse SE env |
+| Confirmation: estimated decision date + tracking | 🔴 | Add to `ApplyConfirmationPage` |
+| Post-submission CSAT (per language) | 🔴 | Out of scope until D6 |
+
+**Minimum slice to play the script live** (in order):
+1. SE app reg + `VITE_EXTERNAL_ID_CLIENT_ID_SE` → rebuild SPA → unlocks login.
+2. `pl.json` locale + lang switcher → unlocks PL UI.
+3. Clone D3-DK Logic App + APIM policies for SE → unlocks submission.
+4. Add reasoning panel on confirmation page → satisfies AI Act talking point.
+5. axe-core CI step → satisfies "zero serious violations" claim.
+
+D1 (Citizen Assistant in PL) and post-submit CSAT remain out of scope for the live walk-through; can be narrated.
+
 ## D3 wiring decisions (resolved 2026-05-13)
 
 1. **DK SPA app reg — `access_as_user` scope** ✅ exposed + self-pre-authorised. See `installation.md` Step 3.5.
