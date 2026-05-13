@@ -23,7 +23,6 @@
         var b = (JObject)context.Variables["reqBody"];
         return (string)(b["contentType"] ?? "application/octet-stream");
       }</value></set-header>
-      <set-header name="x-ms-meta-citizen" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Authorization","")?.Length.ToString() ?? "0")</value></set-header>
       <set-body>@{
         var b = (JObject)context.Variables["reqBody"];
         var b64 = (string)(b["contentBase64"] ?? "");
