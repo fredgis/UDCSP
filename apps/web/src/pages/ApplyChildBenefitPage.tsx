@@ -83,7 +83,7 @@ export function ApplyChildBenefitPage() {
         reader.onerror = () => reject(new Error('Could not read the file.'));
         reader.readAsDataURL(file);
       });
-      const r = await apiFetch<ExtractResult>('/documents/extract', {
+      const r = await apiFetch<ExtractResult>('/agent-doc-extractor/extract', {
         method: 'POST',
         body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream', contentBase64: b64 }),
       });
