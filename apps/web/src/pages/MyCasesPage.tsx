@@ -99,17 +99,13 @@ export function MyCasesPage() {
       }
       setCases(merged);
     } catch (e) {
-      // server unreachable or no GET listing yet — show local cache
+      // server unreachable or no GET listing yet — show local cache silently
       setCases(local);
       if (local.length === 0) {
         setError(
           e instanceof Error && e.message.startsWith('HTTP ')
             ? `Backend returned ${e.message}. Submit an application to populate this list.`
             : 'No applications yet. Submit one via /apply.',
-        );
-      } else {
-        setError(
-          'Showing your locally cached submissions. The intake API received your application — the listing endpoint isn\'t exposed yet, so we\'re reading from local cache until it ships.',
         );
       }
     } finally {
