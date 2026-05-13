@@ -23,6 +23,9 @@
       },
       "d365CasesEndpoint": {
         "type": "String"
+      },
+      "translatorAgentEndpoint": {
+        "type": "String"
       }
     },
     "triggers": {
@@ -112,6 +115,31 @@
           ]
         }
       },
+      "Call_translator_to_caseworker_locale": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@parameters('translatorAgentEndpoint')",
+          "headers": {
+            "traceparent": "@outputs('Ensure_traceparent')",
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+          },
+          "body": {
+            "sourceLanguage": "@coalesce(triggerBody()?['language'], 'auto')",
+            "targetLanguage": "@if(equals(parameters('country'),'dk'),'da',if(equals(parameters('country'),'se'),'sv','nb'))",
+            "extracted": "@body('Call_document_extractor_if_attachments')",
+            "rationale": "@body('Call_eligibility_agent')?['reasoning']",
+            "summary": "@triggerBody()?['text']"
+          }
+        },
+        "runAfter": {
+          "Call_document_extractor_if_attachments": [
+            "Succeeded",
+            "Skipped",
+            "Failed"
+          ]
+        }
+      },
       "Create_D365_case": {
         "type": "Http",
         "inputs": {
@@ -124,8 +152,10 @@
           "body": "@triggerBody()"
         },
         "runAfter": {
-          "Call_document_extractor_if_attachments": [
-            "Succeeded"
+          "Call_translator_to_caseworker_locale": [
+            "Succeeded",
+            "Skipped",
+            "Failed"
           ]
         }
       },
