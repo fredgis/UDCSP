@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
-import { listCases } from '../utils/caseStore';
+import { listCases, removeCase, updateCase } from '../utils/caseStore';
 
 type Case = { id: string; title: string; status: string; updatedAt: string };
 
@@ -145,13 +145,42 @@ export function MyCasesPage() {
         </div>
       ) : (
         <ul className="case-list">
-          {cases.map((c) => (
-            <li key={c.id}>
-              <Link to={`/cases/${c.id}`}><strong>{c.id}</strong> · {c.title}</Link>
-              <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
-              <time>{c.updatedAt}</time>
-            </li>
-          ))}
+          {cases.map((c) => {
+            const isCanceled = /cancel/i.test(c.status);
+            return (
+              <li key={c.id}>
+                <Link to={`/cases/${c.id}`}><strong>{c.id}</strong> · {c.title}</Link>
+                <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
+                <time>{c.updatedAt}</time>
+                <span className="case-actions">
+                  <button
+                    type="button"
+                    className="button-secondary case-actions__btn"
+                    disabled={isCanceled}
+                    onClick={() => {
+                      if (isCanceled) return;
+                      if (!confirm(`Cancel case ${c.id}? You can still view the audit trail afterwards.`)) return;
+                      updateCase(c.id, { status: 'Canceled by citizen' });
+                      void load();
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="button-danger case-actions__btn"
+                    onClick={() => {
+                      if (!confirm(`Delete case ${c.id} from this device? This removes the local cache only — server records are preserved per public-records law. Use the GDPR erasure workflow on the Consent page to request server-side deletion.`)) return;
+                      removeCase(c.id);
+                      void load();
+                    }}
+                  >
+                    Delete
+                  </button>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

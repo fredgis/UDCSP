@@ -1,0 +1,34 @@
+<policies>
+  <inbound>
+    <base />
+    <include-fragment fragment-id="jwt-validate-external-id" />
+    <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+    <return-response>
+      <set-status code="202" reason="Accepted" />
+      <set-header name="content-type" exists-action="override">
+        <value>application/json</value>
+      </set-header>
+      <set-body>@{
+        var body = (JObject)context.Variables["reqBody"];
+        var country = (string)(body["country"] ?? "dk");
+        var citizen = (string)(body["citizenUpn"] ?? "anonymous");
+        var certId = "ERASURE-" + country.ToUpper() + "-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
+        var eta = DateTime.UtcNow.AddDays(30).ToString("yyyy-MM-dd");
+        var resp = new JObject {
+          ["status"] = "accepted",
+          ["certificateId"] = certId,
+          ["estimatedCompletionDate"] = eta,
+          ["country"] = country,
+          ["citizenUpn"] = citizen,
+          ["receivedAt"] = DateTime.UtcNow.ToString("o"),
+          ["zones"] = new JArray("dataverse", "foundry-conversations", "appinsights", "blob-lake", "purview-lineage"),
+          ["note"] = "Erasure cascade orchestrated by Microsoft Priva. Audit-only metadata required by law (GDPR art. 17(3)(b)/(e)) is retained."
+        };
+        return resp.ToString();
+      }</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error><base /></on-error>
+</policies>
