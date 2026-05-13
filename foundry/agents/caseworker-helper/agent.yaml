@@ -1,6 +1,6 @@
 name: udcsp-caseworker-helper
 description: Internal D365 copilot for case summaries, draft replies and next-best-action suggestions.
-model: gpt-5.5
+model: gpt-5.4
 systemPromptFile: system-prompt.md
 tools:
   - d365-case-reader

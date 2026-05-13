@@ -446,6 +446,14 @@ graph TB
 
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
 
+> ℹ️ **Agent runtime — Foundry Agents v1 API.** All seven UDCSP agents are registered through the **new Foundry Agents API (v1)** (not the legacy Assistants/Classic API). Consequences for the rest of the architecture:
+>
+> - **Identity = name + version.** Each agent has a stable name (e.g. `udcsp-classifier`) with auto-incrementing versions (`:1`, `:2`, …). Re-deploying an updated definition appends a new version; the previous version stays addressable. There are **no `asst_*` IDs** anywhere in the platform.
+> - **Entra-only auth, no API keys.** Every callable (Logic App, Function, container, caseworker copilot) talks to Foundry via Entra-issued bearer tokens for the audience `https://ai.azure.com`. This is the only authentication scheme the new agents accept; key auth is not supported.
+> - **Per-agent managed identity.** Foundry provisions a managed identity per agent version (`instance_identity.principal_id`); RBAC against downstream resources (Search, Storage, Key Vault, knowledge bases) is granted to that identity, not to the calling service.
+> - **Invocation = OpenAI Responses API.** Agents expose the `responses` protocol. Recommended call path is `POST {projectEndpoint}/openai/v1/responses` from a thin Function/APIM wrapper that uses the Foundry SDK to resolve agent → version → instructions → model deployment server-side. Logic Apps therefore call **the wrapper**, not Foundry directly, so the workflow stays declarative.
+> - **APIM named-value convention.** Foundry agent endpoints are stored as `<projectEndpoint>|<agentName>` (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`). The wrapper parses the pipe.
+
 ```mermaid
 graph TB
     subgraph CHANNELS["Channels"]
