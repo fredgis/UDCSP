@@ -68,7 +68,7 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
 
     try {
       if (!apimBase) throw new Error('apim-base-not-configured');
-      const res = await fetch(`${apimBase}/agents/topic-router/messages`, {
+      const res = await fetch(`${apimBase}/agent-topic-router/messages`, {
         method: 'POST',
         headers,
         body: JSON.stringify({ sessionId: sessionId.current, channel, locale, text, authenticated: isAuth }),
