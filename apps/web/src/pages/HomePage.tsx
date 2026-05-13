@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { ChatWidget } from '../components/ChatWidget';
 
 const services = [
   {
@@ -25,7 +24,7 @@ const services = [
   {
     to: '/apply/child-benefit',
     title: 'Child benefit',
-    desc: 'Apply for income-based child benefit. Snap a payslip with your phone — no manual entry.',
+    desc: 'Apply for income-based child benefit. Upload a payslip or lease — the assistant extracts the data for you to confirm.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -44,7 +43,30 @@ const services = [
   },
 ];
 
-export function HomePage({ locale = 'en' }: { locale?: string }) {
+const principles = [
+  {
+    title: 'Your data stays in your country',
+    body: 'Each Nordic country runs its own Entra External ID tenant, its own APIM front door, its own Logic Apps and its own Dataverse environment. The portal selects the right backend automatically based on the country you signed in with — there is no shared cross-border data store.',
+    icon: '🇪🇺',
+  },
+  {
+    title: 'AI assists, humans decide',
+    body: 'Eligibility pre-assessment, document extraction and topic routing run on Foundry agents. Every AI suggestion carries a confidence score and a plain-language explanation, and a caseworker reviews any decision the model is unsure about. The full prompt → response chain is logged for audit (EU AI Act, Annex IV).',
+    icon: '🤖',
+  },
+  {
+    title: 'Built for everyone',
+    body: 'Twelve UI languages including Polish, Arabic, Sámi, Ukrainian and Finnish. Every screen is keyboard-navigable and screen-reader-tested against WCAG 2.1 AA. A high-contrast theme and a dyslexic font are one click away.',
+    icon: '♿',
+  },
+  {
+    title: 'You stay in control of your data',
+    body: 'Cross-border agency checks, SMS reminders and data export to a third party only happen if you opted in. You can review and revoke every consent from the Consent page; revocations propagate to APIM and Logic Apps within seconds.',
+    icon: '🔐',
+  },
+];
+
+export function HomePage(_: { locale?: string }) {
   return (
     <>
       <section className="hero" aria-labelledby="hero-heading">
@@ -52,8 +74,9 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
           <span className="hero__eyebrow"><span className="hero__eyebrow-dot" /> Nordic public services · Live</span>
           <h1 id="hero-heading">Unified Digital Citizen Services</h1>
           <p className="lede">
-            One trusted entry point across Denmark, Sweden and Norway.
-            Apply once, follow your case in real time, get help in your language — with humans always in the loop.
+            One trusted entry point for residents of Denmark, Sweden and Norway.
+            Apply once, follow your case in real time, get help in your language —
+            with caseworkers always in the loop.
           </p>
           <div className="hero__cta">
             <Link to="/apply/residency" className="button-primary">Start an application</Link>
@@ -102,76 +125,27 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
 
       <div className="section-heading">
         <div>
-          <h2>What our citizens see today</h2>
-          <p>Outcomes measured across the Nordic pilot programme.</p>
+          <h2>How the platform works for you</h2>
+          <p>Four guarantees behind every screen — sovereign infrastructure, accountable AI, accessibility for every resident, and consent that you stay in charge of.</p>
         </div>
       </div>
-      <div className="stats" role="list">
-        <div className="stat" role="listitem">
-          <div className="stat__value">47 → 1</div>
-          <div className="stat__label">Legacy portals replaced by one entry</div>
-        </div>
-        <div className="stat" role="listitem">
-          <div className="stat__value">28 → 4 days</div>
-          <div className="stat__label">Average residency-transfer turnaround</div>
-        </div>
-        <div className="stat" role="listitem">
-          <div className="stat__value">94 / 100</div>
-          <div className="stat__label">Citizen satisfaction (CSAT)</div>
-        </div>
-        <div className="stat" role="listitem">
-          <div className="stat__value">12</div>
-          <div className="stat__label">Languages, including Sámi & Polish</div>
-        </div>
-      </div>
-
-      <div className="section-heading">
-        <div>
-          <h2>Run a demonstration scenario</h2>
-          <p>10 end-to-end demos exercising every row of the README evaluation matrix — citizen journeys, back-office, governance, insights, DevOps.</p>
-        </div>
-        <Link to="/demos" className="button-secondary">See all 10 demos →</Link>
-      </div>
-      <ul className="persona-grid" role="list">
-        <li className="persona-card persona-card--anna">
-          <span className="persona-card__id">D1</span>
-          <h3>Anna · DK → SE</h3>
-          <p>The flagship: federated eID, omnichannel, multilingual, eligibility pre-assessment.</p>
-          <Link to="/apply/residency">Try residency transfer →</Link>
-        </li>
-        <li className="persona-card persona-card--maria">
-          <span className="persona-card__id">D3</span>
-          <h3>Maria · PL on SE</h3>
-          <p>Polish UI on Swedish portal, NVDA-friendly, AI assistant in PL, human-in-the-loop eligibility.</p>
-          <Link to="/apply/child-benefit">Try housing/child benefit →</Link>
-        </li>
-        <li className="persona-card persona-card--erik">
-          <span className="persona-card__id">D4</span>
-          <h3>Erik · DK · mobile</h3>
-          <p>Snap a payslip with your phone — Document Extractor autofills the income field.</p>
-          <Link to="/apply/child-benefit">Try mobile flow →</Link>
-        </li>
-        <li className="persona-card persona-card--ingrid">
-          <span className="persona-card__id">D8</span>
-          <h3>Ingrid · SecOps</h3>
-          <p>Prompt-injection contained: try sending malicious input to the assistant — Content Safety blocks it.</p>
-          <a href="#chat-title">Try the chat ↓</a>
-        </li>
+      <ul className="principles-grid" role="list">
+        {principles.map((p) => (
+          <li key={p.title} className="principle-card">
+            <span className="principle-card__icon" aria-hidden="true">{p.icon}</span>
+            <h3>{p.title}</h3>
+            <p>{p.body}</p>
+          </li>
+        ))}
       </ul>
 
-      <div className="featured">
-        <div className="featured-card">
-          <h2>How it works</h2>
-          <ul>
-            <li><strong>Sign in</strong> with MitID, BankID or BankID Norge — federated through your country&rsquo;s eID.</li>
-            <li><strong>Tell us once.</strong> We pre-fill names, addresses, dependents from authoritative registers.</li>
-            <li><strong>Get help in your language</strong> from the assistant. A caseworker is always one tap away.</li>
-            <li><strong>Track everything</strong> — every status change, every AI suggestion, every human decision is logged.</li>
-          </ul>
+      <div className="home-cta">
+        <div>
+          <h2>Curious about how it&rsquo;s built?</h2>
+          <p>The <Link to="/demos">Demos</Link> page walks through ten end-to-end scenarios — citizen journeys, back-office, governance, observability — with the architecture diagram and the technology stack behind each one.</p>
         </div>
-        <ChatWidget locale={locale} />
+        <Link to="/demos" className="button-secondary">Explore the demos →</Link>
       </div>
     </>
   );
 }
-
