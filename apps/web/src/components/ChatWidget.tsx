@@ -7,6 +7,30 @@ type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
 function extractReply(data: unknown): string {
+  const raw = extractRawReply(data);
+  return unwrapAgentJson(raw);
+}
+
+// Some Foundry agents are prompted to return a JSON envelope like
+// {"locale":"en","message":"Hi","confidence":0.99}. Pull the human-facing
+// message out so the chat bubble doesn't render raw JSON.
+function unwrapAgentJson(text: string): string {
+  if (!text) return text;
+  const trimmed = text.trim();
+  if (!(trimmed.startsWith('{') && trimmed.endsWith('}'))) return text;
+  try {
+    const obj = JSON.parse(trimmed) as Record<string, unknown>;
+    for (const key of ['message', 'reply', 'response', 'text', 'answer', 'content']) {
+      const v = obj[key];
+      if (typeof v === 'string' && v.trim()) return v;
+    }
+  } catch {
+    // not JSON, fall through
+  }
+  return text;
+}
+
+function extractRawReply(data: unknown): string {
   if (!data || typeof data !== 'object') return '';
   const d = data as Record<string, unknown>;
   if (typeof d.reply === 'string') return d.reply;
