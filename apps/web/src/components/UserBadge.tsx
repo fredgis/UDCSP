@@ -29,7 +29,14 @@ export function UserBadge() {
   const initial = first.charAt(0).toUpperCase();
 
   const signOut = () => {
-    void instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
+    // Navigate the SPA to home FIRST so that even if MSAL/IdP falls back
+    // to "current location" for the post-logout redirect, that location
+    // is the home page rather than a protected /apply/* route. The
+    // postLogoutRedirectUri below also explicitly forces origin + '/'.
+    navigate('/');
+    void instance.logoutRedirect({
+      postLogoutRedirectUri: window.location.origin + '/',
+    });
   };
 
   return (
