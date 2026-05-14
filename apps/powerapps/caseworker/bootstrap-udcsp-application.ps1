@@ -47,6 +47,24 @@ $headers = @{
 }
 $ApiBase = "$EnvUrl/api/data/v9.2"
 
+# ---------- Detect org base language ---------------------------------------
+# Hard-coding 1033 (en-US) fails on orgs that don't have English provisioned.
+# Query the org and pick the base language; fall back to first provisioned one.
+Write-Host "==> Detecting organization base language"
+$lcid = 1033
+try {
+  $r = Invoke-RestMethod -Uri "$ApiBase/organizations?`$select=languagecode" -Headers $headers -Method Get
+  if ($r.value -and $r.value[0].languagecode) { $lcid = [int]$r.value[0].languagecode }
+} catch {
+  try {
+    $r2 = Invoke-RestMethod -Uri "$ApiBase/RetrieveProvisionedLanguages" -Headers $headers -Method Get
+    if ($r2.RetrieveProvisionedLanguages -and $r2.RetrieveProvisionedLanguages.Count -gt 0) {
+      $lcid = [int]$r2.RetrieveProvisionedLanguages[0]
+    }
+  } catch {}
+}
+Write-Host "    using LanguageCode $lcid"
+
 # ---------- Helpers ---------------------------------------------------------
 function Invoke-Dv {
   param([string]$Method, [string]$Path, [object]$Body)
@@ -91,9 +109,9 @@ if (Test-EntityExists $entityLogical) {
   $entityBody = @{
     '@odata.type'                 = 'Microsoft.Dynamics.CRM.EntityMetadata'
     SchemaName                    = $entitySchema
-    DisplayName                   = @{ LocalizedLabels = @(@{ Label='Citizen Application'; LanguageCode=1033 }) }
-    DisplayCollectionName         = @{ LocalizedLabels = @(@{ Label='Citizen Applications'; LanguageCode=1033 }) }
-    Description                   = @{ LocalizedLabels = @(@{ Label='Citizen application case backing every UDCSP flow'; LanguageCode=1033 }) }
+    DisplayName                   = @{ LocalizedLabels = @(@{ Label='Citizen Application'; LanguageCode=$lcid }) }
+    DisplayCollectionName         = @{ LocalizedLabels = @(@{ Label='Citizen Applications'; LanguageCode=$lcid }) }
+    Description                   = @{ LocalizedLabels = @(@{ Label='Citizen application case backing every UDCSP flow'; LanguageCode=$lcid }) }
     OwnershipType                 = 'UserOwned'
     HasActivities                 = $false
     HasNotes                      = $true
@@ -106,7 +124,7 @@ if (Test-EntityExists $entityLogical) {
         RequiredLevel = @{ Value='ApplicationRequired' }
         MaxLength     = 200
         FormatName    = @{ Value='Text' }
-        DisplayName   = @{ LocalizedLabels = @(@{ Label='Case title'; LanguageCode=1033 }) }
+        DisplayName   = @{ LocalizedLabels = @(@{ Label='Case title'; LanguageCode=$lcid }) }
       }
     )
   }
@@ -187,16 +205,16 @@ foreach ($c in $columns) {
     continue
   }
   $attr = switch ($c.type) {
-    'String'   { @{ '@odata.type'='Microsoft.Dynamics.CRM.StringAttributeMetadata';   SchemaName=$schema; MaxLength=$c.max; FormatName=@{Value='Text'};       DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
-    'Memo'    { @{ '@odata.type'='Microsoft.Dynamics.CRM.MemoAttributeMetadata';     SchemaName=$schema; MaxLength=4000;   Format='TextArea';                  DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
-    'DateTime'{ @{ '@odata.type'='Microsoft.Dynamics.CRM.DateTimeAttributeMetadata'; SchemaName=$schema; Format='DateAndTime';                                DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
-    'Decimal' { @{ '@odata.type'='Microsoft.Dynamics.CRM.DecimalAttributeMetadata';  SchemaName=$schema; Precision=2; MinValue=0; MaxValue=99999999;          DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
-    'Integer' { @{ '@odata.type'='Microsoft.Dynamics.CRM.IntegerAttributeMetadata';  SchemaName=$schema; MinValue=0;  MaxValue=999999;                        DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
+    'String'   { @{ '@odata.type'='Microsoft.Dynamics.CRM.StringAttributeMetadata';   SchemaName=$schema; MaxLength=$c.max; FormatName=@{Value='Text'};       DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
+    'Memo'    { @{ '@odata.type'='Microsoft.Dynamics.CRM.MemoAttributeMetadata';     SchemaName=$schema; MaxLength=4000;   Format='TextArea';                  DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
+    'DateTime'{ @{ '@odata.type'='Microsoft.Dynamics.CRM.DateTimeAttributeMetadata'; SchemaName=$schema; Format='DateAndTime';                                DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
+    'Decimal' { @{ '@odata.type'='Microsoft.Dynamics.CRM.DecimalAttributeMetadata';  SchemaName=$schema; Precision=2; MinValue=0; MaxValue=99999999;          DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
+    'Integer' { @{ '@odata.type'='Microsoft.Dynamics.CRM.IntegerAttributeMetadata';  SchemaName=$schema; MinValue=0;  MaxValue=999999;                        DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
     'Boolean' { @{ '@odata.type'='Microsoft.Dynamics.CRM.BooleanAttributeMetadata';  SchemaName=$schema; DefaultValue=$false;
                    OptionSet=@{ '@odata.type'='Microsoft.Dynamics.CRM.BooleanOptionSetMetadata';
-                     TrueOption =@{ Value=1; Label=@{LocalizedLabels=@(@{Label='Yes';LanguageCode=1033})} };
-                     FalseOption=@{ Value=0; Label=@{LocalizedLabels=@(@{Label='No';LanguageCode=1033})} } };
-                   DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=1033})}; RequiredLevel=@{Value='None'} } }
+                     TrueOption =@{ Value=1; Label=@{LocalizedLabels=@(@{Label='Yes';LanguageCode=$lcid})} };
+                     FalseOption=@{ Value=0; Label=@{LocalizedLabels=@(@{Label='No';LanguageCode=$lcid})} } };
+                   DisplayName=@{LocalizedLabels=@(@{Label=$c.label;LanguageCode=$lcid})}; RequiredLevel=@{Value='None'} } }
   }
   Write-Host "    [add ] $logical ($($c.type))"
   try {
