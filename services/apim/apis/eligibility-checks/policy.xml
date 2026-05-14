@@ -55,8 +55,7 @@ Output schema (strict):
   ""lineage"": {""ruleVersion"":""v1"",""promptVersion"":""v1"",""datasetVersion"":""inline""}
 }";
         var body = new JObject();
-        body["temperature"] = 0.0;
-        body["max_tokens"] = 3500;
+        body["max_completion_tokens"] = 3500;
         body["response_format"] = new JObject(new JProperty("type","json_object"));
         var msgs = new JArray();
         msgs.Add(new JObject(
