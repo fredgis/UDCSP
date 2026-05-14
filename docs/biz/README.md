@@ -19,6 +19,7 @@
 |---|---|---|
 | 📋 [`case-study-11.md`](./case-study-11.md) | **Immutable case-study brief.** The verbatim prompt the platform answers. | New to the project — read this once. |
 | 🎬 [`uses.md`](./uses.md) | **10 demonstration scenarios** (narrative). One persona, one journey each. | Pitching, telling the story, demoing. |
+| 👥 [`personas.md`](./personas.md) | **Identity provisioning matrix** — every demo persona, the AD/tenant their account lives in, licences and groups to attach. | Setting up a fresh tenant before a demo run. |
 | 🍳 [`recipe.md`](./recipe.md) | **Live walkthrough** (~1 h 15) — 8 directly-executable scenarios with exit gates. | An evaluator with the platform up & running. |
 
 ---
