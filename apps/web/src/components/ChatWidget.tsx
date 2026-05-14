@@ -3,6 +3,7 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { generateTraceparent } from '../utils/traceparent';
 import { apiScopeForCountry, apimBaseUrlForCountry, getCountry } from '../auth/msalConfig';
 import { listCases } from '../utils/caseStore';
+import { MiniMarkdown } from '../utils/miniMarkdown';
 
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
@@ -171,7 +172,14 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
             ref={i === messages.length - 1 ? logEndRef : undefined}
             className={`chat-msg chat-msg--${m.role}`}
           >
-            <strong>{m.role === 'user' ? 'You' : 'Assistant'}:</strong> {m.text}
+            <strong className="chat-msg__author">{m.role === 'user' ? 'You' : 'Assistant'}</strong>
+            {m.role === 'assistant' ? (
+              <div className="chat-msg__body">
+                <MiniMarkdown text={m.text} />
+              </div>
+            ) : (
+              <span className="chat-msg__body chat-msg__body--user"> {m.text}</span>
+            )}
           </li>
         ))}
       </ul>

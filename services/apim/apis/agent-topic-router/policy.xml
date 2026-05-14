@@ -70,7 +70,8 @@
           " If asked about a specific case id, return its status, decision, and ETA from [CITIZEN_CASES]." +
           " If asked something requiring sign-in but the citizen is anonymous, ask them to sign in with eID." +
           " Reply in the user's locale (" + locale + ")." +
-          " Output ONLY a plain natural-language answer (no JSON, no code fences, no key:value).";
+          " FORMAT YOUR REPLY AS MARKDOWN: use **bold** for service names and important values, numbered lists (1. 2. 3.) for service catalogues, bullet lists (- ) for case summaries, and short paragraphs separated by a blank line." +
+          " Keep total length under ~120 words. Do not output JSON, code fences, or HTML.";
         var input = instructions +
           "\n[LOCALE] " + locale +
           "\n[CHANNEL] " + channel +
