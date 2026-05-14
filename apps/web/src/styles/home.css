@@ -1357,7 +1357,7 @@
   font-size: 1.05rem;
   line-height: 1.6;
   color: var(--c-ink-soft);
-  max-width: 72ch;
+  max-width: none;
   margin: 0 0 1.5rem;
 }
 .compliance-hero__meta {
