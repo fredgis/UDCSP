@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Avbryta denna ansökan? Du kan ansöka igen senare.",
   "cases.cancelLabel": "Avbryt",
   "cases.deleteConfirm": "Ta bort detta ärende endast ur lokal cache? Det finns kvar i backend.",
-  "cases.deleteLabel": "Ta bort från cache",
+  "cases.deleteLabel": "Ta bort",
   "cases.empty": "Du har inga ärenden ännu. Starta en ansökan från startsidan.",
   "cases.notSignedIn": "Logga in för att se dina ärenden.",
   "cases.refresh": "⟳ Uppdatera",

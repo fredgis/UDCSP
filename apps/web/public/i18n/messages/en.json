@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Cancel this application? You can re-apply later.",
   "cases.cancelLabel": "Cancel",
   "cases.deleteConfirm": "Remove this case from local cache only? It stays in the back-end record.",
-  "cases.deleteLabel": "Remove from cache",
+  "cases.deleteLabel": "Remove",
   "cases.empty": "You don’t have any cases yet. Start an application from the homepage.",
   "cases.notSignedIn": "Sign in to see your cases.",
   "cases.refresh": "⟳ Refresh",

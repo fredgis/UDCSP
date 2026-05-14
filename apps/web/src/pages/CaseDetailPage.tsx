@@ -121,7 +121,7 @@ export function CaseDetailPage() {
         <div className="case-detail__actions">
           <button
             type="button"
-            className="button-secondary"
+            className="button-secondary case-actions__btn"
             disabled={isCanceled}
             onClick={() => {
               if (isCanceled) return;
@@ -134,14 +134,14 @@ export function CaseDetailPage() {
           </button>
           <button
             type="button"
-            className="button-danger"
+            className="button-danger case-actions__btn"
             onClick={() => {
               if (!confirm(intl.formatMessage({ id: 'cases.deleteConfirm', defaultMessage: 'Remove this case from local cache only? It stays in the back-end record.' }))) return;
               removeCase(c.id);
               navigate('/cases');
             }}
           >
-            <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove from cache" />
+            <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove" />
           </button>
         </div>
       </header>

@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Anulować ten wniosek? Możesz złożyć go ponownie później.",
   "cases.cancelLabel": "Anuluj",
   "cases.deleteConfirm": "Usunąć tę sprawę tylko z lokalnej pamięci? Pozostaje w systemie back-end.",
-  "cases.deleteLabel": "Usuń z pamięci podręcznej",
+  "cases.deleteLabel": "Usuń",
   "cases.empty": "Nie masz jeszcze żadnych spraw. Rozpocznij wniosek na stronie głównej.",
   "cases.notSignedIn": "Zaloguj się, aby zobaczyć swoje sprawy.",
   "cases.refresh": "⟳ Odśwież",

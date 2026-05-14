@@ -1074,7 +1074,7 @@
 .case-list li { position:relative; padding-right:1rem; }
 .case-actions { display:inline-flex; gap:.4rem; margin-left:auto; }
 .case-actions__btn,
-.case-actions .case-actions__btn { padding:.3rem .7rem; font-size:.8rem; line-height:1.2; }
+.case-actions .case-actions__btn { padding:.3rem .7rem; font-size:.8rem; line-height:1.2; min-width:5.5rem; text-align:center; }
 .button-danger { background:#b3261e; color:#fff; border:1px solid #b3261e; padding:.4rem .9rem; border-radius:6px; cursor:pointer; font-weight:600; }
 .button-danger:hover { background:#8c1d17; }
 .button-danger:disabled { opacity:.5; cursor:not-allowed; }
@@ -1337,6 +1337,10 @@
   border-bottom: 1px solid var(--c-line);
   padding-bottom: 2rem;
   margin-bottom: 2.5rem;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: max(1.5rem, calc(50vw - 50%));
+  padding-right: max(1.5rem, calc(50vw - 50%));
 }
 .compliance-hero__eyebrow {
   text-transform: uppercase;

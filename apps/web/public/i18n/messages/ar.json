@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "هل تريد إلغاء هذا الطلب؟ يمكنك التقديم مجددًا لاحقًا.",
   "cases.cancelLabel": "إلغاء",
   "cases.deleteConfirm": "إزالة هذه القضية من الذاكرة المحلية فقط؟ ستبقى في الخادم.",
-  "cases.deleteLabel": "إزالة من الذاكرة المؤقتة",
+  "cases.deleteLabel": "إزالة",
   "cases.empty": "لا توجد لديك أي قضايا بعد. ابدأ طلبًا من الصفحة الرئيسية.",
   "cases.notSignedIn": "سجّل دخولك لرؤية قضاياك.",
   "cases.refresh": "⟳ تحديث",
