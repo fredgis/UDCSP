@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
-import { appendCase, getCase, removeCase, updateCase, type StoredCase } from '../utils/caseStore';
+import { getCase, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
 
 type StepStatus = 'done' | 'in-progress' | 'pending' | 'skipped';
 type Step = { name: string; label: string; status: StepStatus; at?: string; detail?: string };
@@ -173,9 +173,12 @@ export function CaseDetailPage() {
   }, [id]);
 
   // If localStorage doesn't have the case (cross-device, hard refresh on a deep
-  // link, etc.), fetch the list from APIM, hydrate caseStore and re-read.
+  // link, etc.), or the local entry is slim (missing workflowSteps), fetch the
+  // list from APIM, merge with rich legacy local entries, and re-read.
   useEffect(() => {
-    if (!id || c || !isAuth || hydrating) return;
+    if (!id || !isAuth || hydrating) return;
+    const hasRich = c && c.workflowSteps && c.workflowSteps.length > 0 && c.eligibility;
+    if (hasRich) return;
     let cancelled = false;
     (async () => {
       setHydrating(true);
@@ -194,9 +197,40 @@ export function CaseDetailPage() {
         if (!res.ok) return;
         const payload = (await res.json()) as { value?: RemoteCase[] } | RemoteCase[];
         const items = Array.isArray(payload) ? payload : payload.value ?? [];
+        const localPool = listAllCases();
+        const consumed = new Set<string>();
         for (const it of items) {
-          const stored = remoteToStored(it, country, accounts[0]?.username);
-          if (stored.id) appendCase(stored);
+          const remoteStored = remoteToStored(it, country, accounts[0]?.username);
+          if (!remoteStored.id) continue;
+          // Match with a rich legacy local entry on (upn, applicationType, ~time)
+          const remoteTs = new Date(remoteStored.updatedAt).getTime();
+          let best: { l: StoredCase; delta: number } | undefined;
+          for (const l of localPool) {
+            if (consumed.has(l.id) || l.id === remoteStored.id) continue;
+            if (l.citizenUpn && remoteStored.citizenUpn && l.citizenUpn !== remoteStored.citizenUpn) continue;
+            if (l.applicationType && remoteStored.applicationType && l.applicationType !== remoteStored.applicationType) continue;
+            const lt = new Date(l.updatedAt).getTime();
+            const delta = Math.abs(lt - remoteTs);
+            if (Number.isFinite(delta) && delta < 10 * 60_000 && (!best || delta < best.delta)) {
+              best = { l, delta };
+            }
+          }
+          if (best) {
+            consumed.add(best.l.id);
+            remoteStored.workflowSteps = remoteStored.workflowSteps && remoteStored.workflowSteps.length > 0
+              ? remoteStored.workflowSteps
+              : best.l.workflowSteps;
+            remoteStored.extractedFields = (remoteStored.extractedFields && Object.keys(remoteStored.extractedFields).length > 0)
+              ? remoteStored.extractedFields
+              : best.l.extractedFields;
+            remoteStored.documentBlobUrl = remoteStored.documentBlobUrl || best.l.documentBlobUrl;
+            remoteStored.documentBlobName = remoteStored.documentBlobName || best.l.documentBlobName;
+            remoteStored.storageAccount = remoteStored.storageAccount || best.l.storageAccount;
+            remoteStored.eligibility = remoteStored.eligibility ?? best.l.eligibility;
+            remoteStored.estimatedDecisionDate = remoteStored.estimatedDecisionDate ?? best.l.estimatedDecisionDate;
+            removeCase(best.l.id);
+          }
+          upsertCase(remoteStored);
         }
         if (!cancelled) setC(getCase(id));
       } catch {

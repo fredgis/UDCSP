@@ -3,9 +3,19 @@ import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
-import { appendCase, listCases, removeCase, updateCase, type StoredCase } from '../utils/caseStore';
+import { listCases, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
 
-type Case = { id: string; title: string; status: string; updatedAt: string; progress?: { done: number; total: number; current?: string } };
+type Case = {
+  id: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+  applicationType?: string;
+  country?: string;
+  confidence?: number;
+  decision?: string;
+  progress?: { done: number; total: number; current?: string };
+};
 
 type IntakeApplication = {
   id?: string;
@@ -88,6 +98,24 @@ function hydrateStoredCase(t: IntakeApplication, country: string, citizenUpn?: s
   };
 }
 
+function toCase(c: StoredCase): Case {
+  const steps = c.workflowSteps ?? [];
+  const total = steps.length || 7;
+  const done = steps.filter((s) => s.status === 'done').length;
+  const current = steps.find((s) => s.status === 'in-progress')?.label ?? steps.find((s) => s.status === 'pending')?.label;
+  return {
+    id: c.id,
+    title: c.title,
+    status: c.status,
+    updatedAt: c.updatedAt,
+    applicationType: c.applicationType,
+    country: c.country,
+    confidence: c.confidence,
+    decision: c.decision,
+    progress: steps.length ? { done, total, current } : undefined,
+  };
+}
+
 function normalize(items: IntakeApplication[]): Case[] {
   return items.map((t, i) => ({
     id: t.id || t.applicationId || t.caseId || t.activityid || `app-${i}`,
@@ -97,7 +125,35 @@ function normalize(items: IntakeApplication[]): Case[] {
       t.state ||
       (typeof t.statecode === 'number' ? STATE_LABEL[t.statecode] ?? `state ${t.statecode}` : 'Submitted'),
     updatedAt: t.updatedAt || t.submittedAt || t.createdOn || t.createdon || '',
+    applicationType: t.applicationType,
+    country: t.country,
   }));
+}
+
+// Find the rich local entry that corresponds to a remote item.
+// The apply page stores under a correlationId (random GUID returned by the LA)
+// while the GET-list returns the Dataverse activityid — those never collide.
+// We match on (citizenUpn, applicationType, country) and proximity in time.
+function findLocalMatch(
+  remote: StoredCase,
+  pool: StoredCase[],
+  alreadyMatched: Set<string>,
+): StoredCase | undefined {
+  const remoteTs = new Date(remote.updatedAt).getTime();
+  let best: { l: StoredCase; delta: number } | undefined;
+  for (const l of pool) {
+    if (alreadyMatched.has(l.id)) continue;
+    if (l.id === remote.id) continue;
+    if (l.citizenUpn && remote.citizenUpn && l.citizenUpn !== remote.citizenUpn) continue;
+    if (l.country && remote.country && l.country !== remote.country) continue;
+    if (l.applicationType && remote.applicationType && l.applicationType !== remote.applicationType) continue;
+    const lt = new Date(l.updatedAt).getTime();
+    const delta = Math.abs(lt - remoteTs);
+    if (Number.isFinite(delta) && delta < 10 * 60_000 && (!best || delta < best.delta)) {
+      best = { l, delta };
+    }
+  }
+  return best?.l;
 }
 
 export function MyCasesPage() {
@@ -114,19 +170,7 @@ export function MyCasesPage() {
     setError(null);
     const country = getCountry();
     const upn = accounts[0]?.username;
-    const local: Case[] = listCases(country, upn).map((c) => {
-      const steps = c.workflowSteps ?? [];
-      const total = steps.length || 7;
-      const done = steps.filter((s) => s.status === 'done').length;
-      const current = steps.find((s) => s.status === 'in-progress')?.label ?? steps.find((s) => s.status === 'pending')?.label;
-      return {
-        id: c.id,
-        title: c.title,
-        status: c.status,
-        updatedAt: c.updatedAt,
-        progress: steps.length ? { done, total, current } : undefined,
-      };
-    });
+    const local: Case[] = listCases(country, upn).map(toCase);
     try {
       const apim = apimBaseUrlForCountry(country);
       if (!apim) {
@@ -152,18 +196,43 @@ export function MyCasesPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const payload = (await res.json()) as { value?: IntakeApplication[] } | IntakeApplication[];
       const items = Array.isArray(payload) ? payload : payload.value ?? [];
-      const remote = normalize(items);
-      // Hydrate localStorage with the remote items so CaseDetailPage (which
-      // reads from caseStore by activityid) can render the full workflow,
-      // extracted fields, document attachment, etc. on cross-device loads.
+      // Build remote StoredCase entries, merge each with a matching rich local
+      // entry (apply page wrote one under correlationId — different id but same
+      // citizenUpn/applicationType/timestamp) so the detail page recovers
+      // workflowSteps, extractedFields, documentBlobUrl, eligibilityPreflight
+      // even when the Dataverse description was truncated.
+      const localPool = listAllCases();
+      const consumed = new Set<string>();
+      const merged: StoredCase[] = [];
       for (const it of items) {
-        const sc = hydrateStoredCase(it, country, upn);
-        if (sc.id) appendCase(sc);
+        const remoteStored = hydrateStoredCase(it, country, upn);
+        if (!remoteStored.id) continue;
+        const localMatch = findLocalMatch(remoteStored, localPool, consumed);
+        if (localMatch) {
+          consumed.add(localMatch.id);
+          // Prefer remote authoritative fields, keep local rich data when remote misses
+          remoteStored.workflowSteps = remoteStored.workflowSteps && remoteStored.workflowSteps.length > 0
+            ? remoteStored.workflowSteps
+            : localMatch.workflowSteps;
+          remoteStored.extractedFields = (remoteStored.extractedFields && Object.keys(remoteStored.extractedFields).length > 0)
+            ? remoteStored.extractedFields
+            : localMatch.extractedFields;
+          remoteStored.documentBlobUrl = remoteStored.documentBlobUrl || localMatch.documentBlobUrl;
+          remoteStored.documentBlobName = remoteStored.documentBlobName || localMatch.documentBlobName;
+          remoteStored.storageAccount = remoteStored.storageAccount || localMatch.storageAccount;
+          remoteStored.eligibility = remoteStored.eligibility ?? localMatch.eligibility;
+          remoteStored.estimatedDecisionDate = remoteStored.estimatedDecisionDate ?? localMatch.estimatedDecisionDate;
+          remoteStored.applicationType = remoteStored.applicationType || localMatch.applicationType;
+          remoteStored.country = remoteStored.country || localMatch.country;
+          remoteStored.citizenUpn = remoteStored.citizenUpn || localMatch.citizenUpn;
+          // The legacy correlationId-keyed entry is no longer the canonical row.
+          // Drop it so the detail page only resolves /cases/:activityid.
+          removeCase(localMatch.id);
+        }
+        upsertCase(remoteStored);
+        merged.push(remoteStored);
       }
-      // Once the back-end has returned anything, it's authoritative — drop locals
-      // entirely to avoid duplicate rows (local id = correlationId, remote id = activityid;
-      // they never match, so dedupe by id keeps both). Locals are only shown when the
-      // back-end is unreachable (catch branch below).
+      const remote = merged.map(toCase);
       setCases(remote);
     } catch (e) {
       // server unreachable or no GET listing yet — show local cache silently
@@ -217,19 +286,52 @@ export function MyCasesPage() {
           {cases.map((c) => {
             const isCanceled = /cancel/i.test(c.status);
             const pct = c.progress ? Math.round((c.progress.done / c.progress.total) * 100) : null;
+            const appLabel = c.applicationType === 'child-benefit' ? 'Child & family benefit'
+              : c.applicationType === 'residency-transfer' ? 'Residency transfer'
+              : c.applicationType === 'tax-certificate' ? 'Tax certificate'
+              : (c.title || 'Application');
+            const appIcon = c.applicationType === 'child-benefit' ? '👶'
+              : c.applicationType === 'residency-transfer' ? '🏠'
+              : c.applicationType === 'tax-certificate' ? '📄'
+              : '📌';
+            const flag = c.country === 'dk' ? '🇩🇰' : c.country === 'se' ? '🇸🇪' : c.country === 'no' ? '🇳🇴' : '';
+            const statusKind = isCanceled ? 'canceled'
+              : /complet|approved|done/i.test(c.status) ? 'completed'
+              : /review|await|pending/i.test(c.status) ? 'review'
+              : /eligible|approved/i.test(c.status) ? 'eligible'
+              : 'submitted';
+            const decisionTone = c.decision === 'eligible' || /likely-eligible/.test(c.decision || '') ? 'eligible'
+              : c.decision === 'not-eligible' || /likely-ineligible/.test(c.decision || '') ? 'ineligible'
+              : /escalate|insufficient|requires-review|not-yet/.test(c.decision || '') ? 'review' : undefined;
             return (
-              <li key={c.id} className="case-row">
+              <li key={c.id} className={`case-row case-row--${statusKind}`}>
+                <div className="case-row__accent" aria-hidden="true" />
                 <div className="case-row__main">
                   <Link to={`/cases/${c.id}`} className="case-row__title">
-                    <strong>{c.id}</strong> · {c.title}
+                    <span className="case-row__icon" aria-hidden="true">{appIcon}</span>
+                    <span className="case-row__title-text">{appLabel}</span>
+                    {flag && <span className="case-row__flag" aria-label={c.country?.toUpperCase()}>{flag}</span>}
                   </Link>
+                  <div className="case-row__id">
+                    <code title={c.id}>#{c.id.substring(0, 8)}</code>
+                  </div>
                   <div className="case-row__meta">
-                    <span className={`pill pill--${c.status.toLowerCase().replace(/\s+/g, '-')}`}>{c.status}</span>
+                    <span className={`pill pill--status-${statusKind}`}>{c.status}</span>
+                    {decisionTone && (
+                      <span className={`pill pill--decision-${decisionTone}`}>{c.decision}</span>
+                    )}
+                    {typeof c.confidence === 'number' && (
+                      <span className={`pill pill--confidence-${c.confidence >= 0.75 ? 'high' : c.confidence >= 0.45 ? 'mid' : 'low'}`}>
+                        AI {(c.confidence * 100).toFixed(0)}%
+                      </span>
+                    )}
                     <time>{c.updatedAt ? new Date(c.updatedAt).toLocaleString() : ''}</time>
                   </div>
                   {c.progress && (
                     <div className="case-row__progress" aria-label={`Step ${c.progress.done} of ${c.progress.total} completed`}>
-                      <div className="case-row__progress-bar"><div className="case-row__progress-fill" style={{ width: `${pct}%` }} /></div>
+                      <div className="case-row__progress-bar">
+                        <div className={`case-row__progress-fill case-row__progress-fill--${statusKind}`} style={{ width: `${pct}%` }} />
+                      </div>
                       <span className="case-row__progress-label">
                         Step {c.progress.done}/{c.progress.total} completed
                         {c.progress.current && !isCanceled ? <> · next: <em>{c.progress.current}</em></> : null}
@@ -238,6 +340,9 @@ export function MyCasesPage() {
                   )}
                 </div>
                 <div className="case-row__actions">
+                  <Link to={`/cases/${c.id}`} className="button-primary case-actions__btn">
+                    <FormattedMessage id="cases.openLabel" defaultMessage="Open" />
+                  </Link>
                   <button
                     type="button"
                     className="button-secondary case-actions__btn"

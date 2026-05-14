@@ -63,6 +63,44 @@ export function appendCase(c: StoredCase) {
   writeAll(filtered.slice(0, 50));
 }
 
+// Merge a (possibly partial) remote-derived case into the local store.
+// Preserves any field already present locally unless the incoming value
+// is non-empty — so a rich apply-time entry (full workflowSteps,
+// extractedFields, documentBlobUrl, eligibilityPreflight) is NOT clobbered
+// by a slim re-hydration from a truncated Dataverse description.
+export function upsertCase(c: StoredCase) {
+  const all = readAll();
+  const idx = all.findIndex((x) => x.id === c.id);
+  if (idx < 0) {
+    all.unshift(c);
+    writeAll(all.slice(0, 50));
+    return;
+  }
+  const prev = all[idx];
+  const merged: StoredCase = {
+    ...prev,
+    // Always trust remote for these (server is authoritative)
+    status: c.status || prev.status,
+    updatedAt: c.updatedAt || prev.updatedAt,
+    title: c.title || prev.title,
+    // Only overwrite if the remote actually carries a value
+    country: c.country || prev.country,
+    citizenUpn: c.citizenUpn || prev.citizenUpn,
+    applicationType: c.applicationType || prev.applicationType,
+    decision: c.decision || prev.decision,
+    confidence: typeof c.confidence === 'number' ? c.confidence : prev.confidence,
+    estimatedDecisionDate: c.estimatedDecisionDate || prev.estimatedDecisionDate,
+    extractedFields: (c.extractedFields && Object.keys(c.extractedFields).length > 0) ? c.extractedFields : prev.extractedFields,
+    documentBlobUrl: c.documentBlobUrl || prev.documentBlobUrl,
+    documentBlobName: c.documentBlobName || prev.documentBlobName,
+    storageAccount: c.storageAccount || prev.storageAccount,
+    eligibility: c.eligibility ?? prev.eligibility,
+    workflowSteps: (c.workflowSteps && c.workflowSteps.length > 0) ? c.workflowSteps : prev.workflowSteps,
+  };
+  all[idx] = merged;
+  writeAll(all);
+}
+
 export function listCases(country: string, citizenUpn?: string): StoredCase[] {
   return readAll().filter((c) => c.country === country && (!citizenUpn || c.citizenUpn === citizenUpn));
 }
