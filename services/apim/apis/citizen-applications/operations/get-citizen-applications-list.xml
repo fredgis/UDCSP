@@ -76,16 +76,27 @@
     <return-response>
       <set-status code="200" reason="OK" />
       <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="x-citizen-upn" exists-action="override"><value>@((string)context.Variables["citizenUpn"])</value></set-header>
+      <set-header name="x-dv-status" exists-action="override"><value>@(((IResponse)context.Variables["dvResp"]).StatusCode.ToString())</value></set-header>
       <set-body>@{
           var resp = (IResponse)context.Variables["dvResp"];
+          var upn = (string)context.Variables["citizenUpn"];
           if (resp.StatusCode != 200) {
-            return "{\"value\":[],\"error\":\"dataverse_" + resp.StatusCode + "\"}";
+            string dvErr = "";
+            try { dvErr = resp.Body.As<string>(true); } catch { dvErr = ""; }
+            return new JObject {
+              ["value"] = new JArray(),
+              ["count"] = 0,
+              ["error"] = "dataverse_" + resp.StatusCode,
+              ["citizenUpn"] = upn,
+              ["dvBody"] = dvErr
+            }.ToString();
           }
           JObject body;
           try { body = resp.Body.As<JObject>(); }
-          catch { return "{\"value\":[]}"; }
+          catch { return new JObject { ["value"] = new JArray(), ["count"] = 0, ["error"] = "dv_body_parse", ["citizenUpn"] = upn }.ToString(); }
           var rows = body["value"] as JArray;
-          if (rows == null) { return "{\"value\":[]}"; }
+          if (rows == null) { return new JObject { ["value"] = new JArray(), ["count"] = 0, ["error"] = "dv_value_null", ["citizenUpn"] = upn }.ToString(); }
           var items = new JArray();
           foreach (var row in rows) {
             string sub = (string)row["subject"] ?? "";
@@ -110,7 +121,7 @@
                                   : sub.Contains("tax") ? "tax-certificate" : "application"
             });
           }
-          return new JObject { ["value"] = items, ["count"] = items.Count }.ToString();
+          return new JObject { ["value"] = items, ["count"] = items.Count, ["citizenUpn"] = upn }.ToString();
       }</set-body>
     </return-response>
   </inbound>
