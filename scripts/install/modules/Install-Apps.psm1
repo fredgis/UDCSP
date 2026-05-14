@@ -54,6 +54,31 @@ function Install-Apps {
                 } else {
                     Invoke-NativeCommand -Command @('swa','deploy','./dist','--env','production','--deployment-token',$deployToken,'--no-use-keychain') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 }
+
+                # Custom domain binding (idempotent). Skip when Web.CustomDomain.Hostname is empty
+                # or the binding already exists. The DNS CNAME (Hostname -> <swa>.azurestaticapps.net)
+                # must be created at the registrar BEFORE this step or ACME validation will fail.
+                $customHost = $null
+                if ($Config.ContainsKey('Web') -and $Config.Web.ContainsKey('CustomDomain')) {
+                    $customHost = [string]$Config.Web.CustomDomain.Hostname
+                }
+                if (-not [string]::IsNullOrWhiteSpace($customHost)) {
+                    $validationMethod = 'cname-delegation'
+                    if ($Config.Web.CustomDomain.ContainsKey('ValidationMethod') -and -not [string]::IsNullOrWhiteSpace($Config.Web.CustomDomain.ValidationMethod)) {
+                        $validationMethod = [string]$Config.Web.CustomDomain.ValidationMethod
+                    }
+                    $existingHosts = @()
+                    try {
+                        $existingHostsRaw = & az staticwebapp hostname list --name $swaName --resource-group $swaRg --query '[].name' -o tsv 2>$null
+                        if ($existingHostsRaw) { $existingHosts = $existingHostsRaw -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ } }
+                    } catch { }
+                    if ($existingHosts -contains $customHost) {
+                        Write-Log -LogFile $logFile -Message "[skip] custom domain $customHost already bound to $swaName."
+                    } elseif ($PSCmdlet.ShouldProcess("$swaName", "bind custom domain $customHost (validation: $validationMethod)")) {
+                        Write-Log -LogFile $logFile -Message "[info] Binding custom domain $customHost to $swaName (validation: $validationMethod). Ensure DNS CNAME $customHost -> <swa>.azurestaticapps.net is in place."
+                        Invoke-NativeCommand -Command @('az','staticwebapp','hostname','set','--name',$swaName,'--resource-group',$swaRg,'--hostname',$customHost,'--validation-method',$validationMethod,'--only-show-errors','--output','none') -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                    }
+                }
             } else {
                 Write-Log -LogFile $logFile -Message "[skip] swa CLI not on PATH. Install: npm install -g @azure/static-web-apps-cli."
             }
