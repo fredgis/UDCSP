@@ -917,6 +917,14 @@ $token = az staticwebapp secrets list --name udcsp-web-dev --resource-group udcs
 npx --yes @azure/static-web-apps-cli@latest deploy ./dist --env production --deployment-token $token --no-use-keychain
 ```
 
+> ⚠️ **The SWA `udcsp-web-dev` is NOT branched to GitHub Actions** — there is
+> no auto-deploy on `git push origin main`. Every code change must be
+> deployed manually with the `swa deploy` command above (or by adding a
+> GitHub Actions workflow with the `Azure/static-web-apps-deploy@v1` action
+> and the `AZURE_STATIC_WEB_APPS_API_TOKEN` secret). Until that workflow
+> exists, `git push` updates the repo but the live site at
+> <https://udcsp.fredgis.com> still serves the previous build.
+
 ### Step 5 — Smoke test (per country)
 
 1. Open the portal → header **Sign in** button.
@@ -1069,22 +1077,70 @@ Caseworkers are **not** citizens — their identity lives in the **main Entra te
 
 Two options exist; we recommend **A** today:
 
-| | A. Power Apps Model-Driven app on `task` (now) | B. D365 Customer Service on `incident` (later) |
+| | A. Power Apps Model-Driven app on `udcsp_application` (now) | B. D365 Customer Service on `incident` (later) |
 |---|---|---|
-| Setup time | ~30 min | 1-2 days once licence acquired |
+| Setup time | ~5-15 min (Option A1 = scripted table + 2 maker clicks; A2 = ~30 min fully manual) | 1-2 days once licence acquired |
 | Cost | Free with the existing Dataverse env | Customer Service per-user licence |
-| Schema | Generic activity (`task`) — Subject + Description + State only | Native case schema with SLA, queues, KB, omni-channel |
-| Migration cost | When you flip to B, only **two** things change: the LA action `Create_D365_case` (`/tasks` → `/incidents`) and the APIM `case-management` policies. The caseworker MDA can be deleted in favour of the native incident MDA. | n/a |
+| Schema | Custom Dataverse table `udcsp_application` (~40 columns: identity, routing, citizen, residency-transfer, child-benefit, document extraction, AI verdict, claims envelope, consents, caseworker workflow). Spec in `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml`. | Native case schema with SLA, queues, KB, omni-channel |
+| Migration cost | When you flip to B, only **two** things change: the LA action `Create_D365_case` (`/udcsp_applications` → `/incidents`) and the APIM `case-management` policies. The caseworker MDA can be deleted in favour of the native incident MDA. | n/a |
 
-Build path A (PowerShell stub — finalise in the [Power Apps maker UI](https://make.powerapps.com)):
+> ⚠️ **The standalone `/caseworker` SPA route was removed (May 2026)**.
+> Earlier installer runs shipped a stand-in caseworker page in the
+> citizen SPA at `/caseworker`. That conflated personas (citizen and
+> caseworker authenticating against different Entra rings). The single
+> canonical caseworker surface is now the **model-driven Power App**
+> below — drop-in for the D365 Customer Service deployment when it
+> lands.
+
+#### Build path A1 — scripted table + maker app (recommended, ~5 min)
 
 ```powershell
-# 1. Create a model-driven app called "UDCSP Caseworker" against the existing task entity
-pac solution init --publisher-name UDCSP --publisher-prefix udcsp --outputDirectory ./pa-caseworker
-# 2. In the maker UI: add the `task` table, build a view filtered on subject startswith '[UDCSP-',
-#    and a form showing Subject / Description / State. Publish.
-# 3. Share the app with the caseworker security group.
+# 1. Authenticate Az CLI as a Dataverse System Customizer in the target env
+az login
+
+# 2. Create the udcsp_application table + its 40+ columns idempotently via
+#    Dataverse Web API. Picklists are created as plain String for
+#    simplicity (the SPA already sends matching string values like
+#    'residency-transfer', 'se', 'approved'); convert to Choice in Maker
+#    later if you want enum validation.
+.\apps\powerapps\caseworker\bootstrap-udcsp-application.ps1 `
+  -EnvUrl https://org939d8f07.crm4.dynamics.com
+
+# 3. Two clicks in https://make.powerapps.com:
+#    a. Apps -> New app -> Model-driven, name "UDCSP Caseworker",
+#       attach the udcsp_application table as primary entity.
+#    b. Publish. Bookmark
+#       https://org939d8f07.crm4.dynamics.com/main.aspx?appid=<APP_GUID>
 ```
+
+#### Build path A2 — fully manual (~30 min)
+
+```powershell
+# 1. In https://make.powerapps.com switch to the target env.
+# 2. Tables -> New table 'udcsp_application' with the columns spec'd in
+#    apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml
+# 3. Repeat for udcsp_eligibility_assessment, udcsp_caseworker_decision,
+#    udcsp_consent_record, udcsp_country_zone.
+# 4. Apps -> New app -> Model-driven 'UDCSP Caseworker'.
+# 5. Publish. Bookmark the /main.aspx?appid=<GUID> URL.
+```
+
+#### Replicating across the three sovereign envs
+
+Once the app exists in one environment, replay it on the others with
+`apps\powerapps\caseworker\deploy.ps1`:
+
+```powershell
+.\apps\powerapps\caseworker\deploy.ps1 `
+  -SourceEnv https://org939d8f07.crm4.dynamics.com `
+  -TargetEnvs @(
+    'https://udcspdk.crm4.dynamics.com',
+    'https://udcspse.crm4.dynamics.com',
+    'https://udcspno.crm4.dynamics.com'
+  )
+```
+
+The script auto-locates `pac.exe` under `%LOCALAPPDATA%\Microsoft\PowerAppsCLI\` if it isn't on `PATH`, runs `pac auth create` interactively, exports the solution from `-SourceEnv` (`pac solution export --include general,customization,autonumbering`), and imports it with `--publish-changes` to each `-TargetEnvs` entry.
 
 Path B blueprint lives in § A5 above and in `docs/tech/inprogress.md` § *Reminder when D365 Customer Service licence is acquired*.
 
