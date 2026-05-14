@@ -8,9 +8,8 @@
     <set-header name="traceparent" exists-action="skip"><value>@(context.Request.Headers.GetValueOrDefault("traceparent", Guid.NewGuid().ToString()))</value></set-header>
     <set-header name="x-request-tracing" exists-action="override"><value>true</value></set-header>
     <set-backend-service base-url="{{logicapp-application-intake-url}}" />
-    <cache-lookup vary-by-developer="false" vary-by-developer-groups="false" downstream-caching-type="none"><vary-by-header>Authorization</vary-by-header></cache-lookup>
   </inbound>
   <backend><base /></backend>
-  <outbound><base /><set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header><cache-store duration="60" /></outbound>
+  <outbound><base /><set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header></outbound>
   <on-error><base /><set-header name="x-correlation-id" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header></on-error>
 </policies>
