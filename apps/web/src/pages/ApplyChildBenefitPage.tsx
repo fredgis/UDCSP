@@ -228,7 +228,7 @@ export function ApplyChildBenefitPage() {
 
       <form onSubmit={onSubmit} className="apply-form">
         <fieldset className="apply-card">
-          <legend>1. About you</legend>
+          <legend>1. <FormattedMessage id="apply.section.about" defaultMessage="About you" /></legend>
           <div className="apply-grid">
             <label className="field field--required">
               <span>Parent / guardian name</span>
@@ -275,7 +275,7 @@ export function ApplyChildBenefitPage() {
         </fieldset>
 
         <fieldset className="apply-card">
-          <legend>2. Your children</legend>
+          <legend>2. <FormattedMessage id="apply.section.children" defaultMessage="Your children" /></legend>
           <div className="apply-grid">
             <label className="field field--required">
               <span>Number of dependent children</span>
@@ -293,7 +293,7 @@ export function ApplyChildBenefitPage() {
         </fieldset>
 
         <fieldset className="apply-card">
-          <legend>3. Household income</legend>
+          <legend>3. <FormattedMessage id="apply.section.income" defaultMessage="Household income" /></legend>
           <p className="apply-card__hint">
             Drop a recent payslip or your lease — the AI Document Extractor will read it. You can review what was
             extracted and edit anything before continuing.
@@ -370,7 +370,7 @@ export function ApplyChildBenefitPage() {
         </fieldset>
 
         <fieldset className="apply-card">
-          <legend>4. Consent &amp; declaration</legend>
+          <legend>4. <FormattedMessage id="apply.section.consent" defaultMessage="Consent & declaration" /></legend>
           <label className="checkbox">
             <input type="checkbox" name="consentCrossBorder" />
             <span>I allow verified cross-border eligibility checks with the other Nordic agencies for this application.</span>
