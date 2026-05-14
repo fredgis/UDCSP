@@ -76,24 +76,73 @@ foreach ($c in 'DK','SE','NO') {
 > scaffolds in this repo are the authoritative spec for that one-time
 > manual authoring.
 
-## Use the live web fallback today
+## How to access the Power App
 
-No Dataverse needed:
+> ⚠️ **Today the Power App is not yet accessible** — it requires a one-off
+> manual authoring pass in `make.powerapps.com` because `pac solution pack`
+> cannot synthesise a packageable solution from descriptive scaffold XML
+> (Dataverse needs a real `Other/Solution.xml` + per-table `Entity.xml` that
+> can only be produced by `pac solution export` *after* the table exists).
+> The procedure below gets you to a clickable URL once.
+
+### One-off bootstrap (≈ 15 min, run once)
+
+1. Sign in to <https://make.powerapps.com> with the tenant admin account
+   (`frgisber@microsoft.com` for the dev sandbox) and switch to the
+   **UDCSP-Dev** environment (org URL `org939d8f07.crm4.dynamics.com`).
+   The DK / SE / NO sovereign environments are still placeholders in
+   `docs/installation.md` — provision them later.
+2. **Tables → New table** named `udcsp_application`. Add the columns
+   listed in `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml`
+   (subject + description are not enough — you need at minimum
+   `udcsp_citizenupn`, `udcsp_country`, `udcsp_destinationcountry`,
+   `udcsp_applicationtype`, `udcsp_aidecision`, `udcsp_aiconfidence`,
+   `udcsp_caseworkerdecision`, `udcsp_workflowstate`, `udcsp_payload`).
+3. Repeat for `udcsp_eligibility_assessment`,
+   `udcsp_caseworker_decision`, `udcsp_consent_record`,
+   `udcsp_country_zone` (specs in the same `entities/` folder).
+4. **Apps → New app → Model-driven**, name **UDCSP Caseworker**, attach
+   the `udcsp_application` table as the primary entity. Add the form and
+   views from `application-main-form.xml` + `caseworker-views.xml` (copy
+   the field lists, the form designer is interactive).
+5. **Publish**. The app gets a stable URL of the form
+
+   ```text
+   https://org939d8f07.crm4.dynamics.com/main.aspx?appid=<APP_GUID>
+   ```
+
+   Bookmark it — that's the caseworker entry point. The GUID also appears
+   in `make.powerapps.com → Apps → ... → Details`.
+
+### After bootstrap: replicate to other envs (scripted)
+
+Once steps 1-5 are done **once**, export the resulting solution and
+replay it on every other Power Platform environment. The script below
+lives at `apps\powerapps\caseworker\deploy.ps1`:
 
 ```powershell
-cd apps\web
-npm install
-npm run dev
-# open http://localhost:5173/caseworker
+.\apps\powerapps\caseworker\deploy.ps1 `
+  -SourceEnv https://org939d8f07.crm4.dynamics.com `
+  -TargetEnvs @(
+    'https://udcspdk.crm4.dynamics.com',
+    'https://udcspse.crm4.dynamics.com',
+    'https://udcspno.crm4.dynamics.com'
+  )
 ```
 
-Sign in with any of the three configured citizen identities, submit an
-application from `/apply/residency` or `/apply/child-benefit`, then switch
-to `/caseworker` — the case appears in the queue with the AI verdict, the
-extracted document fields, the workflow timeline and the approve / reject /
-request-more-info buttons.
+It runs `pac solution export --include customization` against
+`-SourceEnv`, then `pac solution import --publish-changes` against each
+`-TargetEnv`. It auto-locates `pac.exe` under
+`%LOCALAPPDATA%\Microsoft\PowerAppsCLI\` if it isn't already on `PATH`.
 
-The same page is deployed at <https://udcsp.fredgis.com/caseworker>.
+### Citizen-side access (works today, no Power App needed)
+
+Citizens never use the Power App — they use the SPA at
+<https://udcsp.fredgis.com> (`/apply/residency`, `/apply/child-benefit`,
+`/cases`). The cases they create are persisted to Dataverse `tasks` (and
+soon `udcsp_application`) by the application-intake Logic App and
+re-hydrated cross-device by the new APIM operation policy
+`services/apim/apis/citizen-applications/operations/get-citizen-applications-list.xml`.
 
 ## How the data flows
 
