@@ -47,7 +47,16 @@ function parseDescription(desc?: string): Record<string, unknown> | null {
 function hydrateStoredCase(t: IntakeApplication, country: string, citizenUpn?: string): StoredCase {
   const id = t.id || t.activityid || t.applicationId || t.caseId || '';
   const body = parseDescription(t.description) ?? {};
-  const elig = (body.eligibilityPreflight ?? {}) as { recommendation?: string; confidence?: number };
+  const elig = (body.eligibilityPreflight ?? {}) as {
+    recommendation?: string;
+    confidence?: number;
+    ruleResults?: Array<{ rule: string; passed: boolean; evidenceIds?: string[]; details?: string }>;
+    missingEvidence?: string[];
+    humanReviewRequired?: boolean;
+    citizenNotice?: string;
+    caseworkerSummary?: string;
+    lineage?: { ruleVersion?: string; promptVersion?: string; datasetVersion?: string };
+  };
   const status =
     t.status ||
     t.state ||
@@ -66,6 +75,16 @@ function hydrateStoredCase(t: IntakeApplication, country: string, citizenUpn?: s
     documentBlobUrl: body.documentBlobUrl as string | undefined,
     documentBlobName: body.documentBlobName as string | undefined,
     storageAccount: body.storageAccount as string | undefined,
+    eligibility: elig.recommendation || typeof elig.confidence === 'number' || (elig.ruleResults?.length ?? 0) > 0 ? {
+      recommendation: elig.recommendation,
+      confidence: typeof elig.confidence === 'number' ? elig.confidence : undefined,
+      ruleResults: elig.ruleResults,
+      missingEvidence: elig.missingEvidence,
+      humanReviewRequired: elig.humanReviewRequired,
+      citizenNotice: elig.citizenNotice,
+      caseworkerSummary: elig.caseworkerSummary,
+      lineage: elig.lineage,
+    } : undefined,
   };
 }
 

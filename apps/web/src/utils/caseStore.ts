@@ -5,6 +5,18 @@
 
 const KEY = 'udcsp.cases.v1';
 
+export type EligibilityRule = { rule: string; passed: boolean; evidenceIds?: string[]; details?: string };
+export type EligibilitySnapshot = {
+  recommendation?: string;
+  confidence?: number;
+  ruleResults?: EligibilityRule[];
+  missingEvidence?: string[];
+  humanReviewRequired?: boolean;
+  citizenNotice?: string;
+  caseworkerSummary?: string;
+  lineage?: { ruleVersion?: string; promptVersion?: string; datasetVersion?: string };
+};
+
 export type StoredCase = {
   id: string;
   title: string;
@@ -20,6 +32,7 @@ export type StoredCase = {
   documentBlobUrl?: string;
   documentBlobName?: string;
   storageAccount?: string;
+  eligibility?: EligibilitySnapshot;
   workflowSteps?: Array<{ name: string; label: string; status: 'done' | 'in-progress' | 'pending' | 'skipped'; at?: string; detail?: string }>;
 };
 
