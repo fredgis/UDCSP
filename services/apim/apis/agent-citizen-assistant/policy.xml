@@ -1,6 +1,7 @@
-<policies>
+﻿<policies>
   <inbound>
     <base />
+    <include-fragment fragment-id="cors" />
     <include-fragment fragment-id="correlation-id" />
     <include-fragment fragment-id="jwt-validate-entra" />
     <rate-limit-by-key calls="120" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />

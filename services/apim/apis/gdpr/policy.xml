@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   GDPR API-level policy.
   Cross-origin + JWT validation are inherited from global policy fragments
   (cors-portal-origin, jwt-validate-spa). Per-operation policies in
@@ -7,6 +7,7 @@
 <policies>
   <inbound>
     <base />
+    <include-fragment fragment-id="cors" />
     <set-header name="x-correlation-id" exists-action="skip">
       <value>@(context.RequestId)</value>
     </set-header>
