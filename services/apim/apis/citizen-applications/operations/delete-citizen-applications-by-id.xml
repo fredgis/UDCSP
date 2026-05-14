@@ -95,6 +95,30 @@
         </return-response>
       </when>
     </choose>
+    <set-variable name="documentBlobUrl" value="@{
+        try {
+            var body = ((IResponse)context.Variables["dvGet"]).Body.As<JObject>();
+            var desc = (string)body["description"] ?? "";
+            var idx = desc.IndexOf("| text:");
+            if (idx < 0) { return ""; }
+            var json = desc.Substring(idx + 7).Trim();
+            JObject parsed;
+            try { parsed = JObject.Parse(json); } catch { return ""; }
+            var url = (string)parsed["documentBlobUrl"];
+            return url ?? "";
+        } catch { return ""; }
+    }" />
+    <choose>
+      <when condition="@(!string.IsNullOrEmpty((string)context.Variables["documentBlobUrl"]))">
+        <authentication-managed-identity resource="https://storage.azure.com/" output-token-variable-name="blobToken" ignore-error="true" />
+        <send-request mode="new" response-variable-name="blobDel" timeout="20" ignore-error="true">
+          <set-url>@((string)context.Variables["documentBlobUrl"])</set-url>
+          <set-method>DELETE</set-method>
+          <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["blobToken"])</value></set-header>
+          <set-header name="x-ms-version" exists-action="override"><value>2021-06-08</value></set-header>
+        </send-request>
+      </when>
+    </choose>
     <send-request mode="new" response-variable-name="dvDel" timeout="20" ignore-error="true">
       <set-url>@{
           var dvUrl = "{{d365-dataverse-url}}".TrimEnd('/');
