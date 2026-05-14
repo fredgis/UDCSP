@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
+import { PlatformDiagram } from '../components/PlatformDiagram';
 
 const services = [
   {
     to: '/apply/residency',
     title: 'Residency transfer',
     desc: 'One guided intake. We pre-fill the country-specific registration steps and route you to the right authority — borger.dk / CPR · Skatteverket · Skatteetaten.',
-    bridge: 'Bridges to: cpr.dk · borger.dk · Skatteverket Folkbokföring · Skatteetaten Folkeregisteret · UDI · Altinn',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 12l9-9 9 9" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" />
@@ -15,8 +15,7 @@ const services = [
   {
     to: '/apply/tax-certificate',
     title: 'Tax residency certificate',
-    desc: 'Request a tax residency certificate for DK, SE or NO. We pick the right form (skat.dk 02.050 · Skatteverket Hemvistintyg · Altinn RF-1306) and pre-fill it.',
-    bridge: 'Bridges to: skat.dk · Skatteverket e-service / SKV 2734 · Altinn RF-1306',
+    desc: 'Request a tax residency certificate for DK, SE or NO. We pick the right form and pre-fill it from your eID data.',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" />
@@ -27,7 +26,6 @@ const services = [
     to: '/apply/child-benefit',
     title: 'Child & family benefit',
     desc: 'Check eligibility and apply for child or family benefits. Upload payslip, lease or birth certificate — we extract the data and route to the competent authority.',
-    bridge: 'Bridges to: Udbetaling Danmark · Försäkringskassan · NAV barnetrygd',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -38,7 +36,6 @@ const services = [
     to: '/cases',
     title: 'My cases',
     desc: 'Track every application across countries. Real-time status, secure messaging, audit trail — across DK / SE / NO authorities.',
-    bridge: 'Aggregated from: D365 · borger.dk · Mina sidor · Altinn',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 14h6M8 17h4" />
@@ -121,22 +118,48 @@ export function HomePage(_: { locale?: string }) {
               <span className="service-card__icon" aria-hidden="true">{s.icon}</span>
               <h3>{s.title}</h3>
               <p>{s.desc}</p>
-              <p className="service-card__bridge">🔗 {s.bridge}</p>
               <span className="service-card__cta">Get started</span>
             </Link>
           </li>
         ))}
       </ul>
 
-      <aside className="bridge-callout" role="note" aria-label="How UDCSP works">
-        <h3>UDCSP is a bridge — not a replacement</h3>
-        <p>
-          Each country still owns its own registers, eID and decisions. UDCSP collects your data once,
-          checks the cross-border rules (Info Norden, Øresunddirekt, Grensetjänsten, EU Single Digital Gateway),
-          pre-fills the right national form, and routes your application to the competent authority:
-          <strong> borger.dk · CPR · MitID · Skatteverket · Försäkringskassan · BankID · Skatteetaten · NAV · UDI · Altinn · ID-porten</strong>.
-        </p>
-      </aside>
+      <section className="bridge-callout" aria-labelledby="unified-platform-heading">
+        <div className="bridge-callout__text">
+          <h3 id="unified-platform-heading">A unified platform across the Nordic public sector</h3>
+          <p>
+            UDCSP is a <strong>unified citizen platform</strong> that connects, in a single guided experience,
+            the registers, eIDs and case systems of Denmark, Sweden and Norway. We don&rsquo;t replace national
+            authorities — we collect your data once, validate the cross-border rules
+            (Info Norden, Øresunddirekt, Grensetjänsten, EU Single Digital Gateway), pre-fill the right form,
+            and submit it to the competent authority for your country.
+          </p>
+        </div>
+        <PlatformDiagram
+          groups={[
+            { country: 'Denmark', flag: '🇩🇰', items: [
+              { label: 'borger.dk', sub: 'Citizen portal' },
+              { label: 'CPR', sub: 'Population register' },
+              { label: 'MitID', sub: 'National eID' },
+              { label: 'SKAT', sub: 'Tax authority' },
+              { label: 'Udbetaling DK', sub: 'Family benefits' },
+            ] },
+            { country: 'Sweden', flag: '🇸🇪', items: [
+              { label: 'Skatteverket', sub: 'Tax & population' },
+              { label: 'Försäkringskassan', sub: 'Social insurance' },
+              { label: 'BankID', sub: 'eID' },
+              { label: 'Freja+', sub: 'eID' },
+            ] },
+            { country: 'Norway', flag: '🇳🇴', items: [
+              { label: 'Skatteetaten', sub: 'Tax & registry' },
+              { label: 'NAV', sub: 'Welfare & benefits' },
+              { label: 'Altinn', sub: 'Forms portal' },
+              { label: 'UDI', sub: 'Immigration' },
+              { label: 'ID-porten', sub: 'eID gateway' },
+            ] },
+          ]}
+        />
+      </section>
 
       <div className="section-heading">
         <div>

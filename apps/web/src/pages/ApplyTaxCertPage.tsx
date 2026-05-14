@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
+import { PlatformDiagram } from '../components/PlatformDiagram';
 
 type Result = { correlationId?: string; caseId?: string; error?: string };
 
@@ -65,15 +66,33 @@ export function ApplyTaxCertPage() {
         </p>
       </header>
 
-      <aside className="bridge-callout" role="note">
-        <h3>Routed to the issuing tax authority</h3>
-        <p>
-          Issuance is always done by the national tax authority — UDCSP only prepares the request:
-          <strong> SKAT form 02.050</strong> (Denmark, request workflow),
-          <strong> Skatteverket Hemvistintyg</strong> (Sweden, e-service since Feb 2026 or SKV 2734),
-          <strong> Altinn RF-1306</strong> (Norway).
-          Delivery times depend on the authority — instant download is not guaranteed everywhere.
-        </p>
+      <aside className="bridge-callout" aria-label="Connected tax authorities">
+        <div className="bridge-callout__text">
+          <h3>Connected to the issuing tax authority</h3>
+          <p>
+            UDCSP is a <strong>unified citizen platform</strong>. The certificate is always issued by the
+            national tax authority — UDCSP picks the right form, pre-fills it, and submits or prepares
+            the request. Delivery time depends on the authority.
+          </p>
+        </div>
+        <PlatformDiagram
+          groups={[
+            { country: 'Denmark', flag: '🇩🇰', items: [
+              { label: 'SKAT', sub: 'Form 02.050' },
+              { label: 'MitID', sub: 'eID' },
+            ] },
+            { country: 'Sweden', flag: '🇸🇪', items: [
+              { label: 'Skatteverket', sub: 'Hemvistintyg' },
+              { label: 'e-service', sub: 'since Feb 2026' },
+              { label: 'SKV 2734', sub: 'Form (fallback)' },
+            ] },
+            { country: 'Norway', flag: '🇳🇴', items: [
+              { label: 'Altinn', sub: 'Form RF-1306' },
+              { label: 'Skatteetaten', sub: 'Issuing authority' },
+              { label: 'ID-porten', sub: 'eID' },
+            ] },
+          ]}
+        />
       </aside>
 
       <form onSubmit={onSubmit} className="apply-form">
