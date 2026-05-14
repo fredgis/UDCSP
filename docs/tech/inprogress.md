@@ -16,7 +16,7 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 
 | #  | Demo (uses.md)                                            | State | What works today                                                                                          | What blocks a live walk-through                                                                                              |
 |----|-----------------------------------------------------------|:-----:|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| 1  | Anna moves Copenhagen → Stockholm (cross-border)          | 🟡    | DK + SE + NO sign-in via External ID; per-country submit chain; cross-country flag UI in header.          | Cross-border **record portability** (SE pre-fills from DK Folkeregistret) not implemented; today she re-keys data in SE.     |
+| 1  | Anna moves Copenhagen → Stockholm (cross-border)          | 🟡    | DK + SE + NO sign-in via External ID; 3-step Residency-transfer wizard live in 12 langs (`/apply/residency`); APIM `agent-topic-router` system prompt knows the DK/SE/NO residency rules + Info Norden / Øresunddirekt / Grensetjänsten cross-border refs; Logic-App `cross-border-residency` workflow.json scaffolded with eIDAS-validation / DK-residency-facade / D365-cases / ACS-notification HTTP actions; Service Bus queue `cross-border-coordination` defined; DPIA + Purview DLP `block-cross-border-cpr-without-consent` + sensitivity label `Restricted-Cross-Border` in repo. | Once-only pre-fill from DK CPR/Folkeregister (Anna re-keys today); Apply form submits to single-country `/citizen-applications/` not the cross-border LA; the LA itself is a skeleton with placeholder endpoints (no eIDAS bridge wired, no signed-claims envelope produced); SE D365 instance + queue not provisioned (caseworker side absent — same gap as D5); Translator agent built but not invoked on the residency outbound path; ACS notification template not produced; Microsoft Entra Verified ID credential issuance not provisioned; auto-onboarding to SE portal via federated identity not built; SLA timer + Power BI median-4d KPI report missing; Foundry trace ID not surfaced on My Cases. |
 | 2  | Lars asks voice assistant for tax refund (NO)             | 🔴    | ACS resource + GPT-4o Realtime deployment exist in Bicep.                                                  | Voice orchestrator Container App not deployed; `IncomingCall` Event Grid sub not wired; warm-transfer to D365 absent.        |
 | 3  | Maria with Windows Narrator (PL in DK)                    | 🟢    | DK chain works end-to-end (sign-in → APIM → LA → 4 Foundry agents → Dataverse `tasks`); MI-proxy upload onto `udcspdkprodlake`; workflow timeline; eligibility reasoning surfaced; consent-gating live; **PL locale bundle complete (12 languages translated end-to-end including HomePage, footer, Apply forms, Compliance, Login, Cases, Consent, Demos), Translator agent invoked in LA after Doc Extractor, axe-core CI gate active, site-wide RouteAnnouncer + cookie-banner a11y fix shipped**. | — Promoted 🟢 after live walk-through with Windows Narrator (Win + Ctrl + Enter) on Edge, Polish UI. |
 | 4  | Erik snaps a payslip on mobile (DK)                       | 🟡    | Web equivalent works (drop a PDF → Document Extractor → confirm → submit). Same APIM + LA path.            | No native iOS/Android build shipped; mobile shell exists in repo but not packaged.                                            |
@@ -27,9 +27,50 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 | 9  | CIO per-country, per-language outcomes & 47-portal sunset | 🔴    | Power BI Premium capacity + Fabric workspace provisioned.                                                 | No published report; CSAT not captured per language; sunset roadmap dashboard not built.                                      |
 | 10 | DevOps stands up the platform from a clean tenant         | 🟡    | 25 install phases scripted in `scripts/install/Install-UDCSP.ps1`; recently extended for D3 lake wiring + per-op policies + GDPR API. | Not re-run on a clean tenant since the recent installer changes (commits `4e32a59`, `00e8ac1`); needs a one-shot validation. |
 
-**The only piece played live recently is Demo 1's chat sub-component** (D1 in the previous taxonomy — citizen public chat through APIM `agent-topic-router`). Everything above the 🟢 line is build-verified but awaits a recorded walk-through.
+**The only piece played live recently is Demo 3 (Maria · DK · PL · Windows Narrator)** — chat sub-component of Demo 1 has been demoed before but the full DK→SE handoff has never been played end-to-end. Everything above the 🟢 line is build-verified but awaits a recorded walk-through.
 
-The remainder of this document tracks the **Demo-3 (Maria) gap** in detail because it is the next demo we expect to play.
+The remainder of this document tracks the **Demo-3 (Maria) gap** in detail because it is the next demo we expect to play, and adds a **Demo-1 (Anna · DK→SE) backlog** below since it is the flagship and the next one we will harden.
+
+## Demo 1 (Anna · DK → SE) — current state
+
+> Source narrative: [`docs/biz/uses.md` § Demo 1](../biz/uses.md#-demo-1--anna-moves-from-copenhagen-to-stockholm-flagship). Self-rating: ~30–40 % complete. The front door (UI, identity, AI agents, APIM router copy) exists. The actual cross-border orchestration, the SE landing, and the notification loop are stubs.
+
+### What works today (✅)
+
+- **DK / SE / NO sign-in** via External ID — three real CIAM tenants on `udcspdk.ciamlogin.com`, `udcspse.ciamlogin.com`, `udcspno.ciamlogin.com`.
+- **`/apply/residency` wizard** — 3 steps (move details → documents → review & submit), localised in the 12 supported languages, accessible (WCAG 2.1 AA), with destination + move-date validation gating step 1.
+- **APIM `agent-topic-router`** system prompt teaches the model the residency-transfer copy for DK/SE/NO and the cross-border references (Info Norden, Øresunddirekt, Grensetjänsten).
+- **Logic App `cross-border-residency`** workflow scaffold deployed: Service Bus trigger on queue `cross-border-coordination`, parameters for `aiActRegistryId`, `eidasValidationEndpoint`, `dkResidencyFacadeEndpoint`, `d365CasesEndpoint`, `acsNotificationEndpoint`, App Insights `traceparent` propagation.
+- **Foundry agents** Classifier, Document Extractor, Eligibility Pre-Assessor, Translator already built and invoked from the DK application-intake LA (D3).
+- **Governance assets**: DPIA `dpia-eligibility-model.md`, Purview DLP `block-cross-border-cpr-without-consent`, sensitivity label `Restricted-Cross-Border`, AI Act registry stub.
+- **Cross-country flag UI** in the header; per-country tenant gating on `/login`.
+
+### What is missing to play the demo end-to-end (🔴 ordered backlog)
+
+1. **Once-Only pre-fill** from DK CPR / Folkeregister into step 1 of the wizard (today Anna re-keys her name, address, employer). Needs a `dk-cpr-facade` Function/HTTP endpoint reading from External ID claims + a stub CPR dataset.
+2. **Cross-border submission path** — re-route Apply Residency from `POST /citizen-applications/` (single-country) to **enqueue on `cross-border-coordination` Service Bus** when destination ≠ origin. Front-end change + APIM op + LA trigger.
+3. **eIDAS-bridge HTTP action** — replace `eidasValidationEndpoint` placeholder with a real validator (or a clearly-labeled mock that returns `eIDAS High` for the demo); produce a **signed-claims JWT** envelope so DK PII never crosses the border in the clear.
+4. **DK → SE handoff in the LA** — implement the `Call_DK_residency_facade → Build_signed_claims → Post_to_SE_D365_cases` chain end-to-end against the real (or stub) endpoints; surface the resulting case ID back to APIM.
+5. **SE D365 instance / queue / SLA timer** — provision a SE Customer Service queue (or stub it on the same DK org with a `country='SE'` view) so the case actually lands; configure the 4-day SLA. Caseworker UI shares the wider D5/D7 backlog; until then a Power Apps interim is acceptable.
+6. **Translator agent invocation on outbound** — call the Translator agent in the LA to produce the SV body + EN summary for the notification.
+7. **ACS push + email notification** — implement `Send_notification` HTTP action against ACS; produce templates `residency-approved.sv-SE.html` and `residency-approved.en.html`.
+8. **Microsoft Entra Verified ID** — provision a Verified ID issuer on the platform tenant, define a `NordicResidencyCredential` schema, issue from the LA after caseworker approval.
+9. **SE portal auto-onboarding** — accept the Verified ID at `udcspse.ciamlogin.com` via External ID's Verified ID custom-policy hook so Anna lands authenticated without re-registering.
+10. **Foundry trace ID on `My Cases` / `Case detail`** — already capture `traceparent`; render a copyable trace link in the case detail timeline so the demo can end on "open the Foundry trace, every prompt is auditable".
+11. **D365 SLA timer + Power BI median-4d KPI** — configure the SLA in D365 once the SE queue is up, build a Power BI tile fed by the Fabric gold layer.
+12. **Cross-border consent enforcement** — the toggle exists on `/consent` but is not actually checked by the residency LA; gate the cross-border submission on `consent_cross_border = true`.
+13. **CSAT post-completion survey** — emit a 1-question rating after notification delivery; capture in Fabric for the +38 % satisfaction KPI.
+14. **Recorded live walk-through** — once 1–9 are wired, play Anna DK → SE on the live tenant, capture screen + Foundry trace + LA run history; promote row 1 to 🟢.
+
+### Reasonable order of attack
+
+A → 1, 2, 3, 4 (the cross-border submission rail, Anna's side) ·
+B → 5, 6, 7 (the SE landing and the notification loop) ·
+C → 8, 9 (Verified ID + auto-onboarding, the showcase finish) ·
+D → 10, 11, 12, 13 (audit, KPI, governance polish) ·
+E → 14 (record the walk-through, flip 🟢).
+
+A + B together unblock a credible MVP walk-through (Anna submits → SE caseworker approves → Anna receives notification) without Verified ID. C is the marquee finale and adds 2–3 days on top.
 
 ## What I can show right now (no further work)
 
