@@ -84,10 +84,21 @@ export function ApplyResidencyPage() {
         </span>
         <h1 id="res-title">Residency transfer</h1>
         <p>
-          Tell us where and when you&rsquo;re moving inside the Nordic region. We&rsquo;ll pre-fill what we already know
-          from your eID and check eligibility with the destination country&rsquo;s population register.
+          One guided intake. We pre-fill the country-specific registration with your eID data,
+          check the cross-border rules, and route your application to the competent national authority.
         </p>
       </header>
+
+      <aside className="bridge-callout" role="note">
+        <h3>UDCSP bridges to the official registers</h3>
+        <p>
+          We don&rsquo;t replace national systems. Depending on your destination, your application is routed to:
+          <strong> CPR / borger.dk</strong> (Denmark · MitID),
+          <strong> Skatteverket Folkbokföring</strong> (Sweden · BankID/Freja+),
+          <strong> Skatteetaten Folkeregisteret · UDI · Altinn</strong> (Norway · ID-porten).
+          Cross-border guidance is sourced from <strong>Info Norden, Øresunddirekt and Grensetjänsten</strong>.
+        </p>
+      </aside>
 
       <ol className="apply-stepper" aria-label="Application progress">
         {STEPS.map((label, idx) => (

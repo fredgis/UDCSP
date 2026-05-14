@@ -4,7 +4,8 @@ const services = [
   {
     to: '/apply/residency',
     title: 'Residency transfer',
-    desc: 'Move between Denmark, Sweden and Norway with a single application — pre-filled from your eID.',
+    desc: 'One guided intake. We pre-fill the country-specific registration steps and route you to the right authority — borger.dk / CPR · Skatteverket · Skatteetaten.',
+    bridge: 'Bridges to: cpr.dk · borger.dk · Skatteverket Folkbokföring · Skatteetaten Folkeregisteret · UDI · Altinn',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M3 12l9-9 9 9" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" />
@@ -13,8 +14,9 @@ const services = [
   },
   {
     to: '/apply/tax-certificate',
-    title: 'Tax certificate',
-    desc: 'Request and download an official tax residency certificate. Signed and verifiable in minutes.',
+    title: 'Tax residency certificate',
+    desc: 'Request a tax residency certificate for DK, SE or NO. We pick the right form (skat.dk 02.050 · Skatteverket Hemvistintyg · Altinn RF-1306) and pre-fill it.',
+    bridge: 'Bridges to: skat.dk · Skatteverket e-service / SKV 2734 · Altinn RF-1306',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" />
@@ -23,8 +25,9 @@ const services = [
   },
   {
     to: '/apply/child-benefit',
-    title: 'Child benefit',
-    desc: 'Apply for income-based child benefit. Upload a payslip or lease — the assistant extracts the data for you to confirm.',
+    title: 'Child & family benefit',
+    desc: 'Check eligibility and apply for child or family benefits. Upload payslip, lease or birth certificate — we extract the data and route to the competent authority.',
+    bridge: 'Bridges to: Udbetaling Danmark · Försäkringskassan · NAV barnetrygd',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
@@ -34,7 +37,8 @@ const services = [
   {
     to: '/cases',
     title: 'My cases',
-    desc: 'Track every application across countries. Real-time status, secure messaging, audit trail.',
+    desc: 'Track every application across countries. Real-time status, secure messaging, audit trail — across DK / SE / NO authorities.',
+    bridge: 'Aggregated from: D365 · borger.dk · Mina sidor · Altinn',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 14h6M8 17h4" />
@@ -117,11 +121,22 @@ export function HomePage(_: { locale?: string }) {
               <span className="service-card__icon" aria-hidden="true">{s.icon}</span>
               <h3>{s.title}</h3>
               <p>{s.desc}</p>
+              <p className="service-card__bridge">🔗 {s.bridge}</p>
               <span className="service-card__cta">Get started</span>
             </Link>
           </li>
         ))}
       </ul>
+
+      <aside className="bridge-callout" role="note" aria-label="How UDCSP works">
+        <h3>UDCSP is a bridge — not a replacement</h3>
+        <p>
+          Each country still owns its own registers, eID and decisions. UDCSP collects your data once,
+          checks the cross-border rules (Info Norden, Øresunddirekt, Grensetjänsten, EU Single Digital Gateway),
+          pre-fills the right national form, and routes your application to the competent authority:
+          <strong> borger.dk · CPR · MitID · Skatteverket · Försäkringskassan · BankID · Skatteetaten · NAV · UDI · Altinn · ID-porten</strong>.
+        </p>
+      </aside>
 
       <div className="section-heading">
         <div>
