@@ -1,0 +1,134 @@
+<!--
+  Operation policy: DELETE /citizen-applications/{applicationId}
+
+  Deletes the underlying Dataverse `task` row owned by the calling citizen.
+
+  Security model:
+   1. Validate the External ID JWT (inherited from API-level base policy).
+   2. Decode the bearer to extract `preferred_username`/`email`/`emails`/`upn`.
+   3. GET the task by activityid first and verify its `description` carries
+      `citizenUpn: <caller-upn>`. This prevents Citizen A from deleting
+      Citizen B's case by guessing the GUID.
+   4. Only then DELETE the task via Dataverse Web API.
+
+  When the canonical `udcsp_application` table is live, swap the entity set
+  to `udcsp_applications({applicationId})` and the ownership predicate to
+  `udcsp_citizenupn eq '<upn>'`.
+-->
+<policies>
+  <inbound>
+    <base />
+    <set-variable name="rawBearer" value="@(context.Request.Headers.GetValueOrDefault("Authorization","").Replace("Bearer ", ""))" />
+    <set-variable name="citizenUpn" value="@{
+        try {
+            var jwt = ((string)context.Variables["rawBearer"]).AsJwt();
+            if (jwt == null) { return ""; }
+            string u = null;
+            if (jwt.Claims.ContainsKey("preferred_username")) { u = jwt.Claims.GetValueOrDefault("preferred_username",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("email")) { u = jwt.Claims.GetValueOrDefault("email",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("emails")) { u = jwt.Claims.GetValueOrDefault("emails",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("upn")) { u = jwt.Claims.GetValueOrDefault("upn",""); }
+            return u ?? "";
+        } catch { return ""; }
+    }" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables["citizenUpn"]))">
+        <return-response>
+          <set-status code="401" reason="Unauthorized" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"missing_citizen_claim"}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <set-variable name="applicationId" value="@(context.Request.MatchedParameters.GetValueOrDefault("applicationId",""))" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables["applicationId"]))">
+        <return-response>
+          <set-status code="400" reason="Bad Request" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"missing_application_id"}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <authentication-managed-identity resource="{{d365-dataverse-url}}" output-token-variable-name="dvToken" ignore-error="false" />
+    <send-request mode="new" response-variable-name="dvGet" timeout="20" ignore-error="true">
+      <set-url>@{
+          var dvUrl = "{{d365-dataverse-url}}".TrimEnd('/');
+          var id = (string)context.Variables["applicationId"];
+          return dvUrl + "/api/data/v9.2/tasks(" + id + ")?$select=activityid,subject,description";
+      }</set-url>
+      <set-method>GET</set-method>
+      <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["dvToken"])</value></set-header>
+      <set-header name="Accept" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="OData-Version" exists-action="override"><value>4.0</value></set-header>
+    </send-request>
+    <choose>
+      <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode == 404)">
+        <return-response>
+          <set-status code="204" reason="No Content" />
+        </return-response>
+      </when>
+      <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode != 200)">
+        <return-response>
+          <set-status code="502" reason="Bad Gateway" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>@("{\"error\":\"dataverse_lookup_failed\",\"status\":" + ((IResponse)context.Variables["dvGet"]).StatusCode + "}")</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <set-variable name="ownsRow" value="@{
+        try {
+            var body = ((IResponse)context.Variables["dvGet"]).Body.As<JObject>();
+            var desc = (string)body["description"] ?? "";
+            var upn = (string)context.Variables["citizenUpn"];
+            return desc.Contains("citizenUpn: " + upn);
+        } catch { return false; }
+    }" />
+    <choose>
+      <when condition="@(!(bool)context.Variables["ownsRow"])">
+        <return-response>
+          <set-status code="403" reason="Forbidden" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"not_owner"}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <send-request mode="new" response-variable-name="dvDel" timeout="20" ignore-error="true">
+      <set-url>@{
+          var dvUrl = "{{d365-dataverse-url}}".TrimEnd('/');
+          var id = (string)context.Variables["applicationId"];
+          return dvUrl + "/api/data/v9.2/tasks(" + id + ")";
+      }</set-url>
+      <set-method>DELETE</set-method>
+      <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["dvToken"])</value></set-header>
+      <set-header name="OData-Version" exists-action="override"><value>4.0</value></set-header>
+    </send-request>
+    <choose>
+      <when condition="@(((IResponse)context.Variables["dvDel"]).StatusCode == 204 || ((IResponse)context.Variables["dvDel"]).StatusCode == 200 || ((IResponse)context.Variables["dvDel"]).StatusCode == 404)">
+        <return-response>
+          <set-status code="204" reason="No Content" />
+        </return-response>
+      </when>
+    </choose>
+    <return-response>
+      <set-status code="502" reason="Bad Gateway" />
+      <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@("{\"error\":\"dataverse_delete_failed\",\"status\":" + ((IResponse)context.Variables["dvDel"]).StatusCode + "}")</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error>
+    <base />
+    <return-response>
+      <set-status code="500" reason="Internal Server Error" />
+      <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+          return new JObject {
+            ["error"] = "delete_failed",
+            ["message"] = context.LastError != null ? context.LastError.Message : "unknown"
+          }.ToString();
+      }</set-body>
+    </return-response>
+  </on-error>
+</policies>

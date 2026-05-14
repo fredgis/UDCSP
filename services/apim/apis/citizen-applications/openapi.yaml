@@ -62,6 +62,19 @@ paths:
               schema: { $ref: "#/components/schemas/Response" }
         '401': { description: Unauthorized }
         '429': { description: Too many requests }
+    delete:
+      summary: Delete the citizen's own application (Dataverse row)
+      operationId: delete-citizen-applications-by-id
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Unauthorized }
+        '403': { description: Not owner }
+        '404': { description: Not found }
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT }

@@ -189,8 +189,33 @@ export function MyCasesPage() {
                   <button
                     type="button"
                     className="button-danger case-actions__btn"
-                    onClick={() => {
-                      if (!confirm(intl.formatMessage({ id: 'cases.deleteConfirm', defaultMessage: 'Remove this case from local cache only? It stays in the back-end record.' }))) return;
+                    onClick={async () => {
+                      if (!confirm(intl.formatMessage({ id: 'cases.deleteConfirm', defaultMessage: 'Permanently remove this case? This deletes the back-end record and cannot be undone.' }))) return;
+                      const country = getCountry();
+                      const apim = apimBaseUrlForCountry(country);
+                      let bearer = '';
+                      if (apim && accounts[0]) {
+                        try {
+                          const tok = await instance.acquireTokenSilent({
+                            account: accounts[0],
+                            scopes: [apiScopeForCountry(country)],
+                          });
+                          bearer = tok.accessToken;
+                        } catch { /* fall through; backend call will be skipped */ }
+                      }
+                      if (apim) {
+                        try {
+                          const res = await fetch(`${apim}/citizen-applications/${encodeURIComponent(c.id)}`, {
+                            method: 'DELETE',
+                            headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+                          });
+                          if (!res.ok && res.status !== 204 && res.status !== 404) {
+                            alert(`Could not delete on the server (HTTP ${res.status}). The local entry will still be removed.`);
+                          }
+                        } catch {
+                          alert('Server unreachable — the local entry will still be removed but the back-end record may persist.');
+                        }
+                      }
                       removeCase(c.id);
                       void load();
                     }}
