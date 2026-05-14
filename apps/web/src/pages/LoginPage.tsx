@@ -37,7 +37,7 @@ export function LoginPage() {
   return (
     <section aria-labelledby="signin-title" style={{ maxWidth: '52rem' }}>
       <h1 id="signin-title"><FormattedMessage id="login.title" defaultMessage="Sign in to UDCSP" /></h1>
-      <p>Choose the country whose services you need. Your account is created on the matching national identity tenant — your data stays in that country.</p>
+      <p><FormattedMessage id="login.lede" defaultMessage="Choose the country whose services you need. Your account is created on the matching national identity tenant — your data stays in that country." /></p>
 
       <fieldset className="login-fieldset">
         <legend><FormattedMessage id="login.legend.country" defaultMessage="1. Choose your country" /></legend>
@@ -67,10 +67,7 @@ export function LoginPage() {
       <fieldset className="login-fieldset">
         <legend><FormattedMessage id="login.legend.method" defaultMessage="2. Choose how to sign in" /></legend>
         <p style={{ color: 'var(--color-fg-soft)', marginTop: 0, fontSize: '.92rem' }}>
-          In production, residents authenticate either with email & password (returning users) or with their <strong>national eID</strong>{' '}
-          ({selected === 'dk' ? 'MitID' : selected === 'se' ? 'BankID' : 'BankID Norge / MinID'}). The eID button is shown here for clarity but is
-          intentionally disabled in this prototype — the real wiring goes through a certified <strong>OIDC broker</strong> (Criipto / Signicat) federated
-          to External ID. See <a href="https://github.com/fredgis/UDCSP/blob/main/docs/tech/architecture.md#4-identity-federation-detail">architecture §4</a>.
+          <FormattedMessage id="login.method.help" defaultMessage="In production, residents authenticate either with email and password (returning users) or with their national eID. The eID button is shown for clarity but disabled in this prototype — the real wiring goes through a certified OIDC broker federated to External ID." />
         </p>
         <div className="auth-method-grid" role="group" aria-label="Authentication method (preview)">
           <button type="button" className="auth-method auth-method--active" disabled aria-pressed="true" title="Active in this prototype">
@@ -93,8 +90,7 @@ export function LoginPage() {
       <fieldset className="login-fieldset">
         <legend><FormattedMessage id="login.legend.action" defaultMessage="3. Sign in or register" /></legend>
         <p style={{ color: 'var(--color-fg-soft)', marginTop: 0 }}>
-          You will be redirected to <strong>udcsp{selected}.ciamlogin.com</strong> · user flow <code>SignUpSignIn</code>.
-          {' '}New residents register; returning users sign in.
+          <FormattedMessage id="login.action.help" defaultMessage="You will be redirected to your national identity tenant. New residents register; returning users sign in." />
         </p>
         <div className="login-actions">
           <button type="button" className="button-primary" onClick={() => void start('signin')} disabled={!configured}><FormattedMessage id="login.signin" defaultMessage="Sign in" /></button>
@@ -111,7 +107,7 @@ export function LoginPage() {
       </fieldset>
 
       <details className="login-help">
-        <summary>How does this work?</summary>
+        <summary><FormattedMessage id="login.help.summary" defaultMessage="How does this work?" /></summary>
         <ol>
           <li>Each country runs its own <strong>Entra External ID (CIAM)</strong> tenant — DK, SE, NO. Citizen data stays in that country.</li>
           <li>The portal is a single-page app. When you choose a country, MSAL is rebuilt with that tenant's <code>SignUpSignIn</code> user flow and matching SPA client ID, then redirects you there.</li>

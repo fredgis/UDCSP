@@ -96,23 +96,7 @@ export function CompliancePage() {
           <div className="compliance-hero__eyebrow"><FormattedMessage id="compliance.eyebrow" defaultMessage="Regulatory framework" /></div>
           <h1 id="compliance-title"><FormattedMessage id="compliance.title" defaultMessage="Compliance & regulatory posture" /></h1>
           <p className="compliance-hero__lead">
-            UDCSP is a public-administration platform that operates across Denmark, Sweden and Norway.
-            Because it handles citizen identification, family entitlements, tax certificates, residency
-            applications and AI-assisted recommendations, it sits at the intersection of <strong>eight
-            overlapping regulatory regimes</strong> — GDPR, the EU AI Act, eIDAS, ePrivacy, NIS2, the
-            Web Accessibility Directive and the administrative-law obligations of each Nordic country.
-          </p>
-          <p className="compliance-hero__lead">
-            Compliance is treated as an architectural property rather than a downstream audit exercise.
-            Every regime is mapped to concrete platform controls — a documented legal basis for each
-            data point, AI Act conformity dossiers per agent, customer-managed encryption keys held in
-            each country, a 24-hour incident-notification chain to the national CSIRT, WCAG 2.1 AA
-            conformance on every channel, and a clear separation of responsibilities between UDCSP
-            (the unified front door) and the national authority (the controller and decision-maker).
-          </p>
-          <p className="compliance-hero__lead">
-            The sections below set out, in plain language and without technical jargon, what each
-            obligation means in practice, what citizens can expect, and where the responsibility lies.
+            <FormattedMessage id="compliance.hero.lede1" defaultMessage="UDCSP runs on the same European cloud, governance and data-protection rules as any modern public agency. The frameworks below are the ones a regulator would expect to see." />
           </p>
           <dl className="compliance-hero__meta">
             <div><dt>Document type</dt><dd>Compliance summary (executive)</dd></div>
