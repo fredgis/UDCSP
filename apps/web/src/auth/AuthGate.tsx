@@ -1,24 +1,74 @@
 import { ReactNode } from 'react';
 import { useIsAuthenticated } from '@azure/msal-react';
 import { Link, useLocation } from 'react-router-dom';
+import { countries, getCountry } from './msalConfig';
+
+const COUNTRY_LABEL: Record<string, string> = {
+  dk: 'Denmark', se: 'Sweden', no: 'Norway',
+};
+const COUNTRY_EID: Record<string, { label: string; sub: string }> = {
+  dk: { label: 'MitID', sub: 'Danish national eID' },
+  se: { label: 'BankID', sub: 'Swedish national eID' },
+  no: { label: 'BankID Norge', sub: 'Norwegian national eID' },
+};
 
 export function AuthGate({ children, title = 'Sign in required' }: { children: ReactNode; title?: string }) {
   const isAuth = useIsAuthenticated();
   const loc = useLocation();
   if (isAuth) return <>{children}</>;
+
+  const country = getCountry();
+  const flag = countries.find((c) => c.code === country)?.flag || '🌐';
+  const label = COUNTRY_LABEL[country] ?? country.toUpperCase();
+  const eid = COUNTRY_EID[country] ?? { label: 'national eID', sub: '' };
+  const returnTo = loc.pathname + (loc.search || '');
+
   return (
     <section aria-labelledby="gate-title" className="auth-gate">
-      <h1 id="gate-title">{title}</h1>
-      <p>
-        This area is reserved for authenticated citizens. Sign in or create an account on your country's national identity tenant —
-        we'll bring you back to <code>{loc.pathname}</code> right after.
-      </p>
-      <p>
-        <Link to="/login" className="button-primary">Sign in / create account</Link>
-      </p>
-      <p style={{ color: 'var(--color-fg-soft)', fontSize: '.9rem' }}>
-        Why? Your case data, applications and consent settings are personal — they live in <strong>your country tenant</strong> (DK, SE or NO External ID) and require your authenticated identity to be read or written.
-      </p>
+      <div className="auth-gate__hero">
+        <span className="auth-gate__country" aria-label={`${label} citizen portal`}>
+          <span aria-hidden="true">{flag}</span> {label}
+        </span>
+        <h1 id="gate-title">{title}</h1>
+        <p className="auth-gate__lede">
+          You're a few seconds away. Sign in with your <strong>{eid.label}</strong>{eid.sub ? ` (${eid.sub})` : ''} or with email &amp; password — we'll bring you straight back here.
+        </p>
+
+        <div className="auth-gate__cta">
+          <Link to={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="button-primary auth-gate__primary">
+            Sign in / create account
+          </Link>
+          <Link to="/" className="auth-gate__secondary">← Back to home</Link>
+        </div>
+
+        <p className="auth-gate__return">
+          You'll return to <code>{returnTo}</code> automatically.
+        </p>
+      </div>
+
+      <ul className="auth-gate__benefits" aria-label="Why you need to sign in">
+        <li>
+          <span className="auth-gate__icon" aria-hidden="true">🔐</span>
+          <div>
+            <strong>Your data stays in your country tenant</strong>
+            <p>Cases, applications and consents live in the {label} External ID directory — no cross-border copies.</p>
+          </div>
+        </li>
+        <li>
+          <span className="auth-gate__icon" aria-hidden="true">🛂</span>
+          <div>
+            <strong>One identity, every service</strong>
+            <p>Sign in once with {eid.label}; child benefit, residency transfer, tax certificate and case follow-up all unlock.</p>
+          </div>
+        </li>
+        <li>
+          <span className="auth-gate__icon" aria-hidden="true">🧠</span>
+          <div>
+            <strong>You stay in control</strong>
+            <p>Granular consent controls, full audit trail, EU AI Act compliant — revoke at any time from <Link to="/consent">Consent center</Link>.</p>
+          </div>
+        </li>
+      </ul>
     </section>
   );
 }
