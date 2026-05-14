@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
@@ -11,6 +12,7 @@ type Result = { correlationId?: string; caseId?: string; error?: string };
 const COUNTRY_LABEL: Record<string, string> = { dk: 'Denmark', se: 'Sweden', no: 'Norway' };
 
 export function ApplyTaxCertPage() {
+  const intl = useIntl();
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
@@ -56,13 +58,13 @@ export function ApplyTaxCertPage() {
   return (
     <section aria-labelledby="tax-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country" aria-label={`Filing in ${COUNTRY_LABEL[country]}`}>
-          <span aria-hidden="true">{flag}</span> Filing in {COUNTRY_LABEL[country]}
+        <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: COUNTRY_LABEL[country] })}>
+          <span aria-hidden="true">{flag}</span>{' '}
+          <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: COUNTRY_LABEL[country] }} />
         </span>
-        <h1 id="tax-title">Tax residency certificate</h1>
+        <h1 id="tax-title"><FormattedMessage id="apply.taxCert.title" defaultMessage="Tax residency certificate" /></h1>
         <p>
-          Request a tax residency certificate to claim a double-taxation treaty. We pick the right form based on
-          your country, pre-fill it, and submit or prepare it for the {COUNTRY_LABEL[country]} tax authority.
+          <FormattedMessage id="apply.taxCert.lede" defaultMessage="Request a tax residency certificate to claim a double-taxation treaty. We pick the right form, pre-fill it, and submit or prepare it for your national tax authority." />
         </p>
       </header>
 
@@ -143,7 +145,7 @@ export function ApplyTaxCertPage() {
 
         <div className="apply-submit">
           <button type="submit" className="button-primary" disabled={busy}>
-            {busy ? 'Requesting…' : 'Request certificate'}
+            {busy ? <FormattedMessage id="apply.cta.submitting" defaultMessage="Submitting…" /> : <FormattedMessage id="apply.cta.submit" defaultMessage="Submit application" />}
           </button>
           <p className="apply-submit__hint">
             The certificate is issued by your country&rsquo;s tax authority. UDCSP only routes the request — it never
@@ -155,10 +157,10 @@ export function ApplyTaxCertPage() {
       {result?.error && <p role="alert" className="info-banner info-banner--warn">⚠ {result.error}</p>}
       {result && !result.error && (
         <article className="apply-result apply-result--likely-eligible" tabIndex={-1}>
-          <h2>✅ Request received</h2>
+          <h2>✅ <FormattedMessage id="apply.result.received" defaultMessage="Application received" /></h2>
           <p>
-            Case reference <code>{result.caseId || result.correlationId || 'pending'}</code>. The certificate will be
-            emailed to you shortly. You can also follow it from <Link to="/cases">My cases</Link>.
+            <FormattedMessage id="apply.result.caseRef" defaultMessage="Case reference" /> <code>{result.caseId || result.correlationId || 'pending'}</code>.{' '}
+            <Link to="/cases"><FormattedMessage id="apply.result.trackInCases" defaultMessage="Track in My cases →" /></Link>
           </p>
         </article>
       )}

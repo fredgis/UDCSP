@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { getCountry } from '../auth/msalConfig';
 import { wipeAllForCitizen } from '../utils/caseStore';
@@ -79,6 +80,7 @@ function loadStored(): Record<string, boolean> {
 }
 
 export function ConsentManagementPage() {
+  const intl = useIntl();
   const [state, setState] = useState<Record<string, boolean>>(loadStored());
   const [saved, setSaved] = useState(false);
 
@@ -144,11 +146,9 @@ export function ConsentManagementPage() {
   return (
     <section aria-labelledby="consent-title" className="consent-page">
       <header className="apply-page__head">
-        <h1 id="consent-title">Consent &amp; privacy</h1>
+        <h1 id="consent-title"><FormattedMessage id="consent.title" defaultMessage="Consent & privacy" /></h1>
         <p>
-          You stay in charge of your data. Toggle each item to allow or revoke a permission. Revocations propagate to
-          APIM and the orchestration layer within seconds — pending requests still in flight finish, but no new ones
-          are issued.
+          <FormattedMessage id="consent.lede" defaultMessage="You stay in charge of your data. Toggle each item to allow or revoke a permission. Revocations propagate within seconds." />
         </p>
       </header>
 
@@ -159,7 +159,7 @@ export function ConsentManagementPage() {
               <div className="consent-card__main">
                 <h2>{c.title}</h2>
                 <p>{c.description}</p>
-                <p className="consent-card__legal"><strong>Legal basis:</strong> {c.legalBasis}</p>
+                <p className="consent-card__legal"><strong><FormattedMessage id="consent.legalBasis" defaultMessage="Legal basis:" /></strong> {c.legalBasis}</p>
               </div>
               <label className="consent-toggle">
                 <input
@@ -172,7 +172,7 @@ export function ConsentManagementPage() {
                   <span className="consent-toggle__thumb" />
                 </span>
                 <span className="consent-toggle__label">
-                  {c.required ? 'Always on' : (state[c.id] ?? c.defaultEnabled) ? 'Allowed' : 'Revoked'}
+                  {c.required ? <FormattedMessage id="consent.alwaysOn" defaultMessage="Always on" /> : (state[c.id] ?? c.defaultEnabled) ? <FormattedMessage id="consent.allowed" defaultMessage="Allowed" /> : <FormattedMessage id="consent.revoked" defaultMessage="Revoked" />}
                 </span>
               </label>
             </li>
@@ -180,13 +180,13 @@ export function ConsentManagementPage() {
         </ul>
 
         <div className="apply-submit">
-          <button type="submit" className="button-primary">Save preferences</button>
-          {saved && <span className="info-banner info-banner--ok" role="status">✅ Preferences saved.</span>}
+          <button type="submit" className="button-primary"><FormattedMessage id="consent.save" defaultMessage="Save preferences" /></button>
+          {saved && <span className="info-banner info-banner--ok" role="status"><FormattedMessage id="consent.saved" defaultMessage="✅ Preferences saved." /></span>}
         </div>
       </form>
 
       <section aria-labelledby="erasure-title" className="gdpr-erasure">
-        <h2 id="erasure-title">Right to erasure (GDPR Article 17)</h2>
+        <h2 id="erasure-title"><FormattedMessage id="consent.erasure.title" defaultMessage="Right to erasure (GDPR Article 17)" /></h2>
         <p>
           Request the permanent deletion of all your personal data held by the platform.
           The request is orchestrated by Microsoft Priva and cascades across the five
@@ -207,7 +207,7 @@ export function ConsentManagementPage() {
             onClick={() => void requestErasure()}
             disabled={erasureBusy}
           >
-            {erasureBusy ? 'Submitting request…' : 'Request permanent erasure of my data'}
+            {erasureBusy ? <FormattedMessage id="consent.erasure.busy" defaultMessage="Submitting request…" /> : <FormattedMessage id="consent.erasure.button" defaultMessage="Request permanent erasure of my data" />}
           </button>
         </p>
         {erasure?.ok && (

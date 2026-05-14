@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FormattedMessage } from 'react-intl';
 import { PlatformDiagram } from '../components/PlatformDiagram';
 
 type Pillar = {
@@ -92,8 +93,8 @@ export function CompliancePage() {
       <div className="compliance-shell">
 
         <header className="compliance-hero">
-          <div className="compliance-hero__eyebrow">Regulatory framework</div>
-          <h1 id="compliance-title">Compliance &amp; regulatory posture</h1>
+          <div className="compliance-hero__eyebrow"><FormattedMessage id="compliance.eyebrow" defaultMessage="Regulatory framework" /></div>
+          <h1 id="compliance-title"><FormattedMessage id="compliance.title" defaultMessage="Compliance & regulatory posture" /></h1>
           <p className="compliance-hero__lead">
             UDCSP is a public-administration platform that operates across Denmark, Sweden and Norway.
             Because it handles citizen identification, family entitlements, tax certificates, residency
@@ -122,7 +123,7 @@ export function CompliancePage() {
 
 
         <section className="compliance-block" aria-labelledby="frame-title">
-          <h2 id="frame-title"><span className="compliance-num">01</span> Regulatory framework</h2>
+          <h2 id="frame-title"><span className="compliance-num">01</span> <FormattedMessage id="compliance.section.framework" defaultMessage="Regulatory framework" /></h2>
           <p className="compliance-lede">
             The eight regimes overlap on every interaction — a single voice call is GDPR, ePrivacy, AI
             Act, NIS2, eIDAS and Accessibility at once. Compliance by design is one of the platform&rsquo;s
@@ -152,7 +153,7 @@ export function CompliancePage() {
         </section>
 
         <section className="compliance-block" aria-labelledby="rights-title">
-          <h2 id="rights-title"><span className="compliance-num">02</span> Citizen rights and operational service levels</h2>
+          <h2 id="rights-title"><span className="compliance-num">02</span> <FormattedMessage id="compliance.section.rights" defaultMessage="Citizen rights and operational service levels" /></h2>
           <p className="compliance-lede">
             The seven core data-subject rights of the GDPR are delivered through automated workflows
             rather than paper procedures. Each right has a measurable service level.
@@ -174,7 +175,7 @@ export function CompliancePage() {
         </section>
 
         <section className="compliance-block" aria-labelledby="bridge-title">
-          <h2 id="bridge-title"><span className="compliance-num">03</span> Controllership boundary</h2>
+          <h2 id="bridge-title"><span className="compliance-num">03</span> <FormattedMessage id="compliance.section.controllership" defaultMessage="Controllership boundary" /></h2>
           <p className="compliance-lede">
             UDCSP is the unified front door — it captures, validates and routes the citizen&rsquo;s request.
             The substantive decision, the official record and the certificate are produced by the
@@ -208,7 +209,7 @@ export function CompliancePage() {
         </section>
 
         <section className="compliance-block" aria-labelledby="evidence-title">
-          <h2 id="evidence-title"><span className="compliance-num">04</span> Evidence pack available to a regulator</h2>
+          <h2 id="evidence-title"><span className="compliance-num">04</span> <FormattedMessage id="compliance.section.evidence" defaultMessage="Evidence pack available to a regulator" /></h2>
           <p className="compliance-lede">
             Should a Data Protection Authority, the AI Office or a national supervisory body request
             evidence, the following dossier is generated on demand from the platform&rsquo;s control plane.
@@ -224,7 +225,7 @@ export function CompliancePage() {
         </section>
 
         <section className="compliance-block compliance-block--neutral" aria-labelledby="exposure-title">
-          <h2 id="exposure-title"><span className="compliance-num">05</span> Exposure for non-compliance</h2>
+          <h2 id="exposure-title"><span className="compliance-num">05</span> <FormattedMessage id="compliance.section.exposure" defaultMessage="Exposure for non-compliance" /></h2>
           <p className="compliance-lede">
             Statutory maxima are recorded for completeness; UDCSP treats them as the consequence of
             failure, not the threshold of acceptability.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
@@ -44,6 +45,7 @@ function estimatedDate(days = 4): string {
 }
 
 export function ApplyChildBenefitPage() {
+  const intl = useIntl();
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
@@ -182,14 +184,13 @@ export function ApplyChildBenefitPage() {
   return (
     <section aria-labelledby="cb-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country" aria-label={`Submitting to ${RESIDENCE_LABEL[country]}`}>
-          <span aria-hidden="true">{flag}</span> Submitting to {RESIDENCE_LABEL[country]}
+        <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: RESIDENCE_LABEL[country] })}>
+          <span aria-hidden="true">{flag}</span>{' '}
+          <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: RESIDENCE_LABEL[country] }} />
         </span>
-        <h1 id="cb-title">Apply for child &amp; family benefit</h1>
+        <h1 id="cb-title"><FormattedMessage id="apply.childBenefit.title" defaultMessage="Child & family benefit" /></h1>
         <p>
-          Tell us about your household. Upload a payslip, lease or birth certificate — the assistant extracts
-          the data for you to confirm. <strong>You stay in charge:</strong> nothing is submitted until you press the
-          button at the bottom.
+          <FormattedMessage id="apply.childBenefit.lede" defaultMessage="Apply for the child or family benefit you are entitled to. Upload a payslip and a recent ID; we extract the fields and pre-check eligibility before a caseworker reviews." />
         </p>
       </header>
 
@@ -389,7 +390,7 @@ export function ApplyChildBenefitPage() {
 
         <div className="apply-submit">
           <button type="submit" className="button-primary" disabled={busy}>
-            {busy ? 'Submitting…' : 'Submit application'}
+            {busy ? <FormattedMessage id="apply.cta.submitting" defaultMessage="Submitting…" /> : <FormattedMessage id="apply.cta.submit" defaultMessage="Submit application" />}
           </button>
           <p className="apply-submit__hint">
             By submitting you start an official case in <strong>{country.toUpperCase()}</strong>. The AI eligibility
@@ -413,7 +414,7 @@ export function ApplyChildBenefitPage() {
             </>
           ) : (
             <>
-              <h2>✅ Your application has been received</h2>
+              <h2>✅ <FormattedMessage id="apply.result.received" defaultMessage="Application received" /></h2>
               <p>
                 Case reference <code>{result.caseId || result.correlationId || 'pending'}</code>.
                 You will receive a written decision by <strong>{result.estimatedDecisionDate}</strong>.

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
@@ -10,13 +11,18 @@ type SubmitResult = { correlationId?: string; caseId?: string; status?: string; 
 
 const COUNTRY_LABEL: Record<string, string> = { dk: 'Denmark', se: 'Sweden', no: 'Norway' };
 
-const STEPS = ['Your move', 'Documents', 'Review & submit'] as const;
-
 export function ApplyResidencyPage() {
+  const intl = useIntl();
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
   const flag = countries.find((c) => c.code === country)?.flag ?? '🌐';
+
+  const STEPS = useMemo(() => [
+    intl.formatMessage({ id: 'apply.residency.step.1', defaultMessage: 'Your move' }),
+    intl.formatMessage({ id: 'apply.residency.step.2', defaultMessage: 'Documents' }),
+    intl.formatMessage({ id: 'apply.residency.step.3', defaultMessage: 'Review & submit' }),
+  ], [intl]);
 
   const [step, setStep] = useState(0);
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -80,13 +86,13 @@ export function ApplyResidencyPage() {
   return (
     <section aria-labelledby="res-title" className="apply-page">
       <header className="apply-page__head">
-        <span className="apply-page__country" aria-label={`Filing from ${COUNTRY_LABEL[country]}`}>
-          <span aria-hidden="true">{flag}</span> Filing from {COUNTRY_LABEL[country]}
+        <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: COUNTRY_LABEL[country] })}>
+          <span aria-hidden="true">{flag}</span>{' '}
+          <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: COUNTRY_LABEL[country] }} />
         </span>
-        <h1 id="res-title">Residency transfer</h1>
+        <h1 id="res-title"><FormattedMessage id="apply.residency.title" defaultMessage="Residency transfer" /></h1>
         <p>
-          One guided intake. We pre-fill the country-specific registration with your eID data,
-          check the cross-border rules, and route your application to the competent national authority.
+          <FormattedMessage id="apply.residency.lede" defaultMessage="One guided intake. We pre-fill the country-specific registration with your eID data, check the cross-border rules, and route your application to the competent national authority." />
         </p>
       </header>
 
@@ -136,7 +142,7 @@ export function ApplyResidencyPage() {
       <div className="apply-form">
         {step === 0 && (
           <fieldset className="apply-card">
-            <legend>Your move</legend>
+            <legend><FormattedMessage id="apply.residency.step.1" defaultMessage="Your move" /></legend>
             <div className="apply-grid">
               <label className="field field--required">
                 <span>Destination country</span>
@@ -165,7 +171,7 @@ export function ApplyResidencyPage() {
 
         {step === 1 && (
           <fieldset className="apply-card">
-            <legend>Documents</legend>
+            <legend><FormattedMessage id="apply.residency.step.2" defaultMessage="Documents" /></legend>
             <p className="apply-card__hint">
               We pre-fill identity, address and tax data from your eID and the population register of {COUNTRY_LABEL[country]}.
               You only need to provide things we don&rsquo;t already have.
@@ -190,7 +196,7 @@ export function ApplyResidencyPage() {
 
         {step === 2 && (
           <fieldset className="apply-card">
-            <legend>Review &amp; submit</legend>
+            <legend><FormattedMessage id="apply.residency.step.3" defaultMessage="Review & submit" /></legend>
             <dl className="apply-review">
               <div><dt>Filing from</dt><dd>{flag} {country.toUpperCase()}</dd></div>
               <div><dt>Destination</dt><dd>{form.destination ? `${COUNTRY_LABEL[form.destination] ?? form.destination}` : '—'}</dd></div>
@@ -211,14 +217,14 @@ export function ApplyResidencyPage() {
         )}
 
         <div className="apply-stepper__actions">
-          <button type="button" className="button-secondary" onClick={back} disabled={step === 0 || busy}>← Back</button>
+          <button type="button" className="button-secondary" onClick={back} disabled={step === 0 || busy}><FormattedMessage id="apply.cta.back" defaultMessage="← Back" /></button>
           {step < STEPS.length - 1 ? (
             <button type="button" className="button-primary" onClick={next} disabled={step === 0 && !step0Valid}>
-              Continue →
+              <FormattedMessage id="apply.cta.continue" defaultMessage="Continue →" />
             </button>
           ) : (
             <button type="button" className="button-primary" onClick={submit} disabled={busy || !canSubmit}>
-              {busy ? 'Submitting…' : 'Submit application'}
+              {busy ? <FormattedMessage id="apply.cta.submitting" defaultMessage="Submitting…" /> : <FormattedMessage id="apply.cta.submit" defaultMessage="Submit application" />}
             </button>
           )}
         </div>
@@ -227,10 +233,10 @@ export function ApplyResidencyPage() {
       {result?.error && <p role="alert" className="info-banner info-banner--warn">⚠ {result.error}</p>}
       {result && !result.error && (
         <article className="apply-result apply-result--likely-eligible" tabIndex={-1}>
-          <h2>✅ Application received</h2>
+          <h2>✅ <FormattedMessage id="apply.result.received" defaultMessage="Application received" /></h2>
           <p>
-            Case reference <code>{result.caseId || result.correlationId || 'pending'}</code>.
-            Track its status in <Link to="/cases">My cases</Link>. A caseworker will review the AI recommendation before any decision is made.
+            <FormattedMessage id="apply.result.caseRef" defaultMessage="Case reference" /> <code>{result.caseId || result.correlationId || 'pending'}</code>.{' '}
+            <Link to="/cases"><FormattedMessage id="apply.result.trackInCases" defaultMessage="Track in My cases →" /></Link>
           </p>
         </article>
       )}
