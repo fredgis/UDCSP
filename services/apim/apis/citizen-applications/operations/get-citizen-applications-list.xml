@@ -36,12 +36,12 @@
     <set-variable name="citizenUpn" value="@{
         try {
             var jwt = ((string)context.Variables["rawBearer"]).AsJwt();
-            if (jwt == null) return "";
+            if (jwt == null) { return ""; }
             string u = null;
-            if (jwt.Claims.ContainsKey("preferred_username")) u = jwt.Claims.GetValueOrDefault("preferred_username","");
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("email")) u = jwt.Claims.GetValueOrDefault("email","");
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("emails")) u = jwt.Claims.GetValueOrDefault("emails","");
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("upn")) u = jwt.Claims.GetValueOrDefault("upn","");
+            if (jwt.Claims.ContainsKey("preferred_username")) { u = jwt.Claims.GetValueOrDefault("preferred_username",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("email")) { u = jwt.Claims.GetValueOrDefault("email",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("emails")) { u = jwt.Claims.GetValueOrDefault("emails",""); }
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("upn")) { u = jwt.Claims.GetValueOrDefault("upn",""); }
             return u ?? "";
         } catch { return ""; }
     }" />
@@ -85,14 +85,14 @@
           try { body = resp.Body.As<JObject>(); }
           catch { return "{\"value\":[]}"; }
           var rows = body["value"] as JArray;
-          if (rows == null) return "{\"value\":[]}";
+          if (rows == null) { return "{\"value\":[]}"; }
           var items = new JArray();
           foreach (var row in rows) {
             string sub = (string)row["subject"] ?? "";
             string desc = (string)row["description"] ?? "";
             string text = desc;
             int idx = desc.IndexOf("| text:");
-            if (idx > 0) text = desc.Substring(idx + 7).Trim();
+            if (idx > 0) { text = desc.Substring(idx + 7).Trim(); }
             items.Add(new JObject {
               ["id"] = (string)row["activityid"],
               ["activityid"] = (string)row["activityid"],
