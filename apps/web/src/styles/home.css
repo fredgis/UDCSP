@@ -1644,3 +1644,129 @@
   background: var(--color-surface); border: 1px dashed var(--color-border);
   border-radius: 10px; color: var(--color-fg-soft); font-size: .92rem; line-height: 1.5;
 }
+
+/* Compliance posture diagram (color block) */
+.compliance-diagram {
+  margin: 0 0 3rem;
+  padding: 0;
+}
+.compliance-diagram__caption {
+  font-size: .82rem;
+  color: var(--c-ink-soft);
+  margin-bottom: .8rem;
+  display: flex;
+  gap: .65rem;
+  align-items: baseline;
+}
+.compliance-diagram__board {
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+  border: 1px solid var(--c-line);
+  border-radius: 6px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .35rem;
+}
+
+.compliance-layer {
+  border-radius: 5px;
+  padding: .85rem 1rem .9rem;
+  border: 1px solid transparent;
+}
+.compliance-layer--regs { background: #f3e8ff; border-color: #d8b4fe; }
+.compliance-layer--ctrl { background: #e0f2fe; border-color: #93c5fd; }
+.compliance-layer--gov  { background: #fef3c7; border-color: #fcd34d; }
+.compliance-layer--out  { background: #dcfce7; border-color: #86efac; }
+
+.compliance-layer__head {
+  display: flex;
+  align-items: baseline;
+  gap: .65rem;
+  margin-bottom: .55rem;
+}
+.compliance-layer__num {
+  font-family: 'Consolas', monospace;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: .12rem .45rem;
+  border-radius: 3px;
+  background: rgba(11, 31, 51, .82);
+  color: #fff;
+}
+.compliance-layer__title {
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.compliance-layer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.cd-chip {
+  display: inline-block;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 500;
+  background: #fff;
+  border: 1px solid currentColor;
+}
+.cd-chip--regs { color: #6b21a8; }
+.cd-chip--ctrl { color: #1e40af; }
+.cd-chip--gov  { color: #92400e; }
+.cd-chip--out  { color: #166534; }
+
+.compliance-arrow {
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--c-line-strong);
+  line-height: 1;
+  margin: -.1rem 0 -.1rem;
+  user-select: none;
+}
+
+.compliance-bridge {
+  margin-top: .9rem;
+  padding: .85rem 1rem;
+  background: #0b1f33;
+  border-radius: 5px;
+  color: #fff;
+}
+.compliance-bridge__lbl {
+  display: block;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #93c5fd;
+  margin-bottom: .55rem;
+  font-weight: 600;
+}
+.compliance-bridge__nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.cd-node {
+  display: inline-block;
+  padding: .3rem .7rem;
+  border-radius: 4px;
+  font-size: .82rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .18);
+  color: #e6edf4;
+}
+.cd-node--dk { border-left: 3px solid #c8102e; }
+.cd-node--se { border-left: 3px solid #ffcd00; }
+.cd-node--no { border-left: 3px solid #00205b; background: rgba(0, 32, 91, .35); }
+
+@media (max-width: 720px) {
+  .compliance-bridge__nodes { flex-direction: column; }
+  .cd-node { width: 100%; }
+}
