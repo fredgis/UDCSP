@@ -78,7 +78,7 @@ const SCENARIOS: Record<string, DemoMeta> = {
     slug: 'd9',
     title: 'D9 — Henrik · CIO executive cockpit',
     intent: 'cio-cockpit',
-    description: 'Power BI Premium executive cockpit; KPI reconciliation against Fabric gold layer.',
+    description: 'Microsoft Fabric executive cockpit; KPI reconciliation against the Fabric gold layer.',
   },
   d10: {
     slug: 'd10',

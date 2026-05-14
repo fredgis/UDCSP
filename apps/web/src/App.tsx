@@ -17,6 +17,7 @@ import { ApplyChildBenefitPage } from './pages/ApplyChildBenefitPage';
 import { ApplyResidencyPage } from './pages/ApplyResidencyPage';
 import { ApplyTaxCertPage } from './pages/ApplyTaxCertPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
+import { CompliancePage } from './pages/CompliancePage';
 import { ConsentManagementPage } from './pages/ConsentManagementPage';
 import { DemoScenarioPage } from './pages/DemoScenarioPage';
 import { DemosIndexPage } from './pages/DemosIndexPage';
@@ -58,9 +59,10 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
               <nav className="site-nav" aria-label="Main">
                 <Link to="/"><FormattedMessage id="nav.home" defaultMessage="Home" /></Link>
                 <Link to="/cases"><FormattedMessage id="nav.cases" defaultMessage="My cases" /></Link>
-                <Link to="/demos"><FormattedMessage id="nav.demos" defaultMessage="Demos" /></Link>
                 <Link to="/consent"><FormattedMessage id="nav.consent" defaultMessage="Consent" /></Link>
                 <Link to="/accessibility"><FormattedMessage id="nav.accessibility" defaultMessage="Accessibility" /></Link>
+                <Link to="/compliance"><FormattedMessage id="nav.compliance" defaultMessage="Compliance" /></Link>
+                <Link to="/demos"><FormattedMessage id="nav.demos" defaultMessage="Demos" /></Link>
               </nav>
               <HeaderTools locale={locale} onLocaleChange={onLocaleChange} />
             </header>
@@ -75,6 +77,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/cases/:id" element={<AuthGate title="Sign in to view this case"><CaseDetailPage /></AuthGate>} />
                 <Route path="/accessibility" element={<><AccessibilityStatementPage /><AccessibilityMenu /></>} />
                 <Route path="/consent" element={<AuthGate title="Sign in to manage your consents"><ConsentManagementPage /></AuthGate>} />
+                <Route path="/compliance" element={<CompliancePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/logout-callback" element={<LogoutCallbackPage />} />
                 <Route path="/demo/:id" element={<DemoScenarioPage />} />

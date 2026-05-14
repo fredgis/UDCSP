@@ -61,7 +61,7 @@ const demos: Demo[] = [
   },
   {
     id: 'D9', title: 'CIO reviews per-country, per-language outcomes & 47-portal sunset', persona: 'CIO',
-    category: 'insights', channels: 'Power BI Premium',
+    category: 'insights', channels: 'Microsoft Fabric',
     story: 'Executive workspace, 28d→4d, +38% CSAT, 47→1 consolidation, per-language eval coverage.',
     links: [{ label: 'CIO outcomes', to: '/demo/D9' }],
   },
@@ -159,7 +159,7 @@ function PrincipleDiagram() {
             ))}
           </div>
           <p className="arch-brain__footer">
-            Every invocation is traced (App Insights), persisted (Dataverse + Lakehouse) and signed with the AI Act registry id (Annex IV).
+            Every invocation is traced (App Insights), persisted (Dataverse + Microsoft Fabric) and signed with the AI Act registry id (Annex IV).
           </p>
         </section>
 
@@ -191,10 +191,10 @@ function PrincipleDiagram() {
           </header>
           <div className="arch-tier__row arch-tier__row--four">
             {[
-              { icon: '🛠️', label: 'D365 / Dataverse', sub: 'cases · contacts' },
-              { icon: '🗄️', label: 'Lakehouse',        sub: 'docs · embeddings' },
-              { icon: '🛡️', label: 'Purview · Sentinel', sub: 'lineage · DLP · SIEM' },
-              { icon: '📊', label: 'Power BI Premium',  sub: 'CIO outcomes' },
+              { icon: '🛠️', label: 'D365 / Dataverse',    sub: 'cases · contacts' },
+              { icon: '🧬', label: 'Microsoft Fabric',    sub: 'analytics · BI · AI data' },
+              { icon: '🛡️', label: 'Purview · Sentinel',  sub: 'lineage · DLP · SIEM' },
+              { icon: '🗃️', label: 'Storage (per country)', sub: 'docs · CMK · sovereign' },
             ].map((b) => (
               <div key={b.label} className="arch-card arch-card--green">
                 <span className="arch-card__icon" aria-hidden="true">{b.icon}</span>
