@@ -1,1 +1,83 @@
-<entity Name="udcsp_application"><displaynames><displayname description="udcsp_application" languagecode="1033" /></displaynames><attributes><attribute PhysicalName="udcsp_name"><Type>String</Type></attribute><attribute PhysicalName="udcsp_country"><Type>Picklist</Type></attribute><attribute PhysicalName="udcsp_applicationtype"><Type>Picklist</Type></attribute><attribute PhysicalName="udcsp_status"><Type>Picklist</Type></attribute><attribute PhysicalName="udcsp_citizenid"><Type>String</Type></attribute><attribute PhysicalName="udcsp_traceparent"><Type>String</Type></attribute></attributes></entity>
+<!--
+  udcsp_application — citizen application case (scaffold spec).
+  
+  Single table backing every citizen flow on the platform: residency-transfer,
+  child-benefit and tax-certificate. The application-intake Logic App writes
+  here through the Dataverse Web API (POST /api/data/v9.2/udcsp_applications)
+  after running the Foundry Classifier + Document Extractor + Eligibility
+  Pre-Assessor agents. The caseworker Power App (apps/powerapps/caseworker)
+  reads from here.
+-->
+<entity Name="udcsp_application">
+  <displaynames>
+    <displayname description="Citizen Application" languagecode="1033" />
+  </displaynames>
+  <attributes>
+
+    <!-- Identity & routing ------------------------------------------------ -->
+    <attribute PhysicalName="udcsp_name"><Type>String</Type></attribute>                           <!-- "Residency to SE — Anna Hansen" -->
+    <attribute PhysicalName="udcsp_country"><Type>Picklist</Type></attribute>                     <!-- dk · se · no — origin -->
+    <attribute PhysicalName="udcsp_destinationcountry"><Type>Picklist</Type></attribute>          <!-- residency-transfer only -->
+    <attribute PhysicalName="udcsp_applicationtype"><Type>Picklist</Type></attribute>             <!-- residency-transfer · child-benefit · tax-certificate -->
+    <attribute PhysicalName="udcsp_status"><Type>Picklist</Type></attribute>                      <!-- submitted · ai-pre-approved · awaiting-review · approved · rejected · more-info -->
+    <attribute PhysicalName="udcsp_crossborder"><Type>Boolean</Type></attribute>
+    <attribute PhysicalName="udcsp_correlationid"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_traceparent"><Type>String</Type></attribute>                   <!-- App Insights deep-link -->
+    <attribute PhysicalName="udcsp_aiActRegistryId"><Type>String</Type></attribute>
+
+    <!-- Citizen ----------------------------------------------------------- -->
+    <attribute PhysicalName="udcsp_citizenid"><Type>String</Type></attribute>                     <!-- masked national id -->
+    <attribute PhysicalName="udcsp_citizenupn"><Type>String</Type></attribute>                    <!-- External ID UPN -->
+    <attribute PhysicalName="udcsp_citizengivenname"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_citizenfamilyname"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_citizenlanguage"><Type>String</Type></attribute>               <!-- preferred contact language -->
+    <attribute PhysicalName="udcsp_citizenemail"><Type>String</Type></attribute>
+
+    <!-- Residency-transfer specific --------------------------------------- -->
+    <attribute PhysicalName="udcsp_movedate"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_destinationaddress"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_dependents"><Type>Integer</Type></attribute>
+    <attribute PhysicalName="udcsp_employername"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_employercountry"><Type>Picklist</Type></attribute>
+    <attribute PhysicalName="udcsp_passportref"><Type>String</Type></attribute>
+
+    <!-- Child & family benefit specific ----------------------------------- -->
+    <attribute PhysicalName="udcsp_children"><Type>Integer</Type></attribute>
+    <attribute PhysicalName="udcsp_childrennames"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_youngestdob"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_monthlyincomeeur"><Type>Decimal</Type></attribute>
+    <attribute PhysicalName="udcsp_adultsinhousehold"><Type>Integer</Type></attribute>
+    <attribute PhysicalName="udcsp_residence"><Type>Picklist</Type></attribute>
+
+    <!-- Document & extraction --------------------------------------------- -->
+    <attribute PhysicalName="udcsp_documentbloburl"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_documentblobname"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_storageaccount"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_extractedfieldsjson"><Type>Memo</Type></attribute>             <!-- JSON dictionary -->
+    <attribute PhysicalName="udcsp_documentsummary"><Type>Memo</Type></attribute>
+
+    <!-- AI pre-assessment ------------------------------------------------- -->
+    <attribute PhysicalName="udcsp_aidecision"><Type>Picklist</Type></attribute>                  <!-- likely-eligible · requires-review · likely-ineligible -->
+    <attribute PhysicalName="udcsp_aiconfidence"><Type>Decimal</Type></attribute>
+    <attribute PhysicalName="udcsp_aireasoning"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_estimateddecisiondate"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_workflowstepsjson"><Type>Memo</Type></attribute>               <!-- JSON [{name,label,status,detail,at}] -->
+
+    <!-- Cross-border claims envelope -------------------------------------- -->
+    <attribute PhysicalName="udcsp_claimsenvelope"><Type>String</Type></attribute>                <!-- e.g. signed-jwt-eidas-high -->
+    <attribute PhysicalName="udcsp_purviewlabel"><Type>String</Type></attribute>                  <!-- e.g. Restricted-Cross-Border -->
+
+    <!-- Consents (timestamps; null = not granted) ------------------------- -->
+    <attribute PhysicalName="udcsp_consentcrossborder"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_consentclaimsmediation"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_consentnotifications"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_consentaiassistant"><Type>DateTime</Type></attribute>
+
+    <!-- Caseworker workflow ----------------------------------------------- -->
+    <attribute PhysicalName="udcsp_assignedto"><Type>Lookup</Type></attribute>                    <!-- systemuser -->
+    <attribute PhysicalName="udcsp_caseworkernotes"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_decisionmadeon"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_decisionoutcome"><Type>Picklist</Type></attribute>             <!-- approved · rejected · more-info-required -->
+
+  </attributes>
+</entity>

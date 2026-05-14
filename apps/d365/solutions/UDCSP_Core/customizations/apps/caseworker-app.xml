@@ -1,0 +1,76 @@
+<!--
+  Model-driven Power App: UDCSP Caseworker.
+  Single app that serves caseworkers in DK, SE and NO. Country gating is
+  done via security roles + view filters (see udcsp_country_zone for
+  the per-country mapping). Replaces D365 Customer Service for
+  environments that don't have a D365 CE licence.
+
+  The same app handles every application type because the underlying
+  table (udcsp_application) is shared: the Summary tab adapts via the
+  visible-when sections in application-main-form.xml.
+
+  See apps/powerapps/caseworker/README.md for import instructions.
+-->
+<App name="UDCSPCaseworker">
+  <displayname>UDCSP Caseworker</displayname>
+  <description>Cross-country caseworker workspace for the UDCSP citizen platform — handles residency transfers, child &amp; family benefit, and tax certificates. Replaces D365 Customer Service in environments without a CE licence.</description>
+  <icon>caseworker.svg</icon>
+  <welcomepage>welcome.html</welcomepage>
+  <publisher>UDCSP</publisher>
+  <prefix>udcsp</prefix>
+
+  <sitemap>
+    <area name="inbox" displayname="Inbox" icon="inbox.svg">
+      <group name="my-work" displayname="My work">
+        <link entity="udcsp_application" view="My Open Cases" />
+        <link entity="udcsp_application" view="SLA at Risk" />
+        <link entity="udcsp_application" view="Requires Human Review (AI Act art.14)" />
+      </group>
+      <group name="all-cases" displayname="All cases">
+        <link entity="udcsp_application" view="All Open Cases" />
+        <link entity="udcsp_application" view="AI Pre-approved (high confidence)" />
+        <link entity="udcsp_application" view="AI Says Ineligible (needs review)" />
+        <link entity="udcsp_application" view="Decided Last 30 Days" />
+      </group>
+    </area>
+
+    <area name="by-type" displayname="By application type" icon="folder.svg">
+      <link entity="udcsp_application" view="Residency Transfers — All Countries" />
+      <link entity="udcsp_application" view="Cross-Border Residency Inbound" />
+      <link entity="udcsp_application" view="Child &amp; Family Benefit — All Countries" />
+      <link entity="udcsp_application" view="Tax Certificates" />
+    </area>
+
+    <area name="by-country" displayname="By country" icon="globe.svg">
+      <link entity="udcsp_application" view="Denmark Inbox" />
+      <link entity="udcsp_application" view="Sweden Inbox" />
+      <link entity="udcsp_application" view="Norway Inbox" />
+    </area>
+
+    <area name="ai" displayname="AI &amp; governance" icon="shield.svg">
+      <link entity="udcsp_eligibility_assessment" view="Active AI Eligibility Assessments" />
+      <link entity="udcsp_caseworker_decision" view="Recent caseworker decisions" />
+      <link entity="udcsp_consent_record" view="Active citizen consents" />
+    </area>
+  </sitemap>
+
+  <!-- Tables included in the app — keeps role-based access tight -->
+  <components>
+    <component entity="udcsp_application" />
+    <component entity="udcsp_eligibility_assessment" />
+    <component entity="udcsp_caseworker_decision" />
+    <component entity="udcsp_consent_record" />
+    <component entity="udcsp_country_zone" />
+    <component entity="systemuser" readonly="true" />
+  </components>
+
+  <!-- Commands available on the form ribbon -->
+  <commands>
+    <command name="approve"            label="Approve"             requires="udcsp_aidecision in ('likely-eligible','requires-review')" runs="caseworker-decision-publish" outcome="approved" />
+    <command name="reject"             label="Reject"              runs="caseworker-decision-publish" outcome="rejected"          requiresField="udcsp_caseworkernotes" />
+    <command name="request-more-info"  label="Request more info"   runs="caseworker-decision-publish" outcome="more-info-required" requiresField="udcsp_caseworkernotes" />
+    <command name="override-ai"        label="Override AI verdict" runs="caseworker-decision-publish" sets="udcsp_overrideai=true" />
+    <command name="open-foundry-trace" label="Open Foundry trace"  type="link" url="https://ai.azure.com/build/observability/trace/{udcsp_traceparent}" />
+    <command name="open-purview"       label="Open Purview lineage" type="link" url="https://purview.microsoft.com/datalineage?correlationId={udcsp_correlationid}" />
+  </commands>
+</App>

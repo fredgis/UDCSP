@@ -1,1 +1,143 @@
-<FormXml><form name="UDCSP Application Main"><tabs><tab name="summary" /><tab name="ai-preassessment" /><tab name="documents" /><tab name="audit-lineage" /></tabs></form></FormXml>
+<!--
+  Main form for udcsp_application surfaced in the caseworker app and
+  (optionally) in real D365 Customer Service. Tabs match the demo
+  narrative: caseworker should see Summary first, then drill into the
+  AI pre-assessment, the citizen's documents, the consents and the
+  audit lineage.
+-->
+<FormXml>
+  <form name="UDCSP Application Main">
+    <tabs>
+
+      <tab name="summary" displayname="Summary">
+        <sections>
+          <section name="who">
+            <controls>
+              <control bind="udcsp_citizengivenname" />
+              <control bind="udcsp_citizenfamilyname" />
+              <control bind="udcsp_citizenupn" />
+              <control bind="udcsp_citizenlanguage" />
+              <control bind="udcsp_citizenemail" />
+            </controls>
+          </section>
+          <section name="what">
+            <controls>
+              <control bind="udcsp_applicationtype" />
+              <control bind="udcsp_status" />
+              <control bind="udcsp_crossborder" />
+              <control bind="udcsp_country" />
+              <control bind="udcsp_destinationcountry" />
+              <control bind="udcsp_estimateddecisiondate" />
+              <control bind="udcsp_assignedto" />
+            </controls>
+          </section>
+          <section name="residency-details" visible-when="udcsp_applicationtype eq 'residency-transfer'">
+            <controls>
+              <control bind="udcsp_movedate" />
+              <control bind="udcsp_destinationaddress" />
+              <control bind="udcsp_dependents" />
+              <control bind="udcsp_employername" />
+              <control bind="udcsp_employercountry" />
+              <control bind="udcsp_passportref" />
+            </controls>
+          </section>
+          <section name="child-benefit-details" visible-when="udcsp_applicationtype eq 'child-benefit'">
+            <controls>
+              <control bind="udcsp_children" />
+              <control bind="udcsp_childrennames" />
+              <control bind="udcsp_youngestdob" />
+              <control bind="udcsp_monthlyincomeeur" />
+              <control bind="udcsp_adultsinhousehold" />
+              <control bind="udcsp_residence" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+      <tab name="ai-preassessment" displayname="AI Pre-assessment">
+        <sections>
+          <section name="verdict">
+            <controls>
+              <control bind="udcsp_aidecision" />
+              <control bind="udcsp_aiconfidence" />
+              <control bind="udcsp_aireasoning" />
+              <control bind="udcsp_aiActRegistryId" />
+            </controls>
+          </section>
+          <section name="related-runs">
+            <controls>
+              <control type="subgrid" entity="udcsp_eligibility_assessment" relationship="udcsp_application_eligibility" />
+            </controls>
+          </section>
+          <section name="workflow">
+            <controls>
+              <control bind="udcsp_workflowstepsjson" type="codeviewer" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+      <tab name="documents" displayname="Documents">
+        <sections>
+          <section name="document">
+            <controls>
+              <control bind="udcsp_documentblobname" />
+              <control bind="udcsp_documentbloburl" type="filepreview" />
+              <control bind="udcsp_storageaccount" />
+              <control bind="udcsp_documentsummary" />
+              <control bind="udcsp_extractedfieldsjson" type="codeviewer" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+      <tab name="consents" displayname="Consents &amp; Claims Envelope">
+        <sections>
+          <section name="consents">
+            <controls>
+              <control bind="udcsp_consentcrossborder" />
+              <control bind="udcsp_consentclaimsmediation" />
+              <control bind="udcsp_consentnotifications" />
+              <control bind="udcsp_consentaiassistant" />
+            </controls>
+          </section>
+          <section name="envelope">
+            <controls>
+              <control bind="udcsp_claimsenvelope" />
+              <control bind="udcsp_purviewlabel" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+      <tab name="caseworker" displayname="Caseworker decision">
+        <sections>
+          <section name="decide">
+            <controls>
+              <control bind="udcsp_caseworkernotes" />
+              <control bind="udcsp_decisionoutcome" />
+              <control bind="udcsp_decisionmadeon" />
+            </controls>
+          </section>
+          <section name="audit">
+            <controls>
+              <control type="subgrid" entity="udcsp_caseworker_decision" relationship="udcsp_application_decisions" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+      <tab name="audit-lineage" displayname="Audit &amp; Lineage">
+        <sections>
+          <section name="trace">
+            <controls>
+              <control bind="udcsp_correlationid" />
+              <control bind="udcsp_traceparent" />
+            </controls>
+          </section>
+        </sections>
+      </tab>
+
+    </tabs>
+  </form>
+</FormXml>

@@ -1,1 +1,47 @@
-<SavedQueries><SavedQuery name="My Open Cases" fetch="status=open and owner=currentuser" /><SavedQuery name="SLA-Risk" fetch="slaStatus in warning,breached" /><SavedQuery name="AI Pre-assessed" fetch="udcsp_confidence gt 0.7" /></SavedQueries>
+<!--
+  Saved queries / views surfaced in the caseworker app. The fetchxml
+  attributes are intent specs — the maker portal will materialise the
+  real <fetch> elements when the views are authored. Each view is
+  country-aware: a caseworker assigned to DK only sees udcsp_country=dk
+  unless they belong to the cross-border group (in which case they see
+  every udcsp_destinationcountry that matches their assignment).
+-->
+<SavedQueries>
+
+  <!-- Cross-cutting (any country, any application type) -->
+  <SavedQuery name="My Open Cases" entity="udcsp_application"
+              fetch="udcsp_status in ('submitted','ai-pre-approved','awaiting-review','more-info') and udcsp_assignedto eq @currentuser" />
+  <SavedQuery name="All Open Cases" entity="udcsp_application"
+              fetch="udcsp_status in ('submitted','ai-pre-approved','awaiting-review','more-info')" />
+  <SavedQuery name="SLA at Risk" entity="udcsp_application"
+              fetch="udcsp_estimateddecisiondate lt now+1d and udcsp_status ne 'approved' and udcsp_status ne 'rejected'" />
+  <SavedQuery name="AI Pre-approved (high confidence)" entity="udcsp_application"
+              fetch="udcsp_aidecision eq 'likely-eligible' and udcsp_aiconfidence gt 0.85" />
+  <SavedQuery name="AI Says Ineligible (needs review)" entity="udcsp_application"
+              fetch="udcsp_aidecision eq 'likely-ineligible'" />
+  <SavedQuery name="Requires Human Review (AI Act art.14)" entity="udcsp_application"
+              fetch="udcsp_aidecision eq 'requires-review' or udcsp_crossborder eq true" />
+
+  <!-- By application type -->
+  <SavedQuery name="Residency Transfers — All Countries" entity="udcsp_application"
+              fetch="udcsp_applicationtype eq 'residency-transfer'" />
+  <SavedQuery name="Cross-Border Residency Inbound" entity="udcsp_application"
+              fetch="udcsp_applicationtype eq 'residency-transfer' and udcsp_crossborder eq true and udcsp_destinationcountry eq @assignedcountry" />
+  <SavedQuery name="Child &amp; Family Benefit — All Countries" entity="udcsp_application"
+              fetch="udcsp_applicationtype eq 'child-benefit'" />
+  <SavedQuery name="Tax Certificates" entity="udcsp_application"
+              fetch="udcsp_applicationtype eq 'tax-certificate'" />
+
+  <!-- By country -->
+  <SavedQuery name="Denmark Inbox" entity="udcsp_application"
+              fetch="udcsp_destinationcountry eq 'dk' or (udcsp_country eq 'dk' and udcsp_crossborder eq false)" />
+  <SavedQuery name="Sweden Inbox" entity="udcsp_application"
+              fetch="udcsp_destinationcountry eq 'se' or (udcsp_country eq 'se' and udcsp_crossborder eq false)" />
+  <SavedQuery name="Norway Inbox" entity="udcsp_application"
+              fetch="udcsp_destinationcountry eq 'no' or (udcsp_country eq 'no' and udcsp_crossborder eq false)" />
+
+  <!-- Closed -->
+  <SavedQuery name="Decided Last 30 Days" entity="udcsp_application"
+              fetch="udcsp_decisionmadeon gt now-30d" />
+
+</SavedQueries>

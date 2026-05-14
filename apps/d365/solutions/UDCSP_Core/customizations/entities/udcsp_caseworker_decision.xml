@@ -1,0 +1,23 @@
+<!--
+  udcsp_caseworker_decision — immutable audit log of every caseworker
+  action on an application (approve/reject/more-info/reassign). Required
+  for EU AI Act art. 14 (human oversight) traceability and for the right
+  to contest under GDPR art. 22. Written by the caseworker app and by
+  the caseworker-decision-publish Logic App.
+-->
+<entity Name="udcsp_caseworker_decision">
+  <displaynames>
+    <displayname description="Caseworker Decision" languagecode="1033" />
+  </displaynames>
+  <attributes>
+    <attribute PhysicalName="udcsp_name"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_applicationid"><Type>Lookup</Type></attribute>
+    <attribute PhysicalName="udcsp_caseworker"><Type>Lookup</Type></attribute>                 <!-- systemuser -->
+    <attribute PhysicalName="udcsp_outcome"><Type>Picklist</Type></attribute>                  <!-- approved · rejected · more-info-required · reassigned -->
+    <attribute PhysicalName="udcsp_overrideai"><Type>Boolean</Type></attribute>                <!-- true if caseworker disagreed with the AI verdict -->
+    <attribute PhysicalName="udcsp_rationale"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_messagetocitizen"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_decidedat"><Type>DateTime</Type></attribute>
+    <attribute PhysicalName="udcsp_traceparent"><Type>String</Type></attribute>
+  </attributes>
+</entity>
