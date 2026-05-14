@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Annuler cette demande ? Vous pourrez la redéposer plus tard.",
   "cases.cancelLabel": "Annuler",
   "cases.deleteConfirm": "Supprimer ce dossier uniquement du cache local ? Il reste dans le back-end.",
-  "cases.deleteLabel": "Retirer du cache",
+  "cases.deleteLabel": "Retirer",
   "cases.empty": "Vous n’avez encore aucun dossier. Démarrez une demande depuis l’accueil.",
   "cases.notSignedIn": "Connectez-vous pour voir vos dossiers.",
   "cases.refresh": "⟳ Actualiser",

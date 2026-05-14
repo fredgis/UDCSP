@@ -195,7 +195,7 @@ export function MyCasesPage() {
                       void load();
                     }}
                   >
-                    <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove from cache" />
+                    <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove" />
                   </button>
                 </div>
               </li>

@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Avbryte denne søknaden? Du kan søke på nytt seinare.",
   "cases.cancelLabel": "Avbryt",
   "cases.deleteConfirm": "Fjerne denne saka berre frå lokal hurtigbuffer? Ho blir verande i back-end.",
-  "cases.deleteLabel": "Fjern frå hurtigbuffer",
+  "cases.deleteLabel": "Fjern",
   "cases.empty": "Du har ingen saker enno. Start ein søknad frå forsida.",
   "cases.notSignedIn": "Logg inn for å sjå sakene dine.",
   "cases.refresh": "⟳ Oppdater",

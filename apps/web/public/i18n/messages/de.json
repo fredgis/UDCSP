@@ -40,7 +40,7 @@
   "cases.cancelConfirm": "Diesen Antrag stornieren? Sie können später neu beantragen.",
   "cases.cancelLabel": "Stornieren",
   "cases.deleteConfirm": "Diesen Vorgang nur aus dem lokalen Zwischenspeicher entfernen? Er bleibt im Backend erhalten.",
-  "cases.deleteLabel": "Aus Zwischenspeicher entfernen",
+  "cases.deleteLabel": "Entfernen",
   "cases.empty": "Sie haben noch keine Vorgänge. Starten Sie einen Antrag von der Startseite.",
   "cases.notSignedIn": "Melden Sie sich an, um Ihre Vorgänge zu sehen.",
   "cases.refresh": "⟳ Aktualisieren",
