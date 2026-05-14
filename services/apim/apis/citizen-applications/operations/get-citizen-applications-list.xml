@@ -59,7 +59,7 @@
       <set-url>@{
           var upn = (string)context.Variables["citizenUpn"];
           var dvUrl = "{{d365-dataverse-url}}".TrimEnd('/');
-          var filter = "startswith(subject,'[UDCSP-') and contains(description,'citizenUpn: " + upn + "')";
+          var filter = "contains(description,'citizenUpn: " + upn + "')";
           var select = "activityid,subject,description,createdon,modifiedon,statecode,statuscode,prioritycode";
           var orderby = "createdon desc";
           return dvUrl + "/api/data/v9.2/tasks?$select=" + System.Net.WebUtility.UrlEncode(select)
