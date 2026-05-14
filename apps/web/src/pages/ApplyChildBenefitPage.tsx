@@ -6,6 +6,7 @@ import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
 import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
 import { ConsentNotice } from '../components/ConsentNotice';
+import { PlatformDiagram } from '../components/PlatformDiagram';
 
 type SubmitResult = {
   correlationId?: string;
@@ -176,14 +177,34 @@ export function ApplyChildBenefitPage() {
         </p>
       </header>
 
-      <aside className="bridge-callout" role="note">
-        <h3>Routed to the competent family-benefit authority</h3>
-        <p>
-          We check residence, work country, social-insurance country and EU/EEA coordination rules, then
-          route to: <strong>Udbetaling Danmark / lifeindenmark.dk</strong> (Denmark — eligibility-based),
-          <strong> Försäkringskassan</strong> (Sweden — generally automatic for resident children),
-          <strong> NAV barnetrygd</strong> (Norway — automatic for born-in-NO, application required for EEA cases).
-        </p>
+      <aside className="bridge-callout" aria-label="Connected family-benefit authorities">
+        <div className="bridge-callout__text">
+          <h3>Connected to the competent family-benefit authority</h3>
+          <p>
+            UDCSP is a <strong>unified citizen platform</strong>. We check residence, work country and
+            EU/EEA coordination rules, then route to the right authority. Some countries pay automatically,
+            others require an application — we surface the right path for your situation.
+          </p>
+        </div>
+        <PlatformDiagram
+          groups={[
+            { country: 'Denmark', flag: '🇩🇰', items: [
+              { label: 'Udbetaling DK', sub: 'Family benefits' },
+              { label: 'lifeindenmark.dk', sub: 'EU/EEA flow' },
+              { label: 'MitID', sub: 'eID' },
+            ] },
+            { country: 'Sweden', flag: '🇸🇪', items: [
+              { label: 'Försäkringskassan', sub: 'Barnbidrag (auto)' },
+              { label: 'BankID', sub: 'eID' },
+            ] },
+            { country: 'Norway', flag: '🇳🇴', items: [
+              { label: 'NAV', sub: 'Barnetrygd' },
+              { label: 'NAV Utvidet', sub: 'Single parent' },
+              { label: 'Altinn', sub: 'Forms' },
+              { label: 'ID-porten', sub: 'eID' },
+            ] },
+          ]}
+        />
       </aside>
 
       <ConsentNotice keys={['crossBorder', 'notifications', 'aiAssistant']} />

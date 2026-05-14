@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
+import { PlatformDiagram } from '../components/PlatformDiagram';
 
 type SubmitResult = { correlationId?: string; caseId?: string; status?: string; error?: string };
 
@@ -89,15 +90,34 @@ export function ApplyResidencyPage() {
         </p>
       </header>
 
-      <aside className="bridge-callout" role="note">
-        <h3>UDCSP bridges to the official registers</h3>
-        <p>
-          We don&rsquo;t replace national systems. Depending on your destination, your application is routed to:
-          <strong> CPR / borger.dk</strong> (Denmark · MitID),
-          <strong> Skatteverket Folkbokföring</strong> (Sweden · BankID/Freja+),
-          <strong> Skatteetaten Folkeregisteret · UDI · Altinn</strong> (Norway · ID-porten).
-          Cross-border guidance is sourced from <strong>Info Norden, Øresunddirekt and Grensetjänsten</strong>.
-        </p>
+      <aside className="bridge-callout" aria-label="Connected national registers">
+        <div className="bridge-callout__text">
+          <h3>Connected to the official population registers</h3>
+          <p>
+            UDCSP is a <strong>unified citizen platform</strong>. Depending on your destination, your
+            registration is sent to the competent national authority — using your existing eID and the
+            cross-border rules from Info Norden, Øresunddirekt and Grensetjänsten.
+          </p>
+        </div>
+        <PlatformDiagram
+          groups={[
+            { country: 'Denmark', flag: '🇩🇰', items: [
+              { label: 'CPR', sub: 'Population register' },
+              { label: 'borger.dk', sub: 'Citizen portal' },
+              { label: 'MitID', sub: 'eID' },
+            ] },
+            { country: 'Sweden', flag: '🇸🇪', items: [
+              { label: 'Skatteverket', sub: 'Folkbokföring' },
+              { label: 'BankID / Freja+', sub: 'eID' },
+            ] },
+            { country: 'Norway', flag: '🇳🇴', items: [
+              { label: 'Skatteetaten', sub: 'Folkeregisteret' },
+              { label: 'UDI', sub: 'Permits (non-Nordic)' },
+              { label: 'Altinn', sub: 'Forms portal' },
+              { label: 'ID-porten', sub: 'eID' },
+            ] },
+          ]}
+        />
       </aside>
 
       <ol className="apply-stepper" aria-label="Application progress">
