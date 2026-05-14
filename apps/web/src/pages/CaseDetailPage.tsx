@@ -1,10 +1,65 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { getCase, removeCase, updateCase, type StoredCase } from '../utils/caseStore';
+import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
+import { appendCase, getCase, removeCase, updateCase, type StoredCase } from '../utils/caseStore';
 
 type StepStatus = 'done' | 'in-progress' | 'pending' | 'skipped';
 type Step = { name: string; label: string; status: StepStatus; at?: string; detail?: string };
+
+type RemoteCase = {
+  id?: string;
+  activityid?: string;
+  caseId?: string;
+  title?: string;
+  subject?: string;
+  description?: string;
+  status?: string;
+  statecode?: number;
+  createdOn?: string;
+  updatedAt?: string;
+  country?: string;
+  applicationType?: string;
+};
+
+const STATE_LABEL_DETAIL: Record<number, string> = { 0: 'Open', 1: 'Completed', 2: 'Canceled' };
+
+function parseDescription(desc?: string): Record<string, unknown> | null {
+  if (!desc) return null;
+  let body = desc.trim();
+  const idx = body.indexOf('| text:');
+  if (idx >= 0) body = body.substring(idx + '| text:'.length).trim();
+  try {
+    const parsed = JSON.parse(body);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function remoteToStored(t: RemoteCase, country: string, citizenUpn?: string): StoredCase {
+  const id = t.id || t.activityid || t.caseId || '';
+  const body = parseDescription(t.description) ?? {};
+  const elig = (body.eligibilityPreflight ?? {}) as { recommendation?: string; confidence?: number };
+  return {
+    id,
+    title: t.title || t.subject || t.applicationType || 'Application',
+    status:
+      t.status ||
+      (typeof t.statecode === 'number' ? STATE_LABEL_DETAIL[t.statecode] ?? `state ${t.statecode}` : 'Submitted'),
+    updatedAt: t.updatedAt || t.createdOn || '',
+    country: (t.country || (body.country as string) || country || 'dk').toLowerCase(),
+    citizenUpn: citizenUpn || (body.citizenUpn as string | undefined),
+    applicationType: t.applicationType || (body.applicationType as string | undefined),
+    decision: elig.recommendation,
+    confidence: typeof elig.confidence === 'number' ? elig.confidence : undefined,
+    extractedFields: (body.extractedFields ?? undefined) as Record<string, unknown> | undefined,
+    documentBlobUrl: body.documentBlobUrl as string | undefined,
+    documentBlobName: body.documentBlobName as string | undefined,
+    storageAccount: body.storageAccount as string | undefined,
+  };
+}
 
 // Default workflow rendering when a case predates the workflowSteps schema:
 // mirrors the 5 actions of the Logic App `udcsp-{country}-dev-application-intake`
@@ -79,18 +134,63 @@ export function CaseDetailPage() {
   const intl = useIntl();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isAuth = useIsAuthenticated();
+  const { instance, accounts } = useMsal();
   const [c, setC] = useState<StoredCase | undefined>(() => (id ? getCase(id) : undefined));
+  const [hydrating, setHydrating] = useState(false);
 
   useEffect(() => {
     if (id) setC(getCase(id));
   }, [id]);
+
+  // If localStorage doesn't have the case (cross-device, hard refresh on a deep
+  // link, etc.), fetch the list from APIM, hydrate caseStore and re-read.
+  useEffect(() => {
+    if (!id || c || !isAuth || hydrating) return;
+    let cancelled = false;
+    (async () => {
+      setHydrating(true);
+      try {
+        const country = getCountry();
+        const apim = apimBaseUrlForCountry(country);
+        if (!apim || !accounts[0]) return;
+        const tok = await instance.acquireTokenSilent({
+          account: accounts[0],
+          scopes: [apiScopeForCountry(country)],
+        });
+        const res = await fetch(`${apim}/citizen-applications/`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${tok.accessToken}` },
+        });
+        if (!res.ok) return;
+        const payload = (await res.json()) as { value?: RemoteCase[] } | RemoteCase[];
+        const items = Array.isArray(payload) ? payload : payload.value ?? [];
+        for (const it of items) {
+          const stored = remoteToStored(it, country, accounts[0]?.username);
+          if (stored.id) appendCase(stored);
+        }
+        if (!cancelled) setC(getCase(id));
+      } catch {
+        // fall through to 'not found' UI
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id, c, isAuth, hydrating, accounts, instance]);
 
   const steps = useMemo(() => (c ? (c.workflowSteps && c.workflowSteps.length ? c.workflowSteps : defaultSteps(c)) : []), [c]);
 
   if (!c) {
     return (
       <article className="apply-page">
-        <h1><FormattedMessage id="caseDetail.notFound" defaultMessage="Case not found" /></h1>
+        <h1>
+          {hydrating ? (
+            <FormattedMessage id="caseDetail.loading" defaultMessage="Loading case…" />
+          ) : (
+            <FormattedMessage id="caseDetail.notFound" defaultMessage="Case not found" />
+          )}
+        </h1>
         <p><Link to="/cases" className="button-secondary"><FormattedMessage id="caseDetail.back" defaultMessage="← Back to My cases" /></Link></p>
       </article>
     );
