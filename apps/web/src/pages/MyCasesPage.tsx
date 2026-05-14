@@ -201,23 +201,29 @@ export function MyCasesPage() {
                             scopes: [apiScopeForCountry(country)],
                           });
                           bearer = tok.accessToken;
-                        } catch { /* fall through; backend call will be skipped */ }
+                        } catch { /* fall through */ }
                       }
+                      let serverOk = !apim;
                       if (apim) {
                         try {
                           const res = await fetch(`${apim}/citizen-applications/${encodeURIComponent(c.id)}`, {
                             method: 'DELETE',
-                            headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+                            headers: bearer ? { Authorization: `Bearer ${bearer}`, 'Cache-Control': 'no-cache' } : { 'Cache-Control': 'no-cache' },
                           });
-                          if (!res.ok && res.status !== 204 && res.status !== 404) {
-                            alert(`Could not delete on the server (HTTP ${res.status}). The local entry will still be removed.`);
+                          if (res.status === 204 || res.status === 200 || res.status === 404) {
+                            serverOk = true;
+                          } else {
+                            const txt = await res.text().catch(() => '');
+                            alert(`Server refused to delete (HTTP ${res.status}). The case is NOT removed.\n\n${txt.substring(0, 300)}`);
                           }
-                        } catch {
-                          alert('Server unreachable — the local entry will still be removed but the back-end record may persist.');
+                        } catch (e) {
+                          alert('Server unreachable — case NOT removed. Try again later.');
                         }
                       }
-                      removeCase(c.id);
-                      void load();
+                      if (serverOk) {
+                        removeCase(c.id);
+                        void load();
+                      }
                     }}
                   >
                     <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove" />
