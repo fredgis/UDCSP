@@ -41,7 +41,16 @@ function parseDescription(desc?: string): Record<string, unknown> | null {
 function remoteToStored(t: RemoteCase, country: string, citizenUpn?: string): StoredCase {
   const id = t.id || t.activityid || t.caseId || '';
   const body = parseDescription(t.description) ?? {};
-  const elig = (body.eligibilityPreflight ?? {}) as { recommendation?: string; confidence?: number };
+  const elig = (body.eligibilityPreflight ?? {}) as {
+    recommendation?: string;
+    confidence?: number;
+    ruleResults?: Array<{ rule: string; passed: boolean; evidenceIds?: string[]; details?: string }>;
+    missingEvidence?: string[];
+    humanReviewRequired?: boolean;
+    citizenNotice?: string;
+    caseworkerSummary?: string;
+    lineage?: { ruleVersion?: string; promptVersion?: string; datasetVersion?: string };
+  };
   return {
     id,
     title: t.title || t.subject || t.applicationType || 'Application',
@@ -58,6 +67,16 @@ function remoteToStored(t: RemoteCase, country: string, citizenUpn?: string): St
     documentBlobUrl: body.documentBlobUrl as string | undefined,
     documentBlobName: body.documentBlobName as string | undefined,
     storageAccount: body.storageAccount as string | undefined,
+    eligibility: elig.recommendation || typeof elig.confidence === 'number' || (elig.ruleResults?.length ?? 0) > 0 ? {
+      recommendation: elig.recommendation,
+      confidence: typeof elig.confidence === 'number' ? elig.confidence : undefined,
+      ruleResults: elig.ruleResults,
+      missingEvidence: elig.missingEvidence,
+      humanReviewRequired: elig.humanReviewRequired,
+      citizenNotice: elig.citizenNotice,
+      caseworkerSummary: elig.caseworkerSummary,
+      lineage: elig.lineage,
+    } : undefined,
   };
 }
 
@@ -266,6 +285,70 @@ export function CaseDetailPage() {
           </p>
           <WorkflowDiagram steps={steps} />
         </section>
+
+        {c.eligibility && (
+          <section aria-labelledby="elig-title" className="case-section case-section--wide">
+            <h2 id="elig-title"><FormattedMessage id="caseDetail.eligibility" defaultMessage="Eligibility pre-assessment" /></h2>
+            <p className="case-detail__hint">
+              Snapshot of the Foundry <code>udcsp-eligibility</code> agent verdict at the moment of submission.
+              The Logic App re-runs the same agent server-side for the AI Act art. 14 audit registry.
+            </p>
+            <div className="case-detail__pills">
+              {c.eligibility.recommendation && (
+                <span className={`pill pill--${c.eligibility.recommendation}`}>
+                  Recommendation: {c.eligibility.recommendation}
+                </span>
+              )}
+              {typeof c.eligibility.confidence === 'number' && (
+                <span className="pill pill--confidence">Confidence {(c.eligibility.confidence * 100).toFixed(0)}%</span>
+              )}
+              {c.eligibility.humanReviewRequired !== undefined && (
+                <span className={`pill ${c.eligibility.humanReviewRequired ? 'pill--review' : 'pill--auto'}`}>
+                  {c.eligibility.humanReviewRequired ? 'Human review required' : 'Auto-decidable'}
+                </span>
+              )}
+            </div>
+            {c.eligibility.citizenNotice && (
+              <p className="case-detail__notice"><strong>For you:</strong> {c.eligibility.citizenNotice}</p>
+            )}
+            {c.eligibility.caseworkerSummary && (
+              <details className="case-detail__details">
+                <summary><strong>Caseworker summary</strong></summary>
+                <p>{c.eligibility.caseworkerSummary}</p>
+              </details>
+            )}
+            {c.eligibility.missingEvidence && c.eligibility.missingEvidence.length > 0 && (
+              <details className="case-detail__details" open>
+                <summary><strong>Missing evidence ({c.eligibility.missingEvidence.length})</strong></summary>
+                <ul>
+                  {c.eligibility.missingEvidence.map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+              </details>
+            )}
+            {c.eligibility.ruleResults && c.eligibility.ruleResults.length > 0 && (
+              <details className="case-detail__details">
+                <summary><strong>Rule-by-rule evidence ({c.eligibility.ruleResults.length})</strong></summary>
+                <ul className="case-detail__rules">
+                  {c.eligibility.ruleResults.map((r, i) => (
+                    <li key={i}>
+                      <span className={r.passed ? 'pill pill--done' : 'pill pill--fail'}>{r.passed ? '✓ pass' : '✗ fail'}</span>
+                      {' '}<code>{r.rule}</code>
+                      {r.details && <div className="case-detail__rule-details">{r.details}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {c.eligibility.lineage && (c.eligibility.lineage.ruleVersion || c.eligibility.lineage.promptVersion) && (
+              <p className="case-detail__hint">
+                Lineage:
+                {c.eligibility.lineage.ruleVersion && <> rule <code>{c.eligibility.lineage.ruleVersion}</code></>}
+                {c.eligibility.lineage.promptVersion && <> · prompt <code>{c.eligibility.lineage.promptVersion}</code></>}
+                {c.eligibility.lineage.datasetVersion && <> · dataset <code>{c.eligibility.lineage.datasetVersion}</code></>}
+              </p>
+            )}
+          </section>
+        )}
 
         {c.documentBlobUrl && (
           <section aria-labelledby="doc-title" className="case-section">
