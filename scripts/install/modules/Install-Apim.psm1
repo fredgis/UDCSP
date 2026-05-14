@@ -68,7 +68,7 @@ function Install-Apim {
                         # any string). Use realistic public endpoints where remote
                         # validation kicks in.
                         $stubValue = switch -Wildcard ($nv.name) {
-                            'portal-origin'                       { 'https://localhost:3000' }
+                            'portal-origin'                       { 'https://udcsp.fredgis.com' }
                             'entra-openid-config-url'             { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
                             'external-id-openid-config-url'       { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
                             'entra-api-audience'                  { 'api://udcsp-stub' }
