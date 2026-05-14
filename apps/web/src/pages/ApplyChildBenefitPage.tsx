@@ -289,7 +289,12 @@ export function ApplyChildBenefitPage() {
                 min={0}
                 step={1}
                 required
-                defaultValue={extracted?.fields?.monthlyIncome ?? ''}
+                defaultValue={
+                  (extracted?.fields?.monthlyIncomeNet ??
+                    extracted?.fields?.monthlyIncome ??
+                    extracted?.fields?.monthlyIncomeGross ??
+                    '') as string | number
+                }
               />
             </label>
             <label className="field field--required">

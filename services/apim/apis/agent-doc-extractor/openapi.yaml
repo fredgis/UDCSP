@@ -24,9 +24,9 @@ paths:
               type: object
               required: [blobUrl]
               properties:
-                blobUrl:     { type: string, format: uri }
-                documentKind:{ type: string, enum: [payslip, lease, id, other] }
-                language:    { type: string, example: en }
+                blobUrl:      { type: string, format: uri }
+                documentKind: { type: string, enum: [payslip, lease, id, other] }
+                language:     { type: string, example: en }
       responses:
         '200':
           description: Extraction result
