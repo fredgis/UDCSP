@@ -25,6 +25,12 @@
     placeholders. Real tool wiring (APIM, Logic Apps, knowledge sources)
     is performed by other phases of the installer.
 
+    NOTE: `system-prompt.md` is uploaded **verbatim** as the agent
+    instructions. The repository convention is that any shared preamble
+    (safety, multilingual, EU AI Act disclosure) is **inlined** directly
+    into each `system-prompt.md` — this script does NOT resolve any
+    `@include` directive. See `foundry/prompts/README.md`.
+
 .PARAMETER AgentDir
     Path to the agent folder containing agent.yaml + system-prompt.md.
 

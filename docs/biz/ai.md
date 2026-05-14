@@ -352,6 +352,46 @@ This bridge boundary is enforced at four levels:
 3. **Eligibility Pre-Assessor** never returns a *decision* enum — its output schema is `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` and the caseworker is the only signer.
 4. **Tracing** records the downstream national authority for every applicable case, so audit can verify that UDCSP did not skip the official channel.
 
+### 6.4 How each agent's brain is configured
+
+Every agent has its own **system prompt** — the always-on briefing that the model reads before every single citizen turn. Think of it as the agent's job description, code of conduct and country knowledge, all rolled into one. The seven UDCSP agents follow a shared **four-layer recipe**, but each agent fills the layers in differently because their job is different.
+
+```mermaid
+flowchart TB
+    classDef shared fill:#1565C0,stroke:#0D47A1,color:#fff
+    classDef role fill:#6A1B9A,stroke:#4A148C,color:#fff
+    classDef nordic fill:#2E7D32,stroke:#1B5E20,color:#fff
+    classDef io fill:#EF6C00,stroke:#E65100,color:#fff
+    classDef agent fill:#fff,stroke:#0D47A1,color:#0D47A1,stroke-width:2px
+
+    subgraph PROMPT["🧠 Each agent's system prompt — the always-on briefing"]
+        L1["① Role &amp; positioning<br/>(who am I, what I never do)"]:::role
+        L2["② Shared safety &amp; AI Act rules<br/>(GDPR · content safety · disclosure ·<br/>12 languages · UDCSP glossary)"]:::shared
+        L3["③ Nordic-authority knowledge<br/>(CPR · Skatteverket · NAV ·<br/>SKAT · Försäkringskassan ·<br/>Altinn · MitID/BankID/ID-porten)"]:::nordic
+        L4["④ Input / output contract<br/>(JSON schema, formatting,<br/>human-review flag)"]:::io
+        L1 --> L2 --> L3 --> L4
+    end
+
+    PROMPT --> A1["Topic Router"]:::agent
+    PROMPT --> A2["Classifier"]:::agent
+    PROMPT --> A3["Translator"]:::agent
+    PROMPT --> A4["Citizen Assistant"]:::agent
+    PROMPT --> A5["Doc Extractor"]:::agent
+    PROMPT --> A6["Eligibility (high-risk)"]:::agent
+    PROMPT --> A7["Caseworker Helper"]:::agent
+```
+
+**The four layers, in plain language:**
+
+1. **Role & positioning.** A short paragraph that tells the model *what it is*, *who it serves* and — just as importantly — *what it must never do*. The Citizen Assistant for instance is told it answers questions; the Eligibility agent is told it recommends but never decides; the Caseworker Helper is told it drafts but never closes a case.
+2. **Shared safety & AI Act rules.** The same three rules every UDCSP agent must follow: respect GDPR + the EU AI Act, talk to citizens in any of the **12 supported languages** without ever translating Nordic-authority names (CPR, MitID, BankID, Hemvistintyg, Folkeregisteret, NAV, Altinn, ID-porten, barnetrygd, barnbidrag, Udbetaling Danmark…), and disclose that this is an AI assistant when asked. These rules live in the agent's prompt as a self-contained block so the agent behaves correctly even if it is invoked outside its usual channel.
+3. **Nordic-authority knowledge.** The factual block tailored to that agent's job. The Citizen Assistant carries the four UDCSP services and the per-country authority for each. The Eligibility agent carries the country rules (CPR cannot be issued before arrival; Sweden Folkbokföring requires ≥ 1 year intended stay; Norway is 183/270 days; Sweden child allowance is automatic and not income-based; NAV barnetrygd is automatic for born-in-NO; Norway's Nordic citizens are exempt from a permit but must notify). The Translator carries the **UDCSP glossary** of terms it must never translate. The Document Extractor carries the catalogue of recognised documents per country (CPR card, Personbevis, Folkeregisterutskrift, lønseddel, lönespecifikation, lønnslipp, NAV decision letters…). Each agent's block is shaped to the job — the Eligibility agent does not need the Translator's glossary in detail, and vice versa.
+4. **Input / output contract.** The strict shape of the answer the agent must return — JSON for the agents that feed downstream automation (Classifier, Translator, Eligibility, Doc Extractor, Caseworker Helper), markdown for the conversational Citizen Assistant. Every agent contract includes a `humanReviewRequired` flag so the human-in-the-loop is never optional for high-risk steps.
+
+**Why the prompt is self-contained.** Each agent's prompt embeds layers ② and ③ directly rather than referencing a shared file. This guarantees that an agent invoked from anywhere — the citizen web chat, a Foundry Studio test, an evaluation run, a future channel like Teams — behaves identically and respects the same Nordic-authority rules. It also makes the prompt the single audit-ready artefact for the AI Act registry under `governance/ai-act/registry/<agent>.yaml`.
+
+**How updates flow.** When a Nordic authority changes a rule (a new e-service from Skatteverket, a new NAV form, a tightened CPR procedure), the change is made in the relevant agent's system prompt, the agent's evaluation suite is run to confirm no regression on the existing test cases, the new prompt version is deployed to Foundry, and the previous version is kept side-by-side for rollback and lineage. The Foundry trace shows which prompt version answered every citizen turn.
+
 ---
 
 ## 7. AI per communication channel
