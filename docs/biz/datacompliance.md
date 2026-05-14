@@ -45,6 +45,7 @@
 8. [NIS2 — Directive (EU) 2022/2555](#8-nis2--directive-eu-20222555)
 9. [Web Accessibility Directive + WCAG 2.1 AA](#9-web-accessibility-directive--wcag-21-aa)
 10. [National law — Denmark · Sweden · Norway](#10-national-law--denmark--sweden--norway)
+    - [10.5 Controllership boundary — UDCSP front-door, national authority back-office](#105-controllership-boundary--udcsp-front-door-national-authority-back-office) ★
 11. [Operational baselines — ISO 27001 · SOC 2](#11-operational-baselines--iso-27001--soc-2)
 
 **Operational machinery**
@@ -134,6 +135,12 @@ flowchart TB
         ACCST["Accessibility statement<br/>per country"]
     end
 
+    subgraph NATAUTH["🤝 National authorities (separate controllers)"]
+        DKA["🇩🇰 CPR · borger · MitID · SKAT · Udbetaling DK"]
+        SEA["🇸🇪 Skatteverket · Försäkringskassan · BankID"]
+        NOA["🇳🇴 Skatteetaten · NAV · Altinn · UDI · ID-porten"]
+    end
+
     GDPR --> ENC & RET & IAM & ERASURE & NOTICE
     AIACT --> TRACE & REG & OVERRIDE & PV
     EPRIV --> NOTICE & RET
@@ -151,18 +158,25 @@ flowchart TB
     NOTICE --> ACCST
     ATT --> EVID
 
+    CTRL -. submits / mirrors status .-> NATAUTH
+    NATAUTH -. issues decision (their controllership) .-> CTRL
+
     classDef law fill:#FCE4EC,stroke:#AD1457,color:#880E4F
     classDef ctrl fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
     classDef gov fill:#FFF3E0,stroke:#E65100,color:#BF360C
     classDef evid fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    classDef nat fill:#1565C0,stroke:#0D47A1,color:#fff
 
     class GDPR,AIACT,EPRIV,EIDAS,NIS2,WCAG,NAT law
     class ENC,RET,IAM,TRACE,REG,OVERRIDE,ERASURE,NOTICE ctrl
     class PV,SENT,DPO,ATT gov
     class REGEXP,ROPA,DPIA,AUDIT,ACCST evid
+    class DKA,SEA,NOA nat
 ```
 
 > **Reading the diagram.** *Regulations* (top) drive a set of *platform controls implemented as code* (middle). Those controls feed the *governance plane* (Purview + Microsoft Priva + Sentinel + DPO console + Microsoft attestations) which produces the *evidence pack* a regulator can demand at any moment. The chain is fully traceable both ways: pick any obligation and find the control that implements it; pick any control and find the audit event that proves it ran.
+>
+> **The bridge boundary.** UDCSP is a *unified citizen platform* that **bridges to** the existing national authorities — it does not absorb them. The right-hand cluster (CPR, Skatteverket, NAV, …) are **separate data controllers** for the substantive decision (residency, tax-residence, family benefit). UDCSP is the front-door joint controller for the citizen-facing interaction (channels, AI assistance, eID acceptance, document upload, status mirroring). This boundary is the foundation of §10.5 below.
 
 ---
 
@@ -417,6 +431,26 @@ Every UDCSP channel is in scope (the directive covers websites, mobile apps, and
 
 For the **AI Act**, each Member State must designate a national competent authority by 2 August 2025; UDCSP's AI Act registry is set up to record the per-country authority once designated.
 
+### 10.5 Controllership boundary — UDCSP front-door, national authority back-office
+
+UDCSP is **a unified citizen platform that bridges to the existing national authorities, not a substitute for them**. This shapes the GDPR controllership map:
+
+| Personal-data processing | Controller(s) | Lawful basis | Where the data lives |
+|---|---|---|---|
+| Channel interaction (web/mobile/voice/chat session) | UDCSP per-country instance (joint controller with the agency that operates that channel) | Art. 6(1)(e) public interest task — performance of a public service | Sovereign Azure region of the country (DK = North Europe; SE = Sweden Central; NO = Norway East) |
+| eID assertion (MitID / BankID / Freja+ / ID-porten / MinID) | The national eID provider (controller for the assertion) → UDCSP joint-controller for storing the federation claim | eIDAS + Art. 6(1)(e) | Federation claim cached in External ID per country; original assertion retained by the eID provider |
+| AI assistance (classification, translation, eligibility recommendation, doc extraction, citizen Q&A) | UDCSP per-country instance | Art. 6(1)(e) + EU AI Act conformity (Art. 14 human oversight on the high-risk Eligibility agent) | Foundry traces in the country region; outputs are recommendations, not decisions |
+| Substantive administrative decision (residency, tax-residence certificate, family benefit, permit) | **The competent national authority** — CPR / Skatteverket / Skatteetaten / SKAT / Försäkringskassan / NAV / Udbetaling DK / Altinn / UDI | National administrative law + Art. 6(1)(e) | The authority's own systems — UDCSP only mirrors the *status* into D365 |
+| Decision audit / appeals | The competent national authority | National administrative law (Forvaltningsloven / Förvaltningslagen / Forvaltningsloven) | The authority's case file; the citizen exercises the right to access (`partsaktindsigt` etc.) at the authority |
+
+Operational consequences enforced in code:
+
+- **Data minimisation across the bridge** — when UDCSP submits to a national authority, the Logic Apps payload is the minimum the authority's API requires; PII not needed by the authority is **never** sent. Per-authority schema mappings live under `services/logic-apps/` and are reviewed by the DPO before each release.
+- **No silent re-use** — UDCSP does not re-use data the citizen submitted for service A to push into service B without an explicit re-confirmation in the UI; the once-only principle (EU SDG / OOTS) is opt-in per service.
+- **Joint-controller agreements (Art. 26 GDPR)** are signed per integration before go-live (DK with SKAT + Udbetaling DK + CPR; SE with Skatteverket + Försäkringskassan; NO with Skatteetaten + NAV + Altinn + UDI). The JCA defines who answers each citizen right (access / rectification / erasure / portability / objection) for each data category.
+- **Erasure** — when the citizen asks UDCSP to erase, UDCSP executes Art. 17 inside its own zone (cascading playbook in [`docs/tech/data.md`](../tech/data.md)). For data already received by the national authority, the citizen is redirected to the authority — UDCSP cannot erase a tax assessment from SKAT or a benefit decision from NAV.
+- **Wording rule** — UDCSP UI, system-prompt, marketing copy and this documentation never claim that UDCSP "issues residency", "approves benefits" or "provides a single application across the Nordics". The system prompt of the Citizen Assistant treats those phrases as drift to flag in the eval suite.
+
 ---
 
 ## 11. Operational baselines — ISO 27001 · SOC 2
@@ -605,7 +639,7 @@ Sentinel detects → on-call paged within minutes → DPA notified within 72 h. 
 
 ### "Can a citizen from Denmark use Swedish services with their Danish ID?"
 
-Yes — that is the core point of UDCSP and of eIDAS Art. 6. The eIDAS Node + Entra External ID claim mapping handle the cross-border assurance level. Demo 1 in [`uses.md`](./uses.md) is precisely this scenario (Anna moves from Copenhagen to Stockholm).
+Increasingly yes, but the truth is more nuanced than "one click". eIDAS Art. 6 requires Member States to **recognise** notified eIDs from other Member States; the Danish eID Gateway accepts a growing list of EU/EEA eIDs but identity matching against the destination register (Skatteverket folkbokföring, NAV folkeregister, etc.) is still required for most services. UDCSP surfaces this honestly — the eIDAS Node + Entra External ID claim mapping handle the cross-border assurance level, then UDCSP routes the citizen to the **competent national authority** (the bridge described in §10.5) which performs the substantive matching. Demo 1 in [`uses.md`](./uses.md) walks through Anna moving from Copenhagen to Stockholm — and shows the Skatteverket step explicitly.
 
 ### "What about the EUDI Wallet (eIDAS 2.0)?"
 

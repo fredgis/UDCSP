@@ -135,8 +135,14 @@ flowchart TB
     subgraph KNOWLEDGE["📚 Knowledge &amp; data sources"]
         SP["📁 SharePoint &amp; agency docs"]
         FAB["🐟 Microsoft Fabric<br/>(case history, anonymised)"]
-        WEBKB["🌐 Public agency websites"]
+        WEBKB["🌐 National-authority sites<br/>(borger · skatteverket · skatteetaten · NAV · Altinn · Info Norden)"]
         PUR["🛡️ Purview catalogue<br/>+ classifications"]
+    end
+
+    subgraph NATIONAL["🤝 National authorities — bridge, never replace"]
+        DKAUTH["🇩🇰 CPR · borger · MitID · SKAT · Udbetaling DK"]
+        SEAUTH["🇸🇪 Skatteverket · Försäkringskassan · BankID · Freja+"]
+        NOAUTH["🇳🇴 Skatteetaten · NAV · Altinn · UDI · ID-porten"]
     end
 
     subgraph SUPPORT["🎤 Supporting Azure AI services"]
@@ -170,6 +176,10 @@ flowchart TB
     PUR -. governs .-> KNOWLEDGE
     PUR -. governs .-> AGENTS
 
+    APIM -. submit / status (Logic Apps) .-> DKAUTH
+    APIM -. submit / status (Logic Apps) .-> SEAUTH
+    APIM -. submit / status (Logic Apps) .-> NOAUTH
+
     %% Colour palette
     classDef citizen fill:#E3F2FD,stroke:#1565C0,color:#0D47A1
     classDef workforce fill:#F3E5F5,stroke:#6A1B9A,color:#4A148C
@@ -180,6 +190,7 @@ flowchart TB
     classDef plat fill:#FFCC80,stroke:#E65100,color:#BF360C
     classDef know fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
     classDef sup fill:#FFF9C4,stroke:#F9A825,color:#F57F17
+    classDef nat fill:#1565C0,stroke:#0D47A1,color:#fff
 
     class WEB,MOB,VOX,TEAMS,WAPP citizen
     class D365COP workforce
@@ -189,6 +200,7 @@ flowchart TB
     class MOD,SAFE,EVAL,TRC,REG,OPT plat
     class SP,FAB,WEBKB,PUR know
     class SPCH,TXL,DCI sup
+    class DKAUTH,SEAUTH,NOAUTH nat
 ```
 
 **How to read this picture, top to bottom**
@@ -201,6 +213,7 @@ flowchart TB
 | 🧠 **Foundry control plane** | Models, agents, prompts, evaluations, traces, safety, AI Act registry, prompt optimization. | The user-facing dialog or the channel mix. |
 | 📚 **Knowledge & data** | The grounding corpus, lineage, classifications. | Reasoning. |
 | 🎤 **Supporting Azure AI** | Single-purpose AI primitives (Speech, Translator, Doc Intelligence) reused by multiple agents. | Orchestration. |
+| 🤝 **National authorities (bridge)** | The decision, the certificate, the residency record, the benefit payment — issued by CPR / Skatteverket / Skatteetaten / SKAT / Försäkringskassan / NAV / Udbetaling DK / Altinn / UDI. | Anything AI; UDCSP submits and mirrors the official status, never substitutes it. |
 
 Each layer has **one** reason to change, which is why it can be evolved (and tested) independently — see § 14.
 
@@ -314,6 +327,30 @@ The Eligibility Pre-Assessor is the only high-risk AI Act system in UDCSP. It ru
 Every AI Act-relevant event — route decision, eligibility recommendation, human override, model version, eval gate, and post-market monitoring checkpoint — is anchored in **Azure Confidential Ledger** (`infra/security/confidential-ledger/`). The ledger provides the tamper-evident backing for Art. 26(6) log retention; Foundry remains the operational trace viewer, while the ledger proves the trace has not been rewritten.
 
 > **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `governance/ai-act/registry/eligibility-model.yaml` is the most complete: intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration, contact for the AI Act competent authority in each of DK/SE/NO. *No autonomous decision is ever taken by this agent — the recommendation goes to a caseworker queue in D365 with full evidence.*
+
+### 6.3 Bridge to national authorities — what the agents are NOT
+
+UDCSP is **a unified citizen platform that bridges to the existing national authorities, not a replacement of them**. The seven agents above produce **drafts, classifications, recommendations, summaries, translations and grounded answers** — they never **issue** an administrative decision. The decision, the certificate, the residency record and the benefit payment always come from the competent national authority and are mirrored back into the citizen's *My cases* timeline.
+
+| Service the citizen is trying to obtain | Authority that issues / decides | Where AI helps inside UDCSP |
+|---|---|---|
+| Residency registration 🇩🇰 | **CPR** + borger.dk + MitID. *CPR cannot be issued before the citizen has actually moved.* | Doc Extractor reads the passport / lease; Citizen Assistant explains the "after arrival" rule; Translator localises the form; topic-router escalates to a caseworker if the case is borderline. |
+| Residency registration 🇸🇪 | **Skatteverket Folkbokföring** + BankID/Freja+. *Required if stay ≥ 1 year.* | Same agents — Citizen Assistant grounds answers on Skatteverket pages and Info Norden. |
+| Residency registration 🇳🇴 | **Skatteetaten Folkeregisteret** (+ UDI for non-Nordic) + ID-porten. *> 6-month stay → must register; Nordic citizens don't need a permit but must notify.* | Same agents — Citizen Assistant explains the 6-month threshold and the Nordic exemption. |
+| Tax-residency certificate 🇩🇰 | **SKAT form 02.050** — request workflow, **not** instant download. | Doc Extractor pre-fills, Eligibility Pre-Assessor flags edge cases, but the certificate is issued by SKAT. |
+| Tax-residency certificate 🇸🇪 | **Skatteverket Hemvistintyg** — new e-service since Feb 2026 (or fallback form SKV 2734). | Same. UDCSP never claims "instant" issuance. |
+| Tax-residency certificate 🇳🇴 | **Altinn form RF-1306** + Skatteetaten. *Tax residence rule: > 183 days / 12 mo OR > 270 days / 36 mo.* | Same — Citizen Assistant restates the rule before pre-filling. |
+| Child & family benefit 🇩🇰 | **Udbetaling Danmark / lifeindenmark.dk**. *Income-based with a specific EU/EEA cross-border path; an apply-without-MitID flow exists for new arrivals.* | Eligibility Pre-Assessor scores the case and produces a recommendation; the actual benefit is decided and paid by Udbetaling Danmark. |
+| Child & family benefit 🇸🇪 | **Försäkringskassan barnbidrag** — generally **automatic** for resident children; cross-border EU/EEA cases coordinated. | Citizen Assistant explains "you don't need to apply" for the resident case; Eligibility only fires for cross-border or split-custody. |
+| Child & family benefit 🇳🇴 | **NAV barnetrygd** — automatic for born-in-NO; application required for EEA / cross-border / complex family. **NAV utvidet barnetrygd** is a separate single-parent flow. | Same logic — Eligibility runs only when an application is actually required. |
+| Status of *My cases* | The relevant national authority case system, mirrored into D365. | Caseworker Helper summarises; the citizen sees the official status, not a UDCSP-derived one. |
+
+This bridge boundary is enforced at four levels:
+
+1. **System prompt** of the Citizen Assistant explicitly forbids phrases like *"single application across the Nordics"*, *"signed and verifiable in minutes"*, *"income-based child benefit in Sweden"* and similar over-promises.
+2. **APIM `agent-topic-router` policy** rate-limits and tags every voice/chat request with `x-channel-actor` so cross-channel telemetry can detect drift from the bridge wording.
+3. **Eligibility Pre-Assessor** never returns a *decision* enum — its output schema is `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` and the caseworker is the only signer.
+4. **Tracing** records the downstream national authority for every applicable case, so audit can verify that UDCSP did not skip the official channel.
 
 ---
 
@@ -594,13 +631,14 @@ flowchart LR
 | Source | Used by | How it is indexed | Refresh cadence |
 |---|---|---|---|
 | 📁 **SharePoint sites** (per-country agency knowledge bases) | Citizen Assistant, Caseworker Helper | Foundry "knowledge" connector → Azure AI Search hybrid index (vector + keyword + semantic ranker) | Hourly delta |
-| 🌐 **Public agency websites** | Citizen Assistant | Crawler → Azure AI Search index, pinned to `.dk`/`.se`/`.no` domains, with a per-domain trust score | Daily |
+| 🌐 **National-authority public sites** (the bridge KB) — borger.dk · lifeindenmark.dk · skat.dk · udbetaling.dk *(🇩🇰)* · skatteverket.se · forsakringskassan.se *(🇸🇪)* · skatteetaten.no · nav.no · altinn.no · udi.no · idporten.no *(🇳🇴)* · norden.org/Info Norden · oresunddirekt.com · grensetjansten.com · ec.europa.eu (Single Digital Gateway / OOTS / eIDAS) | Citizen Assistant — every cross-border answer must cite at least one of these. | Crawler → Azure AI Search index, pinned to `.dk`/`.se`/`.no`/`norden.org`/`europa.eu` domains, with a per-domain trust score and a country tag | Daily |
 | 🐟 **Microsoft Fabric** lakehouse — **anonymised** case history | Caseworker Helper, Eligibility (precedent retrieval, **never** as a decision input) | Synapse-style notebook → vector index over case-summary embeddings | Nightly |
 | 📋 **Eligibility rules** (deterministic) | Eligibility | Code (Python rule plug-ins) versioned in `foundry/projects/eligibility/rules/` | Per release |
 | 🛡️ **Purview catalogue** | Cross-cutting | Lineage + classification metadata exposed to the agents through a Foundry tool, so every grounded answer can declare its source class (PII / sensitive / public) | Continuous |
 
 **Grounding rules we enforce:**
-- Every Citizen Assistant answer must cite at least one source from an authoritative domain or return "I do not know — let me connect you to a caseworker".
+- Every Citizen Assistant answer must cite at least one source from an authoritative domain (national authority site, Info Norden, EU portal) or return "I do not know — let me connect you to a caseworker".
+- The assistant is **never allowed to claim** that UDCSP itself issues residency, tax-residence certificates or family benefits — those are issued by CPR / Skatteverket / Skatteetaten / SKAT / Försäkringskassan / NAV / Udbetaling DK respectively. Phrases like *"single application across DK/SE/NO"* and *"signed and verifiable in minutes"* are explicit no-go strings in the system prompt and in the eval suite.
 - Eligibility never grounds on the citizen's own prior cases (avoids feedback loops); it grounds on the rule set + the current submission only. Precedent cases are surfaced *to the caseworker*, separately, by the Caseworker Helper.
 - Doc Extractor's "verification" step is a strict-JSON LLM call with a low temperature that re-checks the OCR fields against the document schema — it is allowed to flag, never to overwrite.
 
