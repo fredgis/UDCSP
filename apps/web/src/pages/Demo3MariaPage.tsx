@@ -118,9 +118,9 @@ export function Demo3MariaPage() {
   const errorList = Object.entries(errors);
 
   return (
-    <section aria-labelledby="d3-title" className="d3-page" lang="pl">
+    <section aria-labelledby="d3-title" className="d3-page">
       <div className="page-shell">
-        <header className="page-shell__head" lang="en">
+        <header className="page-shell__head">
           <h1 id="d3-title" ref={headingRef} tabIndex={-1}>
             ♿ Demo 3 — Maria · Polish screen-reader child-benefit application
           </h1>
@@ -137,17 +137,18 @@ export function Demo3MariaPage() {
           </ul>
         </header>
 
-        {/* Live announcer — visually hidden but read by screen readers */}
+        {/* Live announcer — visually hidden but read by screen readers, in Polish */}
         <div
           ref={announcerRef}
           className="sr-only"
           role="status"
           aria-live="polite"
           aria-atomic="true"
+          lang="pl"
         />
 
         {!submitted && (
-          <ol className="d3-stepper" aria-label="Postęp wniosku">
+          <ol className="d3-stepper" aria-label="Postęp wniosku" lang="pl">
             {STEP_LABELS.map((label, idx) => (
               <li
                 key={label}
@@ -168,6 +169,7 @@ export function Demo3MariaPage() {
             role="alert"
             aria-labelledby="d3-error-summary-title"
             className="d3-error-summary"
+            lang="pl"
           >
             <h2 id="d3-error-summary-title">Sprawdź formularz — {errorList.length} błąd(ów)</h2>
             <ul>
@@ -179,7 +181,7 @@ export function Demo3MariaPage() {
         )}
 
         {submitted ? (
-          <div className="d3-success" role="alert">
+          <div className="d3-success" role="alert" lang="pl">
             <h2>✅ Wniosek wysłany do Försäkringskassan</h2>
             <p>
               Maria, Twój wniosek o świadczenie dziecięce został przesłany do szwedzkiego urzędu ubezpieczeń społecznych
@@ -194,6 +196,7 @@ export function Demo3MariaPage() {
           <form
             onSubmit={(e) => { e.preventDefault(); step === 3 ? submit() : next(); }}
             className="d3-form"
+            lang="pl"
             noValidate
           >
             {step === 0 && (
@@ -333,7 +336,7 @@ export function Demo3MariaPage() {
           </form>
         )}
 
-        <footer className="d3-page__foot" lang="en">
+        <footer className="d3-page__foot">
           <p>
             <strong>What this proves.</strong> The full wizard is keyboard-only operable, every field is announced with
             its label and help text, validation produces a focused error summary, and the page tells the screen reader
