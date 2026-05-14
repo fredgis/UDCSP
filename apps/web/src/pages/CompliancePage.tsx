@@ -95,10 +95,23 @@ export function CompliancePage() {
           <div className="compliance-hero__eyebrow">Regulatory framework</div>
           <h1 id="compliance-title">Compliance &amp; regulatory posture</h1>
           <p className="compliance-hero__lead">
-            UDCSP operates as a public-administration platform across Denmark, Sweden and Norway and is
-            subject to eight overlapping regulatory regimes. This page sets out, in plain language, the
-            obligations the platform meets, the controls it applies, and the rights it guarantees to
-            citizens.
+            UDCSP is a public-administration platform that operates across Denmark, Sweden and Norway.
+            Because it handles citizen identification, family entitlements, tax certificates, residency
+            applications and AI-assisted recommendations, it sits at the intersection of <strong>eight
+            overlapping regulatory regimes</strong> — GDPR, the EU AI Act, eIDAS, ePrivacy, NIS2, the
+            Web Accessibility Directive and the administrative-law obligations of each Nordic country.
+          </p>
+          <p className="compliance-hero__lead">
+            Compliance is treated as an architectural property rather than a downstream audit exercise.
+            Every regime is mapped to concrete platform controls — a documented legal basis for each
+            data point, AI Act conformity dossiers per agent, customer-managed encryption keys held in
+            each country, a 24-hour incident-notification chain to the national CSIRT, WCAG 2.1 AA
+            conformance on every channel, and a clear separation of responsibilities between UDCSP
+            (the unified front door) and the national authority (the controller and decision-maker).
+          </p>
+          <p className="compliance-hero__lead">
+            The sections below set out, in plain language and without technical jargon, what each
+            obligation means in practice, what citizens can expect, and where the responsibility lies.
           </p>
           <dl className="compliance-hero__meta">
             <div><dt>Document type</dt><dd>Compliance summary (executive)</dd></div>
@@ -107,84 +120,6 @@ export function CompliancePage() {
           </dl>
         </header>
 
-        <figure className="compliance-diagram" role="group" aria-labelledby="diagram-title">
-          <figcaption id="diagram-title" className="compliance-diagram__caption">
-            <span className="compliance-num">FIG. 01</span> Compliance posture — how the eight regimes flow into platform controls and citizen outcomes
-          </figcaption>
-          <div className="compliance-diagram__board">
-            <div className="compliance-layer compliance-layer--regs" aria-label="Layer 1 — regulations">
-              <div className="compliance-layer__head">
-                <span className="compliance-layer__num">L1</span>
-                <span className="compliance-layer__title">Regulatory framework</span>
-              </div>
-              <div className="compliance-layer__chips">
-                <span className="cd-chip cd-chip--regs" title="GDPR">GDPR</span>
-                <span className="cd-chip cd-chip--regs" title="EU AI Act">AI Act</span>
-                <span className="cd-chip cd-chip--regs" title="ePrivacy">ePrivacy</span>
-                <span className="cd-chip cd-chip--regs" title="eIDAS">eIDAS</span>
-                <span className="cd-chip cd-chip--regs" title="NIS2">NIS2</span>
-                <span className="cd-chip cd-chip--regs" title="Web Accessibility">WCAG 2.1 AA</span>
-                <span className="cd-chip cd-chip--regs" title="National administrative law">National law</span>
-                <span className="cd-chip cd-chip--regs" title="ISO 27001 / SOC 2">ISO · SOC 2</span>
-              </div>
-            </div>
-            <div className="compliance-arrow" aria-hidden="true">↓</div>
-            <div className="compliance-layer compliance-layer--ctrl" aria-label="Layer 2 — platform controls">
-              <div className="compliance-layer__head">
-                <span className="compliance-layer__num">L2</span>
-                <span className="compliance-layer__title">Platform controls (in code)</span>
-              </div>
-              <div className="compliance-layer__chips">
-                <span className="cd-chip cd-chip--ctrl">CMK per country</span>
-                <span className="cd-chip cd-chip--ctrl">Retention &amp; immutability</span>
-                <span className="cd-chip cd-chip--ctrl">RBAC + ABAC</span>
-                <span className="cd-chip cd-chip--ctrl">Foundry traces</span>
-                <span className="cd-chip cd-chip--ctrl">AI Act registry</span>
-                <span className="cd-chip cd-chip--ctrl">Human override</span>
-                <span className="cd-chip cd-chip--ctrl">Erasure cascade</span>
-                <span className="cd-chip cd-chip--ctrl">Channel notices</span>
-              </div>
-            </div>
-            <div className="compliance-arrow" aria-hidden="true">↓</div>
-            <div className="compliance-layer compliance-layer--gov" aria-label="Layer 3 — governance and evidence">
-              <div className="compliance-layer__head">
-                <span className="compliance-layer__num">L3</span>
-                <span className="compliance-layer__title">Governance &amp; evidence</span>
-              </div>
-              <div className="compliance-layer__chips">
-                <span className="cd-chip cd-chip--gov">Microsoft Purview</span>
-                <span className="cd-chip cd-chip--gov">Microsoft Sentinel</span>
-                <span className="cd-chip cd-chip--gov">DPO console</span>
-                <span className="cd-chip cd-chip--gov">Conformity dossiers</span>
-                <span className="cd-chip cd-chip--gov">RoPA · DPIA</span>
-                <span className="cd-chip cd-chip--gov">Audit timeline</span>
-              </div>
-            </div>
-            <div className="compliance-arrow" aria-hidden="true">↓</div>
-            <div className="compliance-layer compliance-layer--out" aria-label="Layer 4 — citizen-facing outcomes">
-              <div className="compliance-layer__head">
-                <span className="compliance-layer__num">L4</span>
-                <span className="compliance-layer__title">Citizen-facing outcomes</span>
-              </div>
-              <div className="compliance-layer__chips">
-                <span className="cd-chip cd-chip--out">Access in 30 d</span>
-                <span className="cd-chip cd-chip--out">Erasure ≤ 30 d</span>
-                <span className="cd-chip cd-chip--out">Human review</span>
-                <span className="cd-chip cd-chip--out">12 languages</span>
-                <span className="cd-chip cd-chip--out">WCAG AA channels</span>
-                <span className="cd-chip cd-chip--out">National DPA contact</span>
-              </div>
-            </div>
-            <div className="compliance-bridge" aria-label="Bridge to national authorities">
-              <span className="compliance-bridge__lbl">Bridge — separate controllers</span>
-              <div className="compliance-bridge__nodes">
-                <span className="cd-node cd-node--dk">🇩🇰 DK · CPR · MitID · SKAT · Udbetaling DK</span>
-                <span className="cd-node cd-node--se">🇸🇪 SE · Skatteverket · Försäkringskassan · BankID</span>
-                <span className="cd-node cd-node--no">🇳🇴 NO · NAV · Skatteetaten · Altinn · ID-porten</span>
-              </div>
-            </div>
-          </div>
-        </figure>
 
         <section className="compliance-block" aria-labelledby="frame-title">
           <h2 id="frame-title"><span className="compliance-num">01</span> Regulatory framework</h2>
