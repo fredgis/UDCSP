@@ -63,6 +63,16 @@ export function ApplyChildBenefitPage() {
   const [docBlobUrl, setDocBlobUrl] = useState<string | null>(null);
   const [docBlobName, setDocBlobName] = useState<string | null>(null);
   const [docStorageAccount, setDocStorageAccount] = useState<string | null>(null);
+  const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
+  const [docPreviewKind, setDocPreviewKind] = useState<'pdf' | 'image' | null>(null);
+  const [docSizeKb, setDocSizeKb] = useState<number | null>(null);
+
+  // Free the object URL when the component unmounts or a new file is picked.
+  useEffect(() => {
+    return () => {
+      if (docPreviewUrl) URL.revokeObjectURL(docPreviewUrl);
+    };
+  }, [docPreviewUrl]);
 
   // Pre-fill the parent name from the citizen's signed-in identity claims.
   const [parentName, setParentName] = useState('');
@@ -80,6 +90,12 @@ export function ApplyChildBenefitPage() {
     setDocBlobUrl(null);
     setDocBlobName(null);
     setDocStorageAccount(null);
+    // Local preview — uses the in-browser File reference, never leaves the device.
+    if (docPreviewUrl) URL.revokeObjectURL(docPreviewUrl);
+    const localUrl = URL.createObjectURL(file);
+    setDocPreviewUrl(localUrl);
+    setDocPreviewKind(file.type === 'application/pdf' ? 'pdf' : file.type.startsWith('image/') ? 'image' : null);
+    setDocSizeKb(Math.round(file.size / 1024));
     try {
       // 1) Persist the document to the citizen's country Storage account
       //    (DK→udcspdkprodlake, SE→udcspseprodlake, NO→udcspnoprodlake) via
@@ -292,8 +308,25 @@ export function ApplyChildBenefitPage() {
               onChange={onPickDocument}
               style={{ display: 'none' }}
             />
-            {docName && <span className="apply-upload__name" aria-live="polite">📄 {docName}</span>}
+            {docName && <span className="apply-upload__name" aria-live="polite">📄 {docName}{docSizeKb !== null ? ` · ${docSizeKb} KB` : ''}</span>}
           </div>
+          {docPreviewUrl && docPreviewKind && (
+            <div className="apply-upload-preview" aria-label="Document preview">
+              <div className="apply-upload-preview__head">
+                <span>Preview</span>
+                <a href={docPreviewUrl} target="_blank" rel="noopener noreferrer">Open in new tab ↗</a>
+              </div>
+              {docPreviewKind === 'pdf' ? (
+                <iframe
+                  src={docPreviewUrl}
+                  title={`Preview of ${docName ?? 'document'}`}
+                  className="apply-upload-preview__frame"
+                />
+              ) : (
+                <img src={docPreviewUrl} alt={`Preview of ${docName ?? 'document'}`} className="apply-upload-preview__img" />
+              )}
+            </div>
+          )}
           {extractError && <p role="alert" className="info-banner info-banner--warn">⚠ {extractError}</p>}
           {extracted && (
             <div className="apply-extracted" role="status" aria-live="polite">
