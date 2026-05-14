@@ -64,13 +64,46 @@ The remainder of this document tracks the **Demo-3 (Maria) gap** in detail becau
 
 - **DK / SE / NO sign-in** via External ID — three real CIAM tenants on `udcspdk.ciamlogin.com`, `udcspse.ciamlogin.com`, `udcspno.ciamlogin.com`.
 - **`/apply/residency` wizard** — 3 steps (move details → documents → review & submit), localised in the 12 supported languages, accessible (WCAG 2.1 AA), with destination + move-date validation gating step 1.
+- **Eligibility Foundry-driven** pre-submit (recommendation + confidence + rule-by-rule + missing evidence + citizen notice + caseworker summary), verdict embedded in `payload.eligibilityPreflight`.
+- **POST /citizen-applications/** → LA `application-intake` → Dataverse `tasks` (description truncated server-side to 1900 chars — workaround `c2f44e8`).
+- **My Cases cross-device** — APIM `GET /citizen-applications/` op-policy reads Dataverse filtered by `citizenUpn`, APIM MI has Systemadministrator role to read tasks owned by the LA MI; API-level cache removed so reads are real-time.
+- **Case Detail** — SPA 3-tier description parser recovers `documentBlobUrl`, `extractedFields`, `eligibilityPreflight` even when the JSON was truncated mid-string. Redesigned hero + workflow timeline (Document Extractor shows `<filename> · N fields extracted`) + Eligibility section (rules, missing, notice, summary) + document attached + extracted fields.
+- **Remove** — DELETE op-policy cascades Dataverse row + uploaded blob with ownership guard.
 - **APIM `agent-topic-router`** system prompt teaches the model the residency-transfer copy for DK/SE/NO and the cross-border references (Info Norden, Øresunddirekt, Grensetjänsten).
 - **Logic App `cross-border-residency`** workflow scaffold deployed: Service Bus trigger on queue `cross-border-coordination`, parameters for `aiActRegistryId`, `eidasValidationEndpoint`, `dkResidencyFacadeEndpoint`, `d365CasesEndpoint`, `acsNotificationEndpoint`, App Insights `traceparent` propagation.
 - **Foundry agents** Classifier, Document Extractor, Eligibility Pre-Assessor, Translator already built and invoked from the DK application-intake LA (D3).
 - **Governance assets**: DPIA `dpia-eligibility-model.md`, Purview DLP `block-cross-border-cpr-without-consent`, sensitivity label `Restricted-Cross-Border`, AI Act registry stub.
 - **Cross-country flag UI** in the header; per-country tenant gating on `/login`.
 
-### What is missing to play the demo end-to-end (🔴 ordered backlog)
+> 📊 **Self-rating bumped to ~70 % of the happy-path Demo 1 jouable live** — the citizen-side single-country rail is fully wired end-to-end (sign-in → wizard → eligibility AI → submit → My Cases re-hydrated cross-device → detail riche → Remove cascade). The **cross-border fan-out + SE landing + notification loop** remains the missing third.
+
+### 🛑 Hard blocker — pending D365 Customer Service installation
+
+> User is installing D365 Customer Service now (per-country envs). Resume Demo 1 hardening once the new envs exist. Until then, every cross-border item below is **blocked** — the SE landing has nowhere to land.
+
+**Resume sequence after D365 Customer Service is installed:**
+
+1. **Provision the DK/SE/NO D365 Customer Service envs** (per-country, NOT the shared `org939d8f07`). Note the new org URLs — they will become the new values for `d365-dataverse-url` named-values per APIM instance.
+2. **Re-point the LA `application-intake`** from `…/api/data/v9.2/tasks` to `…/api/data/v9.2/udcsp_applications`. The workflow.json source-of-truth already maps every column (`services/logic-apps/workflows/application-intake/workflow.json` lines 156-220); a clean redeploy makes the legacy `tasks` write disappear and **eliminates the 2000-char truncation entirely** — the SPA's `descriptionParser.ts` becomes a legacy compatibility shim for old `tasks` rows.
+3. **Update APIM op-policies** `GET /citizen-applications/` and `DELETE /{id}` to query `udcsp_applications?$filter=udcsp_citizenupn eq '<upn>'` instead of `tasks?$filter=contains(description,…)`. Also swap the field mapping in the GET-list body: `id=udcsp_applicationid`, `title=udcsp_displaytitle`, etc. The Document Extractor / Eligibility / DocumentBlobUrl sections will then come from dedicated columns instead of a parsed JSON blob.
+4. **Bootstrap `udcsp_application` custom table on each new env** via `apps/powerapps/caseworker/bootstrap-udcsp-application.ps1` (idempotent; auto-detects base LCID since commit `22fa6cd`).
+5. **Import the model-driven caseworker app** (`apps/d365/solutions/UDCSP_Core` via `pac solution import --publish-changes`) on the SE env first (it carries the SLA timer + queues).
+6. **Cross-border submission path** — re-route Apply Residency from single-country POST to enqueue on `cross-border-coordination` Service Bus when destination ≠ origin (front-end + APIM op + LA trigger).
+7. **eIDAS-bridge HTTP action** — replace `eidasValidationEndpoint` placeholder with a real validator (or a clearly-labeled mock that returns `eIDAS High` for the demo); produce a signed-claims JWT envelope so DK PII never crosses the border in the clear.
+8. **DK → SE handoff in the LA `cross-border-residency`** — implement `Call_DK_residency_facade → Build_signed_claims → Post_to_SE_D365_cases` end-to-end against the new SE env; surface the resulting case ID back to APIM.
+9. **Translator agent on outbound** — call `udcsp-translator` in the LA to produce SV body + EN summary.
+10. **ACS push + email notification** — implement `Send_notification` HTTP action against ACS; produce templates `residency-approved.sv-SE.html` and `residency-approved.en.html`.
+11. **Microsoft Entra Verified ID** — provision issuer, define `NordicResidencyCredential` schema, issue from the LA after caseworker approval.
+12. **SE portal auto-onboarding** — accept the Verified ID at `udcspse.ciamlogin.com` via External ID's Verified ID custom-policy hook so Anna lands authenticated without re-registering.
+13. **Foundry trace ID on Case Detail** — already capture `traceparent`; render a copyable trace link in the workflow timeline.
+14. **D365 SLA timer + Power BI median-4d KPI** — configure the SLA on the SE Customer Service env once it's up.
+15. **Cross-border consent enforcement** — gate the cross-border submission on `consent_cross_border = true` (toggle exists on `/consent` but is not checked yet).
+16. **CSAT post-completion survey** + Fabric ingest for the +38 % satisfaction KPI.
+17. **Recorded live walk-through** — once 1–9 are wired, play Anna DK → SE on the live tenant, capture screen + Foundry trace + LA run history; promote row 1 to 🟢.
+
+### What is missing to play the demo end-to-end (🔴 ordered backlog · legacy single-rail view)
+
+Kept for reference — the per-item detail above supersedes this list once the D365 Customer Service envs are live.
 
 1. **Once-Only pre-fill** from DK CPR / Folkeregister into step 1 of the wizard (today Anna re-keys her name, address, employer). Needs a `dk-cpr-facade` Function/HTTP endpoint reading from External ID claims + a stub CPR dataset.
 2. **Cross-border submission path** — re-route Apply Residency from `POST /citizen-applications/` (single-country) to **enqueue on `cross-border-coordination` Service Bus** when destination ≠ origin. Front-end change + APIM op + LA trigger.
