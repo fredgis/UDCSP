@@ -25,7 +25,58 @@
         var locale = (string)(b["locale"] ?? "en");
         var session = (string)(b["sessionId"] ?? "");
         var channel = (string)(b["channel"] ?? "web");
-        var input = "[locale=" + locale + "][channel=" + channel + "][session=" + session + "] " + text;
+        var authenticated = (bool?)b["authenticated"] ?? false;
+        var citizen = b["citizen"] as JObject;
+        var cases = b["cases"] as JArray;
+        var citizenBlock = "";
+        if (citizen != null) {
+          var name = (string)(citizen["name"] ?? "");
+          var country = (string)(citizen["country"] ?? "");
+          citizenBlock = "\n[CITIZEN] name=" + name + ", country=" + country + ", signed_in=true.";
+        } else {
+          citizenBlock = "\n[CITIZEN] anonymous (not signed in).";
+        }
+        var casesBlock = "";
+        if (cases != null && cases.Count > 0) {
+          casesBlock = "\n[CITIZEN_CASES] (" + cases.Count + " case(s) on file)";
+          int i = 0;
+          foreach (var cs in cases) {
+            i++;
+            var co = cs as JObject;
+            if (co == null) { continue; }
+            casesBlock += "\n  " + i + ". id=" + (string)(co["id"] ?? "") +
+              ", title=" + (string)(co["title"] ?? "") +
+              ", type=" + (string)(co["type"] ?? "") +
+              ", status=" + (string)(co["status"] ?? "") +
+              ", decision=" + (string)(co["decision"] ?? "n/a") +
+              ", updated=" + (string)(co["updatedAt"] ?? "") +
+              ", eta=" + (string)(co["estimatedDecisionDate"] ?? "n/a");
+          }
+        } else if (citizen != null) {
+          casesBlock = "\n[CITIZEN_CASES] none yet.";
+        }
+        var kb = "\n[PORTAL_SERVICES_KB]" +
+          "\n1. Residency transfer — Move between Denmark, Sweden, Norway with one application, pre-filled from eID. Path: /apply/residency. Typical review: 4-7 business days. Required: eID sign-in, current address, destination country, move date. Cross-border SLA includes Nordic data exchange." +
+          "\n2. Tax certificate — Request and download an official tax residency certificate, signed and verifiable. Path: /apply/tax-certificate. Delivery: signed PDF in minutes. Required: eID sign-in, tax year." +
+          "\n3. Child benefit — Apply for income-based child benefit. Path: /apply/child-benefit. Required: payslip OR lease (PDF/image, max 4 MB), parent name, monthly net income, number of adults, number of children. The Document Extractor pre-fills fields from the upload. Decision: AI pre-assessment then caseworker review (4 days if likely-eligible, else 7)." +
+          "\n4. My cases — View all your applications across DK/SE/NO. Path: /cases. Real-time status, secure messaging, audit trail. The case list above [CITIZEN_CASES] is the live view of what the citizen sees." +
+          "\nAuth: All personalised actions need eID sign-in (Entra External ID per country). Without sign-in, the assistant can only answer general/public questions." +
+          "\nLanguages: 12 supported (da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi). Always reply in the user's locale below.";
+        var instructions =
+          "You are the UDCSP Citizen Assistant. Use the KB and the citizen context below to answer." +
+          " Be concise, friendly, factual. NEVER invent case data — only refer to cases listed in [CITIZEN_CASES]." +
+          " If the user asks about their cases, summarise from [CITIZEN_CASES]. If none, suggest the relevant 'Get started' service from the KB." +
+          " If the user asks 'what can you do', list the 4 services in plain language and offer to start one." +
+          " If asked about a specific case id, return its status, decision, and ETA from [CITIZEN_CASES]." +
+          " If asked something requiring sign-in but the citizen is anonymous, ask them to sign in with eID." +
+          " Reply in the user's locale (" + locale + ")." +
+          " Output ONLY a plain natural-language answer (no JSON, no code fences, no key:value).";
+        var input = instructions +
+          "\n[LOCALE] " + locale +
+          "\n[CHANNEL] " + channel +
+          "\n[SESSION] " + session +
+          citizenBlock + casesBlock + kb +
+          "\n[USER_MESSAGE] " + text;
         var payload = new JObject(
           new JProperty("model", "gpt-5.4"),
           new JProperty("agent_reference", new JObject(new JProperty("type","agent_reference"), new JProperty("name","udcsp-citizen-assistant"))),
