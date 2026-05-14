@@ -134,6 +134,22 @@
         PublisherName  = 'UDCSP Platform'
     }
 
+    # ----------------------------------------------------------------------
+    # Citizen web portal — production custom domain (single canonical origin
+    # used by External ID redirect URIs, APIM portal-origin CORS named-value,
+    # the consent modal and any logged URL). Leave Hostname empty to skip
+    # the binding step and keep the SWA-internal *.azurestaticapps.net host.
+    # The DNS CNAME record (Hostname → <swa>.azurestaticapps.net) must be
+    # created at your registrar BEFORE running Install-Apps, otherwise the
+    # ACME validation will fail.
+    # ----------------------------------------------------------------------
+    Web = @{
+        CustomDomain = @{
+            Hostname         = 'udcsp.fredgis.com'
+            ValidationMethod = 'cname-delegation'  # 'cname-delegation' (recommended) or 'dns-txt-token'
+        }
+    }
+
     Fabric = @{
         CapacitySku  = 'F64'           # F2 for dev sandbox, F64+ for prod
         WorkspaceIds = @{
