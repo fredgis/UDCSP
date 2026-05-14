@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { useNavigate } from 'react-router-dom';
 
 const STORAGE_KEY = 'udcsp.cookie-consent';
 
@@ -59,6 +60,7 @@ export function CookieBanner({
   const [open, setOpen] = useState<boolean>(() => readStoredChoice() === null);
   const acceptRef = useRef<HTMLButtonElement | null>(null);
   const intl = useIntl();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) acceptRef.current?.focus();
@@ -132,7 +134,14 @@ export function CookieBanner({
         <button
           type="button"
           className="cookie-banner__btn cookie-banner__btn--secondary"
-          onClick={() => onOpenSettings?.()}
+          onClick={() => {
+            if (onOpenSettings) {
+              onOpenSettings();
+            } else {
+              setOpen(false);
+              navigate('/consent');
+            }
+          }}
         >
           <FormattedMessage id="cookie.settings" defaultMessage="Settings" />
         </button>
