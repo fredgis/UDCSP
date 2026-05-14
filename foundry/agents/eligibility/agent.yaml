@@ -8,6 +8,7 @@ tools:
   - lineage-writer
 temperature: 0.0
 maxTokens: 3500
+responseFormat: json_object
 contentSafety:
   input: azure-ai-content-safety-standard
   output: azure-ai-content-safety-standard
