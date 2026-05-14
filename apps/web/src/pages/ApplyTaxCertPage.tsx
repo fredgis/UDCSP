@@ -60,10 +60,21 @@ export function ApplyTaxCertPage() {
         </span>
         <h1 id="tax-title">Tax residency certificate</h1>
         <p>
-          Request an official tax residency certificate. We&rsquo;ll generate it from your records in the {COUNTRY_LABEL[country]} tax
-          authority and notify you when it&rsquo;s ready to download — usually within a few minutes.
+          Request a tax residency certificate to claim a double-taxation treaty. We pick the right form based on
+          your country, pre-fill it, and submit or prepare it for the {COUNTRY_LABEL[country]} tax authority.
         </p>
       </header>
+
+      <aside className="bridge-callout" role="note">
+        <h3>Routed to the issuing tax authority</h3>
+        <p>
+          Issuance is always done by the national tax authority — UDCSP only prepares the request:
+          <strong> SKAT form 02.050</strong> (Denmark, request workflow),
+          <strong> Skatteverket Hemvistintyg</strong> (Sweden, e-service since Feb 2026 or SKV 2734),
+          <strong> Altinn RF-1306</strong> (Norway).
+          Delivery times depend on the authority — instant download is not guaranteed everywhere.
+        </p>
+      </aside>
 
       <form onSubmit={onSubmit} className="apply-form">
         <fieldset className="apply-card">

@@ -56,22 +56,43 @@
           casesBlock = "\n[CITIZEN_CASES] none yet.";
         }
         var kb = "\n[PORTAL_SERVICES_KB]" +
-          "\n1. Residency transfer — Move between Denmark, Sweden, Norway with one application, pre-filled from eID. Path: /apply/residency. Typical review: 4-7 business days. Required: eID sign-in, current address, destination country, move date. Cross-border SLA includes Nordic data exchange." +
-          "\n2. Tax certificate — Request and download an official tax residency certificate, signed and verifiable. Path: /apply/tax-certificate. Delivery: signed PDF in minutes. Required: eID sign-in, tax year." +
-          "\n3. Child benefit — Apply for income-based child benefit. Path: /apply/child-benefit. Required: payslip OR lease (PDF/image, max 4 MB), parent name, monthly net income, number of adults, number of children. The Document Extractor pre-fills fields from the upload. Decision: AI pre-assessment then caseworker review (4 days if likely-eligible, else 7)." +
-          "\n4. My cases — View all your applications across DK/SE/NO. Path: /cases. Real-time status, secure messaging, audit trail. The case list above [CITIZEN_CASES] is the live view of what the citizen sees." +
-          "\nAuth: All personalised actions need eID sign-in (Entra External ID per country). Without sign-in, the assistant can only answer general/public questions." +
-          "\nLanguages: 12 supported (da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi). Always reply in the user's locale below.";
+          "\nUDCSP POSITIONING: UDCSP is a BRIDGE — a guided multi-country intake. It is NOT a single unified backend across DK/SE/NO. Each country still owns its own registers, eID and decisions. We pre-fill country-specific forms, validate eligibility, prepare documents, and route the application to the competent national authority." +
+          "\n" +
+          "\nSERVICE 1 — Residency transfer (/apply/residency). Goal: move between DK/SE/NO. We pre-fill the country-specific registration with eID data and route to the competent population register." +
+          "\n  • DK: cpr.dk + lifeindenmark.dk + borger.dk. CPR number is linked to actual residence — it cannot be issued before the citizen has physically moved to Denmark. eID: MitID." +
+          "\n  • SE: Skatteverket Folkbokföring (Moving to Sweden e-service). Required if stay ≥ 1 year. eID: BankID, Freja+, AB Svenska Pass." +
+          "\n  • NO: Skatteetaten Folkeregisteret. Required if stay > 6 months. Nordic citizens do NOT need a residence permit but must notify the National Registry. UDI handles non-Nordic permits. eID: ID-porten (MinID, BankID, Buypass, Commfides)." +
+          "\n  • Cross-border: Info Norden (norden.org), Øresunddirekt (DK↔SE), Grensetjänsten (NO↔SE)." +
+          "\n" +
+          "\nSERVICE 2 — Tax residency certificate (/apply/tax-certificate). DO NOT promise 'signed and verifiable in minutes' universally — only Sweden has an instant e-service since Feb 2026. Model this as a request workflow." +
+          "\n  • DK: SKAT form 02.050 'Place of residence statement' — request workflow, not instant." +
+          "\n  • SE: Skatteverket Hemvistintyg — new e-service for individuals (Feb 2026) OR form SKV 2734. Issued in Swedish + English." +
+          "\n  • NO: Altinn form RF-1306 'Application for certificate of residence for tax purposes'. Tax residence rule: > 183 days over 12 months OR > 270 days over 36 months." +
+          "\n  • Always required: tax year, country requesting the certificate, purpose, treaty context." +
+          "\n" +
+          "\nSERVICE 3 — Child &amp; family benefit (/apply/child-benefit). Child benefit is NOT income-based universally — only Denmark uses an income-based assessment." +
+          "\n  • DK: lifeindenmark.dk / Udbetaling Danmark. EU/EEA citizens have a specific cross-border path (work in another EU/EEA/Swiss country, etc.). Apply-without-MitID flow exists for new arrivals — requires consent form + employment contract + birth certificates." +
+          "\n  • SE: Försäkringskassan barnbidrag — generally AUTOMATIC if parent is legal guardian, child lives in SE, both insured in SE. Cross-border EU/EEA cases need coordination (forsakringskassan.se EU family benefits)." +
+          "\n  • NO: NAV barnetrygd — generally AUTOMATIC for children born in Norway. Application required for EEA, recently moved, foreign residence, complex family. NAV utvidet barnetrygd is a separate flow for single parents." +
+          "\n  • Always check: child residence country, parent work country, parent residence country, social-insurance country, existing benefit from another country." +
+          "\n" +
+          "\nSERVICE 4 — My cases (/cases). Aggregates status from D365 + the relevant national authority case system. Use [CITIZEN_CASES] above as live data." +
+          "\n" +
+          "\nAUTH: All personalised actions need eID sign-in. Cross-border eID interoperability via the Single Digital Gateway / OOTS / eIDAS is improving but many services still need a national identifier (CPR / personnummer / D-number). The Danish eID Gateway accepts some EU/EEA eIDs but identity matching is often required." +
+          "\nLANGUAGES: 12 supported (da, sv, nb, nn, se, en, de, fr, pl, ar, uk, fi). Always reply in the user's locale below." +
+          "\nWORDING RULES: Never say 'one single application' or 'signed in minutes' as a universal promise. Say 'guided intake', 'pre-fills the country-specific form', 'routes to the competent authority'.";
         var instructions =
           "You are the UDCSP Citizen Assistant. Use the KB and the citizen context below to answer." +
           " Be concise, friendly, factual. NEVER invent case data — only refer to cases listed in [CITIZEN_CASES]." +
+          " UDCSP is a BRIDGE to national authorities (borger.dk, CPR, MitID, Skatteverket, Försäkringskassan, BankID, Skatteetaten, NAV, UDI, Altinn, ID-porten). Never describe it as one unified application across DK/SE/NO." +
+          " When the user asks about a service, mention the competent national authority for THEIR country and any relevant constraint from the KB (e.g. CPR cannot be issued before arrival; SE child allowance is automatic; tax certificates are not always instant)." +
           " If the user asks about their cases, summarise from [CITIZEN_CASES]. If none, suggest the relevant 'Get started' service from the KB." +
           " If the user asks 'what can you do', list the 4 services in plain language and offer to start one." +
           " If asked about a specific case id, return its status, decision, and ETA from [CITIZEN_CASES]." +
-          " If asked something requiring sign-in but the citizen is anonymous, ask them to sign in with eID." +
+          " If asked something requiring sign-in but the citizen is anonymous, ask them to sign in with eID (MitID/BankID/ID-porten depending on country)." +
           " Reply in the user's locale (" + locale + ")." +
           " FORMAT YOUR REPLY AS MARKDOWN: use **bold** for service names and important values, numbered lists (1. 2. 3.) for service catalogues, bullet lists (- ) for case summaries, and short paragraphs separated by a blank line." +
-          " Keep total length under ~120 words. Do not output JSON, code fences, or HTML.";
+          " Keep total length under ~140 words. Do not output JSON, code fences, or HTML.";
         var input = instructions +
           "\n[LOCALE] " + locale +
           "\n[CHANNEL] " + channel +

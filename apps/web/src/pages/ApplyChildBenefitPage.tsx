@@ -168,13 +168,23 @@ export function ApplyChildBenefitPage() {
         <span className="apply-page__country" aria-label={`Submitting to ${RESIDENCE_LABEL[country]}`}>
           <span aria-hidden="true">{flag}</span> Submitting to {RESIDENCE_LABEL[country]}
         </span>
-        <h1 id="cb-title">Apply for child benefit</h1>
+        <h1 id="cb-title">Apply for child &amp; family benefit</h1>
         <p>
-          Tell us about your household. Upload a payslip or lease if you have one — the assistant will read it and pre-fill
-          the income field for you to confirm. <strong>You stay in charge:</strong> nothing is submitted until you press the
+          Tell us about your household. Upload a payslip, lease or birth certificate — the assistant extracts
+          the data for you to confirm. <strong>You stay in charge:</strong> nothing is submitted until you press the
           button at the bottom.
         </p>
       </header>
+
+      <aside className="bridge-callout" role="note">
+        <h3>Routed to the competent family-benefit authority</h3>
+        <p>
+          We check residence, work country, social-insurance country and EU/EEA coordination rules, then
+          route to: <strong>Udbetaling Danmark / lifeindenmark.dk</strong> (Denmark — eligibility-based),
+          <strong> Försäkringskassan</strong> (Sweden — generally automatic for resident children),
+          <strong> NAV barnetrygd</strong> (Norway — automatic for born-in-NO, application required for EEA cases).
+        </p>
+      </aside>
 
       <ConsentNotice keys={['crossBorder', 'notifications', 'aiAssistant']} />
 
