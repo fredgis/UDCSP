@@ -54,6 +54,10 @@ export function listCases(country: string, citizenUpn?: string): StoredCase[] {
   return readAll().filter((c) => c.country === country && (!citizenUpn || c.citizenUpn === citizenUpn));
 }
 
+export function listAllCases(): StoredCase[] {
+  return readAll();
+}
+
 export function getCase(id: string): StoredCase | undefined {
   return readAll().find((c) => c.id === id);
 }

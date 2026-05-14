@@ -147,9 +147,64 @@
           "uri": "@parameters('d365CasesEndpoint')",
           "headers": {
             "traceparent": "@outputs('Ensure_traceparent')",
-            "x-ai-act-registry-id": "@parameters('aiActRegistryId')"
+            "x-ai-act-registry-id": "@parameters('aiActRegistryId')",
+            "Content-Type": "application/json",
+            "OData-Version": "4.0",
+            "Prefer": "return=representation"
           },
-          "body": "@triggerBody()"
+          "_comment": "Explicit field-by-field mapping to udcsp_application Dataverse columns. The whole payload no longer goes through; only known schema attributes are persisted, the rest is captured server-side via App Insights + Purview. Common columns first, then residency-only, then child-benefit-only, then AI verdict, then consents.",
+          "body": {
+            "udcsp_name": "@{coalesce(triggerBody()?['displayTitle'], concat(coalesce(triggerBody()?['applicationType'],'application'), ' — ', coalesce(triggerBody()?['citizen']?['givenName'], triggerBody()?['parentName'], 'citizen')))}",
+            "udcsp_country": "@parameters('country')",
+            "udcsp_destinationcountry": "@triggerBody()?['destinationCountry']",
+            "udcsp_applicationtype": "@coalesce(triggerBody()?['applicationType'], body('Call_classifier_agent')?['intent'], 'unknown')",
+            "udcsp_status": "@if(equals(coalesce(body('Call_eligibility_agent')?['decision'],'requires-review'),'likely-eligible'),'ai-pre-approved','awaiting-review')",
+            "udcsp_crossborder": "@coalesce(triggerBody()?['crossBorder'], not(equals(coalesce(triggerBody()?['destinationCountry'], parameters('country')), parameters('country'))))",
+            "udcsp_correlationid": "@triggerBody()?['correlationId']",
+            "udcsp_traceparent": "@outputs('Ensure_traceparent')",
+            "udcsp_aiActRegistryId": "@parameters('aiActRegistryId')",
+
+            "udcsp_citizenid": "@triggerBody()?['citizenId']",
+            "udcsp_citizenupn": "@triggerBody()?['citizen']?['upn']",
+            "udcsp_citizengivenname": "@coalesce(triggerBody()?['citizen']?['givenName'], triggerBody()?['parentName'])",
+            "udcsp_citizenfamilyname": "@triggerBody()?['citizen']?['familyName']",
+            "udcsp_citizenlanguage": "@coalesce(triggerBody()?['language'], 'en')",
+            "udcsp_citizenemail": "@triggerBody()?['email']",
+
+            "udcsp_movedate": "@triggerBody()?['moveDate']",
+            "udcsp_destinationaddress": "@triggerBody()?['destinationAddress']",
+            "udcsp_dependents": "@triggerBody()?['dependents']",
+            "udcsp_employername": "@triggerBody()?['employerName']",
+            "udcsp_employercountry": "@triggerBody()?['employerCountry']",
+            "udcsp_passportref": "@triggerBody()?['passportRef']",
+
+            "udcsp_children": "@triggerBody()?['children']",
+            "udcsp_childrennames": "@triggerBody()?['childrenNames']",
+            "udcsp_youngestdob": "@triggerBody()?['youngestDob']",
+            "udcsp_monthlyincomeeur": "@triggerBody()?['monthlyIncome']",
+            "udcsp_adultsinhousehold": "@triggerBody()?['adultsInHousehold']",
+            "udcsp_residence": "@triggerBody()?['residence']",
+
+            "udcsp_documentbloburl": "@triggerBody()?['documentBlobUrl']",
+            "udcsp_documentblobname": "@triggerBody()?['documentBlobName']",
+            "udcsp_storageaccount": "@triggerBody()?['storageAccount']",
+            "udcsp_extractedfieldsjson": "@string(coalesce(triggerBody()?['extractedFields'], body('Call_document_extractor_if_attachments')?['fields']))",
+            "udcsp_documentsummary": "@body('Call_document_extractor_if_attachments')?['summary']",
+
+            "udcsp_aidecision": "@coalesce(body('Call_eligibility_agent')?['decision'], 'requires-review')",
+            "udcsp_aiconfidence": "@coalesce(body('Call_eligibility_agent')?['confidence'], 0)",
+            "udcsp_aireasoning": "@body('Call_eligibility_agent')?['reasoning']",
+            "udcsp_estimateddecisiondate": "@addDays(utcNow(), 4)",
+            "udcsp_workflowstepsjson": "@string(triggerBody()?['workflowSteps'])",
+
+            "udcsp_claimsenvelope": "@triggerBody()?['claimsEnvelope']",
+            "udcsp_purviewlabel": "@if(coalesce(triggerBody()?['crossBorder'], false), 'Restricted-Cross-Border', 'Restricted')",
+
+            "udcsp_consentcrossborder": "@if(triggerBody()?['consents']?['crossBorder'], utcNow(), null)",
+            "udcsp_consentclaimsmediation": "@if(triggerBody()?['consents']?['claimsMediation'], utcNow(), null)",
+            "udcsp_consentnotifications": "@if(triggerBody()?['consents']?['notifications'], utcNow(), null)",
+            "udcsp_consentaiassistant": "@if(triggerBody()?['consents']?['aiAssistant'], utcNow(), null)"
+          }
         },
         "runAfter": {
           "Call_translator_to_caseworker_locale": [

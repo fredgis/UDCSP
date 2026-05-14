@@ -1,1 +1,26 @@
-<entity Name="udcsp_eligibility_assessment"><displaynames><displayname description="udcsp_eligibility_assessment" languagecode="1033" /></displaynames><attributes><attribute PhysicalName="udcsp_name"><Type>String</Type></attribute><attribute PhysicalName="udcsp_applicationid"><Type>Lookup</Type></attribute><attribute PhysicalName="udcsp_recommendation"><Type>Picklist</Type></attribute><attribute PhysicalName="udcsp_confidence"><Type>Decimal</Type></attribute><attribute PhysicalName="udcsp_aiActRegistryId"><Type>String</Type></attribute><attribute PhysicalName="udcsp_lineageId"><Type>String</Type></attribute></attributes></entity>
+<!--
+  udcsp_eligibility_assessment — one row per Eligibility Pre-Assessor
+  agent run. Multiple rows possible per application (re-run on new
+  evidence). Linked to udcsp_application via udcsp_applicationid lookup.
+  The agent runs in a Confidential Computing TEE; we keep the row even
+  after the caseworker decides so the AI Act registry can be audited.
+-->
+<entity Name="udcsp_eligibility_assessment">
+  <displaynames>
+    <displayname description="AI Eligibility Assessment" languagecode="1033" />
+  </displaynames>
+  <attributes>
+    <attribute PhysicalName="udcsp_name"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_applicationid"><Type>Lookup</Type></attribute>
+    <attribute PhysicalName="udcsp_recommendation"><Type>Picklist</Type></attribute>          <!-- likely-eligible · requires-review · likely-ineligible -->
+    <attribute PhysicalName="udcsp_confidence"><Type>Decimal</Type></attribute>
+    <attribute PhysicalName="udcsp_reasoning"><Type>Memo</Type></attribute>
+    <attribute PhysicalName="udcsp_criteriajson"><Type>Memo</Type></attribute>                <!-- JSON [{id,met,evidence}] -->
+    <attribute PhysicalName="udcsp_modelid"><Type>String</Type></attribute>                   <!-- e.g. gpt-4o-2024-11 -->
+    <attribute PhysicalName="udcsp_traceparent"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_aiActRegistryId"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_lineageId"><Type>String</Type></attribute>
+    <attribute PhysicalName="udcsp_attestationreport"><Type>String</Type></attribute>         <!-- SEV-SNP attestation hash -->
+    <attribute PhysicalName="udcsp_runat"><Type>DateTime</Type></attribute>
+  </attributes>
+</entity>
