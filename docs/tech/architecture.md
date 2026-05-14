@@ -34,10 +34,10 @@
 
 | # | Principle | Implication |
 |---|---|---|
-| P1 | **Federated, not centralised** | Each country owns its sovereign data zone; cross-border services are mediated, never co-mingled. |
+| P1 | **Federated, not centralised** | Each country owns its sovereign data zone; cross-border services are mediated, never co-mingled. UDCSP is a **unified citizen platform** in front of the existing national authorities — not a replacement of them. |
 | P2 | **AI-first, but supervised** | Every AI decision is registered, traced, evaluated and overridable by a caseworker. |
 | P3 | **Compliance by design** | GDPR + EU AI Act + WCAG 2.1 AA are platform-level invariants, not project-level afterthoughts. |
-| P4 | **Single front door, many back doors** | One citizen experience; many integration points to existing agency systems. |
+| P4 | **Single front door, many back doors** | One citizen experience; many integration points to existing agency systems (CPR / borger.dk · Skatteverket / Försäkringskassan · Skatteetaten / NAV / Altinn / UDI) and to national eIDs (MitID, BankID, Freja+, ID-porten). |
 | P5 | **Event-driven over batch** | Logic Apps + Service Bus + Event Grid, with Fabric Real-Time Intelligence for analytics. |
 | P6 | **Open standards** | OpenID Connect, OAuth 2.0, eIDAS, FHIR (where applicable), OpenAPI 3, JSON-LD, SCIM. |
 | P7 | **Infrastructure as code** | Bicep modules + GitHub Actions; no click-ops in any environment above DEV. |
@@ -94,6 +94,12 @@ graph TB
         PowerBI["Power BI"]
     end
 
+    subgraph National[" 🏛️ National authorities (third-party systems) "]
+        DKAuth["🇩🇰 borger.dk · CPR · MitID · SKAT · Udbetaling DK"]
+        SEAuth["🇸🇪 Skatteverket · Försäkringskassan · BankID · Freja+"]
+        NOAuth["🇳🇴 Skatteetaten · NAV · Altinn · UDI · ID-porten"]
+    end
+
     subgraph Governance[" 🛡️ Trust & governance "]
         Purview["Microsoft Purview"]
         GDPR["GDPR"]
@@ -114,6 +120,9 @@ graph TB
     D365 --> Fabric
     Fabric --> PowerBI
     Foundry -.->|traces + evals| Fabric
+    LogicApps -.->|pre-fill / submit / status| DKAuth
+    LogicApps -.->|pre-fill / submit / status| SEAuth
+    LogicApps -.->|pre-fill / submit / status| NOAuth
     Purview -.->|governs| APIM
     Purview -.->|governs| Foundry
     Purview -.->|governs| Fabric
@@ -157,6 +166,11 @@ graph TB
     style GDPR fill:#d73a49,stroke:#b31d28,color:#fff
     style AIAct fill:#d73a49,stroke:#b31d28,color:#fff
     style WCAG fill:#d73a49,stroke:#b31d28,color:#fff
+
+    style National fill:transparent,stroke:#0d47a1,stroke-width:2px,color:#0d47a1
+    style DKAuth fill:#1565c0,stroke:#0d47a1,color:#fff
+    style SEAuth fill:#1565c0,stroke:#0d47a1,color:#fff
+    style NOAuth fill:#1565c0,stroke:#0d47a1,color:#fff
 ```
 
 Blue = data, green = citizens / channels, orange = backend & process, purple = AI / identity, red = governance.
@@ -310,6 +324,90 @@ graph TB
     class PURVIEW,DPIA l6
     class KV,DEF,SENT,MON,POL,ACR,DDOS,BAS,CIEM,BKP,CHA,CL,VID,PRV l7
 ```
+
+### 2.3 National-authority integration map (the unified-platform bridge)
+
+UDCSP is **a unified citizen platform that connects to the existing national authorities** — it does not replace them. The Logic Apps + APIM tier is the integration plane: every cross-border or country-specific case is pre-filled from the citizen's eID profile, validated against country-specific rules (residence, tax-residence, social-insurance coordination), then submitted to (or downloaded from) the **competent national authority**. Each country's registers, eIDs and case systems remain the source of truth.
+
+Wording rule used across the citizen UI, the assistant prompt and this documentation: never describe UDCSP as "one single application across DK/SE/NO" or promise "signed and verifiable in minutes" universally — issuance, decision and SLA always come from the relevant national authority.
+
+```mermaid
+graph LR
+    subgraph UDCSP[" 🌐 UDCSP — Unified citizen platform "]
+        WEB["Web · Mobile · Voice · Chat"]
+        APIMHUB["APIM + Logic Apps<br/>(per country, sovereign zone)"]
+    end
+
+    subgraph DK[" 🇩🇰 Denmark — competent authorities "]
+        DK_CPR["CPR<br/>Population register"]
+        DK_BORGER["borger.dk / lifeindenmark.dk<br/>Citizen portal"]
+        DK_MITID["MitID<br/>National eID"]
+        DK_SKAT["SKAT<br/>Tax authority (form 02.050)"]
+        DK_UDB["Udbetaling Danmark<br/>Family benefits"]
+    end
+
+    subgraph SE[" 🇸🇪 Sweden — competent authorities "]
+        SE_SKV["Skatteverket<br/>Folkbokföring · Hemvistintyg<br/>(e-service since Feb 2026 / SKV 2734)"]
+        SE_FK["Försäkringskassan<br/>Barnbidrag (auto) · EU family benefits"]
+        SE_BANKID["BankID · Freja+ · AB Svenska Pass<br/>National eID"]
+    end
+
+    subgraph NO[" 🇳🇴 Norway — competent authorities "]
+        NO_SKE["Skatteetaten<br/>Folkeregisteret · Tax residence"]
+        NO_NAV["NAV<br/>Barnetrygd · Utvidet barnetrygd"]
+        NO_ALT["Altinn<br/>Forms portal (RF-1306 …)"]
+        NO_UDI["UDI<br/>Permits (non-Nordic)"]
+        NO_IDP["ID-porten<br/>eID gateway (MinID/BankID/Buypass/Commfides)"]
+    end
+
+    subgraph CB[" 🤝 Cross-border guidance "]
+        INFO["Info Norden — Nordic Council"]
+        ORE["Øresunddirekt — DK ↔ SE"]
+        GRE["Grensetjänsten — NO ↔ SE"]
+        SDG["EU Single Digital Gateway / OOTS / eIDAS"]
+    end
+
+    WEB --> APIMHUB
+    APIMHUB -. residency .-> DK_CPR & DK_BORGER
+    APIMHUB -. eID .-> DK_MITID
+    APIMHUB -. tax cert .-> DK_SKAT
+    APIMHUB -. child benefit .-> DK_UDB
+
+    APIMHUB -. residency · tax cert .-> SE_SKV
+    APIMHUB -. child benefit .-> SE_FK
+    APIMHUB -. eID .-> SE_BANKID
+
+    APIMHUB -. residency · tax residence .-> NO_SKE
+    APIMHUB -. child benefit .-> NO_NAV
+    APIMHUB -. forms .-> NO_ALT
+    APIMHUB -. permits .-> NO_UDI
+    APIMHUB -. eID .-> NO_IDP
+
+    APIMHUB -. eligibility rules .-> CB
+
+    classDef hub fill:#0d47a1,stroke:#0d47a1,color:#fff
+    classDef dk fill:#c8102e,stroke:#a30b22,color:#fff
+    classDef se fill:#006aa7,stroke:#004f7c,color:#fff
+    classDef no fill:#ba0c2f,stroke:#8c0824,color:#fff
+    classDef cb fill:#8957e5,stroke:#6e40c9,color:#fff
+
+    class WEB,APIMHUB hub
+    class DK_CPR,DK_BORGER,DK_MITID,DK_SKAT,DK_UDB dk
+    class SE_SKV,SE_FK,SE_BANKID se
+    class NO_SKE,NO_NAV,NO_ALT,NO_UDI,NO_IDP no
+    class INFO,ORE,GRE,SDG cb
+```
+
+**Routing matrix.** What gets sent where, per service:
+
+| Service | Denmark 🇩🇰 | Sweden 🇸🇪 | Norway 🇳🇴 |
+|---|---|---|---|
+| Residency transfer | CPR + borger.dk + MitID. *CPR cannot be issued before the citizen has actually moved.* | Skatteverket Folkbokföring + BankID/Freja+. *Required if stay ≥ 1 year.* | Skatteetaten Folkeregisteret + (UDI for non-Nordic) + ID-porten. *Required if stay > 6 months. Nordic citizens don't need a permit but must notify.* |
+| Tax residency certificate | SKAT form 02.050 (request workflow — **not** instant download). | Skatteverket Hemvistintyg — new e-service since Feb 2026, fallback form SKV 2734. | Altinn form RF-1306 + Skatteetaten. *Tax residence rule: > 183 days / 12 mo OR > 270 days / 36 mo.* |
+| Child & family benefit | Udbetaling Danmark / lifeindenmark.dk. *Income-based; specific EU/EEA cross-border path; apply-without-MitID flow exists for new arrivals.* | Försäkringskassan barnbidrag — **generally automatic** for resident children; cross-border EU/EEA cases coordinated. | NAV barnetrygd — **automatic for born-in-NO**; application required for EEA / cross-border / complex family. NAV utvidet barnetrygd is a separate single-parent flow. |
+| My cases | Status mirrored from D365 + the relevant national authority case system. | Same. | Same. |
+
+Cross-border eID interoperability via the **EU Single Digital Gateway / Once Only Technical System / eIDAS** is improving but many services still require a national identifier (CPR / personnummer / D-number). The Danish eID Gateway accepts some EU/EEA eIDs but identity matching is still required for most flows. UDCSP surfaces this constraint to the citizen rather than promising seamless cross-border eID.
 
 ---
 

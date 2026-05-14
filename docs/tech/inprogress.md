@@ -3,7 +3,7 @@
 Live state of every end-to-end demo against the deployed sandbox.
 Update one row at a time as we wire each demo.
 
-- **Web SWA** — https://icy-dune-01c23d903.7.azurestaticapps.net
+- **Web SWA** — https://udcsp.fredgis.com
 - **Last bundle deployed** — `signout-home-+-authgate-redesign-+-required-asterisks-+-eid-preview` (commits `7173204`, `2c22f73`): every Apply form now marks required fields with a red `*` and blocks submit until they're filled (drop `noValidate`, gate Residency on `destination + moveDate`); LoginPage shows the production-grade eID method preview tiles (MitID / BankID / BankID Norge); ChatLauncher visible on the home page; sign-out always returns to `/` (UserBadge navigates home before `logoutRedirect`, msalConfig sets `redirectUri` and `postLogoutRedirectUri` to `origin + '/'`); AuthGate ("Sign in to apply…") fully redesigned as a two-column hero + 3 benefit tiles with country pill and eID name; ambient mesh background + glass surfaces across the SPA. Earlier bundle `D3-pl-locale-translator-axe` (Polish locale, Translator agent in application-intake LA, axe-core CI) still active.
 
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
@@ -39,7 +39,7 @@ The remainder of this document tracks the **Demo-3 (Maria) gap** in detail becau
 
 ## How to test D3 end-to-end on the portal
 
-1. Open https://icy-dune-01c23d903.7.azurestaticapps.net in an **InPrivate / Incognito** window (forces a fresh token).
+1. Open https://udcsp.fredgis.com in an **InPrivate / Incognito** window (forces a fresh token).
 2. On `/login`, click the **Danmark 🇩🇰** card → **Create account** (first run) or **Sign in**.
 3. You land on `udcspdk.ciamlogin.com` hosted page → sign up with any email + OTP, or sign in with an existing local user. Accept the consent prompt the first time.
 4. You're redirected to the portal authenticated. Header shows `Hi {firstName} 🇩🇰`.
@@ -57,7 +57,7 @@ If step 6 is empty → check APIM trace on `GET /case-management` for the Datave
 
 1. **APIM**
    - Replace `foundry-topic-router-agent-endpoint` placeholder with the real Foundry agent endpoint.
-   - Add CORS policy allowing `https://icy-dune-01c23d903.7.azurestaticapps.net` (and a `*.azurestaticapps.net` preview pattern for PR slots).
+   - Add CORS policy allowing `https://udcsp.fredgis.com` (and a `*.azurestaticapps.net` preview pattern for PR slots).
    - **Unblocks**: D1 chat, in-app chat for D3.
 2. **App registrations on SE + NO** (5 min each, follow `installation.md` POST CONFIGURATION steps 1-3).
    - Set `VITE_EXTERNAL_ID_CLIENT_ID_SE` and `VITE_EXTERNAL_ID_CLIENT_ID_NO` in `apps/web/.env`, rebuild + deploy.
@@ -129,7 +129,7 @@ NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader fr
 
 1. **Install NVDA** — https://www.nvaccess.org/download/ (~40 MB, 1-min install). No restart needed.
 2. **Add the Polish voice** — *NVDA menu (`Insert + N`) → Preferences → Settings → Speech → Synthesizer = Windows OneCore voices → Voice = Polish (Paulina or Zofia)*. If the Polish voice isn't listed, install it once via *Windows Settings → Time & Language → Language → Add a language → Polish → Speech*.
-3. **Open the portal** — https://icy-dune-01c23d903.7.azurestaticapps.net.
+3. **Open the portal** — https://udcsp.fredgis.com.
 4. **Switch the UI to Polish** — language switcher in the top-right header → "Polski".
 5. **Sign in as a Danish resident** — country card *Danmark* → *Sign in / Create account* → CIAM hosted page → return.
 6. **Run the apply flow** — `Tab` to *"Apply for child benefit"*, `Enter` → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse / focus mode.
