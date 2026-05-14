@@ -55,7 +55,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
             <header className="site-header">
               <Link to="/" className="brand">
                 <span className="brand-logo" aria-hidden="true">UD</span>
-                <span>UDCSP<span style={{ color: 'var(--color-fg-soft)', fontWeight: 500, marginLeft: '.4rem', fontSize: '.85rem' }}>Citizen Portal</span></span>
+                <span>UDCSP<span style={{ color: 'var(--color-fg-soft)', fontWeight: 500, marginLeft: '.4rem', fontSize: '.85rem' }}><FormattedMessage id="brand.tagline" defaultMessage="Citizen Portal" /></span></span>
               </Link>
               <nav className="site-nav" aria-label="Main">
                 <Link to="/"><FormattedMessage id="nav.home" defaultMessage="Home" /></Link>
@@ -90,15 +90,15 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
               <div className="site-footer__inner">
                 <div className="site-footer__brand">
                   <span className="brand-logo" aria-hidden="true">UD</span>
-                  <span>Unified Digital Citizen Services Platform</span>
+                  <span><FormattedMessage id="footer.brand" defaultMessage="Unified Digital Citizen Services Platform" /></span>
                 </div>
                 <nav aria-label="Footer">
-                  <Link to="/demos">Demonstrations</Link>
-                  <Link to="/accessibility">Accessibility</Link>
-                  <Link to="/consent">Consent &amp; privacy</Link>
-                  <a href="https://github.com/fredgis/UDCSP" rel="noreferrer">About this platform</a>
+                  <Link to="/demos"><FormattedMessage id="footer.demos" defaultMessage="Demonstrations" /></Link>
+                  <Link to="/accessibility"><FormattedMessage id="nav.accessibility" defaultMessage="Accessibility" /></Link>
+                  <Link to="/consent"><FormattedMessage id="footer.consent" defaultMessage="Consent & privacy" /></Link>
+                  <a href="https://github.com/fredgis/UDCSP" rel="noreferrer"><FormattedMessage id="footer.about" defaultMessage="About this platform" /></a>
                 </nav>
-                <div>© {new Date().getFullYear()} UDCSP · EU sovereign · DK · SE · NO</div>
+                <div>© {new Date().getFullYear()} UDCSP · <FormattedMessage id="footer.tagline" defaultMessage="EU sovereign · DK · SE · NO" /></div>
               </div>
             </footer>
           </BrowserRouter>
