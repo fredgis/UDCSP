@@ -8,6 +8,7 @@ import { appendCase } from '../utils/caseStore';
 import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
 import { ConsentNotice } from '../components/ConsentNotice';
 import { PlatformDiagram } from '../components/PlatformDiagram';
+import { runEligibility, recommendationToDecision, type EligibilityResponse } from '../utils/eligibility';
 
 type SubmitResult = {
   correlationId?: string;
@@ -105,6 +106,12 @@ export function ApplyResidencyPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
 
+  // Live verdict from the udcsp-eligibility Foundry agent (called via APIM).
+  // Refreshed automatically when the citizen reaches step 4 with enough data.
+  const [eligibility, setEligibility] = useState<EligibilityResponse | null>(null);
+  const [eligibilityBusy, setEligibilityBusy] = useState(false);
+  const [eligibilityRanForKey, setEligibilityRanForKey] = useState<string | null>(null);
+
   // Document upload + Foundry doc-extractor (real back-end calls).
   const [docName, setDocName] = useState<string | null>(null);
   const [docBusy, setDocBusy] = useState(false);
@@ -190,6 +197,55 @@ export function ApplyResidencyPage() {
   }
   function back() { setStep((s) => Math.max(s - 1, 0)); }
 
+  // Auto-call the eligibility agent the first time the citizen lands on
+  // step 4 with the minimum viable context (origin + destination + move
+  // date). Re-call when those inputs change. The button below the panel
+  // also lets the citizen retry manually.
+  async function callEligibility() {
+    setEligibilityBusy(true);
+    try {
+      const r = await runEligibility({
+        applicationType: 'residency-transfer',
+        fromCountry: country,
+        destinationCountry: form.destination || undefined,
+        citizenLocale: intl.locale,
+        citizenUpn: acc?.username,
+        context: {
+          arrivalDate: form.moveDate,
+          intendedStayMonths: 24,
+          destinationAddress: form.destinationAddress,
+          dependents: form.dependents,
+          employerName: form.employerName || extracted?.fields?.employer,
+          employerCountry: form.employerCountry || form.destination,
+          passportRef: form.passportRef,
+          citizen: { givenName: identity.given, familyName: identity.family, country },
+        },
+        extractedFields: extracted?.fields,
+        documentBlobUrl: docBlobUrl ?? undefined,
+      });
+      setEligibility(r);
+    } finally {
+      setEligibilityBusy(false);
+    }
+  }
+
+  // Re-trigger when the citizen reaches step 4 OR when the inputs that
+  // matter for the verdict change (move date, destination, employer,
+  // extracted contract fields).
+  const eligibilityKey = useMemo(() => JSON.stringify([
+    form.destination, form.moveDate, form.employerName, form.employerCountry, docBlobName,
+    extracted?.fields ? Object.keys(extracted.fields).length : 0,
+  ]), [form.destination, form.moveDate, form.employerName, form.employerCountry, docBlobName, extracted]);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    if (!form.destination || !form.moveDate) return;
+    if (eligibilityRanForKey === eligibilityKey) return;
+    setEligibilityRanForKey(eligibilityKey);
+    callEligibility();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, eligibilityKey]);
+
   const step0Valid = Boolean(form.destination && form.moveDate);
   const canSubmit = step0Valid && form.consentCrossBorder && form.consentClaimsMediation && !busy;
 
@@ -211,16 +267,27 @@ export function ApplyResidencyPage() {
     if (docBlobUrl) payload.documentBlobUrl = docBlobUrl;
     if (docBlobName) payload.documentBlobName = docBlobName;
     if (docStorageAccount) payload.storageAccount = docStorageAccount;
+    // Carry the eligibility verdict so the LA records it without re-running
+    // (the LA still calls the agent for the AI Act audit registry).
+    if (eligibility) {
+      payload.eligibilityPreflight = eligibility;
+      payload.confidence = eligibility.confidence;
+      payload.decision = recommendationToDecision(eligibility.recommendation, eligibility.confidence);
+      payload.reasoning = eligibility.caseworkerSummary;
+    }
 
     try {
       const r = await apiFetch<SubmitResult>('/citizen-applications/', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      const decision = r.decision ?? decisionFromConfidence(r.confidence);
+      const decision = r.decision
+        ?? (eligibility ? recommendationToDecision(eligibility.recommendation, eligibility.confidence) : decisionFromConfidence(r.confidence));
+      const confidence = typeof r.confidence === 'number' ? r.confidence : eligibility?.confidence;
+      const reasoning = r.reasoning ?? eligibility?.caseworkerSummary;
       const estimatedDecisionDate = r.estimatedDecisionDate
         ?? (decision === 'likely-eligible' ? estimatedDate(4) : estimatedDate(7));
-      setResult({ ...r, decision, estimatedDecisionDate });
+      setResult({ ...r, decision, confidence, reasoning, estimatedDecisionDate });
       appendCase({
         id: r.caseId || r.correlationId || `res-${Date.now()}`,
         title: `Residency transfer to ${COUNTRY_LABEL[form.destination] ?? form.destination?.toUpperCase() ?? '—'}`,
@@ -230,7 +297,7 @@ export function ApplyResidencyPage() {
         citizenUpn: acc?.username,
         applicationType: 'residency-transfer',
         decision,
-        confidence: r.confidence,
+        confidence,
         estimatedDecisionDate,
         extractedFields: extracted?.fields,
         documentBlobUrl: docBlobUrl ?? undefined,
@@ -240,7 +307,7 @@ export function ApplyResidencyPage() {
           { name: 'intake', label: 'Application received via APIM', status: 'done', at: new Date().toISOString() },
           { name: 'classifier', label: 'Foundry Classifier agent', status: 'done', detail: 'Routed to cross-border-residency queue' },
           { name: 'extractor', label: 'Document Extractor agent', status: docBlobUrl ? 'done' : 'skipped', detail: docName ?? 'no document' },
-          { name: 'eligibility', label: 'Eligibility Pre-Assessor (TEE)', status: 'done', detail: typeof r.confidence === 'number' ? `confidence ${(r.confidence * 100).toFixed(0)}%` : (decision ?? '—') },
+          { name: 'eligibility', label: 'Eligibility Pre-Assessor (TEE)', status: 'done', detail: typeof confidence === 'number' ? `${eligibility?.recommendation ?? decision} · ${(confidence * 100).toFixed(0)}% confidence` : (decision ?? '—') },
           { name: 'claims-envelope', label: 'Signed claims envelope (eIDAS High)', status: 'done', detail: 'Sealed in DK sovereign zone · Purview Restricted-Cross-Border' },
           { name: 'cross-border', label: `Cross-border handoff to ${COUNTRY_LABEL[form.destination] ?? form.destination?.toUpperCase()}`, status: 'done', detail: 'Service Bus · cross-border-coordination queue' },
           { name: 'd365', label: `D365 case created in ${COUNTRY_LABEL[form.destination] ?? form.destination?.toUpperCase()}`, status: 'done', detail: r.caseId ?? r.correlationId ?? '—' },
@@ -453,25 +520,101 @@ export function ApplyResidencyPage() {
           </fieldset>
         )}
 
-        {/* STEP 4 — Eligibility criteria (no client simulation) ------------- */}
+        {/* STEP 4 — Eligibility criteria + LIVE verdict from the agent --- */}
         {step === 3 && (
           <fieldset className="apply-card">
             <legend><FormattedMessage id="apply.residency.step.eligibility" defaultMessage="Eligibility criteria" /></legend>
             <p className="apply-card__hint">
-              These are the criteria the <strong>Eligibility Pre-Assessor</strong> agent will check on the back-end after you submit.
-              The agent runs inside an <strong>Azure Confidential Computing TEE</strong> (encrypted memory, attested SEV-SNP) and a caseworker reviews every cross-border decision before any payment or registration is made (EU AI Act art. 14).
+              The <strong>Eligibility Pre-Assessor</strong> agent runs inside an <strong>Azure Confidential Computing TEE</strong>
+              (encrypted memory, attested SEV-SNP). It returns a rule-by-rule pre-assessment based on your declared move,
+              the verified employment claim and the Nordic / EU coordination rules. A caseworker reviews every cross-border
+              decision (EU AI Act art. 14).
             </p>
-            <ul className="apply-criteria">
-              {ELIGIBILITY_CRITERIA.map((c) => (
-                <li key={c.id} className="apply-criteria__item">
-                  <span className="apply-criteria__legal">{c.legal}</span>
-                  <span className="apply-criteria__what">{c.what}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="apply-card__hint">
-              The verdict — <em>likely eligible</em>, <em>requires review</em> or <em>likely ineligible</em> — together with the agent's reasoning and confidence score will be returned by the back-end and shown on the result screen and in <Link to="/cases">My cases</Link>.
-            </p>
+
+            {/* Live verdict ------------------------------------------------ */}
+            <div className="apply-card" style={{ background: 'var(--color-bg-alt)', marginTop: '.5rem' }}>
+              <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '.5rem' }}>
+                <strong>Live verdict — udcsp-eligibility agent</strong>
+                <button type="button" className="udcsp-btn udcsp-btn--ghost" onClick={callEligibility} disabled={eligibilityBusy}>
+                  {eligibilityBusy ? 'Running…' : 'Re-run'}
+                </button>
+              </header>
+              {eligibilityBusy && !eligibility && (
+                <p style={{ marginTop: '.5rem' }}>Calling the agent in the TEE… this typically takes 2–4 s.</p>
+              )}
+              {eligibility?.error && (
+                <p role="alert" style={{ marginTop: '.5rem', color: '#842029' }}>
+                  Agent unreachable: {eligibility.error}. You can still submit — the Logic App will run the agent server-side.
+                </p>
+              )}
+              {eligibility && !eligibility.error && (
+                <div style={{ marginTop: '.5rem' }}>
+                  <p style={{ margin: 0 }}>
+                    <strong>Recommendation:</strong>{' '}
+                    <span style={{
+                      padding: '.15rem .55rem', borderRadius: '999px', fontWeight: 600,
+                      background:
+                        eligibility.recommendation === 'eligible' ? '#d1e7dd' :
+                        eligibility.recommendation === 'not-eligible' ? '#f8d7da' : '#fff3cd',
+                      color:
+                        eligibility.recommendation === 'eligible' ? '#0f5132' :
+                        eligibility.recommendation === 'not-eligible' ? '#842029' : '#664d03',
+                    }}>
+                      {eligibility.recommendation}
+                    </span>
+                    {' '}· <strong>Confidence:</strong> {(eligibility.confidence * 100).toFixed(0)}%
+                    {' '}· <strong>Human review:</strong> {eligibility.humanReviewRequired ? 'required' : 'optional'}
+                  </p>
+                  {eligibility.caseworkerSummary && (
+                    <p style={{ margin: '.5rem 0 0', fontStyle: 'italic' }}>{eligibility.caseworkerSummary}</p>
+                  )}
+                  {eligibility.citizenNotice && (
+                    <p style={{ margin: '.5rem 0 0', fontSize: '.85rem', color: 'var(--color-fg-soft)' }}>
+                      ℹ️ {eligibility.citizenNotice}
+                    </p>
+                  )}
+                  {eligibility.ruleResults && eligibility.ruleResults.length > 0 && (
+                    <details style={{ marginTop: '.5rem' }}>
+                      <summary><strong>Rule-by-rule evidence ({eligibility.ruleResults.length})</strong></summary>
+                      <ul style={{ marginTop: '.4rem', fontSize: '.9rem' }}>
+                        {eligibility.ruleResults.map((r) => (
+                          <li key={r.rule}>
+                            <span style={{ color: r.passed ? '#0f5132' : '#842029' }}>{r.passed ? '✓' : '✗'}</span>{' '}
+                            <code>{r.rule}</code>
+                            {r.details && <> — {r.details}</>}
+                            {r.evidenceIds && r.evidenceIds.length > 0 && (
+                              <span style={{ fontSize: '.8rem', color: 'var(--color-fg-soft)' }}> · evidence: {r.evidenceIds.join(', ')}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                  {eligibility.missingEvidence && eligibility.missingEvidence.length > 0 && (
+                    <p style={{ marginTop: '.5rem', fontSize: '.85rem' }}>
+                      <strong>Missing evidence:</strong> {eligibility.missingEvidence.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+              {!eligibility && !eligibilityBusy && (
+                <p style={{ marginTop: '.5rem', color: 'var(--color-fg-soft)' }}>
+                  The agent will run automatically when you have a destination + move date. Add an employment contract in step 3 to refine the score.
+                </p>
+              )}
+            </div>
+
+            <details style={{ marginTop: '1rem' }}>
+              <summary>Legal basis the agent applies</summary>
+              <ul className="apply-criteria">
+                {ELIGIBILITY_CRITERIA.map((c) => (
+                  <li key={c.id} className="apply-criteria__item">
+                    <span className="apply-criteria__legal">{c.legal}</span>
+                    <span className="apply-criteria__what">{c.what}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </fieldset>
         )}
 

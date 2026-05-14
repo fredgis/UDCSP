@@ -8,6 +8,7 @@ import { appendCase } from '../utils/caseStore';
 import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
 import { ConsentNotice } from '../components/ConsentNotice';
 import { PlatformDiagram } from '../components/PlatformDiagram';
+import { runEligibility, recommendationToDecision, type EligibilityResponse } from '../utils/eligibility';
 
 type SubmitResult = {
   correlationId?: string;
@@ -53,6 +54,13 @@ export function ApplyChildBenefitPage() {
 
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
+
+  // Live verdict from the udcsp-eligibility Foundry agent.
+  const [eligibility, setEligibility] = useState<EligibilityResponse | null>(null);
+  const [eligibilityBusy, setEligibilityBusy] = useState(false);
+  // Lightweight context used to call eligibility — refreshed when the
+  // citizen edits the relevant fields, debounced via the form's blur.
+  const [agentContext, setAgentContext] = useState<{ children?: number; youngestDob?: string; monthlyIncome?: number; adultsInHousehold?: number; residence?: string }>({ residence: country });
 
   // Document upload UX (Demo 3, Demo 4): the citizen uploads a payslip or
   // lease, the Document Extractor agent returns structured fields, and the
@@ -121,6 +129,59 @@ export function ApplyChildBenefitPage() {
     }
   }
 
+  async function callEligibility(ctx: typeof agentContext) {
+    if (!ctx.children || !ctx.youngestDob) return;
+    setEligibilityBusy(true);
+    try {
+      const r = await runEligibility({
+        applicationType: 'child-benefit',
+        fromCountry: country,
+        citizenLocale: intl.locale,
+        citizenUpn: acc?.username,
+        context: {
+          parentName,
+          residence: ctx.residence ?? country,
+          children: ctx.children,
+          youngestDob: ctx.youngestDob,
+          monthlyIncomeEur: ctx.monthlyIncome,
+          adultsInHousehold: ctx.adultsInHousehold,
+        },
+        extractedFields: extracted?.fields,
+        documentBlobUrl: docBlobUrl ?? undefined,
+      });
+      setEligibility(r);
+    } finally {
+      setEligibilityBusy(false);
+    }
+  }
+
+  function pickFromForm(form: HTMLFormElement) {
+    const fd = new FormData(form);
+    return {
+      children: Number(fd.get('children') || 0) || undefined,
+      youngestDob: (fd.get('youngestDob') as string) || undefined,
+      monthlyIncome: Number(fd.get('monthlyIncome') || 0) || undefined,
+      adultsInHousehold: Number(fd.get('adultsInHousehold') || 0) || undefined,
+      residence: (fd.get('residence') as string) || country,
+    };
+  }
+  function onFormChange(e: React.FormEvent<HTMLFormElement>) {
+    const ctx = pickFromForm(e.currentTarget);
+    setAgentContext(ctx);
+  }
+  function onPreflight(form: HTMLFormElement) {
+    const ctx = pickFromForm(form);
+    setAgentContext(ctx);
+    callEligibility(ctx);
+  }
+  // Auto-call once a contract document is extracted.
+  useEffect(() => {
+    if (extracted?.fields && agentContext.children && agentContext.youngestDob) {
+      callEligibility(agentContext);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extracted]);
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -135,16 +196,25 @@ export function ApplyChildBenefitPage() {
     payload.applicationType = 'child-benefit';
     payload.country = country;
     if (acc?.username) payload.citizenUpn = acc.username;
+    if (eligibility) {
+      payload.eligibilityPreflight = eligibility;
+      payload.confidence = eligibility.confidence;
+      payload.decision = recommendationToDecision(eligibility.recommendation, eligibility.confidence);
+      payload.reasoning = eligibility.caseworkerSummary;
+    }
 
     try {
       const r = await apiFetch<SubmitResult>('/citizen-applications/', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      const decision = r.decision ?? decisionFromConfidence(r.confidence);
+      const decision = r.decision
+        ?? (eligibility ? recommendationToDecision(eligibility.recommendation, eligibility.confidence) : decisionFromConfidence(r.confidence));
+      const confidence = typeof r.confidence === 'number' ? r.confidence : eligibility?.confidence;
+      const reasoning = r.reasoning ?? eligibility?.caseworkerSummary;
       const estimatedDecisionDate =
         r.estimatedDecisionDate ?? (decision === 'likely-eligible' ? estimatedDate(4) : estimatedDate(7));
-      setResult({ ...r, decision, estimatedDecisionDate });
+      setResult({ ...r, decision, confidence, reasoning, estimatedDecisionDate });
       appendCase({
         id: r.caseId || r.correlationId || `cb-${Date.now()}`,
         title: 'Child benefit application',
@@ -154,7 +224,7 @@ export function ApplyChildBenefitPage() {
         citizenUpn: acc?.username,
         applicationType: 'child-benefit',
         decision,
-        confidence: r.confidence,
+        confidence,
         estimatedDecisionDate,
         extractedFields: extracted?.fields,
         documentBlobUrl: docBlobUrl ?? undefined,
@@ -164,7 +234,7 @@ export function ApplyChildBenefitPage() {
           { name: 'intake', label: 'Application received via APIM', status: 'done', at: new Date().toISOString() },
           { name: 'classifier', label: 'Foundry Classifier agent', status: 'done', detail: 'Routed to child-benefit queue' },
           { name: 'extractor', label: 'Document Extractor agent', status: docBlobUrl ? 'done' : 'skipped', detail: docName ?? 'no document' },
-          { name: 'eligibility', label: 'Eligibility Pre-Assessor', status: 'done', detail: typeof r.confidence === 'number' ? `confidence ${(r.confidence*100).toFixed(0)}%` : (decision ?? '—') },
+          { name: 'eligibility', label: 'Eligibility Pre-Assessor', status: 'done', detail: typeof confidence === 'number' ? `${eligibility?.recommendation ?? decision} · ${(confidence*100).toFixed(0)}% confidence` : (decision ?? '—') },
           { name: 'd365', label: 'D365 case created', status: 'done', detail: r.caseId ?? r.correlationId ?? '—' },
           { name: 'lineage', label: 'Lineage published (Purview)', status: 'done' },
           { name: 'review', label: 'Caseworker review', status: 'in-progress', detail: estimatedDecisionDate ? `ETA ${estimatedDecisionDate}` : undefined },
@@ -226,7 +296,7 @@ export function ApplyChildBenefitPage() {
 
       <ConsentNotice keys={['crossBorder', 'notifications', 'aiAssistant']} />
 
-      <form onSubmit={onSubmit} className="apply-form">
+      <form onSubmit={onSubmit} onChange={onFormChange} className="apply-form">
         <fieldset className="apply-card">
           <legend>1. <FormattedMessage id="apply.section.about" defaultMessage="About you" /></legend>
           <div className="apply-grid">
@@ -370,7 +440,72 @@ export function ApplyChildBenefitPage() {
         </fieldset>
 
         <fieldset className="apply-card">
-          <legend>4. <FormattedMessage id="apply.section.consent" defaultMessage="Consent & declaration" /></legend>
+          <legend>4. AI eligibility pre-assessment <span style={{ fontWeight: 400, fontSize: '.85rem', color: 'var(--color-fg-soft)' }}>(udcsp-eligibility · runs in Confidential TEE)</span></legend>
+          <p className="apply-card__hint">
+            The eligibility agent scores your declared situation against the country's child-benefit rules and any
+            uploaded payslip/contract. A caseworker reviews every case before any payment (EU AI Act art. 14).
+          </p>
+          <button type="button" className="udcsp-btn udcsp-btn--ghost"
+            onClick={(e) => onPreflight((e.currentTarget as HTMLButtonElement).form as HTMLFormElement)}
+            disabled={eligibilityBusy || !agentContext.children || !agentContext.youngestDob}>
+            {eligibilityBusy ? 'Running…' : (eligibility ? 'Re-run pre-assessment' : 'Run pre-assessment')}
+          </button>
+          {!agentContext.children || !agentContext.youngestDob ? (
+            <p style={{ marginTop: '.5rem', color: 'var(--color-fg-soft)', fontSize: '.85rem' }}>
+              Add at least the number of children and the youngest child's date of birth to unlock the agent.
+            </p>
+          ) : null}
+          {eligibility?.error && (
+            <p role="alert" style={{ marginTop: '.5rem', color: '#842029' }}>
+              Agent unreachable: {eligibility.error}. You can still submit — the Logic App will run the agent server-side.
+            </p>
+          )}
+          {eligibility && !eligibility.error && (
+            <div style={{ marginTop: '.5rem' }}>
+              <p style={{ margin: 0 }}>
+                <strong>Recommendation:</strong>{' '}
+                <span style={{
+                  padding: '.15rem .55rem', borderRadius: '999px', fontWeight: 600,
+                  background:
+                    eligibility.recommendation === 'eligible' ? '#d1e7dd' :
+                    eligibility.recommendation === 'not-eligible' ? '#f8d7da' : '#fff3cd',
+                  color:
+                    eligibility.recommendation === 'eligible' ? '#0f5132' :
+                    eligibility.recommendation === 'not-eligible' ? '#842029' : '#664d03',
+                }}>{eligibility.recommendation}</span>
+                {' '}· <strong>Confidence:</strong> {(eligibility.confidence * 100).toFixed(0)}%
+                {' '}· <strong>Human review:</strong> {eligibility.humanReviewRequired ? 'required' : 'optional'}
+              </p>
+              {eligibility.caseworkerSummary && (
+                <p style={{ margin: '.5rem 0 0', fontStyle: 'italic' }}>{eligibility.caseworkerSummary}</p>
+              )}
+              {eligibility.citizenNotice && (
+                <p style={{ margin: '.5rem 0 0', fontSize: '.85rem', color: 'var(--color-fg-soft)' }}>ℹ️ {eligibility.citizenNotice}</p>
+              )}
+              {eligibility.ruleResults && eligibility.ruleResults.length > 0 && (
+                <details style={{ marginTop: '.5rem' }}>
+                  <summary><strong>Rule-by-rule evidence ({eligibility.ruleResults.length})</strong></summary>
+                  <ul style={{ marginTop: '.4rem', fontSize: '.9rem' }}>
+                    {eligibility.ruleResults.map((r) => (
+                      <li key={r.rule}>
+                        <span style={{ color: r.passed ? '#0f5132' : '#842029' }}>{r.passed ? '✓' : '✗'}</span>{' '}
+                        <code>{r.rule}</code>{r.details && <> — {r.details}</>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              {eligibility.missingEvidence && eligibility.missingEvidence.length > 0 && (
+                <p style={{ marginTop: '.5rem', fontSize: '.85rem' }}>
+                  <strong>Missing evidence:</strong> {eligibility.missingEvidence.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+        </fieldset>
+
+        <fieldset className="apply-card">
+          <legend>5. <FormattedMessage id="apply.section.consent" defaultMessage="Consent & declaration" /></legend>
           <label className="checkbox">
             <input type="checkbox" name="consentCrossBorder" />
             <span>I allow verified cross-border eligibility checks with the other Nordic agencies for this application.</span>
