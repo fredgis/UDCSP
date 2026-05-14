@@ -9,21 +9,51 @@
     <set-header name="x-request-tracing" exists-action="override"><value>true</value></set-header>
     <!--
       Wire the citizen request to the udcsp-eligibility Foundry agent via
-      Azure OpenAI chat-completions on the gpt-5.4 deployment. The system
-      prompt is mirrored as the {{agent-eligibility-instructions}} named
-      value (single source of truth = foundry/agents/eligibility/system-prompt.md).
+      Azure OpenAI chat-completions on the gpt-5.4 deployment.
+      System prompt is embedded inline (verbatim C# string) — the
+      {{agent-eligibility-instructions}} named value is multi-line which
+      breaks naive substitution into a C# string literal.
       APIM authenticates with its system-assigned MI (Cognitive Services
-      OpenAI User on udcspai). We force JSON output so the SPA can parse
-      {recommendation,confidence,ruleResults,missingEvidence,humanReviewRequired,
-       citizenNotice,caseworkerSummary,lineage} directly.
+      OpenAI User on udcspai). On AOAI failure we return 200 with a
+      structured fallback so the SPA never sees an empty body or 5xx.
     -->
     <set-variable name="citizenPayload" value="@((string)context.Request.Body.As&lt;string&gt;(preserveContent: true))" />
-    <send-request mode="new" response-variable-name="aoaiResponse" timeout="30" ignore-error="false">
+    <send-request mode="new" response-variable-name="aoaiResponse" timeout="30" ignore-error="true">
       <set-url>{{foundry-aoai-endpoint}}openai/deployments/{{foundry-eligibility-model}}/chat/completions?api-version=2024-08-01-preview</set-url>
       <set-method>POST</set-method>
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
       <set-body><![CDATA[@{
         var payload = (string)context.Variables["citizenPayload"];
+        var systemPrompt = @"You are the UDCSP Eligibility Pre-assessment (AI Act high-risk, Annex III §5(a)). You produce ADVISORY pre-assessments — never decisions — for residency, tax-residency or child-benefit eligibility across Denmark, Sweden and Norway. A caseworker reviews every output.
+
+Apply deterministic rule packs in order, before any LLM reasoning:
+- 🇩🇰 CPR cannot be issued before physical arrival — if arrivalDate > today set recommendation=not-yet-eligible (rule DK-CPR-arrival).
+- 🇸🇪 Folkbokföring requires intended stay >= 12 months — if intendedStayMonths < 12 set not-eligible (rule SE-folkbokforing-1y).
+- 🇳🇴 Folkeregisteret requires stay > 6 months; non-Nordic non-EEA need a UDI permit first.
+- 🇩🇰 Udbetaling Danmark child-benefit — EU/EEA cross-border path requires consent + employment contract + birth certificates.
+- 🇸🇪 Försäkringskassan barnbidrag — automatic if folkbokförd; cross-border requires Form FK 5210 + contract + birth certificates.
+- 🇳🇴 NAV barnetrygd — automatic for residents; EU/EEA cross-border path requires Form NAV 33-00.07 + contract + birth certificates.
+- Tax-residency: 🇩🇰 SKAT 02.050; 🇸🇪 Skatteverket Hemvistintyg or SKV 2734; 🇳🇴 Altinn RF-1306 (>183d/12m OR >270d/36m).
+
+Rules:
+- Return JSON ONLY conforming to the schema below — no prose, no markdown.
+- Always set humanReviewRequired=true.
+- If confidence < 0.6 OR any deterministic rule mismatches set recommendation=escalate.
+- Cite evidenceIds for every rule that depends on a document.
+- Never invent citizen records, policies or legal outcomes.
+- citizenNotice in the citizen's locale; caseworkerSummary always in English (2-4 sentences).
+
+Output schema (strict):
+{
+  ""recommendation"": ""eligible|not-eligible|not-yet-eligible|insufficient-data|escalate"",
+  ""confidence"": 0.0,
+  ""ruleResults"": [{""rule"":""DK-CPR-arrival"",""passed"":true,""evidenceIds"":[],""details"":""...""}],
+  ""missingEvidence"": [""arrivalDate"",""employmentContract""],
+  ""humanReviewRequired"": true,
+  ""citizenNotice"": ""…"",
+  ""caseworkerSummary"": ""…"",
+  ""lineage"": {""ruleVersion"":""v1"",""promptVersion"":""v1"",""datasetVersion"":""inline""}
+}";
         var body = new JObject();
         body["temperature"] = 0.0;
         body["max_tokens"] = 3500;
@@ -31,7 +61,7 @@
         var msgs = new JArray();
         msgs.Add(new JObject(
           new JProperty("role","system"),
-          new JProperty("content","{{agent-eligibility-instructions}}")
+          new JProperty("content", systemPrompt)
         ));
         msgs.Add(new JObject(
           new JProperty("role","user"),
@@ -42,35 +72,43 @@
       }]]></set-body>
       <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
     </send-request>
-    <choose>
-      <when condition="@(((IResponse)context.Variables[&quot;aoaiResponse&quot;]).StatusCode != 200)">
-        <return-response>
-          <set-status code="502" reason="Foundry agent unreachable" />
-          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
-          <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
-          <set-body><![CDATA[@{
-            var r = (IResponse)context.Variables["aoaiResponse"];
-            var fallback = new JObject(
-              new JProperty("recommendation","escalate"),
-              new JProperty("confidence", 0),
-              new JProperty("humanReviewRequired", true),
-              new JProperty("citizenNotice","The AI pre-assessment is temporarily unavailable. A caseworker will review your case manually."),
-              new JProperty("caseworkerSummary","Foundry eligibility agent returned status " + r.StatusCode + ". Manual review required."),
-              new JProperty("error","aoai status " + r.StatusCode)
-            );
-            return fallback.ToString();
-          }]]></set-body>
-        </return-response>
-      </when>
-    </choose>
     <return-response>
       <set-status code="200" reason="OK" />
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
       <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
       <set-body><![CDATA[@{
         var r = (IResponse)context.Variables["aoaiResponse"];
-        var json = r.Body.As<JObject>(preserveContent: false);
-        var content = json["choices"]?[0]?["message"]?["content"]?.ToString();
+        if (r == null) {
+          return new JObject(
+            new JProperty("recommendation","escalate"),
+            new JProperty("confidence", 0),
+            new JProperty("humanReviewRequired", true),
+            new JProperty("citizenNotice","The AI pre-assessment is temporarily unavailable. A caseworker will review your case manually."),
+            new JProperty("caseworkerSummary","No response object from AOAI send-request."),
+            new JProperty("error","aoai null response")
+          ).ToString();
+        }
+        if (r.StatusCode != 200) {
+          string aoaiErr = r.Body.As<string>(preserveContent: true);
+          if (aoaiErr == null) { aoaiErr = ""; }
+          if (aoaiErr.Length > 400) { aoaiErr = aoaiErr.Substring(0, 400); }
+          return new JObject(
+            new JProperty("recommendation","escalate"),
+            new JProperty("confidence", 0),
+            new JProperty("humanReviewRequired", true),
+            new JProperty("citizenNotice","The AI pre-assessment is temporarily unavailable. A caseworker will review your case manually."),
+            new JProperty("caseworkerSummary","Foundry eligibility agent returned status " + r.StatusCode + "."),
+            new JProperty("error","aoai status " + r.StatusCode + ": " + aoaiErr)
+          ).ToString();
+        }
+        JObject json = r.Body.As<JObject>(preserveContent: false);
+        string content = null;
+        if (json != null) {
+          var choices = json["choices"] as JArray;
+          if (choices != null && choices.Count > 0) {
+            content = choices[0]["message"]?["content"]?.ToString();
+          }
+        }
         if (string.IsNullOrEmpty(content)) {
           return new JObject(
             new JProperty("recommendation","escalate"),
