@@ -4,6 +4,7 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 import { listCases, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
+import { parseDescription, extractEligibility, humanTitle, applicationIcon, countryFlag, humanStatus } from '../utils/descriptionParser';
 
 type Case = {
   id: string;
@@ -36,65 +37,29 @@ type IntakeApplication = {
   updatedAt?: string;
 };
 
-const STATE_LABEL: Record<number, string> = { 0: 'Open', 1: 'Completed', 2: 'Canceled' };
-
-function parseDescription(desc?: string): Record<string, unknown> | null {
-  if (!desc) return null;
-  // APIM op-policy strips the `citizenUpn: … | text:` prefix already, but if a
-  // pre-prefix version leaks through (older rows / direct DV writes), strip it
-  // defensively here too.
-  let body = desc.trim();
-  const idx = body.indexOf('| text:');
-  if (idx >= 0) body = body.substring(idx + '| text:'.length).trim();
-  try {
-    const parsed = JSON.parse(body);
-    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
-
 function hydrateStoredCase(t: IntakeApplication, country: string, citizenUpn?: string): StoredCase {
   const id = t.id || t.activityid || t.applicationId || t.caseId || '';
   const body = parseDescription(t.description) ?? {};
-  const elig = (body.eligibilityPreflight ?? {}) as {
-    recommendation?: string;
-    confidence?: number;
-    ruleResults?: Array<{ rule: string; passed: boolean; evidenceIds?: string[]; details?: string }>;
-    missingEvidence?: string[];
-    humanReviewRequired?: boolean;
-    citizenNotice?: string;
-    caseworkerSummary?: string;
-    lineage?: { ruleVersion?: string; promptVersion?: string; datasetVersion?: string };
-  };
-  const status =
-    t.status ||
-    t.state ||
-    (typeof t.statecode === 'number' ? STATE_LABEL[t.statecode] ?? `state ${t.statecode}` : 'Submitted');
+  const applicationType = t.applicationType || (body.applicationType as string | undefined);
+  const status = humanStatus(t.status || t.state, t.statecode);
   return {
     id,
-    title: t.title || t.subject || t.applicationType || 'Application',
+    title: humanTitle(applicationType, t.title || t.subject),
     status,
     updatedAt: t.updatedAt || t.submittedAt || t.createdOn || t.createdon || '',
     country: (t.country || (body.country as string) || country || 'dk').toLowerCase(),
     citizenUpn: citizenUpn || (body.citizenUpn as string | undefined),
-    applicationType: t.applicationType || (body.applicationType as string | undefined),
-    decision: elig.recommendation,
-    confidence: typeof elig.confidence === 'number' ? elig.confidence : undefined,
+    applicationType,
+    decision: (body as { recommendation?: string; decision?: string }).recommendation
+      || (body as { decision?: string }).decision,
+    confidence: typeof (body as { confidence?: number }).confidence === 'number'
+      ? (body as { confidence?: number }).confidence
+      : undefined,
     extractedFields: (body.extractedFields ?? undefined) as Record<string, unknown> | undefined,
     documentBlobUrl: body.documentBlobUrl as string | undefined,
-    documentBlobName: body.documentBlobName as string | undefined,
+    documentBlobName: (body.documentBlobName as string | undefined) || (body.attachedDocument as string | undefined),
     storageAccount: body.storageAccount as string | undefined,
-    eligibility: elig.recommendation || typeof elig.confidence === 'number' || (elig.ruleResults?.length ?? 0) > 0 ? {
-      recommendation: elig.recommendation,
-      confidence: typeof elig.confidence === 'number' ? elig.confidence : undefined,
-      ruleResults: elig.ruleResults,
-      missingEvidence: elig.missingEvidence,
-      humanReviewRequired: elig.humanReviewRequired,
-      citizenNotice: elig.citizenNotice,
-      caseworkerSummary: elig.caseworkerSummary,
-      lineage: elig.lineage,
-    } : undefined,
+    eligibility: extractEligibility(body),
   };
 }
 
@@ -119,11 +84,8 @@ function toCase(c: StoredCase): Case {
 function normalize(items: IntakeApplication[]): Case[] {
   return items.map((t, i) => ({
     id: t.id || t.applicationId || t.caseId || t.activityid || `app-${i}`,
-    title: t.title || t.subject || t.applicationType || 'Application',
-    status:
-      t.status ||
-      t.state ||
-      (typeof t.statecode === 'number' ? STATE_LABEL[t.statecode] ?? `state ${t.statecode}` : 'Submitted'),
+    title: humanTitle(t.applicationType, t.title || t.subject),
+    status: humanStatus(t.status || t.state, t.statecode),
     updatedAt: t.updatedAt || t.submittedAt || t.createdOn || t.createdon || '',
     applicationType: t.applicationType,
     country: t.country,
@@ -286,15 +248,9 @@ export function MyCasesPage() {
           {cases.map((c) => {
             const isCanceled = /cancel/i.test(c.status);
             const pct = c.progress ? Math.round((c.progress.done / c.progress.total) * 100) : null;
-            const appLabel = c.applicationType === 'child-benefit' ? 'Child & family benefit'
-              : c.applicationType === 'residency-transfer' ? 'Residency transfer'
-              : c.applicationType === 'tax-certificate' ? 'Tax certificate'
-              : (c.title || 'Application');
-            const appIcon = c.applicationType === 'child-benefit' ? '👶'
-              : c.applicationType === 'residency-transfer' ? '🏠'
-              : c.applicationType === 'tax-certificate' ? '📄'
-              : '📌';
-            const flag = c.country === 'dk' ? '🇩🇰' : c.country === 'se' ? '🇸🇪' : c.country === 'no' ? '🇳🇴' : '';
+            const appLabel = humanTitle(c.applicationType, c.title);
+            const appIcon = applicationIcon(c.applicationType);
+            const flag = countryFlag(c.country);
             const statusKind = isCanceled ? 'canceled'
               : /complet|approved|done/i.test(c.status) ? 'completed'
               : /review|await|pending/i.test(c.status) ? 'review'
