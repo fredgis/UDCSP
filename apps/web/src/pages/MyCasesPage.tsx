@@ -91,15 +91,11 @@ export function MyCasesPage() {
       const payload = (await res.json()) as { value?: IntakeApplication[] } | IntakeApplication[];
       const items = Array.isArray(payload) ? payload : payload.value ?? [];
       const remote = normalize(items);
-      // dedupe by id, prefer remote (more authoritative)
-      const seen = new Set<string>();
-      const merged: Case[] = [];
-      for (const r of [...remote, ...local]) {
-        if (seen.has(r.id)) continue;
-        seen.add(r.id);
-        merged.push(r);
-      }
-      setCases(merged);
+      // Once the back-end has returned anything, it's authoritative — drop locals
+      // entirely to avoid duplicate rows (local id = correlationId, remote id = activityid;
+      // they never match, so dedupe by id keeps both). Locals are only shown when the
+      // back-end is unreachable (catch branch below).
+      setCases(remote);
     } catch (e) {
       // server unreachable or no GET listing yet — show local cache silently
       setCases(local);
