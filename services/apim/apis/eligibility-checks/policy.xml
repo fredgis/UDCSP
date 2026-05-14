@@ -1,4 +1,4 @@
-﻿<policies>
+<policies>
   <inbound>
     <base />
     <include-fragment fragment-id="cors" />
@@ -7,10 +7,85 @@
     <rate-limit-by-key calls="120" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
     <set-header name="traceparent" exists-action="skip"><value>@(context.Request.Headers.GetValueOrDefault("traceparent", Guid.NewGuid().ToString()))</value></set-header>
     <set-header name="x-request-tracing" exists-action="override"><value>true</value></set-header>
-    <set-backend-service base-url="{{foundry-eligibility-agent-endpoint}}" />
-
+    <!--
+      Wire the citizen request to the udcsp-eligibility Foundry agent via
+      Azure OpenAI chat-completions on the gpt-5.4 deployment. The system
+      prompt is mirrored as the {{agent-eligibility-instructions}} named
+      value (single source of truth = foundry/agents/eligibility/system-prompt.md).
+      APIM authenticates with its system-assigned MI (Cognitive Services
+      OpenAI User on udcspai). We force JSON output so the SPA can parse
+      {recommendation,confidence,ruleResults,missingEvidence,humanReviewRequired,
+       citizenNotice,caseworkerSummary,lineage} directly.
+    -->
+    <set-variable name="citizenPayload" value="@((string)context.Request.Body.As&lt;string&gt;(preserveContent: true))" />
+    <send-request mode="new" response-variable-name="aoaiResponse" timeout="30" ignore-error="false">
+      <set-url>{{foundry-aoai-endpoint}}openai/deployments/{{foundry-eligibility-model}}/chat/completions?api-version=2024-08-01-preview</set-url>
+      <set-method>POST</set-method>
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-body><![CDATA[@{
+        var payload = (string)context.Variables["citizenPayload"];
+        var body = new JObject();
+        body["temperature"] = 0.0;
+        body["max_tokens"] = 3500;
+        body["response_format"] = new JObject(new JProperty("type","json_object"));
+        var msgs = new JArray();
+        msgs.Add(new JObject(
+          new JProperty("role","system"),
+          new JProperty("content","{{agent-eligibility-instructions}}")
+        ));
+        msgs.Add(new JObject(
+          new JProperty("role","user"),
+          new JProperty("content","Citizen pre-assessment request (JSON):\n" + payload + "\n\nReturn the structured JSON per the output schema.")
+        ));
+        body["messages"] = msgs;
+        return body.ToString();
+      }]]></set-body>
+      <authentication-managed-identity resource="https://cognitiveservices.azure.com" />
+    </send-request>
+    <choose>
+      <when condition="@(((IResponse)context.Variables[&quot;aoaiResponse&quot;]).StatusCode != 200)">
+        <return-response>
+          <set-status code="502" reason="Foundry agent unreachable" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
+          <set-body><![CDATA[@{
+            var r = (IResponse)context.Variables["aoaiResponse"];
+            var fallback = new JObject(
+              new JProperty("recommendation","escalate"),
+              new JProperty("confidence", 0),
+              new JProperty("humanReviewRequired", true),
+              new JProperty("citizenNotice","The AI pre-assessment is temporarily unavailable. A caseworker will review your case manually."),
+              new JProperty("caseworkerSummary","Foundry eligibility agent returned status " + r.StatusCode + ". Manual review required."),
+              new JProperty("error","aoai status " + r.StatusCode)
+            );
+            return fallback.ToString();
+          }]]></set-body>
+        </return-response>
+      </when>
+    </choose>
+    <return-response>
+      <set-status code="200" reason="OK" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
+      <set-body><![CDATA[@{
+        var r = (IResponse)context.Variables["aoaiResponse"];
+        var json = r.Body.As<JObject>(preserveContent: false);
+        var content = json["choices"]?[0]?["message"]?["content"]?.ToString();
+        if (string.IsNullOrEmpty(content)) {
+          return new JObject(
+            new JProperty("recommendation","escalate"),
+            new JProperty("confidence", 0),
+            new JProperty("humanReviewRequired", true),
+            new JProperty("citizenNotice","No content from the AI agent. A caseworker will review."),
+            new JProperty("caseworkerSummary","Empty model response."),
+            new JProperty("error","empty content")
+          ).ToString();
+        }
+        return content;
+      }]]></set-body>
+    </return-response>
   </inbound>
   <backend><base /></backend>
-  <outbound><base /><set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header></outbound>
+  <outbound><base /></outbound>
   <on-error><base /><set-header name="x-correlation-id" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header></on-error>
 </policies>
