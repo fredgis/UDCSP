@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { generateTraceparent } from '../utils/traceparent';
 import { apiScopeForCountry, apimBaseUrlForCountry, getCountry } from '../auth/msalConfig';
+import { listCases } from '../utils/caseStore';
 
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
@@ -104,10 +105,38 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
 
     try {
       if (!apimBase) throw new Error('apim-base-not-configured');
+      const acct = accounts[0];
+      const cases = isAuth
+        ? listCases(country, acct?.username).slice(0, 10).map((c) => ({
+            id: c.id,
+            title: c.title,
+            status: c.status,
+            type: c.applicationType,
+            decision: c.decision,
+            updatedAt: c.updatedAt,
+            estimatedDecisionDate: c.estimatedDecisionDate,
+            country: c.country,
+          }))
+        : [];
       const res = await fetch(`${apimBase}/agent-topic-router/messages`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ sessionId: sessionId.current, channel, locale, text, authenticated: isAuth }),
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          channel,
+          locale,
+          text,
+          authenticated: isAuth,
+          citizen: isAuth
+            ? {
+                name: acct?.name ?? null,
+                givenName: acct?.name?.split(' ')[0] ?? null,
+                upn: acct?.username ?? null,
+                country,
+              }
+            : null,
+          cases,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       const reply = extractReply(data);
