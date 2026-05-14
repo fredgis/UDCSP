@@ -153,6 +153,14 @@ The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke p
 - **Default**: NAT Gateway in each spoke for workload egress (planned) — currently Azure default outbound (to be replaced before GA).
 - **Private**: Foundry, Storage, KV, ACR, Postgres, Redis, RSV, Confidential Ledger are reached via **Private Endpoint only**; their public endpoints are disabled (`publicNetworkAccess: Disabled`).
 - **Microsoft Graph** (Identity / Verified ID / Priva / Purview management): reached via Service Tag rules in NSGs; APIs are public Microsoft endpoints.
+- **National-authority bridge egress** (unified-platform integration plane): Logic Apps + APIM in `integration` reach the public HTTPS endpoints of the national authorities listed in `architecture.md §2.3` — borger.dk / lifeindenmark.dk / SKAT / Udbetaling DK (DK), Skatteverket / Försäkringskassan / BankID / Freja+ (SE), Skatteetaten / NAV / Altinn / UDI / ID-porten (NO). Egress is per-country sovereign (DK Logic Apps only call DK authorities, never SE or NO), via NAT Gateway with the per-country PIP allow-listed at the partner endpoint where the partner publishes such an allow-list. eIDAS / EU SDG / OOTS gateways follow the same egress rule.
+
+### 4.4 Public ingress hostnames (production)
+
+| Hostname | Backend | Notes |
+|---|---|---|
+| `udcsp.fredgis.com` | Azure Static Web App `udcsp-web-dev` (custom domain, ACME-managed cert, `cname-delegation` validated) | Citizen portal — single canonical origin; CNAME → `<swa-name>.azurestaticapps.net`. All External ID redirect URIs and APIM `portal-origin` CORS named-values point here (see `installation.md §POST CONFIGURATION → Step 0`). |
+| `udcsp-{dk,se,no}-prod-apim.azure-api.net` | APIM Premium per country (External SKU) | `agent-topic-router` + `citizen-applications` + MI-proxy operations. Front Door custom domain on top is planned but not yet live. |
 
 ### 4.3 East-west (intra-spoke)
 
