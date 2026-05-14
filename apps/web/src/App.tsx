@@ -19,6 +19,7 @@ import { ApplyTaxCertPage } from './pages/ApplyTaxCertPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
 import { CompliancePage } from './pages/CompliancePage';
 import { ConsentManagementPage } from './pages/ConsentManagementPage';
+import { Demo3MariaPage } from './pages/Demo3MariaPage';
 import { DemoScenarioPage } from './pages/DemoScenarioPage';
 import { DemosIndexPage } from './pages/DemosIndexPage';
 import { HomePage } from './pages/HomePage';
@@ -80,6 +81,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/compliance" element={<CompliancePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/logout-callback" element={<LogoutCallbackPage />} />
+                <Route path="/demo/d3" element={<Demo3MariaPage />} />
                 <Route path="/demo/:id" element={<DemoScenarioPage />} />
               </Routes>
             </main>
