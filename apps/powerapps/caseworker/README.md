@@ -85,7 +85,27 @@ foreach ($c in 'DK','SE','NO') {
 > can only be produced by `pac solution export` *after* the table exists).
 > The procedure below gets you to a clickable URL once.
 
-### One-off bootstrap (≈ 15 min, run once)
+### One-off bootstrap (≈ 5-15 min, run once)
+
+**Two options** — pick the scripted one (Option A) to skip ~40 manual column clicks.
+
+#### Option A — scripted table provisioning (recommended)
+
+```powershell
+az login                            # interactive, opens browser
+.\apps\powerapps\caseworker\bootstrap-udcsp-application.ps1 `
+  -EnvUrl https://org939d8f07.crm4.dynamics.com
+```
+
+The script `bootstrap-udcsp-application.ps1` calls the Dataverse Web API
+with your Az CLI bearer token and creates the `udcsp_application` table
+plus all 40+ columns (idempotent — re-running skips existing). Picklist
+columns are created as plain String for simplicity (the SPA already
+sends the right string values like `residency-transfer`, `se`,
+`approved`); convert to Choice in Maker later if you want enum
+validation. Only **steps 4-5 below remain** after the script.
+
+#### Option B — fully manual
 
 1. Sign in to <https://make.powerapps.com> with the tenant admin account
    (`frgisber@microsoft.com` for the dev sandbox) and switch to the
