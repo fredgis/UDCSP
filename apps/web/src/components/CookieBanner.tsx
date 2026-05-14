@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useNavigate } from 'react-router-dom';
 
@@ -62,9 +62,13 @@ export function CookieBanner({
   const intl = useIntl();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (open) acceptRef.current?.focus();
-  }, [open]);
+  // Note: we deliberately do NOT auto-focus a button on mount and do NOT use
+  // role="dialog" + aria-modal="true". Both behaviours, when applied without
+  // a focus trap, an Escape handler and a focus-return strategy, leave
+  // screen-reader users (NVDA, JAWS, VoiceOver, Narrator) trapped on the
+  // banner with the rest of the page declared inert. The banner is therefore
+  // a non-modal region (role="region") that announces itself politely; the
+  // user can choose to interact with it or continue reading the page.
 
   if (!open) return null;
 
@@ -76,8 +80,7 @@ export function CookieBanner({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      role="region"
       aria-labelledby="cookie-banner-title"
       aria-describedby="cookie-banner-body"
       className="cookie-banner"
@@ -117,7 +120,6 @@ export function CookieBanner({
       </ul>
       <div className="cookie-banner__actions">
         <button
-          ref={acceptRef}
           type="button"
           className="cookie-banner__btn cookie-banner__btn--primary"
           onClick={() => decide('all')}
