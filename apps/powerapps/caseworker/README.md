@@ -128,6 +128,19 @@ validation. Only **steps 4-5 below remain** after the script.
    Then **Save → Publish → Play**.
    *(The legacy "Apps → New → Model-driven" entry was removed from the
    maker portal in 2025; everything now goes through Solutions.)*
+
+   > ⚠️ **Today the citizen portal writes to the standard `Task` table,
+   > not yet `udcsp_application`.** The deployed Logic App
+   > `udcsp-dk-dev-application-intake` is configured with
+   > `d365CasesEndpoint=https://org939d8f07.crm4.dynamics.com/api/data/v9.2/tasks`,
+   > and `My Cases` reads from `tasks` filtered by subject prefix `[UDCSP-`
+   > (see `services/apim/apis/citizen-applications/operations/get-citizen-applications-list.xml`).
+   > **For the demo today**, also add a second page in the model-driven app
+   > pointing at the standard **`Task`** table — that's where every existing
+   > submission (Child & Family Benefit, Residency, etc.) actually lives.
+   > Filter the view on `Subject contains [UDCSP-`. The `udcsp_application`
+   > page will populate once the LA is repointed (see migration note below).
+
    Add the form and views from `application-main-form.xml` + `caseworker-views.xml` (copy
    the field lists, the form designer is interactive).
 5. **Publish**. The app gets a stable URL of the form
@@ -138,6 +151,30 @@ validation. Only **steps 4-5 below remain** after the script.
 
    Bookmark it — that's the caseworker entry point. The GUID also appears
    in `make.powerapps.com → Apps → ... → Details`.
+
+### Migration path: switch the LA from `tasks` to `udcsp_application`
+
+When the `udcsp_application` table has all its columns (re-run
+`bootstrap-udcsp-application.ps1` with the LCID auto-detect from
+commit `22fa6cd`), repoint the LA and the My Cases GET in two steps:
+
+```powershell
+# 1. Update the LA workflow parameter (DK first, replicate to SE/NO when their LAs land)
+az resource update -n udcsp-dk-dev-application-intake -g udcsp-dk-logicapps-rg `
+  --resource-type Microsoft.Logic/workflows `
+  --set properties.parameters.d365CasesEndpoint.value="https://org939d8f07.crm4.dynamics.com/api/data/v9.2/udcsp_applications"
+
+# 2. Update the APIM GET op for citizen-applications to read udcsp_applications
+#    instead of tasks (see services/apim/apis/citizen-applications/operations/
+#    get-citizen-applications-list.xml — swap the OData query as the comment
+#    on lines 21-25 already prescribes), then push:
+az apim api operation policy create -g udcsp-dk-apim-rg -n udcsp-dk-prod-apim `
+  --api-id citizen-applications --operation-id get-citizen-applications-list `
+  --xml-policy @services/apim/apis/citizen-applications/operations/get-citizen-applications-list.xml
+```
+
+Repeat for SE/NO once their `application-intake` LAs are deployed and
+their APIM `logicapp-application-intake-url` NV is set to a real URL.
 
 ### After bootstrap: replicate to other envs (scripted)
 
