@@ -144,13 +144,18 @@ $metadata = @{
     udcsp_sla          = [string]$agent.sla
 }
 
+$modelOptions = @{}
+if ($null -ne $agent.temperature) { $modelOptions.temperature = [double]$agent.temperature }
+if ($null -ne $agent.maxTokens)   { $modelOptions.max_completion_tokens = [int]$agent.maxTokens }
+if ($agent.responseFormat -eq 'json_object') { $modelOptions.response_format = @{ type = 'json_object' } }
+
 $definition = @{
     kind         = 'prompt'
     model        = [string]$agent.model
     instructions = $instructions
-    temperature  = if ($null -ne $agent.temperature) { [double]$agent.temperature } else { 0.7 }
 }
-if ($tools.Count -gt 0) { $definition.tools = $tools }
+if ($modelOptions.Count -gt 0) { $definition.model_options = $modelOptions }
+if ($tools.Count -gt 0)        { $definition.tools         = $tools }
 
 # --- Idempotent upsert (new agents API) ----------------------------------------
 $agentName = [string]$agent.name
