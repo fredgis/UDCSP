@@ -788,9 +788,11 @@ Still inside the country tenant:
 3. Supported account types: **Accounts in this organizational directory only** (single-tenant on the CIAM tenant).
 4. Redirect URI → platform **Single-page application (SPA)** → URL exactly:
    ```
-   https://icy-dune-01c23d903.7.azurestaticapps.net
+   https://icy-dune-01c23d903.7.azurestaticapps.net/
    ```
    *(replace with your own SWA hostname if you redeployed the portal)*
+
+   > **Trailing slash matters.** The SPA's MSAL config emits `redirectUri = window.location.origin + '/'` and `postLogoutRedirectUri = window.location.origin + '/'` (so that sign-out lands on the home page rather than re-firing the AuthGate on a protected route). External ID does an **exact-match** on the registered Redirect URI — register the URI **with** the trailing slash. If you want backwards-compat with older bookmarks, click **+ Add URI** and register the no-slash variant `https://icy-dune-01c23d903.7.azurestaticapps.net` as well.
 5. **Register**.
 6. Copy the **Application (client) ID** — this is the value you'll inject as `VITE_EXTERNAL_ID_CLIENT_ID_<COUNTRY>`.
 
@@ -900,7 +902,7 @@ Use **Users → New user → Create new user**, set initial password, share cred
 | `AADSTS700016 Application not found` on Sign in | No SPA app reg in the country tenant | ✅ Resolved |
 | Hosted page returns "Invalid user flow" | User flow `SignUpSignIn` missing | ✅ Resolved |
 | Header shows generic `Sign in` even after redirect back | MSAL token never issued (clientId placeholder) | ✅ Header switches to `<initial> <name> <flag>` |
-| `/cases`, `/apply/*`, `/consent` show "Sign in to continue" forever | AuthGate sees no MSAL account | ✅ Pages render once authenticated |
+| `/cases`, `/apply/*`, `/consent` show the "Sign in to apply / view / manage…" gate forever | AuthGate sees no MSAL account | ✅ Pages render once authenticated |
 | ChatWidget badge stays `🌐 Public` | `useIsAuthenticated()` returns false | ✅ Becomes `🔒 Personalised`, sends Bearer to APIM |
 
 ### What this does NOT fix (separate sections)

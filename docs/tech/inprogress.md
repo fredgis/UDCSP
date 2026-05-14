@@ -4,7 +4,7 @@ Live state of every end-to-end demo against the deployed sandbox.
 Update one row at a time as we wire each demo.
 
 - **Web SWA** — https://icy-dune-01c23d903.7.azurestaticapps.net
-- **Last bundle deployed** — `D3-pl-locale-translator-axe` (Polish locale bundle finalised, Translator agent wired into application-intake LA between Doc Extractor and D365 case write, axe-core CI gate added under `.github/workflows/web-axe.yml`)
+- **Last bundle deployed** — `signout-home-+-authgate-redesign-+-required-asterisks-+-eid-preview` (commits `7173204`, `2c22f73`): every Apply form now marks required fields with a red `*` and blocks submit until they're filled (drop `noValidate`, gate Residency on `destination + moveDate`); LoginPage shows the production-grade eID method preview tiles (MitID / BankID / BankID Norge); ChatLauncher visible on the home page; sign-out always returns to `/` (UserBadge navigates home before `logoutRedirect`, msalConfig sets `redirectUri` and `postLogoutRedirectUri` to `origin + '/'`); AuthGate ("Sign in to apply…") fully redesigned as a two-column hero + 3 benefit tiles with country pill and eID name; ambient mesh background + glass surfaces across the SPA. Earlier bundle `D3-pl-locale-translator-axe` (Polish locale, Translator agent in application-intake LA, axe-core CI) still active.
 
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
