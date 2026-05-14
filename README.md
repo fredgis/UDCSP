@@ -25,10 +25,11 @@
 
 Three Nordic governments collectively serve **2.1 million citizens** through **47 disconnected legacy portals**. A citizen who moves from Copenhagen to Stockholm has to re-submit identity documents, wait **28 days** for a residency decision, navigate a portal that may not speak their language, and which may not be accessible to them at all.
 
-UDCSP is **one** federated platform that:
+UDCSP is a **unified citizen platform** that:
 
 - 🌐 **Unifies the front door** — the 47 national portals are rationalised into a single citizen experience across web, mobile and telephone in **12 languages**, **multilingual and inclusive by design** (voice, screen-reader, plain language) — while each country keeps its sovereign back-office systems intact.
-- 🔐 **Federates identity** across the three countries while preserving national data sovereignty.
+- 🤝 **Bridges to the national authorities, never replaces them** — every transaction is pre-filled, validated, then **submitted to the competent authority** (CPR / borger.dk / SKAT / Udbetaling DK in 🇩🇰, Skatteverket / Försäkringskassan in 🇸🇪, Skatteetaten / NAV / Altinn / UDI in 🇳🇴) and the official decision, certificate or status is mirrored back into the citizen's *My cases* timeline. UDCSP itself never issues residency, tax or benefit decisions.
+- 🔐 **Federates identity** across the three countries while preserving national data sovereignty (MitID · BankID · Freja+ · ID-porten · MinID via certified OIDC brokers).
 - 🧠 **Puts AI at the center, under human control** — a Microsoft Foundry-hosted set of agents and models classifies requests, translates content, pre-determines benefit eligibility and answers citizen questions in natural language. **Every model recommendation is traceable, explainable and systematically validated or adjusted by a human caseworker** before any final decision (AI-first, but supervised).
 - ⚙️ **Automates back-office routing** through Azure Logic Apps and a Dynamics 365 case-management spine.
 - 📊 **Closes the loop** with a unified data and governance layer powered by Microsoft Fabric, Power BI and **Microsoft Purview** — a single governance fabric (catalog, AI Act registry, end-to-end traceability) that makes cross-border data sharing strictly compliant with **GDPR, the EU AI Act and sector-specific EU directives — by design, not as an afterthought**.
@@ -51,7 +52,16 @@ graph TB
     Data["📊 Microsoft Fabric  ➜  📈 Power BI"]
     Governance["🛡️ Trust &amp; Governance<br/>Purview · GDPR · EU AI Act · WCAG 2.1 AA"]
 
+    subgraph National["🤝 National authorities — bridge, never replace"]
+        DKAuth["🇩🇰 borger.dk · CPR · MitID · SKAT · Udbetaling DK"]
+        SEAuth["🇸🇪 Skatteverket · Försäkringskassan · BankID · Freja+"]
+        NOAuth["🇳🇴 Skatteetaten · NAV · Altinn · UDI · ID-porten"]
+    end
+
     Citizens --> Channels --> Edge --> Foundry --> Process --> Data
+    Process -. pre-fill / submit / status .-> DKAuth
+    Process -. pre-fill / submit / status .-> SEAuth
+    Process -. pre-fill / submit / status .-> NOAuth
     Governance -. governs every layer .-> Edge
     Governance -.-> Foundry
     Governance -.-> Data
@@ -63,13 +73,17 @@ graph TB
     style Process fill:#e36209,stroke:#c24e00,color:#fff
     style Data fill:#1565c0,stroke:#0d47a1,color:#fff
     style Governance fill:#d73a49,stroke:#b31d28,color:#fff
+    style National fill:transparent,stroke:#0d47a1,stroke-width:2px,color:#0d47a1
+    style DKAuth fill:#1565c0,stroke:#0d47a1,color:#fff
+    style SEAuth fill:#1565c0,stroke:#0d47a1,color:#fff
+    style NOAuth fill:#1565c0,stroke:#0d47a1,color:#fff
 ```
 
-Green = citizens / channels, purple = identity & AI, orange = backend & process, blue = data, red = governance.
+Green = citizens / channels, purple = identity & AI, orange = backend & process, blue = data + national authorities, red = governance.
 
-> 📖 **Reading the diagram:** citizens enter through web, mobile or voice; identity is federated and gated by API Management; requests are routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365 and analytics flow into Fabric + Power BI. **Microsoft Purview wraps every layer.**
+> 📖 **Reading the diagram:** citizens enter through web, mobile or voice; identity is federated and gated by API Management; requests are routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365; **Logic Apps then bridges to the competent national authority** (CPR / borger.dk / SKAT / Udbetaling DK in 🇩🇰, Skatteverket / Försäkringskassan in 🇸🇪, Skatteetaten / NAV / Altinn / UDI in 🇳🇴) — UDCSP submits the application, polls the status and mirrors the official decision back into the citizen's *My cases*. Analytics flow into Fabric + Power BI. **Microsoft Purview wraps every layer.**
 >
-> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform) for the same picture with every Foundry agent, identity service and country flag broken out, then §2.2+ for the deep-dive layer breakdown, data flows, AI request lifecycle, deployment topology, and installer flow.
+> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform), then **§2.3 — National-authority integration map** for the per-country bridge diagram + per-service routing matrix (residency / tax certificate / child benefit) and per-country constraints.
 
 ---
 
@@ -157,7 +171,7 @@ graph TB
 | | Pillar | Highlights |
 |:-:|---|---|
 | 🧠 | **AI-first** | Microsoft Foundry hosts the agents (classifier, translator, eligibility, citizen assistant, document extractor) with built-in evaluation, tracing, content safety, and the EU AI Act registry. **Azure OpenAI is only accessed through Foundry.** |
-| 🌐 | **Federated, not centralised** | Each country keeps its sovereign data zone; identity, AI, and orchestration meet in the middle through standards (eIDAS, OpenID Connect, OAuth 2.0). National eID (**MitID** for DK, **BankID** for SE, **BankID Norge / MinID** for NO) federates into Entra External ID via a certified OIDC broker (Criipto / Signicat) — see [`architecture.md` §4](docs/tech/architecture.md#4-identity-federation-detail). |
+| 🌐 | **Federated, not centralised — bridge to national authorities** | Each country keeps its sovereign data zone and its competent authorities (CPR · borger.dk · SKAT · Udbetaling DK · Skatteverket · Försäkringskassan · Skatteetaten · NAV · Altinn · UDI). Identity, AI and orchestration meet in the middle through standards (eIDAS, OpenID Connect, OAuth 2.0). National eID (**MitID** for DK, **BankID** for SE, **BankID Norge / MinID** for NO) federates into Entra External ID via a certified OIDC broker (Criipto / Signicat). Per-service routing matrix and per-country constraints documented in [`architecture.md` §2.3](docs/tech/architecture.md#23-national-authority-integration-map-the-unified-platform-bridge) and [`architecture.md` §4](docs/tech/architecture.md#4-identity-federation-detail). |
 | ♿ | **Inclusive by design** | WCAG 2.1 AA baked into the design system; voice channel for citizens who cannot or will not use a screen; **12 official languages with native parity**, not a translation pass. |
 | 🛡️ | **Compliance by design** | Purview classifies and labels every dataset; Logic Apps enforces approval gates; AI agents are registered, evaluated, and monitored under the EU AI Act. |
 | 🔍 | **Auditable end-to-end** | Every agent decision and every case action is traced into Fabric and made visible in Power BI dashboards for citizens, caseworkers, and auditors. |
