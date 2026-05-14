@@ -68,10 +68,20 @@ function remoteToStored(t: RemoteCase, country: string, citizenUpn?: string): St
 function defaultSteps(c: StoredCase): Step[] {
   const isCanceled = /cancel/i.test(c.status);
   const finalReview: StepStatus = isCanceled ? 'skipped' : 'in-progress';
+  const hasExtraction = !!(
+    c.documentBlobName ||
+    c.documentBlobUrl ||
+    (c.extractedFields && Object.keys(c.extractedFields).length > 0)
+  );
+  const extractorDetail = c.documentBlobName
+    ?? (c.documentBlobUrl ? c.documentBlobUrl.split('/').pop() : undefined)
+    ?? (c.extractedFields && Object.keys(c.extractedFields).length > 0
+        ? `${Object.keys(c.extractedFields).length} fields extracted`
+        : 'no document');
   return [
     { name: 'intake', label: 'Application received via APIM', status: 'done', at: c.updatedAt },
     { name: 'classifier', label: 'Foundry Classifier agent', status: 'done', detail: c.applicationType ?? '—' },
-    { name: 'extractor', label: 'Document Extractor agent', status: c.documentBlobName ? 'done' : 'skipped', detail: c.documentBlobName ?? 'no document' },
+    { name: 'extractor', label: 'Document Extractor agent', status: hasExtraction ? 'done' : 'skipped', detail: extractorDetail },
     { name: 'eligibility', label: 'Eligibility Pre-Assessor', status: 'done', detail: typeof c.confidence === 'number' ? `confidence ${(c.confidence*100).toFixed(0)}%` : (c.decision ?? '—') },
     { name: 'd365', label: 'D365 case created', status: 'done', detail: c.id },
     { name: 'lineage', label: 'Lineage published (Purview)', status: 'done' },
