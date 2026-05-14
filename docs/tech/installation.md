@@ -973,7 +973,7 @@ az role assignment create --assignee-object-id $apimMi --assignee-principal-type
 az role assignment create --assignee-object-id $apimMi --assignee-principal-type ServicePrincipal --role "Azure AI User"                  --scope $foundry
 ```
 
-Then create the APIM MI as a Dataverse Application User (one-time, per environment). Use the appId of the MI (`az ad sp show --id <principalId> --query appId -o tsv`), POST it to `/api/data/v9.2/systemusers` with the root business unit, and attach **System Customizer** + **Basic User** roles. Full snippet is in `scripts/install/Configure-Dataverse-AppUser.ps1` (committed today).
+Then create the APIM MI as a Dataverse Application User (one-time, per environment). Use the appId of the MI (`az ad sp show --id <principalId> --query appId -o tsv`), POST it to `/api/data/v9.2/systemusers` with the root business unit, and attach **Systemadministrator** (org-wide read/write/delete on `task`/`activity` — required so the GET `/citizen-applications/` op-policy can return rows owned by the LA MI, and DELETE `/citizen-applications/{id}` can cascade-delete them). `Basic User` alone is insufficient: it restricts reads to user-owned records, so APIM never sees the citizen tasks created by the Logic App's own MI. Full snippet is in `scripts/install/Configure-Dataverse-AppUser.ps1` (committed today).
 
 **B. Logic App `udcsp-<c>-dev-application-intake` system MI (covers D3 backend)**
 
