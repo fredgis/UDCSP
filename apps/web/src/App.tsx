@@ -26,7 +26,6 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { LogoutCallbackPage } from './pages/LogoutCallbackPage';
 import { MyCasesPage } from './pages/MyCasesPage';
-import { CaseworkerPage } from './pages/CaseworkerPage';
 
 function HeaderTools({
   locale,
@@ -61,7 +60,6 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
               <nav className="site-nav" aria-label="Main">
                 <Link to="/"><FormattedMessage id="nav.home" defaultMessage="Home" /></Link>
                 <Link to="/cases"><FormattedMessage id="nav.cases" defaultMessage="My cases" /></Link>
-                <Link to="/caseworker"><FormattedMessage id="nav.caseworker" defaultMessage="Caseworker" /></Link>
                 <Link to="/consent"><FormattedMessage id="nav.consent" defaultMessage="Consent" /></Link>
                 <Link to="/accessibility"><FormattedMessage id="nav.accessibility" defaultMessage="Accessibility" /></Link>
                 <Link to="/compliance"><FormattedMessage id="nav.compliance" defaultMessage="Compliance" /></Link>
@@ -78,7 +76,6 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/apply/child-benefit" element={<AuthGate title="Sign in to apply for child benefit"><ApplyChildBenefitPage /></AuthGate>} />
                 <Route path="/cases" element={<AuthGate title="Sign in to view your cases"><MyCasesPage /></AuthGate>} />
                 <Route path="/cases/:id" element={<AuthGate title="Sign in to view this case"><CaseDetailPage /></AuthGate>} />
-                <Route path="/caseworker" element={<AuthGate title="Sign in to access the caseworker workspace"><CaseworkerPage /></AuthGate>} />
                 <Route path="/accessibility" element={<><AccessibilityStatementPage /><AccessibilityMenu /></>} />
                 <Route path="/consent" element={<AuthGate title="Sign in to manage your consents"><ConsentManagementPage /></AuthGate>} />
                 <Route path="/compliance" element={<CompliancePage />} />

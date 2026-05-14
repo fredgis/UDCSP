@@ -1,0 +1,134 @@
+<!--
+  Operation policy: GET /citizen-applications/
+
+  Returns the list of UDCSP cases that BELONG to the authenticated citizen.
+
+  Why this exists:
+  Cross-device persistence — when a citizen signs out and back in a week
+  later (different browser / device / cleared cache), the localStorage
+  fallback on the SPA is empty. The cases must be re-hydrated from
+  Dataverse, scoped to the caller.
+
+  How:
+   1. Validate the caller's External ID JWT (inherited from API-level base policy).
+   2. Decode the bearer manually so we can read claims (the validate-jwt
+      fragment doesn't expose the parsed token). External ID emits one of
+      `preferred_username`, `email`, or `emails[0]` — try them in order.
+   3. Override the API-level backend (which is the LA POST trigger) with
+      Dataverse Web API.
+   4. Authenticate to Dataverse with APIM's system-assigned MI (already
+      granted Application User in `org939d8f07` per inprogress.md C5).
+   5. Filter `tasks` by the LA's subject prefix (`[UDCSP-`) AND by the
+      `citizenUpn:` token embedded in the description (the LA writes
+      `description: "citizenUpn: <upn> | text: …"`). When the canonical
+      `udcsp_application` custom table is authored, swap the OData query
+      for `udcsp_applications?$filter=udcsp_citizenupn eq '<upn>'`.
+   6. Reshape Dataverse rows into the schema the SPA expects.
+
+  No new infrastructure required — relies entirely on bits already
+  deployed (APIM MI grants, LA write, External ID JWT). On a fresh device
+  the citizen sees the same cases they submitted from the original device.
+-->
+<policies>
+  <inbound>
+    <base />
+    <set-variable name="rawBearer" value="@(context.Request.Headers.GetValueOrDefault("Authorization","").Replace("Bearer ", ""))" />
+    <set-variable name="citizenUpn" value="@{
+        try {
+            var jwt = ((string)context.Variables["rawBearer"]).AsJwt();
+            if (jwt == null) return "";
+            string u = null;
+            if (jwt.Claims.ContainsKey("preferred_username")) u = jwt.Claims.GetValueOrDefault("preferred_username","");
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("email")) u = jwt.Claims.GetValueOrDefault("email","");
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("emails")) u = jwt.Claims.GetValueOrDefault("emails","");
+            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("upn")) u = jwt.Claims.GetValueOrDefault("upn","");
+            return u ?? "";
+        } catch { return ""; }
+    }" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables["citizenUpn"]))">
+        <return-response>
+          <set-status code="401" reason="Unauthorized" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"missing_citizen_claim","message":"JWT must carry preferred_username / email / emails / upn for case lookup."}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <authentication-managed-identity resource="{{d365-dataverse-url}}" output-token-variable-name="dvToken" ignore-error="false" />
+    <send-request mode="new" response-variable-name="dvResp" timeout="20" ignore-error="false">
+      <set-url>@{
+          var upn = (string)context.Variables["citizenUpn"];
+          var dvUrl = "{{d365-dataverse-url}}".TrimEnd('/');
+          var filter = "startswith(subject,'[UDCSP-') and contains(description,'citizenUpn: " + upn + "')";
+          var select = "activityid,subject,description,createdon,modifiedon,statecode,statuscode,prioritycode";
+          var orderby = "createdon desc";
+          return dvUrl + "/api/data/v9.2/tasks?$select=" + System.Net.WebUtility.UrlEncode(select)
+                       + "&$filter=" + System.Net.WebUtility.UrlEncode(filter)
+                       + "&$orderby=" + System.Net.WebUtility.UrlEncode(orderby)
+                       + "&$top=200";
+      }</set-url>
+      <set-method>GET</set-method>
+      <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["dvToken"])</value></set-header>
+      <set-header name="OData-Version" exists-action="override"><value>4.0</value></set-header>
+      <set-header name="Accept" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="Prefer" exists-action="override"><value>odata.include-annotations="*"</value></set-header>
+    </send-request>
+    <return-response>
+      <set-status code="200" reason="OK" />
+      <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+          var resp = (IResponse)context.Variables["dvResp"];
+          if (resp.StatusCode != 200) {
+            return "{\"value\":[],\"error\":\"dataverse_" + resp.StatusCode + "\"}";
+          }
+          JObject body;
+          try { body = resp.Body.As<JObject>(); }
+          catch { return "{\"value\":[]}"; }
+          var rows = body["value"] as JArray;
+          if (rows == null) return "{\"value\":[]}";
+          var items = new JArray();
+          foreach (var row in rows) {
+            string sub = (string)row["subject"] ?? "";
+            string desc = (string)row["description"] ?? "";
+            string text = desc;
+            int idx = desc.IndexOf("| text:");
+            if (idx > 0) text = desc.Substring(idx + 7).Trim();
+            items.Add(new JObject {
+              ["id"] = (string)row["activityid"],
+              ["activityid"] = (string)row["activityid"],
+              ["caseId"] = (string)row["activityid"],
+              ["title"] = sub,
+              ["subject"] = sub,
+              ["description"] = text,
+              ["status"] = (int?)row["statuscode"] != null ? "statuscode " + row["statuscode"] : "Submitted",
+              ["statecode"] = (int?)row["statecode"] ?? 0,
+              ["createdOn"] = (string)row["createdon"],
+              ["updatedAt"] = (string)row["modifiedon"] ?? (string)row["createdon"],
+              ["country"] = sub.Length >= 8 ? sub.Substring(7, 2).ToLower() : null,
+              ["applicationType"] = sub.Contains("residency") ? "residency-transfer"
+                                  : sub.Contains("child") ? "child-benefit"
+                                  : sub.Contains("tax") ? "tax-certificate" : "application"
+            });
+          }
+          return new JObject { ["value"] = items, ["count"] = items.Count }.ToString();
+      }</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /><set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header></outbound>
+  <on-error>
+    <base />
+    <set-header name="x-correlation-id" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header>
+    <return-response>
+      <set-status code="500" reason="Internal Server Error" />
+      <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+      <set-body>@{
+          return new JObject {
+            ["error"] = "lookup_failed",
+            ["message"] = context.LastError != null ? context.LastError.Message : "unknown",
+            ["correlationId"] = (string)context.Variables["correlationId"]
+          }.ToString();
+      }</set-body>
+    </return-response>
+  </on-error>
+</policies>
