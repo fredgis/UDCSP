@@ -65,7 +65,9 @@
     <choose>
       <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode == 404)">
         <return-response>
-          <set-status code="204" reason="No Content" />
+          <set-status code="404" reason="Not Found" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"not_found","message":"No Dataverse row with this activityid (likely a stale local-cache entry)."}</set-body>
         </return-response>
       </when>
       <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode != 200)">
