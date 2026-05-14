@@ -58,7 +58,6 @@ export function CookieBanner({
   onOpenSettings?: () => void;
 }) {
   const [open, setOpen] = useState<boolean>(() => readStoredChoice() === null);
-  const acceptRef = useRef<HTMLButtonElement | null>(null);
   const intl = useIntl();
   const navigate = useNavigate();
 
