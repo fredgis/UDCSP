@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 import { listCases, removeCase, updateCase } from '../utils/caseStore';
 
@@ -38,6 +39,7 @@ function normalize(items: IntakeApplication[]): Case[] {
 }
 
 export function MyCasesPage() {
+  const intl = useIntl();
   const isAuth = useIsAuthenticated();
   const { instance, accounts } = useMsal();
   const [cases, setCases] = useState<Case[] | null>(null);
@@ -117,20 +119,20 @@ export function MyCasesPage() {
     void load();
   }, [load]);
 
-  if (cases === null) return <section><h1>My cases</h1><p>Loading…</p></section>;
+  if (cases === null) return <section><h1><FormattedMessage id="cases.title" defaultMessage="My cases" /></h1><p>…</p></section>;
 
   return (
     <section aria-labelledby="cases-title">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-        <h1 id="cases-title" style={{ marginBottom: 0 }}>My cases</h1>
+        <h1 id="cases-title" style={{ marginBottom: 0 }}><FormattedMessage id="cases.title" defaultMessage="My cases" /></h1>
         <button
           type="button"
           className="button-secondary"
           onClick={() => void load()}
           disabled={loading}
-          aria-label="Refresh case list"
+          aria-label={intl.formatMessage({ id: 'cases.refresh', defaultMessage: '⟳ Refresh' })}
         >
-          {loading ? '⟳ Refreshing…' : '⟳ Refresh'}
+          {loading ? <FormattedMessage id="cases.refreshing" defaultMessage="⟳ Refreshing…" /> : <FormattedMessage id="cases.refresh" defaultMessage="⟳ Refresh" />}
         </button>
       </div>
       <p style={{ color: 'var(--color-fg-soft)' }}>
@@ -139,11 +141,10 @@ export function MyCasesPage() {
       {error && <p role="status" className="info-banner">{error}</p>}
       {cases.length === 0 ? (
         <div className="empty-state">
-          <h2>No applications yet</h2>
-          <p>Start a new application — it will appear here as soon as a case number is issued.</p>
+          <h2><FormattedMessage id="cases.empty" defaultMessage="You don’t have any cases yet. Start an application from the homepage." /></h2>
           <p>
-            <Link to="/apply/residency" className="button-primary">Start residency transfer</Link>{' '}
-            <Link to="/apply/child-benefit" className="button-secondary">Apply for child benefit</Link>
+            <Link to="/apply/residency" className="button-primary"><FormattedMessage id="apply.residency.title" defaultMessage="Residency transfer" /></Link>{' '}
+            <Link to="/apply/child-benefit" className="button-secondary"><FormattedMessage id="apply.childBenefit.title" defaultMessage="Child & family benefit" /></Link>
           </p>
         </div>
       ) : (
@@ -178,23 +179,23 @@ export function MyCasesPage() {
                     disabled={isCanceled}
                     onClick={() => {
                       if (isCanceled) return;
-                      if (!confirm(`Cancel case ${c.id}? You can still view the audit trail afterwards.`)) return;
+                      if (!confirm(intl.formatMessage({ id: 'cases.cancelConfirm', defaultMessage: 'Cancel this application? You can re-apply later.' }))) return;
                       updateCase(c.id, { status: 'Canceled by citizen' });
                       void load();
                     }}
                   >
-                    Cancel
+                    <FormattedMessage id="cases.cancelLabel" defaultMessage="Cancel" />
                   </button>
                   <button
                     type="button"
                     className="button-danger case-actions__btn"
                     onClick={() => {
-                      if (!confirm(`Delete case ${c.id} from this device? This removes the local cache only — server records are preserved per public-records law. Use the GDPR erasure workflow on the Consent page to request server-side deletion.`)) return;
+                      if (!confirm(intl.formatMessage({ id: 'cases.deleteConfirm', defaultMessage: 'Remove this case from local cache only? It stays in the back-end record.' }))) return;
                       removeCase(c.id);
                       void load();
                     }}
                   >
-                    Delete
+                    <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove from cache" />
                   </button>
                 </div>
               </li>

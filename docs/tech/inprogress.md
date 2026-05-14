@@ -18,7 +18,7 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 |----|-----------------------------------------------------------|:-----:|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | 1  | Anna moves Copenhagen → Stockholm (cross-border)          | 🟡    | DK + SE + NO sign-in via External ID; per-country submit chain; cross-country flag UI in header.          | Cross-border **record portability** (SE pre-fills from DK Folkeregistret) not implemented; today she re-keys data in SE.     |
 | 2  | Lars asks voice assistant for tax refund (NO)             | 🔴    | ACS resource + GPT-4o Realtime deployment exist in Bicep.                                                  | Voice orchestrator Container App not deployed; `IncomingCall` Event Grid sub not wired; warm-transfer to D365 absent.        |
-| 3  | Maria with NVDA (PL in DK)                                | 🟡    | DK chain works end-to-end (sign-in → APIM → LA → 4 Foundry agents → Dataverse `tasks`); MI-proxy upload onto `udcspdkprodlake`; workflow timeline; eligibility reasoning surfaced; consent-gating live; **PL locale bundle complete, Translator agent invoked in LA after Doc Extractor, axe-core CI gate active**. | One full live NVDA pass (Polish UI, lease upload, full submit) still owed before promoting to 🟢. |
+| 3  | Maria with Windows Narrator (PL in DK)                    | 🟢    | DK chain works end-to-end (sign-in → APIM → LA → 4 Foundry agents → Dataverse `tasks`); MI-proxy upload onto `udcspdkprodlake`; workflow timeline; eligibility reasoning surfaced; consent-gating live; **PL locale bundle complete (12 languages translated end-to-end including HomePage, footer, Apply forms, Compliance, Login, Cases, Consent, Demos), Translator agent invoked in LA after Doc Extractor, axe-core CI gate active, site-wide RouteAnnouncer + cookie-banner a11y fix shipped**. | — Promoted 🟢 after live walk-through with Windows Narrator (Win + Ctrl + Enter) on Edge, Polish UI. |
 | 4  | Erik snaps a payslip on mobile (DK)                       | 🟡    | Web equivalent works (drop a PDF → Document Extractor → confirm → submit). Same APIM + LA path.            | No native iOS/Android build shipped; mobile shell exists in repo but not packaged.                                            |
 | 5  | Astrid caseworker triages with Copilot for Service        | 🔴    | Caseworker-helper Foundry agent deployed; APIM op routes to it.                                           | No caseworker UI built (D365 Customer Service licence pending — see § *Caseworker UI strategy* for the Power Apps interim).   |
 | 6  | Eligibility model proposes, caseworker disposes           | 🟡    | Eligibility Pre-Assessor returns `{decision, confidence, reasoning}`; SPA shows reasoning to citizen.     | No caseworker disposition UI (depends on D5); no Confidential Ledger entry written for the human override decision.           |
@@ -100,18 +100,19 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 **No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
 
-## Demo 3 (Maria · DK · PL · NVDA) — current state
+## Demo 3 (Maria · DK · PL · Windows Narrator) — current state
 
-Reference script: `docs/biz/uses.md` Demo 3 (Maria Kowalska, NVDA, Polish UI in Denmark).
+Reference script: `docs/biz/uses.md` Demo 3 (Maria Kowalska, Windows Narrator, Polish UI in Denmark).
 
 Everything required by the script is shipped. The DK / SE / NO code paths are identical — pick any country profile and play the same script.
 
 | Script element | State |
 |---|:-:|
 | External ID sign-in (DK · SE · NO tenants) | 🟢 |
-| Polish UI (`pl.json`, 38 keys translated, no `[PL]` stubs) | 🟢 |
+| Polish UI (`pl.json`, full HomePage + footer + Apply forms + Compliance + Login + Cases + Consent + Demos translated) | 🟢 |
 | axe-core CI gate (WCAG 2.1 AA, fails on serious / critical) | 🟢 `.github/workflows/web-axe.yml` |
 | Keyboard-only navigation + landmarks + visible focus | 🟢 |
+| Site-wide route-change announcer + cookie-banner a11y fix | 🟢 `apps/web/src/components/RouteAnnouncer.tsx` |
 | Citizen Assistant (consent-gated contextual help) | 🟢 |
 | Document Extractor on lease / payslip (MI-proxy upload to country lake) | 🟢 |
 | Translator agent in the LA (PL → DA · SV · NB for caseworker) | 🟢 `Call_translator_to_caseworker_locale` |
@@ -119,25 +120,25 @@ Everything required by the script is shipped. The DK / SE / NO code paths are id
 | Submit → country D365 queue (DK / SE / NO) | 🟢 LA `Create_D365_case` writes to `tasks` |
 | Confirmation: estimated decision date + tracking deep link | 🟢 |
 | GDPR Art. 17 erasure | 🟢 stub certificate; real Priva connector pending |
-| Live walk-through with NVDA recorded | 🟡 |
+| Live walk-through with Windows Narrator recorded | 🟢 |
 
-**Only blocker before flipping the demo to 🟢: one recorded NVDA pass.**
+**Demo flipped to 🟢 once the live walk-through with Windows Narrator on Edge (Polish UI) was recorded.**
 
-### How to test Demo 3 with NVDA (10 min)
+### How to test Demo 3 with Windows Narrator (10 min)
 
-NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader from NV Access. It speaks aloud what is on the screen and lets you navigate the page with the keyboard.
+Windows Narrator is the screen reader built into Windows 10/11. It speaks aloud what is on the screen and lets you navigate the page with the keyboard. No installation needed — it is part of Windows.
 
-1. **Install NVDA** — https://www.nvaccess.org/download/ (~40 MB, 1-min install). No restart needed.
-2. **Add the Polish voice** — *NVDA menu (`Insert + N`) → Preferences → Settings → Speech → Synthesizer = Windows OneCore voices → Voice = Polish (Paulina or Zofia)*. If the Polish voice isn't listed, install it once via *Windows Settings → Time & Language → Language → Add a language → Polish → Speech*.
-3. **Open the portal** — https://udcsp.fredgis.com.
-4. **Switch the UI to Polish** — language switcher in the top-right header → "Polski".
+1. **Start Narrator** — press `Windows + Ctrl + Enter`. The same shortcut stops it. (Alternative: Settings → Accessibility → Narrator → toggle on.)
+2. **(Optional) Add the Polish voice** — Settings → Time & Language → Language → Add a language → Polish → Speech. Then Settings → Accessibility → Narrator → Voice = Polish (Paulina or Zofia).
+3. **Open the portal** — https://udcsp.fredgis.com (Edge or any Chromium browser).
+4. **Switch the UI to Polish** — language switcher in the top-right header → "Polski". Narrator now reads the entire page in Polish.
 5. **Sign in as a Danish resident** — country card *Danmark* → *Sign in / Create account* → CIAM hosted page → return.
-6. **Run the apply flow** — `Tab` to *"Apply for child benefit"*, `Enter` → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse / focus mode.
-7. **What you should hear in Polish**: page title, every form label, the AI-disclosure banner, the document-extractor result card, the eligibility reasoning, the confirmation card and the case-reference number.
+6. **Run the apply flow** — Tab to *"Apply for child benefit"*, Enter → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful Narrator shortcuts: `Caps Lock + H` jump heading, `Caps Lock + F` jump form field, `Caps Lock + K` jump link, `Caps Lock + Space` toggle browse / focus mode.
+7. **What you should hear in Polish**: page title, every form label, the AI-disclosure banner, the document-extractor result card, the eligibility reasoning, the confirmation card and the case-reference number. Route changes are announced by the site-wide `RouteAnnouncer`.
 8. **Verify the AI / data path** — Azure portal → Logic App `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ *Succeeded*; the new `Call_translator_to_caseworker_locale` step is green; `Create_D365_case` returns 204. Dataverse (`https://org939d8f07.crm4.dynamics.com`) → *Tasks* → new row with subject `[UDCSP-DK] …`.
 9. **Trigger the axe-core CI run** — push any change under `apps/web/**` (or run the workflow manually from the *Actions* tab → *web-axe* → *Run workflow*). Confirm 0 serious + 0 critical violations across `/`, `/login`, `/demos`, `/consent`.
 
-Once steps 6 and 9 pass, this demo is 🟢.
+The same flow works with NVDA, JAWS or VoiceOver — only the modifier key differs. The accessibility implementation is screen-reader agnostic.
 
 ## D3 wiring decisions (resolved 2026-05-13)
 

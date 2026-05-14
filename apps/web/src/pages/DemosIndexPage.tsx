@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FormattedMessage } from 'react-intl';
 
 type Demo = {
   id: string;
@@ -26,7 +27,7 @@ const demos: Demo[] = [
   {
     id: 'D3', title: 'Maria submits a benefit application with a screen reader', persona: 'Maria · PL on SE',
     category: 'citizen', channels: 'Web · Chat · Caseworker',
-    story: 'Polish UI on Swedish portal, NVDA-friendly, AI assistant in PL, eligibility flagged for human review.',
+    story: 'Polish UI on Danish portal, screen-reader friendly (Windows Narrator), AI assistant in PL, eligibility flagged for human review.',
     links: [{ label: 'Apply child benefit', to: '/apply/child-benefit' }, { label: 'Track case', to: '/cases' }],
   },
   {
@@ -219,18 +220,15 @@ export function DemosIndexPage() {
   return (
     <section aria-labelledby="demos-title">
       <header className="demos-hero">
-        <h1 id="demos-title">Demonstration scenarios</h1>
+        <h1 id="demos-title"><FormattedMessage id="demos.title" defaultMessage="Demonstration scenarios" /></h1>
         <p>
-          Ten end-to-end scenarios that exercise every row of the README evaluation matrix —
-          citizen journeys, back-office work, governance, observability and DevOps.
-          Pick one and follow the deep links to the relevant portal page or admin surface.
-          The full narration lives in <a href="https://github.com/fredgis/UDCSP/blob/main/docs/biz/uses.md">docs/biz/uses.md</a>.
+          <FormattedMessage id="demos.lede" defaultMessage="Ten end-to-end scenarios — citizen journeys, back-office work, governance, observability and DevOps. Pick one and follow the deep links." />
         </p>
       </header>
 
       <div className="section-heading">
         <div>
-          <h2>How everything is wired</h2>
+          <h2><FormattedMessage id="demos.architecture.heading" defaultMessage="How everything is wired" /></h2>
           <p>The functional architecture below shows the path every citizen request takes — through identity, the platform layer and into the country&rsquo;s own backend.</p>
         </div>
       </div>
@@ -238,8 +236,8 @@ export function DemosIndexPage() {
 
       <div className="section-heading" style={{ marginTop: 'var(--space-6)' }}>
         <div>
-          <h2>The ten scenarios</h2>
-          <p>Each demo is self-contained and can be played independently.</p>
+          <h2><FormattedMessage id="demos.scenarios.heading" defaultMessage="The ten scenarios" /></h2>
+          <p><FormattedMessage id="demos.scenarios.lede" defaultMessage="Each demo is self-contained and can be played independently." /></p>
         </div>
       </div>
       <ul className="demo-grid" role="list">

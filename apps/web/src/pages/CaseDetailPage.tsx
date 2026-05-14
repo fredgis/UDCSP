@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { getCase, removeCase, updateCase, type StoredCase } from '../utils/caseStore';
 
 type StepStatus = 'done' | 'in-progress' | 'pending' | 'skipped';
@@ -75,6 +76,7 @@ function fmt(v: unknown): string {
 }
 
 export function CaseDetailPage() {
+  const intl = useIntl();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [c, setC] = useState<StoredCase | undefined>(() => (id ? getCase(id) : undefined));
@@ -88,9 +90,8 @@ export function CaseDetailPage() {
   if (!c) {
     return (
       <article className="apply-page">
-        <h1>Case not found</h1>
-        <p>This case is not in your local cache. Try refreshing the list.</p>
-        <p><Link to="/cases" className="button-secondary">← Back to my cases</Link></p>
+        <h1><FormattedMessage id="caseDetail.notFound" defaultMessage="Case not found" /></h1>
+        <p><Link to="/cases" className="button-secondary"><FormattedMessage id="caseDetail.back" defaultMessage="← Back to My cases" /></Link></p>
       </article>
     );
   }
@@ -99,7 +100,7 @@ export function CaseDetailPage() {
 
   return (
     <article className="apply-page case-detail">
-      <p className="case-detail__back"><Link to="/cases">← Back to my cases</Link></p>
+      <p className="case-detail__back"><Link to="/cases"><FormattedMessage id="caseDetail.back" defaultMessage="← Back to My cases" /></Link></p>
       <header className="case-detail__head">
         <div>
           <h1>{c.title}</h1>
@@ -124,30 +125,30 @@ export function CaseDetailPage() {
             disabled={isCanceled}
             onClick={() => {
               if (isCanceled) return;
-              if (!confirm('Cancel this case? Caseworker is notified and the audit trail is preserved.')) return;
+              if (!confirm(intl.formatMessage({ id: 'cases.cancelConfirm', defaultMessage: 'Cancel this application? You can re-apply later.' }))) return;
               updateCase(c.id, { status: 'Canceled by citizen' });
               setC(getCase(c.id));
             }}
           >
-            Cancel case
+            <FormattedMessage id="cases.cancelLabel" defaultMessage="Cancel" />
           </button>
           <button
             type="button"
             className="button-danger"
             onClick={() => {
-              if (!confirm('Delete this case from local cache? Server records remain (public-records law). Request server-side erasure via the Consent page.')) return;
+              if (!confirm(intl.formatMessage({ id: 'cases.deleteConfirm', defaultMessage: 'Remove this case from local cache only? It stays in the back-end record.' }))) return;
               removeCase(c.id);
               navigate('/cases');
             }}
           >
-            Remove from cache
+            <FormattedMessage id="cases.deleteLabel" defaultMessage="Remove from cache" />
           </button>
         </div>
       </header>
 
       <div className="case-detail__grid">
         <section aria-labelledby="wf-title" className="case-section case-section--wide">
-          <h2 id="wf-title">Workflow timeline</h2>
+          <h2 id="wf-title"><FormattedMessage id="caseDetail.timeline" defaultMessage="Workflow timeline" /></h2>
           <p className="case-detail__hint">
             Live view of the country intake Logic App
             {' '}<code>udcsp-{c.country}-dev-application-intake</code>{' '}
@@ -158,7 +159,7 @@ export function CaseDetailPage() {
 
         {c.documentBlobUrl && (
           <section aria-labelledby="doc-title" className="case-section">
-            <h2 id="doc-title">Attached document</h2>
+            <h2 id="doc-title"><FormattedMessage id="caseDetail.attachedDoc" defaultMessage="Attached document" /></h2>
             <dl className="case-detail__dl">
               <dt>File</dt><dd>{c.documentBlobName ?? '—'}</dd>
               <dt>Storage account</dt><dd><code>{c.storageAccount ?? `udcsp${c.country}prodlake`}</code></dd>
@@ -171,7 +172,7 @@ export function CaseDetailPage() {
 
         {c.extractedFields && Object.keys(c.extractedFields).length > 0 && (
           <section aria-labelledby="ex-title" className="case-section">
-            <h2 id="ex-title">Extracted fields</h2>
+            <h2 id="ex-title"><FormattedMessage id="caseDetail.extracted" defaultMessage="Extracted fields" /></h2>
             <table className="case-fields-table">
               <thead><tr><th>Field</th><th>Value</th></tr></thead>
               <tbody>

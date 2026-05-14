@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
+import { FormattedMessage } from 'react-intl';
 import { authorityForCountry, countries, Country, createMsalConfig, getCountry, isCountryConfigured, loginRequest, setCountry } from '../auth/msalConfig';
 
 export function LoginPage() {
@@ -35,11 +36,11 @@ export function LoginPage() {
 
   return (
     <section aria-labelledby="signin-title" style={{ maxWidth: '52rem' }}>
-      <h1 id="signin-title">Sign in to UDCSP</h1>
+      <h1 id="signin-title"><FormattedMessage id="login.title" defaultMessage="Sign in to UDCSP" /></h1>
       <p>Choose the country whose services you need. Your account is created on the matching national identity tenant — your data stays in that country.</p>
 
       <fieldset className="login-fieldset">
-        <legend>1. Choose your country</legend>
+        <legend><FormattedMessage id="login.legend.country" defaultMessage="1. Choose your country" /></legend>
         <div role="radiogroup" aria-label="Country" className="country-grid">
           {countries.map((c) => {
             const isSelected = selected === c.code;
@@ -64,7 +65,7 @@ export function LoginPage() {
       </fieldset>
 
       <fieldset className="login-fieldset">
-        <legend>2. Choose how to sign in</legend>
+        <legend><FormattedMessage id="login.legend.method" defaultMessage="2. Choose how to sign in" /></legend>
         <p style={{ color: 'var(--color-fg-soft)', marginTop: 0, fontSize: '.92rem' }}>
           In production, residents authenticate either with email & password (returning users) or with their <strong>national eID</strong>{' '}
           ({selected === 'dk' ? 'MitID' : selected === 'se' ? 'BankID' : 'BankID Norge / MinID'}). The eID button is shown here for clarity but is
@@ -90,14 +91,14 @@ export function LoginPage() {
       </fieldset>
 
       <fieldset className="login-fieldset">
-        <legend>3. Sign in or register</legend>
+        <legend><FormattedMessage id="login.legend.action" defaultMessage="3. Sign in or register" /></legend>
         <p style={{ color: 'var(--color-fg-soft)', marginTop: 0 }}>
           You will be redirected to <strong>udcsp{selected}.ciamlogin.com</strong> · user flow <code>SignUpSignIn</code>.
           {' '}New residents register; returning users sign in.
         </p>
         <div className="login-actions">
-          <button type="button" className="button-primary" onClick={() => void start('signin')} disabled={!configured}>Sign in</button>
-          <button type="button" className="button-secondary" onClick={() => void start('signup')} disabled={!configured}>Create an account</button>
+          <button type="button" className="button-primary" onClick={() => void start('signin')} disabled={!configured}><FormattedMessage id="login.signin" defaultMessage="Sign in" /></button>
+          <button type="button" className="button-secondary" onClick={() => void start('signup')} disabled={!configured}><FormattedMessage id="login.create" defaultMessage="Create an account" /></button>
         </div>
         {!configured && (
           <p role="alert" className="login-warning">
