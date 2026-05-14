@@ -6,6 +6,11 @@ Update one row at a time as we wire each demo.
 - **Web SWA** — https://udcsp.fredgis.com
 - **Last bundle deployed** — `signout-home-+-authgate-redesign-+-required-asterisks-+-eid-preview` (commits `7173204`, `2c22f73`): every Apply form now marks required fields with a red `*` and blocks submit until they're filled (drop `noValidate`, gate Residency on `destination + moveDate`); LoginPage shows the production-grade eID method preview tiles (MitID / BankID / BankID Norge); ChatLauncher visible on the home page; sign-out always returns to `/` (UserBadge navigates home before `logoutRedirect`, msalConfig sets `redirectUri` and `postLogoutRedirectUri` to `origin + '/'`); AuthGate ("Sign in to apply…") fully redesigned as a two-column hero + 3 benefit tiles with country pill and eID name; ambient mesh background + glass surfaces across the SPA. Earlier bundle `D3-pl-locale-translator-axe` (Polish locale, Translator agent in application-intake LA, axe-core CI) still active.
 
+> 🛠️ **May 14 hotfix bundle (commits `697c1e4` · `d6869e4` · `f6831b2` · `ec02efb`).**
+> – `services/apim/apis/eligibility-checks/policy.xml` was using `jwt-validate-entra` (Workforce OIDC) instead of `jwt-validate-external-id`; every citizen-side eligibility call returned 401 before reaching the agent. Fragment swapped + policy redeployed live to `udcsp-{dk,se,no}-prod-apim` via `az rest PUT --output-file`.
+> – Discovered the SWA `udcsp-web-dev` has **no GitHub Actions workflow** (`gh workflow list` only returns `web-axe`; `az staticwebapp show` returns `repo: null`). All recent merges to `main` therefore did **not** reach the live origin until manually deployed. **Going forward, every code change must be pushed live with `npm run build && npx --yes @azure/static-web-apps-cli@latest deploy ./dist --deployment-token <key> --env production --no-use-keychain` (token from `az staticwebapp secrets list -n udcsp-web-dev`).**
+> – Power Apps caseworker bootstrap landed: `apps/powerapps/caseworker/bootstrap-udcsp-application.ps1` provisions the `udcsp_application` custom table (~40 columns) idempotently via the Dataverse Web API; `apps/powerapps/caseworker/deploy.ps1` replicates the resulting solution across DK/SE/NO envs with `pac solution export/import --publish-changes`.
+
 Legend: 🟢 fully E2E · 🟡 partial / UI-only · 🔴 not wired
 
 ## Demo status

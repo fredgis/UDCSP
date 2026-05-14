@@ -208,6 +208,24 @@ flowchart LR
 | **Azure Database for PostgreSQL — Flexible Server** *(post-audit refactor — replaces Azure SQL **and** Cosmos DB)* | Reference data (countries, postal codes, currencies), business rules (eligibility tables, fee schedules), per-country glossaries, durable JSONB application drafts (>24 h retention), all relational lookups previously in SQL DB and all "JSON-document" workloads previously in Cosmos | Single OLTP engine consolidating relational + JSONB; CMK; private endpoint; geo-zone-redundant backup; Flexible Server HA; clear right-to-erasure surface | Reference + drafts plane |
 | **Azure Cache for Redis** *(post-audit refactor — replaces ephemeral Cosmos workloads)* | Slot-filling cache for the topic-router (TTL 24 h.), session state, rate-limit counters, ephemeral conversational context, in-progress draft autosaves (TTL ≤ 24 h.), distributed locks | Sub-millisecond p99 reads; native TTL; Enterprise SKU CMK + private endpoint; cheaper than Cosmos for ephemeral data | App service plane |
 
+> 🔧 **Implementation status (May 2026) — Dataverse `udcsp_application` table.**
+> The canonical Dataverse table for citizen applications is `udcsp_application`
+> (~40 columns covering identity, routing, citizen, residency-transfer, child-benefit, document extraction, AI verdict, claims envelope, consents, caseworker workflow). The full spec lives in
+> `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml`.
+> **However**, until the table is authored once in `make.powerapps.com` (or
+> provisioned by `apps/powerapps/caseworker/bootstrap-udcsp-application.ps1`,
+> which calls the Dataverse Web API to create it idempotently), the
+> application-intake Logic App falls back to writing on the standard
+> `task` activity entity with `subject = "[UDCSP-<country>] <topic>"` and
+> `description = "citizenUpn: <upn> | text: …"`. The 30+ `udcsp_*`
+> columns the LA tries to set are silently dropped. The APIM operation
+> policy `services/apim/apis/citizen-applications/operations/get-citizen-applications-list.xml`
+> mirrors that fallback by querying `tasks` filtered by UPN — this gives
+> citizens **cross-device case re-hydration today** (sign out, switch
+> device, sign back in → cases appear). When the canonical table lands,
+> swap one OData query in that policy (`tasks` → `udcsp_applications`)
+> and the LA stops dropping columns.
+
 ### 3.2 Zone 2 — Documents (binary, immuable)
 
 > **Purpose.** Binary blobs that are too big for Dataverse and need lifecycle policies.
