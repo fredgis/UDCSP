@@ -151,6 +151,7 @@ function Install-Apim {
                                '--api-id',$a.Name,
                                '--specification-path',$openapi,
                                '--specification-format','OpenApi',
+                               '--subscription-required','false',
                                '--only-show-errors','--output','none') `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
