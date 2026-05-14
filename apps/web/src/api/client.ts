@@ -34,7 +34,12 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
         ...(options.headers || {}),
       },
     });
-    if (response.ok) return (response.status === 204 ? undefined : response.json()) as T;
+    if (response.ok) {
+      if (response.status === 204) return undefined as T;
+      const text = await response.text();
+      if (!text) return undefined as T;
+      try { return JSON.parse(text) as T; } catch { throw new Error(`APIM response not JSON (status ${response.status})`); }
+    }
     if (attempt === retries || ![408, 429, 500, 502, 503, 504].includes(response.status)) {
       throw new Error(`APIM request failed: ${response.status}`);
     }
