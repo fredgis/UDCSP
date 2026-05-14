@@ -1107,16 +1107,66 @@
 
 /* My Cases — rich row with progress bar */
 .case-list { list-style:none; padding:0; margin:1rem 0 0; display:flex; flex-direction:column; gap:.75rem; }
-.case-row { display:flex; gap:1rem; padding:1rem 1.1rem; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); align-items:flex-start; flex-wrap:wrap; }
-.case-row__main { flex:1 1 60%; min-width:0; display:flex; flex-direction:column; gap:.4rem; }
-.case-row__title { font-size:1rem; }
-.case-row__meta { display:flex; gap:.6rem; align-items:center; flex-wrap:wrap; color:var(--color-fg-soft); font-size:.85rem; }
-.case-row__progress { display:flex; flex-direction:column; gap:.25rem; margin-top:.25rem; }
-.case-row__progress-bar { height:6px; background:#e6ecf3; border-radius:999px; overflow:hidden; }
-.case-row__progress-fill { height:100%; background:linear-gradient(90deg, #1f6f43, #2e9663); transition:width .4s; }
+.case-row { position:relative; display:flex; gap:1rem; padding:1rem 1.1rem 1rem 1.5rem; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface); align-items:flex-start; flex-wrap:wrap; overflow:hidden; transition: box-shadow .15s, transform .15s; }
+.case-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); transform: translateY(-1px); }
+.case-row__accent { position:absolute; left:0; top:0; bottom:0; width:6px; background:#9aa6b2; }
+.case-row--submitted .case-row__accent { background: linear-gradient(180deg,#3a86ff,#0a4d8c); }
+.case-row--review .case-row__accent { background: linear-gradient(180deg,#f59e0b,#b45309); }
+.case-row--completed .case-row__accent { background: linear-gradient(180deg,#2e9663,#1f6f43); }
+.case-row--eligible .case-row__accent { background: linear-gradient(180deg,#2e9663,#1f6f43); }
+.case-row--canceled .case-row__accent { background: linear-gradient(180deg,#9ca3af,#4b5563); }
+.case-row__main { flex:1 1 60%; min-width:0; display:flex; flex-direction:column; gap:.45rem; }
+.case-row__title { font-size:1.05rem; font-weight:700; color:#1a3a5c; display:flex; align-items:center; gap:.55rem; text-decoration:none; }
+.case-row__title:hover { text-decoration: underline; }
+.case-row__icon { font-size:1.4rem; line-height:1; }
+.case-row__title-text { flex:1; }
+.case-row__flag { font-size:1.1rem; }
+.case-row__id { font-size:.78rem; color:var(--color-fg-soft); }
+.case-row__id code { background:#f1f4f8; padding:.1rem .35rem; border-radius:4px; }
+.case-row__meta { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; color:var(--color-fg-soft); font-size:.85rem; }
+.case-row__progress { display:flex; flex-direction:column; gap:.25rem; margin-top:.3rem; }
+.case-row__progress-bar { height:8px; background:#e6ecf3; border-radius:999px; overflow:hidden; }
+.case-row__progress-fill { height:100%; transition:width .4s; background:linear-gradient(90deg, #1f6f43, #2e9663); }
+.case-row__progress-fill--submitted { background:linear-gradient(90deg,#0a4d8c,#3a86ff); }
+.case-row__progress-fill--review { background:linear-gradient(90deg,#b45309,#f59e0b); }
+.case-row__progress-fill--completed,
+.case-row__progress-fill--eligible { background:linear-gradient(90deg,#1f6f43,#2e9663); }
+.case-row__progress-fill--canceled { background:linear-gradient(90deg,#6b7280,#9ca3af); }
 .case-row__progress-label { font-size:.78rem; color:var(--color-fg-soft); }
 .case-row__progress-label em { font-style:normal; color:#1a3a5c; font-weight:600; }
-.case-row__actions { display:flex; gap:.4rem; align-items:flex-start; flex:0 0 auto; }
+.case-row__actions { display:flex; gap:.4rem; align-items:flex-start; flex:0 0 auto; flex-wrap:wrap; }
+
+/* Status / decision / confidence pills */
+.pill--status-submitted { background:#dbeafe; color:#1e40af; }
+.pill--status-review { background:#fef3c7; color:#92400e; }
+.pill--status-completed { background:#dcfce7; color:#166534; }
+.pill--status-eligible { background:#dcfce7; color:#166534; }
+.pill--status-canceled { background:#e5e7eb; color:#4b5563; text-decoration:line-through; }
+.pill--decision-eligible { background:#dcfce7; color:#166534; }
+.pill--decision-ineligible { background:#fee2e2; color:#991b1b; }
+.pill--decision-review { background:#fef3c7; color:#92400e; }
+.pill--confidence-high { background:#dcfce7; color:#166534; }
+.pill--confidence-mid { background:#fef3c7; color:#92400e; }
+.pill--confidence-low { background:#fee2e2; color:#991b1b; }
+.pill--review { background:#fef3c7; color:#92400e; }
+.pill--auto { background:#dcfce7; color:#166534; }
+.pill--done { background:#dcfce7; color:#166534; }
+.pill--fail { background:#fee2e2; color:#991b1b; }
+.pill--escalate { background:#fef3c7; color:#92400e; }
+.pill--insufficient-data { background:#fef3c7; color:#92400e; }
+.pill--not-yet-eligible { background:#fef3c7; color:#92400e; }
+.pill--eligible { background:#dcfce7; color:#166534; }
+.pill--not-eligible { background:#fee2e2; color:#991b1b; }
+
+/* Eligibility section on case detail */
+.case-detail__notice { background:#eff6ff; border-left:4px solid #3b82f6; padding:.75rem 1rem; border-radius:6px; margin:.75rem 0; }
+.case-detail__details { margin:.6rem 0; padding:.5rem 0; }
+.case-detail__details summary { cursor:pointer; padding:.35rem 0; font-size:.92rem; }
+.case-detail__rules { list-style:none; padding:0; margin:.5rem 0; display:flex; flex-direction:column; gap:.5rem; }
+.case-detail__rules li { padding:.55rem .7rem; background:#f8fafc; border-left:3px solid #cbd5e1; border-radius:4px; }
+.case-detail__rules li:has(.pill--done) { border-left-color:#1f6f43; }
+.case-detail__rules li:has(.pill--fail) { border-left-color:#dc2626; }
+.case-detail__rule-details { margin-top:.3rem; font-size:.85rem; color:var(--color-fg-soft); line-height:1.4; }
 
 /* Case detail — 2-col grid */
 .case-detail__back { margin:0 0 .5rem; }
