@@ -121,9 +121,14 @@ validation. Only **steps 4-5 below remain** after the script.
 3. Repeat for `udcsp_eligibility_assessment`,
    `udcsp_caseworker_decision`, `udcsp_consent_record`,
    `udcsp_country_zone` (specs in the same `entities/` folder).
-4. **Apps → New app → Model-driven**, name **UDCSP Caseworker**, attach
-   the `udcsp_application` table as the primary entity. Add the form and
-   views from `application-main-form.xml` + `caseworker-views.xml` (copy
+4. **Solutions → Default Solution (or new solution `UDCSP Caseworker`) → + New → App → Model-driven app**,
+   name **UDCSP Caseworker**, **Create**. In the modern app designer:
+   *Pages → + Add page → Table based view and form*, search
+   `udcsp_application`, check it, **Add**, tick **Show in navigation**, **Add**.
+   Then **Save → Publish → Play**.
+   *(The legacy "Apps → New → Model-driven" entry was removed from the
+   maker portal in 2025; everything now goes through Solutions.)*
+   Add the form and views from `application-main-form.xml` + `caseworker-views.xml` (copy
    the field lists, the form designer is interactive).
 5. **Publish**. The app gets a stable URL of the form
 
