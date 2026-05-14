@@ -81,6 +81,7 @@ export function CookieBanner({
       className="cookie-banner"
       data-testid="cookie-banner"
     >
+      <div className="cookie-banner__card">
       <h2 id="cookie-banner-title">
         <FormattedMessage id="cookie.title" defaultMessage="Cookies on UDCSP" />
       </h2>
@@ -135,6 +136,7 @@ export function CookieBanner({
         >
           <FormattedMessage id="cookie.settings" defaultMessage="Settings" />
         </button>
+      </div>
       </div>
     </div>
   );
