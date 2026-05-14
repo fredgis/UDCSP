@@ -8,63 +8,61 @@
     <set-header name="traceparent" exists-action="skip"><value>@(context.Request.Headers.GetValueOrDefault("traceparent", Guid.NewGuid().ToString()))</value></set-header>
     <set-header name="x-request-tracing" exists-action="override"><value>true</value></set-header>
     <!--
-      Wire the citizen request to the udcsp-eligibility Foundry agent via
-      Azure OpenAI chat-completions on the gpt-5.4 deployment.
-      System prompt is embedded inline (verbatim C# string) — the
-      {{agent-eligibility-instructions}} named value is multi-line which
-      breaks naive substitution into a C# string literal.
-      APIM authenticates with its system-assigned MI (Cognitive Services
-      OpenAI User on udcspai). On AOAI failure we return 200 with a
-      structured fallback so the SPA never sees an empty body or 5xx.
+      Source of truth: udcsp-eligibility prompt agent (kind=prompt) in Foundry
+      project udcsp on udcspai. We fetch the latest version of its definition
+      (instructions + model + model_options), cache it for 5 minutes, then
+      call Azure OpenAI gpt-5.4 with that prompt. This way the agent's
+      versioned prompt drives the runtime — no parallel inline copy.
     -->
     <set-variable name="citizenPayload" value="@((string)context.Request.Body.As&lt;string&gt;(preserveContent: true))" />
+    <cache-lookup-value key="foundry-eligibility-agent-def-v1" variable-name="agentDefRaw" />
+    <choose>
+      <when condition="@(!context.Variables.ContainsKey(&quot;agentDefRaw&quot;))">
+        <send-request mode="new" response-variable-name="agentDefResp" timeout="20" ignore-error="true">
+          <set-url>{{foundry-agents-endpoint}}agents/udcsp-eligibility?api-version=2025-05-15-preview</set-url>
+          <set-method>GET</set-method>
+          <authentication-managed-identity resource="https://ai.azure.com" />
+        </send-request>
+        <choose>
+          <when condition="@{ var r = (IResponse)context.Variables[&quot;agentDefResp&quot;]; return r != null &amp;&amp; r.StatusCode == 200; }">
+            <set-variable name="agentDefRaw" value="@(((IResponse)context.Variables[&quot;agentDefResp&quot;]).Body.As&lt;string&gt;(preserveContent: true))" />
+            <cache-store-value key="foundry-eligibility-agent-def-v1" value="@((string)context.Variables[&quot;agentDefRaw&quot;])" duration="300" />
+          </when>
+        </choose>
+      </when>
+    </choose>
     <send-request mode="new" response-variable-name="aoaiResponse" timeout="30" ignore-error="true">
       <set-url>{{foundry-aoai-endpoint}}openai/deployments/{{foundry-eligibility-model}}/chat/completions?api-version=2024-08-01-preview</set-url>
       <set-method>POST</set-method>
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
       <set-body><![CDATA[@{
         var payload = (string)context.Variables["citizenPayload"];
-        var systemPrompt = @"You are the UDCSP Eligibility Pre-assessment (AI Act high-risk, Annex III §5(a)). You produce ADVISORY pre-assessments — never decisions — for residency, tax-residency or child-benefit eligibility across Denmark, Sweden and Norway. A caseworker reviews every output.
-
-Apply deterministic rule packs in order, before any LLM reasoning:
-- 🇩🇰 CPR cannot be issued before physical arrival — if arrivalDate > today set recommendation=not-yet-eligible (rule DK-CPR-arrival).
-- 🇸🇪 Folkbokföring requires intended stay >= 12 months — if intendedStayMonths < 12 set not-eligible (rule SE-folkbokforing-1y).
-- 🇳🇴 Folkeregisteret requires stay > 6 months; non-Nordic non-EEA need a UDI permit first.
-- 🇩🇰 Udbetaling Danmark child-benefit — EU/EEA cross-border path requires consent + employment contract + birth certificates.
-- 🇸🇪 Försäkringskassan barnbidrag — automatic if folkbokförd; cross-border requires Form FK 5210 + contract + birth certificates.
-- 🇳🇴 NAV barnetrygd — automatic for residents; EU/EEA cross-border path requires Form NAV 33-00.07 + contract + birth certificates.
-- Tax-residency: 🇩🇰 SKAT 02.050; 🇸🇪 Skatteverket Hemvistintyg or SKV 2734; 🇳🇴 Altinn RF-1306 (>183d/12m OR >270d/36m).
-
-Rules:
-- Return JSON ONLY conforming to the schema below — no prose, no markdown.
-- Always set humanReviewRequired=true.
-- If confidence < 0.6 OR any deterministic rule mismatches set recommendation=escalate.
-- Cite evidenceIds for every rule that depends on a document.
-- Never invent citizen records, policies or legal outcomes.
-- citizenNotice in the citizen's locale; caseworkerSummary always in English (2-4 sentences).
-
-Output schema (strict):
-{
-  ""recommendation"": ""eligible|not-eligible|not-yet-eligible|insufficient-data|escalate"",
-  ""confidence"": 0.0,
-  ""ruleResults"": [{""rule"":""DK-CPR-arrival"",""passed"":true,""evidenceIds"":[],""details"":""...""}],
-  ""missingEvidence"": [""arrivalDate"",""employmentContract""],
-  ""humanReviewRequired"": true,
-  ""citizenNotice"": ""…"",
-  ""caseworkerSummary"": ""…"",
-  ""lineage"": {""ruleVersion"":""v1"",""promptVersion"":""v1"",""datasetVersion"":""inline""}
-}";
+        string instructions = "You are an eligibility pre-assessment assistant. Return JSON only.";
         var body = new JObject();
         body["max_completion_tokens"] = 3500;
+        body["temperature"] = 0.0;
         body["response_format"] = new JObject(new JProperty("type","json_object"));
+        if (context.Variables.ContainsKey("agentDefRaw")) {
+          var agentDef = JObject.Parse((string)context.Variables["agentDefRaw"]);
+          var latest = agentDef["versions"]?["latest"];
+          if (latest != null) {
+            instructions = (string)latest["definition"]?["instructions"] ?? instructions;
+            var opts = latest["definition"]?["model_options"] as JObject;
+            if (opts != null) {
+              foreach (var p in opts.Properties()) {
+                body[p.Name] = p.Value;
+              }
+            }
+          }
+        }
         var msgs = new JArray();
         msgs.Add(new JObject(
           new JProperty("role","system"),
-          new JProperty("content", systemPrompt)
+          new JProperty("content", instructions)
         ));
         msgs.Add(new JObject(
           new JProperty("role","user"),
-          new JProperty("content","Citizen pre-assessment request (JSON):\n" + payload + "\n\nReturn the structured JSON per the output schema.")
+          new JProperty("content","Citizen pre-assessment request (JSON):\n" + payload + "\n\nReturn the structured JSON per the output schema in your instructions.")
         ));
         body["messages"] = msgs;
         return body.ToString();
@@ -75,6 +73,7 @@ Output schema (strict):
       <set-status code="200" reason="OK" />
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
       <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
+      <set-header name="x-foundry-agent" exists-action="override"><value>udcsp-eligibility</value></set-header>
       <set-body><![CDATA[@{
         var r = (IResponse)context.Variables["aoaiResponse"];
         if (r == null) {
