@@ -17,6 +17,7 @@ import { ApplyChildBenefitPage } from './pages/ApplyChildBenefitPage';
 import { ApplyResidencyPage } from './pages/ApplyResidencyPage';
 import { ApplyTaxCertPage } from './pages/ApplyTaxCertPage';
 import { CaseDetailPage } from './pages/CaseDetailPage';
+import { TaxAdministrationPage } from './pages/TaxAdministrationPage';
 import { CompliancePage } from './pages/CompliancePage';
 import { ConsentManagementPage } from './pages/ConsentManagementPage';
 import { DemoScenarioPage } from './pages/DemoScenarioPage';
@@ -74,6 +75,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/apply/residency" element={<AuthGate title="Sign in to apply for residency"><ApplyResidencyPage /></AuthGate>} />
                 <Route path="/apply/tax-certificate" element={<AuthGate title="Sign in to request a tax certificate"><ApplyTaxCertPage /></AuthGate>} />
                 <Route path="/apply/child-benefit" element={<AuthGate title="Sign in to apply for child benefit"><ApplyChildBenefitPage /></AuthGate>} />
+                <Route path="/tax-administration" element={<TaxAdministrationPage />} />
                 <Route path="/cases" element={<AuthGate title="Sign in to view your cases"><MyCasesPage /></AuthGate>} />
                 <Route path="/cases/:id" element={<AuthGate title="Sign in to view this case"><CaseDetailPage /></AuthGate>} />
                 <Route path="/accessibility" element={<><AccessibilityStatementPage /><AccessibilityMenu /></>} />

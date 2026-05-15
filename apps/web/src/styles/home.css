@@ -117,32 +117,171 @@
 .service-card__cta::after { content:"→"; transition: transform .15s ease; }
 .service-card:hover .service-card__cta::after { transform: translateX(3px); }
 
-/* Phone-card variant — same footprint as the other service tiles but
-   surfaces 3 country toll-free numbers (Demo 2 voice channel). The card
-   is not itself a link (the underlying phone <a> tags are). */
-.service-card--phone { cursor:default; }
-.service-card--phone:hover, .service-card--phone:focus-within { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--color-primary); }
-.service-card--phone p { min-height: 3.4em; }
-.service-card__phones { list-style:none; padding:0; margin:0 0 var(--space-2); display:flex; flex-direction:column; gap:.4rem; }
-.service-card__phone-link {
-  display:flex; align-items:center; gap:.6rem;
-  padding:.45rem .6rem; border-radius:8px;
-  background: rgba(10,77,140,.06);
-  border:1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
-  color: var(--color-primary-strong); text-decoration:none;
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+/* ============================================================
+   TaxAdministrationPage — Demo 2 voice channel landing
+   Sober, corporate, EU-public-sector palette. No marketing fluff.
+   ============================================================ */
+.tax-admin { max-width: 1100px; margin: 0 auto; padding: .5rem 0 var(--space-6); }
+.tax-admin__back { margin: 0 0 1rem; }
+.tax-admin__back a { color: var(--color-primary); text-decoration: none; font-weight: 600; }
+.tax-admin__back a:hover { text-decoration: underline; }
+
+.tax-admin__hero {
+  position: relative;
+  padding: 1.75rem 2rem 1.75rem 2.4rem;
+  background: linear-gradient(135deg, #ffffff 0%, #eef3f8 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
 }
-.service-card__phone-link:hover, .service-card__phone-link:focus-visible {
-  background: rgba(10,77,140,.12);
+.tax-admin__hero-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, #003399 0%, #FFCC00 100%); }
+.tax-admin__hero-main { position: relative; z-index: 1; }
+.tax-admin__eyebrow { display: inline-flex; align-items: center; gap: .5rem; color: var(--color-primary); font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+.tax-admin__eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; background: #1f6f43; box-shadow: 0 0 0 4px rgba(31, 111, 67, .15); }
+.tax-admin__hero h1 { margin: 0 0 .65rem; font-size: 1.85rem; line-height: 1.15; color: #0f2944; letter-spacing: -.01em; }
+.tax-admin__lede { margin: 0; color: var(--color-fg); font-size: 1.02rem; line-height: 1.55; max-width: 75ch; }
+
+.tax-admin__countries { margin: 0 0 1.5rem; }
+.tax-admin__countries h2,
+.tax-admin__numbers h2,
+.tax-admin__compliance h2 { margin: 0 0 .35rem; font-size: 1.2rem; color: #0f2944; }
+.tax-admin__hint { margin: 0 0 1rem; color: var(--color-fg-soft); font-size: .92rem; max-width: 75ch; }
+.tax-admin__grid {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+}
+@media (max-width: 900px) { .tax-admin__grid { grid-template-columns: 1fr; } }
+
+.tax-admin__country { position: relative; }
+.tax-admin__country-card {
+  display: flex; flex-direction: column; height: 100%; min-height: 100%;
+  padding: 1.2rem 1.3rem 1.3rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.tax-admin__country:hover .tax-admin__country-card,
+.tax-admin__country:focus-within .tax-admin__country-card {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
   border-color: var(--color-primary);
-  transform: translateX(2px);
-  outline:none;
 }
-.service-card__phone-flag { font-size:1.25rem; line-height:1; }
-.service-card__phone-meta { display:flex; flex-direction:column; line-height:1.2; min-width:0; }
-.service-card__phone-country { font-size:.72rem; color:var(--color-fg-soft); text-transform:uppercase; letter-spacing:.04em; }
-.service-card__phone-number { font-weight:700; font-size:.95rem; font-variant-numeric: tabular-nums; }
-.service-card__hint { margin-top:auto; font-size:.72rem; color:var(--color-fg-soft); line-height:1.4; }
+.tax-admin__country--no .tax-admin__country-card { border-top: 4px solid #BA0C2F; }
+.tax-admin__country--dk .tax-admin__country-card { border-top: 4px solid #C8102E; }
+.tax-admin__country--se .tax-admin__country-card { border-top: 4px solid #006AA7; }
+
+.tax-admin__country-head { display: flex; gap: .8rem; align-items: center; margin-bottom: .9rem; }
+.tax-admin__country-flag { font-size: 2.4rem; line-height: 1; }
+.tax-admin__country-head h3 { margin: 0 0 .15rem; font-size: 1.08rem; color: #0f2944; }
+.tax-admin__country-sub { margin: 0; color: var(--color-fg-soft); font-size: .82rem; }
+.tax-admin__country-meta { display: grid; grid-template-columns: max-content 1fr; gap: .35rem .9rem; margin: 0 0 1rem; font-size: .85rem; }
+.tax-admin__country-meta dt { color: var(--color-fg-soft); font-weight: 600; text-transform: uppercase; font-size: .72rem; letter-spacing: .04em; }
+.tax-admin__country-meta dd { margin: 0; color: var(--color-fg); }
+
+.tax-admin__phone-cta {
+  display: flex; align-items: center; gap: .7rem;
+  margin-top: auto;
+  padding: .7rem .85rem;
+  background: linear-gradient(135deg, #0a4d8c, #1565c0);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: filter .15s ease, transform .15s ease;
+}
+.tax-admin__phone-cta:hover, .tax-admin__phone-cta:focus-visible {
+  filter: brightness(1.08);
+  transform: scale(1.01);
+  outline: 2px solid #FFCC00; outline-offset: 2px;
+}
+.tax-admin__phone-icon { display: inline-flex; }
+.tax-admin__phone-label { display: block; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.tax-admin__phone-number { display: block; font-weight: 700; font-size: 1.08rem; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+
+/* Hover overlay — country service overview */
+.tax-admin__country-overview {
+  position: absolute; inset: 0;
+  background: rgba(15, 41, 68, .95);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 1.2rem 1.3rem;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s ease;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.tax-admin__country:hover .tax-admin__country-overview,
+.tax-admin__country:focus-within .tax-admin__country-overview {
+  opacity: 1;
+}
+.tax-admin__country-overview h4 { margin: 0 0 .55rem; font-size: .92rem; text-transform: uppercase; letter-spacing: .06em; color: #FFCC00; }
+.tax-admin__country-overview ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .4rem; font-size: .9rem; line-height: 1.4; }
+.tax-admin__country-overview li { padding-left: 1.1rem; position: relative; }
+.tax-admin__country-overview li::before { content: "→"; position: absolute; left: 0; color: #FFCC00; }
+
+/* All-numbers list */
+.tax-admin__numbers { margin: 0 0 1.5rem; }
+.tax-admin__numbers-list {
+  list-style: none; padding: 0; margin: 0 0 .75rem;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-surface); overflow: hidden;
+}
+.tax-admin__numbers-list li {
+  display: grid;
+  grid-template-columns: auto 1fr 1.4fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: .85rem 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.tax-admin__numbers-list li:last-child { border-bottom: none; }
+.tax-admin__num-flag { font-size: 1.5rem; line-height: 1; }
+.tax-admin__num-country { font-weight: 600; color: #0f2944; }
+.tax-admin__num-authority { color: var(--color-fg-soft); font-size: .9rem; }
+.tax-admin__num-dial {
+  font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums;
+  color: var(--color-primary-strong); text-decoration: none;
+  padding: .35rem .65rem; border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  transition: background .15s ease;
+}
+.tax-admin__num-dial:hover, .tax-admin__num-dial:focus-visible {
+  background: rgba(10, 77, 140, .08);
+  outline: none;
+}
+.tax-admin__caveat { margin: 0; color: var(--color-fg-soft); font-size: .82rem; line-height: 1.5; }
+
+/* Compliance grid */
+.tax-admin__compliance { margin: 0 0 1.25rem; }
+.tax-admin__compliance-grid {
+  margin-top: .85rem;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: .85rem;
+}
+@media (max-width: 800px) { .tax-admin__compliance-grid { grid-template-columns: 1fr; } }
+.tax-admin__compliance-item {
+  display: flex; gap: .85rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.tax-admin__compliance-icon { font-size: 1.6rem; line-height: 1; flex: 0 0 auto; }
+.tax-admin__compliance-item h3 { margin: 0 0 .35rem; font-size: 1rem; color: #0f2944; }
+.tax-admin__compliance-item p { margin: 0; color: var(--color-fg); font-size: .88rem; line-height: 1.5; }
+.tax-admin__compliance-item code { background: #eef2f8; padding: .05rem .3rem; border-radius: 4px; font-size: .82rem; }
+
+.tax-admin__more {
+  margin: .5rem 0 0;
+  padding: .9rem 1.1rem;
+  background: rgba(10, 77, 140, .06);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 6px;
+  color: var(--color-fg-soft);
+  font-size: .85rem;
+  line-height: 1.5;
+}
 
 .bridge-callout { margin:1.75rem 0 .5rem; padding:1.25rem 1.4rem; background:linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)), var(--color-surface)); border:1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border-soft)); border-left:4px solid var(--color-primary); border-radius:var(--radius-md); display:grid; grid-template-columns: minmax(220px, 1fr) minmax(360px, 1.6fr); gap:1.5rem; align-items:start; }
 .bridge-callout__text h3 { margin:0 0 .4rem; font-size:1.05rem; color:var(--color-primary); }
