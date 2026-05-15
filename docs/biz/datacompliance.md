@@ -26,6 +26,8 @@
 >
 > 📖 *For the **storage architecture and retention matrix** that operationalises every promise made here, see [`../tech/data.md`](../tech/data.md). For the **AI-specific governance** (high-risk classification, conformity declarations, post-market monitoring), see [`ai.md`](./ai.md) § 11.*
 
+> ℹ️ **Live vs roadmap.** Most GDPR / AI Act controls below are wired today. **Microsoft Entra Verified ID issuance for cross-border onboarding remains roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md). Other roadmap items are flagged inline where they appear.
+
 ---
 
 ## 📑 Table of contents

@@ -4,6 +4,8 @@
 
 </div>
 
+> ℹ️ **Live vs roadmap.** Outbound notification emails via ACS Email + Logic Apps are wired; **inbound email-to-case routing into a D365 caseworker queue is roadmap** (caseworker workspace is currently a model-driven Power App on shared Dataverse — see [`../tech/inprogress.md`](../tech/inprogress.md)).
+
 > [!NOTE]
 > **Supporting notification rail — not a case-study mandated channel.** [`case-study-11.md`](./case-study-11.md) mandates the **web, mobile and voice** citizen surfaces; email is documented here for completeness because it is the audit trail of every long-running case (decision letters, GDPR SAR bundles, AI-Act lineage exports). The deployment is real (ACS Email + Logic Apps), but no demo scenario in [`uses.md`](./uses.md) requires email to be live for evaluation.
 

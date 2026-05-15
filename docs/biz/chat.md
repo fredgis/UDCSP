@@ -4,6 +4,8 @@
 
 </div>
 
+> ℹ️ **Live vs roadmap.** Chat answers grounded in Foundry are live in the DK SPA today. Warm-transfer escalations to D365 caseworker queues remain **roadmap** until Customer Service is provisioned per country — see [`../tech/inprogress.md`](../tech/inprogress.md).
+
 > [!NOTE]
 > **Channel surface only.** This document covers the in-page chat widget — UX, slot-filling, escalation handover. The underlying agent topology (topic-router → specialised agents → APIM facade → Redis session memory) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how chat feels to the citizen*; `ai.md` owns *which agent answers and why*.
 
