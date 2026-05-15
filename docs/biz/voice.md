@@ -434,6 +434,35 @@ The earlier audit noted that the Bot Framework SDK is being **deprecated end of 
 | Observability | `src/logger.ts` | App Insights with `LogContext` (callConnectionId, traceparent, country, locale, intent) — same correlation id Foundry uses, so a single call ties together ACS events, GPT Realtime tool calls, APIM logs, Foundry traces and D365 transfer audit. |
 | Container App + Event Grid + Realtime deployment | `infra/voice-orchestrator.bicep`, `infra/event-grid-incoming-call.bicep`, `infra/gpt-realtime-deployment.bicep` | Per-country IaC. UAMI-bound, KV-backed secrets, public ingress with `transport: 'auto'` (WSS-capable). |
 
+#### 11.4a A call, end to end, in 5 steps
+
+The orchestrator is **not the AI** — it's a **WebSocket bridge** between three systems that don't natively talk to each other (ACS, GPT-4o Realtime, APIM/Foundry). Here is what happens when Lars dials the Norwegian toll-free number:
+
+1. **ACS answers the call.** The number `+47 800 …` is bound (via `Bind-AcsNumber.ps1`) to the `udcsp-no-acs` resource pinned to **Norway East** (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
+2. **ACS opens a bidirectional audio WebSocket** to `/api/acs/media?callConnectionId={id}`. PCM 16 kHz frames flow in both directions.
+3. **The orchestrator opens a second WebSocket** to `wss://{aoai}/openai/realtime?deployment=gpt-realtime` (UAMI auth, audience `https://cognitiveservices.azure.com`). It configures server-VAD + barge-in, then proxies base64 PCM frames in both directions. GPT-4o Realtime does **everything in one stream**: Whisper STT, GPT reasoning, neural TTS. **Latency p95 < 2 s** end-to-end.
+4. **GPT Realtime invokes function tools.** The system prompt declares three tools (see `src/foundry-tool.ts`):
+   - `lookup_topic_router(text, locale)` → POSTs to APIM `/agents/topic-router/messages` with `x-channel-actor: voice`. APIM hits the **same Foundry topic-router agent** that powers the web chat (gpt-5.4, prompt + AI Search FAQ index `udcsp-citizens-faq`). Returns `{text, escalate, confidence, trace}`. GPT Realtime turns the text into voice and speaks it back to Lars.
+   - `escalate_to_human(reason, summary)` → `transferCallToParticipant` with the D365 voice workstream queue id; the caseworker sees the `udcspEscalation` JSON context (transcript summary, traceparent, AI verdict) on screen before they answer.
+   - `end_call_with_recap(recapText)` → ACS SMS to Lars in NB (template `apps/voice/notifications/sms-templates.json`) + `hangUpCall`.
+5. **Warm-transfer or hang-up.** If the citizen says "I want a human" or GPT detects low confidence, `escalate_to_human` is invoked; otherwise, after the recap SMS, `hangUpCall` ends the call. Both legs land in App Insights correlated by the same `traceparent`.
+
+**Why a Container App and not an Azure Function?** A long-lived bidirectional WebSocket per call (×2 — one to ACS, one to GPT Realtime) is the wrong shape for Functions: 5-minute timeouts, cold starts that ruin sub-2-second voice latency, no graceful KEDA scaling on RPS for WS-heavy workloads. The Container App handles WSS natively (ingress `transport: auto`), keeps warm pods, scales on connections, and is UAMI-bound — exactly the right primitive for a voice cortex.
+
+**Why not Bot Framework or MAF in the audio path?** Bot Framework SDK ends 31 Dec 2025; MAF is turn-based (request → response), which is the wrong shape for streaming audio with server-VAD + barge-in. Microsoft's own canonical sample [`Azure-Samples/acs-azopenai-voice-integration`](https://github.com/Azure-Samples/acs-azopenai-voice-integration) connects ACS directly to the Realtime WebSocket — we follow that pattern. **One brain (Foundry topic-router), three channels (chat, voice, copilot), no duplicated intelligence.**
+
+**Why the same image in DK / SE / NO?** Every wiring point is environment-driven (`AZURE_OPENAI_ENDPOINT`, `APIM_BASE_URL`, `ACS_CONNECTION_STRING_SECRET_URI`, `D365_VOICE_QUEUE_ID`, etc. — see `src/config.ts`). The Bicep injects per-country values; the Docker image stays unchanged. `isLiveMode()` returns `false` until all required env vars are populated, so `npm run dev` is safe locally.
+
+#### 11.4b Running without D365 Customer Service (Demo 2 v1 — no-handoff mode)
+
+The Phase A orchestrator was designed assuming D365 Customer Service voice channel exists. **It does not need to.** When `D365_TRANSFER_TARGET_ID` and `D365_VOICE_QUEUE_ID` are left empty in the `Voice.<country>` config (see [`../tech/installation.md`](../tech/installation.md) § B5), the orchestrator:
+
+1. **Does not register the `escalate_to_human` function tool** with GPT Realtime — so the AI never tries to warm-transfer to a non-existent queue and never fails ungracefully mid-call.
+2. **Falls back to a polite verbal closure** when the citizen asks for a human: the topic-router prompt instructs the AI to say *"En saksbehandler vil ringe deg tilbake innen 2 virkedager"* / *"A caseworker will call you back within 2 business days"* and creates a Dataverse follow-up task (via the regular `tasks` write path used by Demos 1 + 3).
+3. **Keeps every other function** (`lookup_topic_router`, `end_call_with_recap` SMS, transcript pipeline, App Insights correlation, recording disclosure, sovereignty pinning).
+
+This mode covers **9 of the 10 case-study requirements** for Demo 2 (everything except the SLA + Power BI median-4d KPI which need caseworker outcome data). Once Customer Service NO is provisioned, populate the two GUIDs in `Voice.no`, redeploy with `Install-UDCSP.ps1 -Phase Voice`, and the `escalate_to_human` tool is re-enabled automatically.
+
 ### 11.5 Why the previous "Phase A bot adapter" idea is gone
 
 The earlier plan asked for a small Bot Framework SDK bot registered in the D365 voice workstream's *Bots* panel. We dropped that for three reasons:
