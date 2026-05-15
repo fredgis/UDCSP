@@ -4,6 +4,8 @@
 >
 > **Purpose:** operationalises the BCDR matrix in [`data.md`](./data.md) §10 and the resilience experiments in [`infra/security/chaos-studio/`](../../infra/security/chaos-studio/). Every drill described here is run **twice yearly per country**, with caseworker simulation, and the outcome is filed in the country compliance vault.
 
+> ⚠️ **Current executability.** Steps that depend on **per-country D365 Customer Service** envs (caseworker authentication into parallel D365, parallel Dataverse case landing, caseworker lead paging) are **target-state procedures**. D365 Customer Service is not yet installed in any country today — the caseworker workspace is a model-driven Power App on the shared Dataverse env `org939d8f07`. Run these steps as **table-top drills** until per-country D365 envs exist; see [`inprogress.md`](./inprogress.md) § "Demo 1" for the live-vs-roadmap split.
+
 ---
 
 ## 1. RPO / RTO targets (recap)

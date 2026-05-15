@@ -642,7 +642,7 @@ graph TB
     subgraph DATA_AI["Data services for AI"]
         TRANS["Azure AI Translator"]
         DOCINT["Azure AI Document Intelligence"]
-        SPEECH["Azure AI Speech (STT/TTS)"]
+        SPEECH["Azure AI Speech (D365 IVR menus + post-call analytics only — not in live audio path)"]
     end
 
     subgraph SESSION["Conversational session state"]
@@ -1049,7 +1049,7 @@ UDCSP treats **language and accessibility as first-class platform invariants**. 
 | AI Brain — Citizen Assistant | Foundry agent | RAG knowledge base indexed per language; cross-lingual retrieval as fallback; safety filters per locale. |
 | AI Brain — Eligibility | Foundry agent | Decision lineage and reasoning translated for caseworker + citizen views; never auto-translates legal text without human review. |
 | AI Brain — Document Extractor | AI Document Intelligence + LLM | Multilingual OCR; field labels normalised to a canonical schema; per-country document templates supported. |
-| Case Management | D365 Customer Service | Multilingual KB; per-language SLA queues; caseworker UI in their working language; outbound mail templates per locale, edited before send. |
+| Case Management | D365 Customer Service *(roadmap — currently a model-driven Power App on the shared Dataverse env `org939d8f07` until per-country D365 CS envs are provisioned; same `udcsp_application` schema for drop-in replacement)* | Multilingual KB; per-language SLA queues; caseworker UI in their working language; outbound mail templates per locale, edited before send. |
 | Notifications | Azure Communication Services | Templates per locale (email, SMS, voice); fallback to citizen-preferred language. |
 | Data & Insights | Microsoft Fabric + Power BI | Locale dimension on every fact table; semantic models slice CSAT, accuracy, SLA, and content-safety metrics **by language** to detect inequity. |
 | Governance | Purview | Sensitivity labels and policies localised; DPIAs available per language; AI Act registry includes per-language evaluation evidence. |
@@ -1069,7 +1069,7 @@ Coverage targets the **official**, **most-common minority** and **cross-border w
 | **Design system first** | Audited, accessible components shared across all citizen portals; no ad-hoc UI. |
 | **Automated CI gate** | `axe-core` and Lighthouse accessibility audits run on every PR; build fails below the agreed threshold. |
 | **Manual audit** | Annual third-party WCAG 2.1 AA audit per portal; findings tracked as platform debt. |
-| **Voice channel parity** | Citizens who cannot use a screen can complete every primary journey via the voice channel (ACS Call Automation + voice orchestrator + GPT-4o Realtime + warm transfer to a human caseworker). |
+| **Voice channel parity** | Citizens who cannot use a screen can complete every primary journey via the voice channel (ACS Call Automation + voice orchestrator + GPT-4o Realtime). Warm-transfer to a human caseworker is wired in code but gated until per-country D365 Customer Service is provisioned — until then, the assistant offers a verbal callback closure ("a caseworker will call you back within 2 business days"). |
 | **Caseworker assistance** | Caseworkers can complete forms on behalf of citizens and capture verifiable consent. |
 | **Plain language** | Foundry **Citizen Assistant** is prompted to reply in plain, jargon-free language at a defined reading level per locale. |
 | **Accessibility statements** | Each portal publishes a per-locale accessibility statement and a feedback channel routed to D365. |
