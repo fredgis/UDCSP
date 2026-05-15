@@ -77,15 +77,17 @@ flowchart TB
     ORCH -->|function tool: lookup_topic_router| APIM["APIM<br/>/agents/topic-router"]
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility · doc-extractor · caseworker-helper"]
-    ORCH -->|escalate=true → warm transfer| D365["Dynamics 365<br/>voice workstream"]
+    ORCH -.->|escalate_to_human<br/>v2 only · needs D365 CS| D365["Dynamics 365<br/>voice workstream<br/>(optional in v1)"]
     ROUTER --> FABRIC["Fabric + App Insights<br/>transcripts + traces"]
-    D365 --> ACSOUT["ACS SMS récap"]
+    ORCH -->|end_call_with_recap| ACSOUT["ACS SMS récap"]
     ACSOUT -.-> PHONE
     SPEECH["Azure AI Speech<br/>(reserved for D365 pre-orchestrator IVR menus<br/>+ post-call analytics — not in the live audio path)"]
     D365 -. menus .-> SPEECH
+    classDef v2 stroke-dasharray:5 5,stroke:#888,color:#666
+    class D365,SPEECH v2
 ```
 
-> 📖 **Reading the picture.** Voice keeps ACS for telephony and **GPT-4o Realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
+> 📖 **Reading the picture.** Voice keeps ACS for telephony and **GPT-4o Realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **The dashed D365 leg is enabled only in v2** (when Customer Service is provisioned per country); v1 — Demo 2 no-handoff — runs the citizen↔AI loop without warm-transfer (see § 11.4b). **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
 
 ---
 
@@ -101,7 +103,7 @@ sequenceDiagram
     participant API as 🚪 APIM
     participant R as 🧠 Foundry topic-router
     participant F as 🤖 Foundry agents
-    participant D as 📋 D365
+    participant D as 📋 D365 (v2 only)
     C->>ACS: dial country toll-free number
     ACS->>C: greeting + recording disclosure
     C->>ACS: consent / utterance
@@ -119,8 +121,10 @@ sequenceDiagram
     GPTRT-->>ORCH: stream synthesised audio
     ORCH-->>ACS: forward audio frames
     ACS-->>C: spoken answer
-    R->>D: warm-transfer when required
-    D->>ACS: post-call SMS récap
+    Note over ORCH,D: v2 only — escalate_to_human registered<br/>iff D365_VOICE_QUEUE_ID is set
+    ORCH-->>D: warm-transfer (v2 · transferCallToParticipant)
+    ORCH->>ACS: end_call_with_recap → SMS récap
+    ACS-->>C: post-call SMS in NB
 ```
 
 **Latency budget** (target: end-to-end p95 ≤ 2 s round-trip):
