@@ -37,6 +37,8 @@ UDCSP is a **unified citizen platform** that:
 > [!IMPORTANT]
 > **Target outcomes:** applications processed in **4 days instead of 28**, **+38 % citizen satisfaction**, **WCAG 2.1 AA** accessibility, and **2.1 M citizens** served via a single federated front door — without compromising national data sovereignty.
 
+> ℹ️ **Live deployment vs roadmap.** This README describes the **target platform**. Today the live citizen portal runs on `udcsp.fredgis.com` with Demo 3 (Maria · PL screen reader) end-to-end and the Demo 1 citizen-side single rail (sign-in, /apply, eligibility, My Cases, Remove cascade). **Demo 2 voice runs in no-handoff mode** (citizen↔AI loop, verbal callback closure) because per-country **D365 Customer Service** is not yet installed. **Verified ID, cross-border eIDAS fan-out, PSTN numbers (Nkom/PTS/ERST)** are still roadmap. For the canonical live-vs-roadmap split see [`docs/tech/inprogress.md`](./docs/tech/inprogress.md).
+
 ---
 
 ## 🏛️ Simplified Architecture
@@ -184,7 +186,7 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 
 | Layer | How the 12 languages are handled |
 |---|---|
-| 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice IVR with **Azure AI Speech** STT/TTS in all 12 languages. |
+| 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice channel uses **GPT-4o Realtime** for native STT + reasoning + TTS in one stream (Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics, not the live audio path). |
 | 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). |
 | 🧠 **AI Brain (Foundry)** | The **Translator agent** chains Azure OpenAI with **Azure AI Translator** to preserve administrative terminology; the **Classifier** and **Citizen Assistant** are evaluated per language with golden datasets. |
 | 📄 **Documents** | **Azure AI Document Intelligence** + LLM verification handle multilingual passports, payslips, leases, and forms. |
