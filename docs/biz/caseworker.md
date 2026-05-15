@@ -100,11 +100,11 @@ flowchart TB
         FLOW["Power Automate<br/><i>escalation-to-human.json</i>"]
     end
 
-    subgraph D365["🏢 D365 Customer Service (per country)"]
-        CASE["D365 Case<br/><i>created or updated</i>"]
+    subgraph D365["🏢 D365 Customer Service per country (roadmap)<br/>· today: model-driven Power App on shared Dataverse <code>org939d8f07</code> ·"]
+        CASE["Case row<br/><i>tasks today · udcsp_application target</i>"]
         QUEUE["Caseworker queue<br/><i>country · language · service-type</i>"]
-        UI["Caseworker UI<br/><i>D365 web client</i>"]
-        CFS["Copilot for Service<br/><i>in-context AI panel</i>"]
+        UI["Caseworker UI<br/><i>Power App today · D365 web client target</i>"]
+        CFS["Copilot for Service<br/><i>in-context AI panel (roadmap)</i>"]
     end
 
     subgraph BACK["📊 Back-office outcomes"]
