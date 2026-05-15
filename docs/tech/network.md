@@ -144,7 +144,7 @@ The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke p
 | Surface | Path | Notes |
 |---------|------|-------|
 | Citizen web/chat UI | Internet → Azure Front Door (Premium, WAF) → origin = Static Web App PE in `web` subnet | TLS 1.2+; WAF in Prevention mode; Defender for APIs onboarded |
-| Citizen voice | Internet → ACS (managed) → Container App Job in `app` subnet | ACS is a Microsoft-hosted PaaS; the App-side runtime is private |
+| Citizen voice | Internet → ACS (managed) → voice orchestrator Container App in `app` subnet | ACS is a Microsoft-hosted PaaS; the orchestrator runtime is private. PSTN numbers not yet procured (Nkom/PTS/ERST KYC pending). |
 | APIM gateway | Internet → APIM (External, Premium) → backends via VNet integration in `app` / `integration` | APIM rate-limit policy enforced for `/agents/topic-router/messages` (see `services/apim`) |
 | Admin (operators only) | Internet → Azure Bastion PIP → SSH/RDP to NICs inside the spoke | Only one public IP per country; Conditional Access + PIM required; tagged `publicIpException: 'azure-bastion-only'` |
 
