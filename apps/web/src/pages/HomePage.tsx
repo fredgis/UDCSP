@@ -33,17 +33,16 @@ const services = [
       </svg>
     ),
   },
-];
-
-// Demo 2 — voice-channel entry-point. Until the real Nordic toll-free numbers
-// are issued by Nkom / PTS / ERST (1-3 weeks regulatory lead), these are
-// placeholder display numbers; the underlying ACS routing wires whichever
-// number Bind-AcsNumber.ps1 actually procures. tel: links are clickable so a
-// mobile user can dial straight from the home page.
-const taxAdminNumbers = [
-  { country: 'no', flag: '🇳🇴', label: 'Norway', display: '+47 800 12 345', dial: '+4780012345' },
-  { country: 'dk', flag: '🇩🇰', label: 'Denmark', display: '+45 80 12 34 56', dial: '+4580123456' },
-  { country: 'se', flag: '🇸🇪', label: 'Sweden', display: '+46 20 123 45 67', dial: '+46201234567' },
+  {
+    to: '/tax-administration',
+    titleId: 'home.service.taxAdmin.title',
+    descId: 'home.service.taxAdmin.desc',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
+      </svg>
+    ),
+  },
 ];
 
 const principles = [
@@ -106,31 +105,6 @@ export function HomePage(_: { locale?: string }) {
             </Link>
           </li>
         ))}
-        <li>
-          <div className="service-card service-card--phone">
-            <span className="service-card__icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-            </span>
-            <h3><FormattedMessage id="home.service.taxAdmin.title" defaultMessage="National Tax-administration" /></h3>
-            <p><FormattedMessage id="home.service.taxAdmin.desc" defaultMessage="Speak to our AI voice assistant for help with tax refunds, deductions, residency tax status and certificates — in your national language, 24/7." /></p>
-            <ul className="service-card__phones" aria-label="National toll-free numbers">
-              {taxAdminNumbers.map((n) => (
-                <li key={n.country}>
-                  <a href={`tel:${n.dial}`} className="service-card__phone-link">
-                    <span className="service-card__phone-flag" aria-hidden="true">{n.flag}</span>
-                    <span className="service-card__phone-meta">
-                      <span className="service-card__phone-country">{n.label}</span>
-                      <span className="service-card__phone-number">{n.display}</span>
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <span className="service-card__hint"><FormattedMessage id="home.service.taxAdmin.hint" defaultMessage="Toll-free · Powered by Foundry voice agent · Recorded for quality" /></span>
-          </div>
-        </li>
       </ul>
 
       <section className="bridge-callout" aria-labelledby="unified-platform-heading">
