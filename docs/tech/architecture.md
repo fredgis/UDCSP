@@ -208,7 +208,7 @@ graph TB
         AGENTS["Foundry Agents:<br/>Topic-Router · Classifier · Translator · Eligibility · Assistant · DocExtractor · CaseworkerHelper"]
         EVAL["Foundry Evaluations + Tracing + Content Safety"]
         TEE["Confidential Compute (TEE)<br/>for Eligibility (high-risk)"]
-        AISPEECH["Azure AI Speech"]
+        AISPEECH["Azure AI Speech<br/>(D365 IVR menus + post-call analytics only<br/>— not in the live audio path)"]
         AITRANS["Azure AI Translator"]
         AIDOC["Azure AI Document Intelligence"]
     end

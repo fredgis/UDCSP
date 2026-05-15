@@ -158,7 +158,8 @@ sequenceDiagram
     participant EID as 🔑 External ID (DK)
     participant APIM as 🚪 APIM
     participant F as 🧠 Foundry
-    participant D as 📋 D365
+    participant LA as ⚙️ Logic App<br/>application-intake
+    participant D as 📋 Dataverse
 
     A->>FD: GET https://dk.udcsp.gov/apply/residency
     FD->>SWA: route to DK SWA origin (North Europe)
@@ -180,11 +181,13 @@ sequenceDiagram
     F-->>APIM: extracted employer, salary, start date
     APIM->>F: invoke eligibility pre-assessor, high-risk HITL required
     F-->>APIM: provisional entitlement + confidence + explanation
-    APIM->>D: POST /udcsp_application, case create + AI recommendations
-    D-->>APIM: case ID + SLA deadline 4 days
-    APIM-->>SWA: 200 OK with caseId and status received
+    APIM->>LA: enqueue submission (verdict carried in payload)
+    LA->>D: write task row (tasks today; udcsp_application target)
+    D-->>LA: activityid
+    LA-->>APIM: 202 Accepted + correlationId
+    APIM-->>SWA: 202 with correlationId and status received
     SWA-->>A: optimistic UI, confirmation toast + case ID
-    Note over A,D: Anna receives push/email notification when caseworker decides
+    Note over A,D: Anna sees the case in /cases after the GET op-policy re-hydrates from Dataverse
 ```
 
 **Latency budget** (target: page interactive p95 ≤ 1.5 s):

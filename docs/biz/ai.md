@@ -146,7 +146,7 @@ flowchart TB
     end
 
     subgraph SUPPORT["🎤 Supporting Azure AI services"]
-        SPCH["Azure AI Speech (STT/TTS)"]
+        SPCH["Azure AI Speech<br/>(D365 IVR menus + post-call analytics —<br/>NOT in the live audio path)"]
         TXL["Azure AI Translator"]
         DCI["Azure AI Document Intelligence"]
     end
@@ -289,7 +289,7 @@ The post-audit decision removes the redundant conversational façade. Foundry al
 flowchart LR
     WEB["💻 Web chat"] --> APIM["APIM<br/>/agents/topic-router"]
     MOB["📱 Mobile chat"] --> APIM
-    VOX["📞 Voice IVR<br/>ACS + AI Speech"] --> APIM
+    VOX["📞 Voice<br/>ACS + voice orchestrator + GPT-4o Realtime"] --> APIM
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> CLS["Classifier"]
     ROUTER --> AST["Citizen Assistant"]
@@ -450,7 +450,7 @@ flowchart LR
     end
 
     subgraph AIPRIM["🎤 Azure AI primitives"]
-        SPK["Speech STT/TTS"]
+        SPK["GPT-4o Realtime (live audio path)<br/>+ Azure AI Speech (D365 IVR menus<br/>+ post-call analytics only)"]
         DI["Document Intelligence"]
         SAFE["Content Safety"]
     end
@@ -498,24 +498,24 @@ flowchart LR
 
 ### 7.2 📞 Voice channel
 
-> *PSTN, Speech STT/TTS, telephone-grade real-time loop.*  
+> *PSTN → ACS → voice orchestrator → **GPT-4o Realtime** (one stream, native STT+reasoning+TTS) → APIM `/agents/topic-router` as a function tool.*  
 > 📖 *Architecture deep-dive: [`voice.md`](./voice.md). Procurement of a real Nordic toll-free number lives in § 9 of that doc.*
 
 | | |
 |---|---|
-| 🗣️ **Façade** | Foundry `topic-router` voice channel + per-locale voice topics |
-| 🤖 **Foundry agents** | Classifier (intent + locale lock-in) → Citizen Assistant (RAG answer) → optional Eligibility (HIGH-RISK) → optional Translator (out-of-locale escalation summary) |
-| 🎤 **Azure AI primitives** | Speech STT (per locale), Speech TTS (neural voices: `da-DK-ChristelNeural`, `sv-SE-SofieNeural`, `nb-NO-PernilleNeural`), Content Safety (input + output) |
+| 🗣️ **Façade** | Voice orchestrator Container App (`apps/voice/call-automation/`) bridges ACS audio ↔ GPT-4o Realtime; calls Foundry `topic-router` via APIM as a function tool |
+| 🤖 **Foundry agents** | topic-router (orchestrator) → Citizen Assistant (RAG) → optional Eligibility (HIGH-RISK) → optional Translator (out-of-locale escalation summary) |
+| 🎤 **Azure AI primitives** | **GPT-4o Realtime** for live STT + reasoning + TTS in one stream (12 languages, neural voices native to the model); **Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics — not in the live audio path**; Content Safety (input + output) |
 | ⏱️ **Latency budget** | ≤ 2 s p95 from end-of-utterance to start-of-TTS |
-| 🌍 **Multilingual mechanism** | STT auto-detects locale; voice topics select the matching neural voice; in-call language switch supported |
-| 🛡️ **Safety extras** | Voice-specific jailbreak panel (audio prompt-injection, "read these instructions"); barge-in protection in the voice topic |
+| 🌍 **Multilingual mechanism** | GPT-4o Realtime detects locale natively; in-call language switch supported |
+| 🛡️ **Safety extras** | Voice-specific jailbreak panel (audio prompt-injection, "read these instructions"); barge-in handled server-side by GPT Realtime |
 | 📋 **EU AI Act class triggered** | Eligibility = HIGH-RISK when invoked; Citizen Assistant + Classifier = limited risk |
 
 **What's special on this channel.**
 
-- It is the **only channel that uses Speech STT/TTS** — every other channel sees text from byte one.
-- Voice is **the only channel where latency is on the critical path** for the LLM call: a 4 s wait that is invisible on web is a deal-breaker on the phone, so the Citizen Assistant has a special voice prompt variant (`max_tokens=120`, `presence_penalty=0`) tuned for short, conversational answers.
-- Warm transfer to a caseworker carries the **Foundry trace_id** in the SIP custom header, so the caseworker opens D365 with the full conversation already attached.
+- It is the **only channel with a real-time bidirectional audio stream** — every other channel sees text from byte one.
+- Voice is **the only channel where latency is on the critical path**: a 4 s wait that is invisible on web is a deal-breaker on the phone, so the Citizen Assistant has a special voice prompt variant (`max_completion_tokens=120`) tuned for short, conversational answers.
+- Warm-transfer to a caseworker is **wired in code but gated** on `D365_VOICE_QUEUE_ID` env var being non-empty — until D365 Customer Service is provisioned per country, Demo 2 v1 runs in **no-handoff mode** (verbal callback closure + ACS SMS recap). See [`../tech/inprogress.md`](../tech/inprogress.md) § "Demo 2".
 
 ---
 
