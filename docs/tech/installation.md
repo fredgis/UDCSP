@@ -383,31 +383,132 @@ This runs **23 of the 25 phases** sequentially in dependency order, idempotent, 
 <details>
 <summary><b>B4. Harvest Voice outputs from B3</b></summary>
 
-Read `scripts/install/reports/<runStamp>/install-report.json` and the Azure portal for each field below. **For the case-study demo, filling DK alone is enough.**
+Once B3 has run, all the Voice prerequisites are in place (ACR, Container Apps env, UAMI, Key Vault, APIM, Foundry, App Insights). This step **collects the IDs / URIs / connection strings** that the Voice phase needs in `Voice.<country>`. Do it once per country you want to enable voice on (NO for Demo 2 voice; DK alone is enough for the rest of the case-study demo).
 
-| Field in `Voice.<country>` | Source phase | Where to read it |
+### B4.0 — Pre-flight checks
+
+Verify the upstream phases produced what Voice depends on:
+
+```powershell
+# Container Apps Environment per country
+az containerapp env list `
+  --query "[?contains(name,'udcsp-no')].{name:name,rg:resourceGroup,id:id}" -o table
+
+# UAMI for the voice orchestrator
+az identity list `
+  --query "[?contains(name,'voice')&&contains(name,'no')].{name:name,id:id}" -o table
+
+# Key Vault per country
+az keyvault list --query "[?contains(name,'udcsp-no')].name" -o tsv
+
+# gpt-realtime quota in the target region — fall back to swedencentral if 0
+az cognitiveservices usage list --location norwayeast `
+  --query "[?contains(name.value,'realtime')].{name:name.localizedValue,limit:limit,used:currentValue}" -o table
+```
+
+If the Container Apps env or UAMI are missing, run the upstream phases first:
+
+```powershell
+pwsh ./scripts/install/Install-UDCSP.ps1 -Phase LandingZone,Identity -Environment dev
+```
+
+### B4.1 — Build + push the orchestrator image to ACR
+
+The Voice Bicep needs a real image to deploy. Build once, push to the country ACR. Re-do this whenever you change anything under `apps/voice/call-automation/`.
+
+```powershell
+cd apps/voice/call-automation
+docker build -t udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0 .
+az acr login --name udcspnoprodacr
+docker push udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0
+cd ../../..
+```
+
+### B4.2 — Provision the voice App Registration + KV client secret
+
+The orchestrator uses OAuth client-credentials to call APIM `/agents/topic-router/messages`. Create a dedicated App Registration and stash its secret in the country Key Vault.
+
+```powershell
+# (a) App Registration
+$app  = az ad app create --display-name "udcsp-voice-orch-no" --query "{appId:appId,id:id}" -o json | ConvertFrom-Json
+az ad sp create --id $app.appId --query id -o tsv | Out-Null
+$cred = az ad app credential reset --id $app.appId --append --query "{password:password}" -o json | ConvertFrom-Json
+"voiceClientId    : $($app.appId)"
+"voiceClientSecret: $($cred.password)"
+
+# (b) Stash the secret in the country Key Vault
+$kvName = az keyvault list --query "[?contains(name,'udcsp-no')] | [0].name" -o tsv
+az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value $cred.password --query id -o tsv
+# Save the returned URI — that's the value for `voiceClientSecretUri`.
+```
+
+### B4.3 — Harvest every other Resource ID / URI
+
+| Field in `Voice.<country>` | Source phase | Command / location |
 |---|---|---|
-| `containerAppsEnvironmentId` | `LandingZone` | Resource ID of per-country Container Apps env |
-| `userAssignedIdentityId` | `Identity` | Resource ID of per-country UAMI for the voice orchestrator |
-| `image` | (manual) | `<acr>.azurecr.io/udcsp/voice-orchestrator:<tag>` — built from `apps/voice/call-automation/Dockerfile`, pushed to the ACR provisioned in `LandingZone` |
-| `azureOpenAiAccountName`, `azureOpenAiEndpoint` | `Foundry` | Azure OpenAI resource hosting GPT-4o Realtime |
-| `apimBaseUrl` | `Apim` | Public APIM gateway URL (e.g. `https://api.udcsp.dk`) |
-| `cognitiveServicesEndpoint` | `Foundry` (or sibling Speech resource) | Cognitive Services / Speech endpoint for STT-fallback |
-| `acsConnectionStringSecretUri`, `voiceClientSecretUri` | `LandingZone` (Key Vault) | Key Vault secret URIs |
-| `voiceClientId` | `Identity` | Client ID of the App Registration with `voice-orchestrator` app role |
-| `appInsightsConnectionString` | `Observability` | Per-country App Insights connection string |
-| `publicHostname` | (DNS) | FQDN you point at the Container App (or default `*.azurecontainerapps.io`) |
-| `d365TransferTargetId`, `d365VoiceQueueId` | `D365` | Power Apps maker portal → Customer Service admin centre → **Workstreams** → your voice workstream → **Queue** GUID + **Transfer target** GUID |
-| `deadLetterStorageAccountId` | `LandingZone` | Storage account for Event Grid dead-lettering |
-| `acsResourceName` | `Voice` (created on first-pass `-WhatIf`) | Pre-created by Voice Bicep before orchestrator deploy |
-| `env`, `location`, `resourceGroup` | (config) | Plain values you choose |
+| `containerAppsEnvironmentId` | `LandingZone` | `az containerapp env show -n <env-name> -g <rg> --query id -o tsv` |
+| `userAssignedIdentityId` | `Identity` | `az identity show -n <uami-name> -g <rg> --query id -o tsv` |
+| `image` | B4.1 above | `udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0` |
+| `azureOpenAiAccountName`, `azureOpenAiEndpoint` | `Foundry` | `udcspai` (shared) — `https://udcspai.openai.azure.com/`. If you provision a regional NO account, use that instead. |
+| `apimBaseUrl` | `Apim` | `https://udcsp-no-prod-apim.azure-api.net` |
+| `cognitiveServicesEndpoint` | `Foundry` | `https://udcspai.cognitiveservices.azure.com/` |
+| `voiceClientSecretUri` | B4.2 above | URI returned by `az keyvault secret set` |
+| `voiceClientId` | B4.2 above | `$app.appId` |
+| `appInsightsConnectionString` | `Observability` | `az monitor app-insights component show -a udcsp-no-prod-shared-appi -g <rg> --query connectionString -o tsv` |
+| `deadLetterStorageAccountId` | `LandingZone` | `az storage account list -g <rg> --query "[?contains(name,'udcspno')].id" -o tsv` |
+| `publicHostname` | (DNS) | Leave empty on first run — Container Apps assigns `*.azurecontainerapps.io` |
+| `acsResourceName` | first-pass Voice | Set to `udcsp-no-acs`; the Voice Bicep creates it on the first WhatIf pass |
+| `acsConnectionStringSecretUri` | filled after B4.4 | Filled after the ACS resource exists (B4.4) |
+| `d365TransferTargetId`, `d365VoiceQueueId` | `D365` Customer Service | **Leave empty for the no-handoff demo** (Demo 2 v1). Fill from the Customer Service admin centre once D365 CS NO is provisioned. |
+| `env`, `location`, `resourceGroup` | (config) | `dev` / `norwayeast` / `udcsp-no-voice` |
+
+### B4.4 — First-pass Voice WhatIf to seed the ACS resource
+
+The ACS connection string only exists after the ACS resource has been created by the Voice Bicep. Run a dry-pass to provision ACS, then capture the connection string.
+
+```powershell
+pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev -WhatIf
+
+# Now ACS exists — read its primary connection string and stash in KV
+$acsCs = az communication list-key --name udcsp-no-acs -g udcsp-no-voice --query primaryConnectionString -o tsv
+az keyvault secret set --vault-name $kvName --name "acs-connection-string" --value $acsCs --query id -o tsv
+# Save the URI — that's `acsConnectionStringSecretUri`.
+```
 
 </details>
 
 <details>
 <summary><b>B5. Configure the Voice block from first-pass outputs</b></summary>
 
-Re-open `scripts/install/config/udcsp.config.psd1` and replace placeholders for at least one country (DK).
+Open `scripts/install/config/udcsp.config.psd1` and fill the country block under `Voice` with the values harvested in B4. Example for the Demo 2 no-handoff target (Norway):
+
+```powershell
+Voice = @{
+    no = @{
+        env                          = 'dev'
+        resourceGroup                = 'udcsp-no-voice'
+        location                     = 'norwayeast'
+        containerAppsEnvironmentId   = '/subscriptions/.../managedEnvironments/<name>'   # B4.3
+        userAssignedIdentityId       = '/subscriptions/.../userAssignedIdentities/<name>' # B4.3
+        image                        = 'udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' # B4.1
+        azureOpenAiAccountName       = 'udcspai'
+        azureOpenAiEndpoint          = 'https://udcspai.openai.azure.com/'
+        apimBaseUrl                  = 'https://udcsp-no-prod-apim.azure-api.net'
+        cognitiveServicesEndpoint    = 'https://udcspai.cognitiveservices.azure.com/'
+        acsConnectionStringSecretUri = 'https://udcsp-no-kv.vault.azure.net/secrets/acs-connection-string/...' # B4.4
+        voiceClientSecretUri         = 'https://udcsp-no-kv.vault.azure.net/secrets/voice-client-secret/...'   # B4.2
+        voiceClientId                = '<App Registration client-id>'                                          # B4.2
+        appInsightsConnectionString  = '<connection string>'                                                   # B4.3
+        publicHostname               = ''
+        d365TransferTargetId         = ''   # ⚠️ empty until D365 Customer Service NO is installed
+        d365VoiceQueueId             = ''   # ⚠️ idem — re-enables escalate_to_human warm-transfer
+        deadLetterStorageAccountId   = '/subscriptions/.../storageAccounts/<name>'                             # B4.3
+        acsResourceName              = 'udcsp-no-acs'
+    }
+}
+```
+
+> ⚠️ **`d365TransferTargetId` / `d365VoiceQueueId` left empty** means the voice orchestrator skips the `escalate_to_human` function tool. The AI assistant will answer questions and decline warm-transfer gracefully ("a human caseworker will call you back") until D365 Customer Service is provisioned. See [`inprogress.md`](./inprogress.md) § "Demo 2" for the v2 plan.
 
 </details>
 
@@ -418,7 +519,40 @@ Re-open `scripts/install/config/udcsp.config.psd1` and replace placeholders for 
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
 ```
 
-The DAG resolver re-includes Voice's prerequisites — every Bicep deploy is idempotent so this is safe and takes only seconds for already-up phases.
+The DAG resolver re-includes Voice's prerequisites — every Bicep deploy is idempotent so this is safe and takes only seconds for already-up phases. The Voice phase itself provisions:
+
+- `udcsp-no-acs` (Azure Communication Services, `dataLocation=Norway`)
+- `gpt-realtime-no` (Azure OpenAI deployment, 10k TPM by default, fallback to `swedencentral` if NO has zero quota)
+- `udcsp-no-dev-voice-orch` (Container App, UAMI-bound, KV-backed secrets, ingress `transport: auto` for WSS)
+- Event Grid `IncomingCall` subscription pointing at the orchestrator's `/api/acs/eventgrid` route
+
+Verify the orchestrator is live:
+
+```powershell
+$fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g udcsp-no-voice `
+    --query "properties.configuration.ingress.fqdn" -o tsv
+curl "https://$fqdn/healthz"
+# Expected: 200 OK with { "status": "ok", "mode": "live" }
+```
+
+### B6.1 — Bind a phone number (or browser ingress) to the orchestrator
+
+Pick ONE of these three, in order of regulatory lead time:
+
+| Option | Lead time | How |
+|---|---|---|
+| **A — ACS Direct Calling (browser)** | 0 min | Use the ACS Web SDK from a button on the demo page — no PSTN, no procurement, no regulator. Best for jury rehearsal. |
+| **B — US toll-free `+1 800…`** | Minutes | Order a US toll-free via the ACS portal, then run `Bind-AcsNumber.ps1`. Same backend, different ingress. |
+| **C — Real Nordic toll-free** (`+47 800…` / `+45 80…` / `+46 20…`) | 1–3 weeks | Submit the Nkom / ERST / PTS KYC pack via the ACS portal; production-grade. |
+
+```powershell
+# Option B / C — bind the procured number to this orchestrator
+pwsh ./apps/voice/scripts/Bind-AcsNumber.ps1 -Country no -Env dev `
+    -PhoneNumber "+1XXXXXXXXXX" `
+    -AcsResourceName udcsp-no-acs `
+    -ResourceGroup udcsp-no-voice `
+    -OrchestratorFqdn $fqdn
+```
 
 </details>
 
@@ -429,9 +563,26 @@ The DAG resolver re-includes Voice's prerequisites — every Bicep deploy is ide
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev
 ```
 
-A green QA gate prints the platform's URLs to console.
+The QA phase exercises `/healthz` on every deployed surface, replays an Event Grid `SubscriptionValidationEvent` against the orchestrator, and prints the platform URLs to console.
 
-✅ **Section B done — the platform is fully running.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios.
+### B7.1 — Live dial test
+
+End-to-end verification:
+
+1. **Call** the bound number (option B/C) or open the browser caller (option A).
+2. **Listen** — you should hear the recording-disclosure prompt in Norwegian, then a "How can I help?" greeting.
+3. **Say** in NB : *"Hvorfor er skatterefusjonen min så lav i år?"*
+4. **Confirm in App Insights** that the call hit Foundry through APIM:
+   ```kusto
+   requests
+   | where url contains "/agents/topic-router/messages"
+       and customDimensions["x-channel-actor"] == "voice"
+       and timestamp > ago(2m)
+   | project timestamp, resultCode, duration, operation_Id
+   ```
+   Expect a single HTTP 200 with a `traceparent` linking back to the ACS call leg.
+
+✅ **Section B done — the platform is fully running, including the voice channel.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios.
 
 </details>
 
