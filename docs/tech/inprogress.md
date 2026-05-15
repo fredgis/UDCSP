@@ -56,7 +56,8 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 
 The remainder of this document tracks the **Demo-3 (Maria) gap** in detail because it is the next demo we expect to play, and adds a **Demo-1 (Anna · DK→SE) backlog** below since it is the flagship and the next one we will harden.
 
-## Demo 1 (Anna · DK → SE) — current state
+<details>
+<summary><h2 id="demo-1-anna">Demo 1 (Anna · DK → SE) — current state</h2></summary>
 
 > Source narrative: [`docs/biz/uses.md` § Demo 1](../biz/uses.md#-demo-1--anna-moves-from-copenhagen-to-stockholm-flagship). Self-rating: ~30–40 % complete. The front door (UI, identity, AI agents, APIM router copy) exists. The actual cross-border orchestration, the SE landing, and the notification loop are stubs.
 
@@ -130,6 +131,8 @@ E → 14 (record the walk-through, flip 🟢).
 
 A + B together unblock a credible MVP walk-through (Anna submits → SE caseworker approves → Anna receives notification) without Verified ID. C is the marquee finale and adds 2–3 days on top.
 
+</details>
+
 ## What I can show right now (no further work)
 
 1. Architecture & navigation: home, `/demos`, persona panel, footer.
@@ -199,7 +202,8 @@ Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandar
 
 **No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
 
-## Demo 2 (Lars · NO · voice) — current state
+<details>
+<summary><h2 id="demo-2-lars">Demo 2 (Lars · NO · voice) — current state</h2></summary>
 
 > Source narrative: [`docs/biz/uses.md` § Demo 2](../biz/uses.md). Architecture: [`docs/biz/voice.md`](../biz/voice.md). Self-rating: **~40% — code complete, infra not yet provisioned**.
 
@@ -256,7 +260,10 @@ D365 Customer Service NO is not yet installed → we **drop the warm-transfer to
 6. Add post-call CSAT IVR survey, ingest into Fabric → Power BI median-4d tile → +38 % KPI.
 7. Promote Demo 2 row to 🟢.
 
-## Demo 3 (Maria · DK · PL · Windows Narrator) — current state
+</details>
+
+<details>
+<summary><h2 id="demo-3-maria">Demo 3 (Maria · DK · PL · Windows Narrator) — current state</h2></summary>
 
 Reference script: `docs/biz/uses.md` Demo 3 (Maria Kowalska, Windows Narrator, Polish UI in Denmark).
 
@@ -295,6 +302,8 @@ Windows Narrator is the screen reader built into Windows 10/11. It speaks aloud 
 9. **Trigger the axe-core CI run** — push any change under `apps/web/**` (or run the workflow manually from the *Actions* tab → *web-axe* → *Run workflow*). Confirm 0 serious + 0 critical violations across `/`, `/login`, `/demos`, `/consent`.
 
 The same flow works with NVDA, JAWS or VoiceOver — only the modifier key differs. The accessibility implementation is screen-reader agnostic.
+
+</details>
 
 ## D3 wiring decisions (resolved 2026-05-13)
 
