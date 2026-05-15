@@ -440,7 +440,71 @@ The earlier audit noted that the Bot Framework SDK is being **deprecated end of 
 
 #### 11.4a A call, end to end, in 5 steps
 
-The orchestrator is **not the AI** — it's a **WebSocket bridge** between three systems that don't natively talk to each other (ACS, GPT-4o Realtime, APIM/Foundry). Here is what happens when Lars dials the Norwegian toll-free number:
+The orchestrator is **not the AI** — it's a **WebSocket bridge** between three systems that don't natively talk to each other (ACS, GPT-4o Realtime, APIM/Foundry).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as 🇳🇴 Citizen (Lars)
+    participant ACS as 🛰️ ACS Call Automation<br/>(Norway East)
+    participant EG as 🔔 Event Grid
+    participant ORCH as 🎚️ Voice orchestrator<br/>(Container App)
+    participant GPT as 🧠 GPT-4o Realtime
+    participant API as 🚪 APIM<br/>/agents/topic-router
+    participant FND as 🤖 Foundry topic-router<br/>+ AI Search FAQ
+    participant D365 as 📋 D365 voice queue<br/>(v2 · optional)
+
+    rect rgba(220,235,250,.4)
+    Note over C,EG: ① ACS answers the call (sovereignty-pinned)
+    C->>ACS: dial +47 800 …
+    ACS->>EG: IncomingCall event
+    EG->>ORCH: POST /api/acs/eventgrid
+    ORCH->>ACS: AnswerCall + mediaStreamingOptions
+    ACS-->>C: recording disclosure (NB · 12 langs)
+    end
+
+    rect rgba(225,245,225,.4)
+    Note over ACS,ORCH: ①ᵇ ACS opens audio WebSocket
+    ACS-->>ORCH: WSS /api/acs/media (PCM 16 kHz)
+    end
+
+    rect rgba(255,235,210,.4)
+    Note over ORCH,GPT: ② Orchestrator opens 2ⁿᵈ WS → GPT Realtime
+    ORCH-->>GPT: wss://…/openai/realtime?deployment=gpt-realtime<br/>(UAMI auth, server-VAD, barge-in)
+    C->>ACS: « Hvorfor er skatterefusjonen min så lav i år? »
+    ACS->>ORCH: audio frames
+    ORCH->>GPT: proxy base64 PCM
+    GPT-->>ORCH: streaming transcript + intent
+    end
+
+    rect rgba(245,225,245,.4)
+    Note over ORCH,FND: ③ + ④ GPT invokes lookup_topic_router tool
+    GPT->>ORCH: function call: lookup_topic_router(text, "nb")
+    ORCH->>API: POST /agents/topic-router/messages<br/>x-channel-actor: voice
+    API->>FND: route to topic-router agent
+    FND-->>API: { text, escalate, confidence, trace }
+    API-->>ORCH: response
+    ORCH-->>GPT: tool result
+    GPT-->>ORCH: synthesised audio (TTS streaming)
+    ORCH-->>ACS: audio frames
+    ACS-->>C: spoken answer in NB
+    end
+
+    rect rgba(240,240,240,.4)
+    Note over ORCH,D365: ⑤ Close — recap SMS, or warm-transfer if v2
+    alt v1 · no-handoff (D365_VOICE_QUEUE_ID empty)
+        GPT->>ORCH: end_call_with_recap(text)
+        ORCH->>ACS: SMS récap NB + HangUpCall
+        ACS-->>C: 📲 SMS recap
+    else v2 · escalate to human
+        GPT->>ORCH: escalate_to_human(reason, summary)
+        ORCH->>D365: transferCallToParticipant<br/>+ udcspEscalation context
+        D365-->>C: caseworker takes the leg
+    end
+    end
+```
+
+Same flow as the narrative below, hop by hop:
 
 1. **ACS answers the call.** The number `+47 800 …` is bound (via `Bind-AcsNumber.ps1`) to the `udcsp-no-acs` resource pinned to **Norway East** (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
 2. **ACS opens a bidirectional audio WebSocket** to `/api/acs/media?callConnectionId={id}`. PCM 16 kHz frames flow in both directions.
