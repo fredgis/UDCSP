@@ -211,7 +211,9 @@ Two cross-cutting concerns:
 | 📜 | **Correlation thread** — every case carries a `udcsp_traceparent` (W3C trace context) that links the Foundry `topic-router` conversation, the Power Automate flows, the Foundry eligibility trace, and the Fabric mirror row into a single observable request chain. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml` |
 | 🔐 | **Consent gating** — citizen consent for data processing is modelled in `udcsp_consent_record` and checked by `citizen-status-notify` before any outbound communication. Notifications are suppressed if consent has expired or been withdrawn. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_consent_record.xml` |
 
-Every caseworker has a persistent **Copilot for Service panel** docked inside the D365 case form. It is powered by the `udcsp-caseworker-helper` Foundry agent (`foundry/agents/caseworker-helper/agent.yaml`) — model `gpt-5.5`, temperature `0.2`, `p95 ≤ 2 s` inside the D365 panel.
+Every caseworker has a persistent **Copilot for Service panel** docked inside the D365 case form. It is powered by the `udcsp-caseworker-helper` Foundry agent (`foundry/agents/caseworker-helper/agent.yaml`) — model `gpt-5.4` (was `gpt-5.5`, but `gpt-5.5` has zero quota in `swedencentral`), temperature `0.2`, `p95 ≤ 2 s` inside the D365 panel.
+
+> ⚠️ **Today's caseworker surface is a shared model-driven Power App on Dataverse `org939d8f07`** — the per-country D365 Customer Service envs are not yet provisioned. The `udcsp_application` schema, Power Fx form and column logical names match what the future D365 deployment will use, so the artefact is a drop-in. See [`../tech/inprogress.md`](../tech/inprogress.md) § "Caseworker UI strategy".
 
 The five runtime prompts (two scaffolded in `prompts.xml`, three added at import time):
 

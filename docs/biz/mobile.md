@@ -27,6 +27,8 @@
 > |---|---|
 > | 🗄️ **Where stored** | Same as web: `bot_session`, Redis ephemeral drafts plus PostgreSQL JSONB persisted drafts, ADLS `citizen-uploads/`, AI Search memory, App Insights traces; push receipts in Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) (TTL 30 days). |
 
+> ℹ️ **Live vs roadmap.** Web portal is live on `udcsp.fredgis.com`. A packaged iOS / Android build and the Verified ID cross-border credential flow are **roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md).
+
 ---
 
 > [!NOTE]

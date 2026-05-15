@@ -13,6 +13,10 @@
 
 ---
 
+> ℹ️ **Deployed vs roadmap.** These docs describe the **target platform**. For what's actually live today across DK/SE/NO — including D365 Customer Service status, Verified ID, the Demo 2 no-handoff mode — see [`../tech/inprogress.md`](../tech/inprogress.md).
+
+---
+
 ## 🎯 Start here
 
 | Doc | What it is | Read first if you are… |

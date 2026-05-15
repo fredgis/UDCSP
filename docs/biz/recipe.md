@@ -18,6 +18,8 @@
 >
 > **Goal:** prove that every requirement in [`case-study-11.md`](./case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
 
+> ℹ️ **Live vs target steps.** Scenarios 1 (Anna · DK→SE) and 2 (Lars · voice) include steps that depend on D365 Customer Service per country + Verified ID issuance, which are **not yet provisioned**. Today, Scenario 2 runs in **no-handoff mode** (citizen↔AI loop only, verbal callback closure) and Scenario 1's SE landing is mocked via the shared Dataverse Power App. See [`../tech/inprogress.md`](../tech/inprogress.md) for the canonical live-vs-roadmap split.
+
 Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from [`uses.md`](./uses.md)** it satisfies.
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.

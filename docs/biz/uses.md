@@ -15,6 +15,10 @@
 
 ---
 
+> ℹ️ **Narrative vs deployed reality.** Each scenario below describes the **target end-state**. For what's actually live today (e.g. Demo 1 SE D365 Customer Service, Verified ID, Demo 2 warm-transfer to a human caseworker — all still **roadmap**), see [`../tech/inprogress.md`](../tech/inprogress.md). Demo 3 is the only one currently playable end-to-end live.
+
+---
+
 ## 📑 Table of Contents
 
 1. [How to Use This Document](#how-to-use-this-document)

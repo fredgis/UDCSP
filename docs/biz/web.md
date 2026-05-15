@@ -4,6 +4,8 @@
 
 </div>
 
+> ℹ️ **Live vs roadmap.** External ID per-country sign-in, the 12-language wizard, eligibility Foundry-driven and the My Cases re-hydration are live on `udcsp.fredgis.com`. **Verified ID cross-border credential issuance is roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md).
+
 > [!NOTE]
 > **Channel surface only.** This document covers the React+Vite portal — pages, accessibility, routing, citizen-facing UX. The agent routing topology (which Foundry agent handles which intent, how the topic-router fans out, what happens when content safety blocks a turn) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how the citizen sees the platform on the web*; `ai.md` owns *how the platform thinks*.
 

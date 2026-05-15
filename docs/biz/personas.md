@@ -28,7 +28,7 @@
 > | Tenant | Role of accounts here | Min. count |
 > |---|---|---:|
 > | 🇩🇰 `udcspdk.ciamlogin.com` | Citizens applying as Danes | **3** |
-> | 🇸🇪 `udcspse.ciamlogin.com` | Citizens applying as Swedes | **0** *(Verified ID auto-issues)* |
+> | 🇸🇪 `udcspse.ciamlogin.com` | Citizens applying as Swedes | **0** *(planned: Verified ID auto-issues at D1; provision manually until issued)* |
 > | 🇳🇴 `udcspno.ciamlogin.com` | Citizens applying as Norwegians | **1** |
 > | 🏢 UDCSP system Entra | All back-office staff | **7** |
 
@@ -61,7 +61,7 @@
 </div>
 
 > [!TIP]
-> **Anna's Swedish account is created automatically by Verified ID** at the cross-border step in D1. Provision an `anna.jensen@udcspse.onmicrosoft.com` account upfront only if you want the demo to skip the VID issuance wait.
+> **Anna's Swedish account is planned to be created automatically by Verified ID** at the cross-border step in D1. Verified ID issuance is **not yet wired** — for now, provision an `anna.jensen@udcspse.onmicrosoft.com` account upfront so the demo can skip the (currently mocked) VID step.
 
 > [!NOTE]
 > **Maria's Polish UI** is driven by an `extension_uiLanguage = pl` claim on her CIAM profile — the SPA reads it on sign-in and loads `pl.json` for `i18next`. No extra account, just one custom attribute.
@@ -73,7 +73,7 @@
 | Tenant | Accounts to provision | Used in |
 |---|---|:-:|
 | 🇩🇰 **`udcspdk.ciamlogin.com`** | Anna · Maria · Erik | **D1 · D3 · D4** |
-| 🇸🇪 **`udcspse.ciamlogin.com`** | *(none required — Verified ID auto-issues at D1)* | **D1** *(target side)* |
+| 🇸🇪 **`udcspse.ciamlogin.com`** | *(none required once Verified ID auto-issues at D1; provision manually until then)* | **D1** *(target side)* |
 | 🇳🇴 **`udcspno.ciamlogin.com`** | Lars | **D2** |
 
 </div>
@@ -163,7 +163,7 @@ flowchart LR
 2. **🗄️ Dataverse Application Users** — promote the 3 caseworkers + APIM MI + Logic Apps MI in each country's environment ([`../tech/installation.md` § Step 3.5](../tech/installation.md)).
 3. **🪪 CIAM tenants** — provision the 4 citizen accounts after the per-country SPA app registration is in place ([`../tech/installation.md` § Step 2](../tech/installation.md)).
 4. **🤖 Foundry agents** — already created by `Install-Foundry.psm1`; re-deploy only if the project endpoint changes (see [`../tech/inprogress.md` § Foundry agents](../tech/inprogress.md)).
-5. **🔐 Verified ID issuer** — only required to demo the D1 cross-border auto-onboarding step into the SE tenant.
+5. **🔐 Verified ID issuer** *(roadmap — not yet wired)* — required to demo the D1 cross-border auto-onboarding step into the SE tenant; until then, pre-provision the SE account manually.
 
 ---
 
