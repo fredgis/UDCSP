@@ -133,13 +133,16 @@ A + B together unblock a credible MVP walk-through (Anna submits → SE casework
 
 </details>
 
-## What I can show right now (no further work)
+<details>
+<summary><h2 id="cross-demo">📋 Cross-demo backlog &amp; quick demos</h2></summary>
+
+### What I can show right now (no further work)
 
 1. Architecture & navigation: home, `/demos`, persona panel, footer.
 2. **D3 DK auth path**: pick Danmark → Sign in / Create account → CIAM hosted page on `udcspdk.ciamlogin.com` → return to portal authenticated.
 3. Multi-tenant gating: ✓/⚠ markers per country card on `/login` show governance posture.
 
-## How to test D3 end-to-end on the portal
+### How to test D3 end-to-end on the portal (10 min, no screen reader)
 
 1. Open https://udcsp.fredgis.com in an **InPrivate / Incognito** window (forces a fresh token).
 2. On `/login`, click the **Danmark 🇩🇰** card → **Create account** (first run) or **Sign in**.
@@ -147,15 +150,17 @@ A + B together unblock a credible MVP walk-through (Anna submits → SE casework
 4. You're redirected to the portal authenticated. Header shows `Hi {firstName} 🇩🇰`.
 5. Go to **Apply for Child Benefit** (or `/apply/child-benefit`). Fill the form (child name, DOB, etc.) and **Submit**.
    - Expect a green confirmation toast with a `caseId` (`UDCSP-DK-…`).
-6. Open **My cases** (`/my-cases`). The new case appears in the list with status **Open** within ~10 s.
+6. Open **My cases** (`/cases`). The new case appears in the list with status **Open** within ~10 s.
 7. (Optional verification — Azure portal)
    - **Logic App** `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ Succeeded, all 3 Foundry agent actions green, `Create_D365_case` returns 204.
    - **Dataverse** `https://org939d8f07.crm4.dynamics.com` → *Advanced find* on **Tasks** filtered by `Subject begins with [UDCSP-` → new row present.
 
 If step 5 returns 401 → token expired, sign out + sign in again.
-If step 6 is empty → check APIM trace on `GET /case-management` for the Dataverse error.
+If step 6 is empty → check APIM trace on `GET /citizen-applications/` for the Dataverse error.
 
-## Unblock backlog (in suggested order)
+For the screen-reader-specific walk-through, see Demo 3 § "How to test Demo 3 with Windows Narrator" above.
+
+### Unblock backlog (in suggested order)
 
 1. **APIM**
    - Replace `foundry-topic-router-agent-endpoint` placeholder with the real Foundry agent endpoint.
@@ -172,35 +177,7 @@ If step 6 is empty → check APIM trace on `GET /case-management` for the Datave
    - **Unblocks**: D6.
 6. **Back-office / M365 connector / Purview / Event Grid** for D7, D9, D10.
 
-## Recent commits relevant to this tracker
-
-- **Today (Foundry v1 migration)** — Deleted 7 classic assistants. Rewrote `Import-FoundryAgent.ps1` to call new Agents v1 API (`/agents` with `kind: prompt`, no API key, Entra-only auth). Recreated all 7 agents via the new API; eligibility & caseworker-helper bumped to v2 after switching from `gpt-5.5` (no quota) to `gpt-5.4`. Deployed model `gpt-5.4` on `udcspai`. Updated `architecture.md` Foundry section to reflect the new identity model.
-- **Today (Option B wiring, see commit log)** — Foundry: gpt-5.4-mini deployed + 7 assistants created on `udcspai/udcsp` project. APIM DK named-values filled (logicapp callback, foundry endpoints, d365 url, OIDC config, audience, portal-origin). Global CORS policy on `udcsp-dk-prod-apim`. Subscription-key disabled on all 11 APIs. Web `apiFetch` acquires bearer for `api://<dk-clientId>/access_as_user` per current country. Apply Child Benefit page now POSTs and shows correlationId.
-- `2dfa7e5` — CIAM authority fix (drop `/SignUpSignIn` from path).
-- `c59fb25` — Per-country `VITE_EXTERNAL_ID_CLIENT_ID_{DK,SE,NO}` + correct PCA per redirect.
-- `bbe61d7` — POST CONFIGURATION section in `installation.md` + UserBadge "Sign in" without flag.
-- `efb22e6` — AuthGate, UserBadge, DemosIndexPage, identity-aware ChatWidget, MyCases empty-state.
-- `35a93f7` — Country picker on `/login`.
-
-## Foundry agents (DK/SE/NO — same project, **new Agents v1 API**)
-
-> ⚠️ **Migration done** — All 7 agents were originally created as **classic Assistants** (Assistants v1 API on `/assistants`). The Foundry portal flagged them as legacy with the message _"Classic agents — Assistants are not yet supported, save as a new agent powered by the updated API"_. We deleted the 7 classic assistants and recreated them using the **new Agents v1 API** (`/agents`, `kind: prompt`, name+version identity, Entra-only auth, no API key). The importer `foundry/scripts/Import-FoundryAgent.ps1` was rewritten accordingly — see commit log.
-
-Project endpoint: `https://udcspai.services.ai.azure.com/api/projects/udcsp` · API version: `v1`
-
-| Agent | Identity (name) | Latest version | Model deployment |
-|---|---|---|---|
-| Classifier | `udcsp-classifier` | `:1` | `gpt-5.4-mini` |
-| Eligibility | `udcsp-eligibility` | `:2` | `gpt-5.4` (was `gpt-5.5`, no quota in `swedencentral`) |
-| Document extractor | `udcsp-doc-extractor` | `:1` | `gpt-5.4-mini` |
-| Citizen assistant | `udcsp-citizen-assistant` | `:1` | `gpt-5.4` |
-| Topic router | `topic-router` | `:1` | `gpt-5.4` |
-| Caseworker helper | `udcsp-caseworker-helper` | `:2` | `gpt-5.4` (was `gpt-5.5`, no quota) |
-| Translator | `udcsp-translator` | `:1` | `gpt-5.4` |
-
-Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandard, 100 k TPM). `gpt-5.5` could not be deployed (zero quota in this region as of today).
-
-**No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
+</details>
 
 <details>
 <summary><h2 id="demo-2-lars">Demo 2 (Lars · NO · voice) — current state</h2></summary>
@@ -303,9 +280,7 @@ Windows Narrator is the screen reader built into Windows 10/11. It speaks aloud 
 
 The same flow works with NVDA, JAWS or VoiceOver — only the modifier key differs. The accessibility implementation is screen-reader agnostic.
 
-</details>
-
-## D3 wiring decisions (resolved 2026-05-13)
+### D3 wiring decisions (resolved 2026-05-13)
 
 1. **DK SPA app reg — `access_as_user` scope** ✅ exposed + self-pre-authorised. See `installation.md` Step 3.5.
 
@@ -319,7 +294,32 @@ The same flow works with NVDA, JAWS or VoiceOver — only the modifier key diffe
 
 6. **APIM `citizen-applications` DELETE** ✅ (`operations/delete-citizen-applications-by-id.xml`, commit `db29abb`) — `MyCasesPage` Remove button now calls `DELETE /citizen-applications/{activityid}` end-to-end. Policy: validates External ID JWT → extracts `preferred_username`/`email`/`emails`/`upn` (`citizenUpn`) → GETs the `task` row → checks `description` contains `citizenUpn: <caller>` (IDOR guard, returns 403 if not owner; 404 if row gone) → parses the JSON tail of `description` (after `| text: `) to extract `documentBlobUrl` → if present, fires a blob `DELETE` against `udcspdkprodlake/citizen-uploads/...` using APIM MI (`Storage Blob Data Contributor` granted in `Install-Apim.psm1` line 258, `x-ms-version: 2021-06-08`, `ignore-error="true"` so a missing/old blob doesn't block the row deletion) → DELETEs the Dataverse row (204/200/404 → 204; else 502 with the upstream body for triage). Companion SPA fix (commit `3ad73f5`): `MyCasesPage` no longer merges remote+local — when the back-end responds, it shows remote rows only (the prior merge produced two cards per case because remote ids = `activityid` GUID and local cache ids = `correlationId` returned by POST, which never collide; clicking the local card sent a non-existent GUID to the DELETE op and the row stayed on Dataverse). Local cache is now only the offline fallback when APIM is unreachable. Cascade verified end-to-end: Dataverse `task` row gone + uploaded PDF removed from `udcspdkprodlake`. Install script auto-deploys this on a fresh env: `openapi.yaml` defines the `DELETE /{applicationId}` op (so `az apim api import` creates it), and `Install-Apim.psm1` lines 184-207 PUT the operation policy from `operations/*.xml` — no manual step.
 
-## Caseworker UI strategy (D7)
+</details>
+
+<details>
+<summary><h2 id="reference">📂 Reference &amp; operational notes</h2></summary>
+
+### 🤖 Foundry agents (DK/SE/NO — same project, new Agents v1 API)
+
+> ⚠️ **Migration done** — All 7 agents were originally created as **classic Assistants** (Assistants v1 API on `/assistants`). The Foundry portal flagged them as legacy with the message _"Classic agents — Assistants are not yet supported, save as a new agent powered by the updated API"_. We deleted the 7 classic assistants and recreated them using the **new Agents v1 API** (`/agents`, `kind: prompt`, name+version identity, Entra-only auth, no API key). The importer `foundry/scripts/Import-FoundryAgent.ps1` was rewritten accordingly — see commit log.
+
+Project endpoint: `https://udcspai.services.ai.azure.com/api/projects/udcsp` · API version: `v1`
+
+| Agent | Identity (name) | Latest version | Model deployment |
+|---|---|---|---|
+| Classifier | `udcsp-classifier` | `:1` | `gpt-5.4-mini` |
+| Eligibility | `udcsp-eligibility` | `:2` | `gpt-5.4` (was `gpt-5.5`, no quota in `swedencentral`) |
+| Document extractor | `udcsp-doc-extractor` | `:1` | `gpt-5.4-mini` |
+| Citizen assistant | `udcsp-citizen-assistant` | `:1` | `gpt-5.4` |
+| Topic router | `topic-router` | `:1` | `gpt-5.4` |
+| Caseworker helper | `udcsp-caseworker-helper` | `:2` | `gpt-5.4` (was `gpt-5.5`, no quota) |
+| Translator | `udcsp-translator` | `:1` | `gpt-5.4` |
+
+Model deployments on `udcspai`: `gpt-5.4-mini` and `gpt-5.4` (both GlobalStandard, 100 k TPM). `gpt-5.5` could not be deployed (zero quota in this region as of today).
+
+**No more `asst_*` IDs.** Agents are referenced by `<name>` and optionally `<name>:<version>`. Update `foundry-*-agent-endpoint` named values in APIM to use the new format (e.g. `https://udcspai.services.ai.azure.com/api/projects/udcsp|udcsp-classifier`) — done.
+
+### 🧑‍💼 Caseworker UI strategy (D7)
 
 Today the citizen-side LA writes to the `task` activity entity in `org939d8f07` (UDCSP system tenant) — caseworker identity is therefore an Entra user in the **system tenant**, not in any of the per-country External ID tenants. That separation is intentional: caseworkers operate on cases from any country, while citizens authenticate through their country's CIAM.
 
@@ -328,9 +328,9 @@ Two paths exist:
 1. **Power Apps Model-Driven app on `task`** — buildable in ~30 min today. Pros: unblocks D7 immediately, uses the rows the LAs are already writing, no extra licence. Cons: `task` is a generic activity (no `gps_citizencountry`, no `gps_aiconfidence`) so the caseworker view is plain.
 2. **Wait for D365 Customer Service licence + migrate to `incident`** — ~1-2 days once the licence lands. Pros: native case management UI (queues, SLA, knowledge base, omni-channel), proper case schema, out-of-the-box dashboards. Cons: blocked on procurement.
 
-**Recommendation**: build the Power Apps shell now (just enough to demo D7 routing + AI confidence overlay) and migrate when the licence lands. The migration is well documented under § "Reminder — when D365 Customer Service licence is acquired" — only the LA action `Create_D365_case` and the APIM `case-management` policies need to flip from `tasks` to `incidents`. The Power Apps view can be deleted at that point in favour of the native incident model-driven app.
+**Recommendation**: build the Power Apps shell now (just enough to demo D7 routing + AI confidence overlay) and migrate when the licence lands. The migration is well documented under the D365 Customer Service migration checklist below — only the LA action `Create_D365_case` and the APIM `case-management` policies need to flip from `tasks` to `incidents`. The Power Apps view can be deleted at that point in favour of the native incident model-driven app.
 
-## 🔔 Reminder — when D365 Customer Service licence is acquired
+### 🔔 D365 Customer Service migration checklist (when licence is acquired)
 
 Today the demo writes cases to the generic `task` activity entity (no `incident` table in this env). Once Customer Service is installed, swap back:
 
@@ -349,6 +349,18 @@ Today the demo writes cases to the generic `task` activity entity (no `incident`
 
 4. Apply the same on SE + NO once their Logic Apps are wired.
 
-## Maintenance rule
+### 🕰️ Recent commits relevant to this tracker
+
+- **Today (Foundry v1 migration)** — Deleted 7 classic assistants. Rewrote `Import-FoundryAgent.ps1` to call new Agents v1 API (`/agents` with `kind: prompt`, no API key, Entra-only auth). Recreated all 7 agents via the new API; eligibility & caseworker-helper bumped to v2 after switching from `gpt-5.5` (no quota) to `gpt-5.4`. Deployed model `gpt-5.4` on `udcspai`. Updated `architecture.md` Foundry section to reflect the new identity model.
+- **Today (Option B wiring, see commit log)** — Foundry: gpt-5.4-mini deployed + 7 assistants created on `udcspai/udcsp` project. APIM DK named-values filled (logicapp callback, foundry endpoints, d365 url, OIDC config, audience, portal-origin). Global CORS policy on `udcsp-dk-prod-apim`. Subscription-key disabled on all 11 APIs. Web `apiFetch` acquires bearer for `api://<dk-clientId>/access_as_user` per current country. Apply Child Benefit page now POSTs and shows correlationId.
+- `2dfa7e5` — CIAM authority fix (drop `/SignUpSignIn` from path).
+- `c59fb25` — Per-country `VITE_EXTERNAL_ID_CLIENT_ID_{DK,SE,NO}` + correct PCA per redirect.
+- `bbe61d7` — POST CONFIGURATION section in `installation.md` + UserBadge "Sign in" without flag.
+- `efb22e6` — AuthGate, UserBadge, DemosIndexPage, identity-aware ChatWidget, MyCases empty-state.
+- `35a93f7` — Country picker on `/login`.
+
+### 🔧 Maintenance rule
 
 When you finish wiring a demo, edit only its row (state + columns), bump the bundle hash at the top, append a one-line entry to "Recent commits", and do not rewrite the rest of the file.
+
+</details>
