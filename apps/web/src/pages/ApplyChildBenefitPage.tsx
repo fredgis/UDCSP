@@ -5,7 +5,8 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
-import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
+import { uploadDocument } from '../utils/documentUpload';
+import { extractDocument } from '../utils/extractDocument';
 import { ConsentNotice } from '../components/ConsentNotice';
 import { PlatformDiagram } from '../components/PlatformDiagram';
 import { runEligibility, recommendationToDecision, type EligibilityResponse } from '../utils/eligibility';
@@ -115,12 +116,10 @@ export function ApplyChildBenefitPage() {
       setDocBlobUrl(upload.blobUrl);
       setDocBlobName(upload.blobName);
       setDocStorageAccount(upload.storageAccount);
-      // 2) Extract structured fields by calling Foundry doc-extractor through APIM
-      const b64 = await readFileAsBase64(file);
-      const r = await apiFetch<ExtractResult>('/agent-doc-extractor/extract', {
-        method: 'POST',
-        body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream', contentBase64: b64 }),
-      });
+      // 2) Extract structured fields by calling Foundry doc-extractor through APIM.
+      //    extractDocument sends both the new (blobUrl, documentKind) and legacy
+      //    (filename, contentBase64) contracts so we work across environments.
+      const r = await extractDocument({ file, blobUrl: upload.blobUrl, documentKind: 'payslip' });
       setExtracted(r);
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : 'Document handling failed.');
