@@ -80,6 +80,12 @@ export class CallHandler {
         contentType: 'audio',
         audioChannelType: 'mixed',
         startMediaStreaming: true,
+        // gpt-realtime 2025-08-28 emits 24 kHz PCM mono by default (the
+        // 'pcm16' output_audio_format in our session.update sets bit-depth,
+        // not sample rate). ACS Call Automation defaults to 16 kHz unless
+        // we explicitly negotiate 24 kHz — without this the audio bytes
+        // were being decoded at the wrong rate and the caller heard nothing.
+        audioFormat: 'pcm24KMono',
       } as any,
     };
 
