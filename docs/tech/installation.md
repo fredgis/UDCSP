@@ -659,6 +659,33 @@ pwsh ./apps/voice/scripts/Bind-AcsNumber.ps1 -Country no -Env dev `
     -OrchestratorFqdn $fqdn
 ```
 
+### B6.2 — Lock down ACR + Key Vault after deploy (post-deploy hardening)
+
+> ⚠️ **Do NOT run these before B6.** The Voice orchestrator Container App pulls its image from `udcspnoprodacr` at startup and reads `acs-connection-string` + `voice-client-secret` from `udcsp-no-prod-kv` via its UAMI. Container Apps without VNet integration uses the **public** ACR/KV endpoints — disabling them before B6 will make the container fail to start with `ImagePullBackOff` / `FailedToLoadSecret`.
+>
+> Run B6.2 **after** `curl https://$fqdn/healthz` returns 200. Future image rebuilds + replica restarts will then need a temporary re-enable (the same toggle pair we used in B4.1 / B4.2).
+
+```powershell
+# 1. Re-disable ACR public access (built + pushed in B4.1, container already pulled).
+az acr update -n udcspnoprodacr --public-network-enabled false --default-action Deny --output none
+
+# 2. Re-disable Key Vault public access (secrets already loaded by the running replica).
+az keyvault update --name udcsp-no-prod-kv --public-network-access Disabled --default-action Deny --bypass AzureServices --output none
+
+# 3. Verify both flipped back to Disabled.
+az acr show -n udcspnoprodacr --query "[publicNetworkAccess, networkRuleSet.defaultAction]" -o tsv
+az keyvault show --name udcsp-no-prod-kv --query "properties.publicNetworkAccess" -o tsv
+# Expected: Disabled · Deny  /  Disabled
+```
+
+**When to re-enable** (with the same `az ... --public-network-access Enabled` pair from B4.1 / B4.2):
+
+- Rebuilding the orchestrator image (`az acr build ...` needs ACR ingress)
+- Adding / rotating a KV secret (`az keyvault secret set ...`)
+- Forcing a Container App restart with image pull (ACA control plane → ACR pull)
+
+Once the build / secret-set / restart is done, re-run the two `az ... Disabled` lines above. The running replica keeps working because the image is already in the ACA cache and KV secrets are cached for the container lifetime.
+
 </details>
 
 <details>
