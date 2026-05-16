@@ -23,12 +23,9 @@
 
 ## ✨ The Story in One Page
 
-<table>
-  <tr>
-    <td width="50%"><img src="./images/screen1.png" alt="UDCSP citizen portal homepage — multilingual unified front door" /></td>
-    <td width="50%"><img src="./images/screen2.png" alt="UDCSP case dashboard — eligibility verdict, workflow timeline, evidence pack" /></td>
-  </tr>
-</table>
+<p align="center">
+  <img src="./images/screen1.png" alt="UDCSP citizen portal — multilingual unified front door across DK · SE · NO" width="900" />
+</p>
 
 Three Nordic governments collectively serve **2.1 million citizens** through **47 disconnected legacy portals**. A citizen who moves from Copenhagen to Stockholm has to re-submit identity documents, wait **28 days** for a residency decision, navigate a portal that may not speak their language, and which may not be accessible to them at all.
 
