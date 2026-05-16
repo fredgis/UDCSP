@@ -433,13 +433,21 @@ az acr build --registry udcspnoprodacr --image udcsp/voice-orchestrator:1.0.0 .
 cd ../../..
 ```
 
-> If `az acr build` fails with `denied: client with IP ... is not allowed access`, the ACR firewall is blocking even its own build agents. Allow trusted Azure services once (idempotent, no portal trip):
+> If `az acr build` fails with `denied: client with IP ... is not allowed access`, the ACR firewall is blocking even its own build agents. Two cases:
+>
+> **Case A — public network access ENABLED + network rules in Deny.** Allow trusted Azure services (idempotent, no portal trip), wait ~30 s for propagation, re-run:
 >
 > ```powershell
 > az resource update --ids $(az acr show --name udcspnoprodacr --query id -o tsv) --set properties.networkRuleBypassOptions=AzureServices
 > ```
 >
-> Wait ~30 s for propagation, re-run the `az acr build` command above.
+> **Case B — public network access DISABLED (private endpoint only).** The trusted-services bypass is ignored. Re-enable public access for the build, then re-disable once the image is pushed (the Container App runtime pulls via the private endpoint, so the public toggle can stay off afterward):
+>
+> ```powershell
+> az acr update --name udcspnoprodacr --public-network-enabled true
+> # wait ~30 s, then run `az acr build` above
+> az acr update --name udcspnoprodacr --public-network-enabled false
+> ```
 
 > `az acr build` runs `docker build` + `docker push` on the ACR cloud agents — no local Docker daemon required. If you prefer a local build (faster on subsequent builds because of layer caching, but needs Docker Desktop running):
 >
