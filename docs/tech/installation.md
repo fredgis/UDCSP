@@ -429,11 +429,19 @@ The Voice Bicep needs a real image to deploy. Build once, push to the country AC
 
 ```powershell
 cd apps/voice/call-automation
-docker build -t udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0 .
-az acr login --name udcspnoprodacr
-docker push udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0
+az acr build --registry udcspnoprodacr --image udcsp/voice-orchestrator:1.0.0 .
 cd ../../..
 ```
+
+> `az acr build` runs `docker build` + `docker push` on the ACR cloud agents — no local Docker daemon required. If you prefer a local build (faster on subsequent builds because of layer caching, but needs Docker Desktop running):
+>
+> ```powershell
+> cd apps/voice/call-automation
+> docker build -t udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0 .
+> az acr login --name udcspnoprodacr
+> docker push udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0
+> cd ../../..
+> ```
 
 ### B4.2 — Provision the voice App Registration + KV client secret
 
