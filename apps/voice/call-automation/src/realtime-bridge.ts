@@ -128,10 +128,12 @@ export class RealtimeBridge {
 
     // Greet the caller with the recording disclosure + welcome prompt
     // by injecting an assistant message and asking the model to speak it.
+    // AOAI Realtime requires modalities to be either ['text'] or
+    // ['audio', 'text'] — ['audio'] alone is rejected with invalid_value.
     const initialResponse = {
       type: 'response.create',
       response: {
-        modalities: ['audio'],
+        modalities: ['audio', 'text'],
         instructions: `Speak the following greeting verbatim, in ${this.ivr.locale}, calmly and warmly:\n\n"${this.ivr.recordingDisclosure}\n\n${this.ivr.welcome.prompts.normal}"`,
       },
     };
