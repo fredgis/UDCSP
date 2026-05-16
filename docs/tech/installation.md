@@ -578,12 +578,16 @@ $appId                 = az ad app list --display-name 'udcsp-voice-orch-no' --q
 $voiceClientSecretUri  = az keyvault secret show --vault-name udcsp-no-prod-kv -n voice-client-secret --query id -o tsv
 $acsCsUri              = az keyvault secret show --vault-name udcsp-no-prod-kv -n acs-connection-string --query id -o tsv
 
-# 1. gpt-realtime model deployment (NO has no quota → set this to swedencentral if NO fails).
+# 1. gpt-realtime model deployment. The model is a sub-resource of the AOAI
+#    account 'udcspai', which lives in RG 'udcsp' in 'swedencentral' (NO has
+#    no realtime quota — audio still flows back through the NO orchestrator
+#    so sovereignty is preserved at ACS + ACA layer). Deploy against the
+#    AOAI account's RG, not the voice RG.
 az deployment group create `
-    --resource-group $rg `
+    --resource-group udcsp `
     --name udcsp-no-dev-voice-realtime `
     --template-file "$repo/apps/voice/call-automation/infra/gpt-realtime-deployment.bicep" `
-    --parameters country=no env=dev location=$location azureOpenAiAccountName=udcspai `
+    --parameters country=no env=dev azureOpenAiAccountName=udcspai `
     --output none
 
 # 2. Voice orchestrator Container App, first pass — publicHostname='' until ingress FQDN is known.
@@ -638,7 +642,7 @@ curl "https://$fqdn/healthz"
 # Expected: 200 OK with { "status": "ok", "mode": "live" }
 ```
 
-> **gpt-realtime quota fallback.** If step 1 fails with `InsufficientCapacity` in `norwayeast`, re-run it pointing at `swedencentral` — change `location=$location` to `location=swedencentral` and use a Sweden Central AOAI account name (`udcspai` is already there). Audio still flows back through the NO orchestrator and ACS-Norway data-location keeps recordings sovereign.
+> **gpt-realtime quota fallback.** If step 1 fails with `InsufficientCapacity`, the deployment template targets the `udcspai` AOAI account in `swedencentral` (NO has no realtime quota). If `udcspai` itself runs out of capacity, request a quota increase on the `Tokens per Minute - gpt-realtime - GlobalStandard` quota in `swedencentral` via the portal, or override `--parameters capacity=5` to halve the requested TPM.
 
 ### B6.1 — Bind a phone number (or browser ingress) to the orchestrator
 
