@@ -720,13 +720,44 @@ Once the build / secret-set / restart is done, re-run the two `az ... Disabled` 
 </details>
 
 <details>
-<summary><b>B7. Run the QA smoke gate</b></summary>
+<summary><b>B7. Smoke-test every deployed surface (inline)</b></summary>
+
+The original `Install-UDCSP.ps1 -Phase QA` only validates that CI workflow files exist in the repo — it does NOT hit the live surfaces. Run these inline checks instead so a green B7 means the live platform actually answers:
 
 ```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev
-```
+# 1. SPA reachable.
+curl -sI "https://udcsp.fredgis.com" | Select-String -Pattern 'HTTP/'
+# Expected: HTTP/2 200
 
-The QA phase exercises `/healthz` on every deployed surface, replays an Event Grid `SubscriptionValidationEvent` against the orchestrator, and prints the platform URLs to console.
+# 2. APIM gateways respond (anonymous probes — should NOT need a bearer).
+foreach ($apim in 'udcsp-dk-prod-apim','udcsp-se-prod-apim','udcsp-no-prod-apim') {
+    $code = curl -s -o $null -w "%{http_code}" "https://$apim.azure-api.net/status-0123456789abcdef"
+    "  $apim → $code"   # 200 = APIM up; 404 = APIM up but no /status route (still fine)
+}
+
+# 3. Topic-router accepts an anonymous chat message (no JWT required by design).
+curl -sS -X POST "https://udcsp-dk-prod-apim.azure-api.net/agent-topic-router/messages" `
+    -H "Content-Type: application/json" -H "Origin: https://udcsp.fredgis.com" `
+    -d '{"sessionId":"smoke-b7","channel":"web","locale":"en","text":"hello"}' | Out-String
+
+# 4. Voice orchestrator healthz.
+$fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g udcsp-no-voice --query "properties.configuration.ingress.fqdn" -o tsv
+curl "https://$fqdn/healthz"
+# Expected: 200 OK with { "status": "ok", "mode": "live" }
+
+# 5. Event Grid subscription is provisioned and the orchestrator answered its handshake.
+az eventgrid event-subscription show `
+    --name incoming-call `
+    --source-resource-id (az communication show -n udcsp-no-acs -g udcsp-no-voice --query id -o tsv) `
+    --query "{state:provisioningState,endpoint:destination.endpointBaseUrl}" -o table
+# Expected: state=Succeeded, endpoint=https://<fqdn>/api/acs/eventgrid
+
+# 6. App Insights correlation — confirm at least one trace ingested in the last hour.
+$appiId = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query appId -o tsv
+az monitor app-insights query --app $appiId `
+    --analytics-query "requests | where timestamp > ago(1h) | summarize count()" -o tsv
+# Expected: a non-zero count
+```
 
 ### B7.1 — Live dial test
 
