@@ -387,10 +387,6 @@ Once B3 has run, all the Voice prerequisites are in place (ACR, Container Apps e
 
 > 💡 **For Demo 2 (Lars · NB · Norway), `Voice.no` is enough.** The whole scenario lives in NO (Skatteetaten, Norwegian Bokmål, Norway East sovereignty). All commands in B4 → B7 below already target NO only (`udcspnoprodacr`, `udcsp-no-acs`, `udcsp-no-voice`, `norwayeast`); leave the `Voice.dk` / `Voice.se` blocks empty in `udcsp.config.psd1` and the `Install-UDCSP.ps1 -Phase Voice` loop skips them automatically. Re-apply the same B4 → B7 sequence later if you need DK or SE voice too — nothing changes beyond the country prefix.
 
-> ⚠️ **Shell requirement.** Every command below uses **PowerShell** syntax — the backtick `` ` `` is line continuation in PowerShell, not cmd or bash. Run them inside `pwsh` (or Windows PowerShell). If you prefer cmd / bash, collapse each multi-line block onto a single line by removing the trailing `` ` ``.
->
-> ⚠️ **Windows + Azure CLI quirk.** The `az.cmd` wrapper on Windows does **not** parse `--query "[…].{key:val}"` (dict projection with curly braces) correctly, even from PowerShell. You'll hit `].{key was unexpected at this time.` Use array projection `[name,resourceGroup,id]` instead of `{name:name,…}`, or pipe `-o table` through `findstr` / `Select-String`. All examples below use the array form.
-
 ### B4.0 — Pre-flight checks
 
 Verify the upstream phases produced what Voice depends on:
