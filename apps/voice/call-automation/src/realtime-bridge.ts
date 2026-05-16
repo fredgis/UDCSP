@@ -38,10 +38,11 @@ export interface BridgeOptions {
 interface OutgoingAudioFrame {
   // ACS Call Automation bidirectional media streaming uses PascalCase for
   // OUTBOUND frames (server → ACS) and lowercase for INBOUND (ACS → server).
-  // Sending lowercase out is silently dropped: ACS accepts the WebSocket
-  // frames without complaint but never plays them back to the caller.
+  // Official MS samples also include 'StopAudio: null' on every audio frame
+  // — without that sibling key ACS silently drops the playback.
   Kind: 'AudioData';
   AudioData: { Data: string };
+  StopAudio: null;
 }
 
 const REALTIME_VOICES: Record<string, string> = {
@@ -214,7 +215,7 @@ export class RealtimeBridge {
   }
 
   private relayAudioToAcs(base64Pcm: string): void {
-    const frame: OutgoingAudioFrame = { Kind: 'AudioData', AudioData: { Data: base64Pcm } };
+    const frame: OutgoingAudioFrame = { Kind: 'AudioData', AudioData: { Data: base64Pcm }, StopAudio: null };
     if (this.acs.readyState === WebSocket.OPEN) {
       this.acs.send(JSON.stringify(frame));
     }
