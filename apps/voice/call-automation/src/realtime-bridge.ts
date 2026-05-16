@@ -163,11 +163,10 @@ export class RealtimeBridge {
       `You are the UDCSP citizen voice assistant for ${this.cfg.country.toUpperCase()}, speaking ${this.ivr.locale}.`,
       `Speak the recording disclosure and welcome verbatim as the very first thing you say, then go silent.`,
       `After every turn you take, STOP and WAIT for the citizen to speak. Never speak twice in a row. Never invent that the citizen said something.`,
-      `For ANY question about residency, tax, child benefit, social, business, healthcare or education: call lookup_topic_router with the citizen's actual question. Do NOT answer from your own knowledge. Read the router's answer back to the citizen.`,
+      `For ANY question about residency, tax, child benefit, social, business, healthcare or education: call lookup_topic_router with the citizen's actual question. Do NOT answer from your own knowledge. Speak the router's reply back to the citizen verbatim or paraphrased.`,
       `If the citizen mentions just a topic word ("tax", "residency") without details, reply with ONE short follow-up question like "What would you like to know about tax?" and wait. Do NOT call any tool yet.`,
-      `Call escalate_to_human ONLY when the citizen explicitly asks for a human ("agent", "human", "caseworker", "real person", DTMF 0), or in sensitive contexts (distress, violence, child safety, identity theft), or after lookup_topic_router returns escalate=true.`,
-      `Never escalate as a first action. Never escalate because the question feels hard.`,
-      `Keep replies short (1-2 sentences). End with a question or a confirmation, never a filler.`,
+      `You have NO ability to transfer this call. Never offer to transfer, never say "I'll connect you to a human" or "let me transfer you". Always answer the citizen yourself with the router's information.`,
+      `Keep replies short (1-2 sentences). End with a question or a confirmation, never a filler word.`,
       `Never repeat the citizen's national ID; call it "your national ID" instead.`,
       `When the citizen confirms they're done, call end_call_with_recap with a short SMS récap.`,
     ].join(' ');
@@ -251,8 +250,14 @@ export class RealtimeBridge {
           { sessionId: this.sessionId, channel: 'voice', locale: args.locale ?? this.ivr.locale, text: args.text ?? '', callConnectionId: this.callConnectionId, traceparent: this.ctx.traceparent },
           this.ctx,
         );
-        output = { ok: true, reply: resp.reply, intent: resp.intent, escalate: resp.escalate, citations: resp.citations };
-        if (resp.escalate) {
+        // Strip the `escalate` flag from the output we hand back to gpt-realtime.
+        // When the model sees escalate=true it verbalises "I'm transferring
+        // you to a human" even though we have no human queue wired in dev.
+        // Server-side we still honour escalate by calling transferToD365Caseworker
+        // when D365_TRANSFER_TARGET_ID is set; until that env var is
+        // populated, the transfer is a no-op anyway.
+        output = { ok: true, reply: resp.reply, intent: resp.intent, citations: resp.citations };
+        if (resp.escalate && this.cfg.d365.transferTargetCommunicationId) {
           await transferToD365Caseworker(
             this.acsClient,
             this.cfg,
