@@ -38,11 +38,23 @@ async function getApimToken(cfg: Config): Promise<string> {
   if (!cfg.apim.tenantId || !cfg.apim.voiceClientId || !cfg.apim.voiceClientSecret) {
     return ''; // dev mode — APIM JWT validation expected to be loose or skipped
   }
-  const cred = new ClientSecretCredential(cfg.apim.tenantId, cfg.apim.voiceClientId, cfg.apim.voiceClientSecret);
-  const at = await cred.getToken(SCOPE_DEFAULT);
-  if (!at) throw new Error('Failed to acquire APIM access token for voice channel');
-  cachedToken = { token: at.token, expiresAt: at.expiresOnTimestamp };
-  return at.token;
+  // The topic-router APIM operation accepts anonymous calls (the chat
+  // widget hits it without a bearer too), so a token-acquisition failure
+  // here must NOT break the tool call. Swallow errors and fall back to
+  // anonymous. If APIM later starts requiring JWT, this will surface as
+  // a 401 from APIM which the caller already handles.
+  try {
+    const cred = new ClientSecretCredential(cfg.apim.tenantId, cfg.apim.voiceClientId, cfg.apim.voiceClientSecret);
+    const at = await cred.getToken(SCOPE_DEFAULT);
+    if (!at) return '';
+    cachedToken = { token: at.token, expiresAt: at.expiresOnTimestamp };
+    return at.token;
+  } catch (err) {
+    // Log once and continue without a token.
+    // eslint-disable-next-line no-console
+    console.warn('[voice] getApimToken failed, falling back to anonymous topic-router call:', (err as Error)?.message);
+    return '';
+  }
 }
 
 export async function callTopicRouter(cfg: Config, req: TopicRouterRequest, ctx: LogContext): Promise<TopicRouterResponse> {
