@@ -575,6 +575,7 @@ $location              = 'norwayeast'
 $caeId                 = az containerapp env show -n udcsp-no-voice-env -g $rg --query id -o tsv
 $uamiId                = az identity show -n udcsp-no-voice-orch-uami -g $rg --query id -o tsv
 $uamiPrincipalId       = az identity show -n udcsp-no-voice-orch-uami -g $rg --query principalId -o tsv
+$uamiClientId          = az identity show -n udcsp-no-voice-orch-uami -g $rg --query clientId -o tsv
 $aiConn                = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query connectionString -o tsv
 $dlStorageId           = az storage account show -n udcspnoprodlake -g udcsp-no-prod-platform-rg --query id -o tsv
 $appId                 = az ad app list --display-name 'udcsp-voice-orch-no' --query '[0].appId' -o tsv
@@ -621,6 +622,7 @@ az deployment group create `
         containerAppsEnvironmentId=$caeId `
         image='udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' `
         userAssignedIdentityId=$uamiId `
+        userAssignedIdentityClientId=$uamiClientId `
         publicHostname='' `
         azureOpenAiEndpoint='https://udcspai.openai.azure.com/' `
         apimBaseUrl='https://udcsp-no-prod-apim.azure-api.net' `
@@ -641,6 +643,7 @@ az deployment group create `
         containerAppsEnvironmentId=$caeId `
         image='udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' `
         userAssignedIdentityId=$uamiId `
+        userAssignedIdentityClientId=$uamiClientId `
         publicHostname=$fqdn `
         azureOpenAiEndpoint='https://udcspai.openai.azure.com/' `
         apimBaseUrl='https://udcsp-no-prod-apim.azure-api.net' `
