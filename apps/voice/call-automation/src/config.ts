@@ -59,7 +59,7 @@ export function loadConfig(): Config {
     },
     apim: {
       baseUrl: optional('APIM_BASE_URL', 'https://example.invalid'),
-      topicRouterPath: optional('APIM_TOPIC_ROUTER_PATH', '/agents/topic-router/messages'),
+      topicRouterPath: optional('APIM_TOPIC_ROUTER_PATH', '/agent-topic-router/messages'),
       voiceClientId: optional('VOICE_CLIENT_ID', ''),
       voiceClientSecret: optional('VOICE_CLIENT_SECRET', ''),
       tenantId: optional('AZURE_TENANT_ID', ''),
