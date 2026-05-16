@@ -398,7 +398,28 @@ az keyvault list -o table | findstr udcsp-no
 az cognitiveservices usage list --location norwayeast -o table | findstr -i realtime
 ```
 
-If the Container Apps env or UAMI are missing, run the upstream phases first:
+If the Container Apps env or UAMI are missing, you can either run the upstream phases via the installer (idempotent — re-applies LandingZone + Identity for every country) **or**, if you want to scope the change to NO only and avoid touching other countries:
+
+```powershell
+$RG = 'udcsp-no-voice'
+$LOC = 'norwayeast'
+
+az group create -n $RG -l $LOC -o none
+
+az identity create -g $RG -n udcsp-no-voice-orch-uami -l $LOC -o none
+
+# Re-use the Log Analytics workspace already provisioned for NO (Observability phase)
+$LAW = az monitor log-analytics workspace list --query "[?contains(name,'udcsp-no')].id" -o tsv | Select-Object -First 1
+$LAWCustomerId = az monitor log-analytics workspace show --ids $LAW --query customerId -o tsv
+$LAWKey = az monitor log-analytics workspace get-shared-keys --ids $LAW --query primarySharedKey -o tsv
+
+az containerapp env create -g $RG -n udcsp-no-voice-env -l $LOC `
+  --logs-workspace-id $LAWCustomerId --logs-workspace-key $LAWKey -o none
+```
+
+> 💡 **gpt-realtime: fallback to `swedencentral`.** Norway East doesn't ship `gpt-realtime` yet (region-limited preview). Swedencentral is the only Nordic region with quota — keep `Voice.no.azureOpenAiEndpoint = 'https://udcspai.openai.azure.com/'` (the default). ACS audio remains pinned to Norway East, so media sovereignty is preserved; only the LLM inference crosses to SE.
+
+Or, if you prefer the full installer pass (safe — every Bicep is idempotent):
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase LandingZone,Identity -Environment dev
