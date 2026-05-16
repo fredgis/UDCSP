@@ -168,6 +168,7 @@ export class RealtimeBridge {
         // GPT Realtime streams base64-encoded PCM audio chunks; relay to ACS.
         // The legacy gpt-4o-realtime-preview model uses response.audio.delta;
         // gpt-realtime (2025-08-28+) uses response.output_audio.delta. Handle both.
+        logEvent('realtime.audio_delta', this.ctx, { bytes: msg.delta?.length ?? 0 });
         this.relayAudioToAcs(msg.delta);
         break;
       case 'response.audio_transcript.done':
@@ -184,7 +185,9 @@ export class RealtimeBridge {
         logError(new Error(`realtime error: ${JSON.stringify(msg.error)}`), this.ctx);
         break;
       default:
-        // Ignore the chatty events (rate-limits, response.created, etc.)
+        // Surface every other event type once so we can diagnose schema drift
+        // between gpt-4o-realtime-preview and gpt-realtime 2025-08-28.
+        logEvent('realtime.event', this.ctx, { kind: msg.type });
         break;
     }
   }
