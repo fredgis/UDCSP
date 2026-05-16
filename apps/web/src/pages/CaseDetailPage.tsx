@@ -4,7 +4,8 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 import { getCase, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
-import { parseDescription, extractEligibility, humanTitle, applicationIcon, countryFlag, humanStatus } from '../utils/descriptionParser';
+import { parseDescription, extractEligibility, humanTitle, applicationIcon, humanStatus } from '../utils/descriptionParser';
+import { Flag } from '../components/Flag';
 
 type StepStatus = 'done' | 'in-progress' | 'pending' | 'skipped';
 type Step = { name: string; label: string; status: StepStatus; at?: string; detail?: string };
@@ -238,7 +239,7 @@ export function CaseDetailPage() {
   const isCanceled = /cancel/i.test(c.status);
   const appLabel = humanTitle(c.applicationType, c.title);
   const appIcon = applicationIcon(c.applicationType);
-  const flag = countryFlag(c.country);
+  const hasCountry = !!c.country && ['dk', 'se', 'no'].includes(c.country.toLowerCase());
   const statusKind = isCanceled ? 'canceled'
     : /complet|approved|done/i.test(c.status) ? 'completed'
     : /review|await|pending|progress/i.test(c.status) ? 'review'
@@ -264,7 +265,7 @@ export function CaseDetailPage() {
             <div>
               <h1>{appLabel}</h1>
               <p className="case-detail__hero-sub">
-                {flag && <span aria-label={c.country.toUpperCase()}>{flag}</span>}
+                {hasCountry && <Flag countryCode={c.country} ariaLabel={`${c.country.toUpperCase()} flag`} />}
                 {' '}<strong>{c.country.toUpperCase()}</strong> · case <code>#{c.id.substring(0, 8)}</code>
                 {c.updatedAt && <> · updated {new Date(c.updatedAt).toLocaleString()}</>}
               </p>

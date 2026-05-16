@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { Flag } from '../components/Flag';
 import { appendCase } from '../utils/caseStore';
 import { uploadDocument } from '../utils/documentUpload';
 import { extractDocument } from '../utils/extractDocument';
@@ -90,7 +91,6 @@ export function ApplyResidencyPage() {
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
-  const flag = countries.find((c) => c.code === country)?.flag ?? '🌐';
   const origin = ORIGIN_REGISTER[country] ?? ORIGIN_REGISTER.dk;
 
   // 6 steps mapping 1-for-1 to docs/biz/uses.md §Demo 1 walk-through.
@@ -326,7 +326,7 @@ export function ApplyResidencyPage() {
     <section aria-labelledby="res-title" className="apply-page">
       <header className="apply-page__head">
         <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: COUNTRY_LABEL[country] })}>
-          <span aria-hidden="true">{flag}</span>{' '}
+          <Flag countryCode={country} />{' '}
           <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: COUNTRY_LABEL[country] }} />
         </span>
         <h1 id="res-title"><FormattedMessage id="apply.residency.title" defaultMessage="Residency transfer" /></h1>
@@ -350,16 +350,16 @@ export function ApplyResidencyPage() {
         </div>
         <PlatformDiagram
           groups={[
-            { country: 'Denmark', flag: '🇩🇰', items: [
+            { country: 'Denmark', code: 'dk', items: [
               { label: 'CPR', sub: 'Population register' },
               { label: 'borger.dk', sub: 'Citizen portal' },
               { label: 'MitID', sub: 'eID' },
             ] },
-            { country: 'Sweden', flag: '🇸🇪', items: [
+            { country: 'Sweden', code: 'se', items: [
               { label: 'Skatteverket', sub: 'Folkbokföring' },
               { label: 'BankID / Freja+', sub: 'eID' },
             ] },
-            { country: 'Norway', flag: '🇳🇴', items: [
+            { country: 'Norway', code: 'no', items: [
               { label: 'Skatteetaten', sub: 'Folkeregisteret' },
               { label: 'UDI', sub: 'Permits (non-Nordic)' },
               { label: 'Altinn', sub: 'Forms portal' },
@@ -665,7 +665,7 @@ export function ApplyResidencyPage() {
           <fieldset className="apply-card">
             <legend><FormattedMessage id="apply.residency.step.review" defaultMessage="Review & submit" /></legend>
             <dl className="apply-review">
-              <div><dt>Filing from</dt><dd>{flag} {country.toUpperCase()} · {identity.given} {identity.family}</dd></div>
+              <div><dt>Filing from</dt><dd><Flag countryCode={country} /> {country.toUpperCase()} · {identity.given} {identity.family}</dd></div>
               <div><dt>Destination</dt><dd>{COUNTRY_LABEL[form.destination] ?? form.destination?.toUpperCase() ?? '—'} {form.destinationAddress && `· ${form.destinationAddress}`}</dd></div>
               <div><dt>Move date</dt><dd>{form.moveDate || '—'}</dd></div>
               <div><dt>Dependents</dt><dd>{form.dependents}</dd></div>

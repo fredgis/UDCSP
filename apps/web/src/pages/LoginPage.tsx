@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { FormattedMessage } from 'react-intl';
 import { authorityForCountry, countries, Country, createMsalConfig, getCountry, isCountryConfigured, loginRequest, setCountry } from '../auth/msalConfig';
+import { Flag } from '../components/Flag';
 
 export function LoginPage() {
   const [selected, setSelected] = useState<Country>(getCountry());
@@ -55,7 +56,7 @@ export function LoginPage() {
                 className={`country-card${isSelected ? ' country-card--selected' : ''}${!ok ? ' country-card--unconfigured' : ''}`}
                 title={ok ? `${c.label} ready` : `${c.label} — app registration not configured in this build`}
               >
-                <span className="country-card__flag" aria-hidden="true">{c.flag}</span>
+                <span className="country-card__flag" aria-hidden="true"><Flag countryCode={c.code} /></span>
                 <strong className="country-card__name">{c.label} {ok ? '✓' : '⚠'}</strong>
                 <span className="country-card__tenant">{c.tenantDomain}</span>
               </button>

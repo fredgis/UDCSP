@@ -116,20 +116,20 @@ export function HomePage(_: { locale?: string }) {
         </div>
         <PlatformDiagram
           groups={[
-            { country: 'Denmark', flag: '🇩🇰', items: [
+            { country: 'Denmark', code: 'dk', items: [
               { label: 'borger.dk', sub: 'Citizen portal' },
               { label: 'CPR', sub: 'Population register' },
               { label: 'MitID', sub: 'National eID' },
               { label: 'SKAT', sub: 'Tax authority' },
               { label: 'Udbetaling DK', sub: 'Family benefits' },
             ] },
-            { country: 'Sweden', flag: '🇸🇪', items: [
+            { country: 'Sweden', code: 'se', items: [
               { label: 'Skatteverket', sub: 'Tax & population' },
               { label: 'Försäkringskassan', sub: 'Social insurance' },
               { label: 'BankID', sub: 'eID' },
               { label: 'Freja+', sub: 'eID' },
             ] },
-            { country: 'Norway', flag: '🇳🇴', items: [
+            { country: 'Norway', code: 'no', items: [
               { label: 'Skatteetaten', sub: 'Tax & registry' },
               { label: 'NAV', sub: 'Welfare & benefits' },
               { label: 'Altinn', sub: 'Forms portal' },

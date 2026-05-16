@@ -169,19 +169,19 @@ export function CompliancePage() {
             title="Routing to national authorities"
             intro="UDCSP prepares the file once; the competent authority issues the decision and the official record."
             groups={[
-              { country: 'Denmark', flag: '🇩🇰', items: [
+              { country: 'Denmark', code: 'dk', items: [
                 { label: 'CPR', sub: 'civil registry' },
                 { label: 'borger.dk', sub: 'citizen portal' },
                 { label: 'MitID', sub: 'eID' },
                 { label: 'SKAT', sub: 'tax' },
                 { label: 'Udbetaling DK', sub: 'benefits' },
               ]},
-              { country: 'Sweden', flag: '🇸🇪', items: [
+              { country: 'Sweden', code: 'se', items: [
                 { label: 'Skatteverket', sub: 'tax · personnummer' },
                 { label: 'Försäkringskassan', sub: 'social insurance' },
                 { label: 'BankID', sub: 'eID' },
               ]},
-              { country: 'Norway', flag: '🇳🇴', items: [
+              { country: 'Norway', code: 'no', items: [
                 { label: 'Skatteetaten', sub: 'tax' },
                 { label: 'NAV', sub: 'welfare' },
                 { label: 'Altinn', sub: 'public forms' },

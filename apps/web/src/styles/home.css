@@ -2063,3 +2063,18 @@
 .apply-criteria__legal { font-weight: 600; color: var(--color-primary-strong); font-size: .92rem; }
 .apply-criteria__what { color: var(--color-fg); font-size: .92rem; }
 @media (max-width: 720px) { .apply-criteria__item { grid-template-columns: 1fr; gap: .35rem; } }
+
+/* === Country flags (cross-OS, via flag-icons SVG sprites) === */
+/* flag-icons defaults to inline-block 4:3 aspect ratio. We set a default
+   width so the SVG sprite has predictable physical size next to text;
+   per-page overrides can bump it with a more-specific selector. */
+.fi {
+  width: 1.4em;
+  height: 1em;
+  line-height: 1em;
+  background-size: cover;
+  vertical-align: middle;
+  margin-right: 0.35em;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
