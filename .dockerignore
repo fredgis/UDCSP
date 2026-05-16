@@ -1,0 +1,56 @@
+# Dockerignore for the voice orchestrator image (context = repo root).
+# The Dockerfile only needs:
+#   apps/voice/call-automation/package.json
+#   apps/voice/call-automation/tsconfig.json
+#   apps/voice/call-automation/src
+#   apps/voice/recording-consent
+#   apps/voice/ivr
+#   apps/voice/escalation
+# Everything else is dead weight on the upload — repo is ~660 MB if we keep it all.
+**/node_modules
+**/.git
+**/.github
+**/dist
+**/build
+**/out
+**/.next
+**/.turbo
+**/.vite
+**/.cache
+**/coverage
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.terraform
+**/.azure
+**/tests
+**/*.log
+**/*.md
+**/.env
+**/.env.*
+
+# Top-level paths that are clearly not voice-orchestrator inputs
+.vscode
+.idea
+.cursor
+.copilot
+docs
+infra
+governance
+services/d365
+services/apim
+scripts
+tests
+apps/web
+apps/voice/sms-recap
+apps/voice/notifications
+apps/voice/recording-consent/!recording-disclosure.md
+apps/voice/escalation/!escalation-config.yaml
+
+# Re-include the assets the runtime needs
+!apps/voice/recording-consent/recording-disclosure.md
+!apps/voice/ivr
+!apps/voice/escalation/escalation-config.yaml
+!apps/voice/call-automation/package.json
+!apps/voice/call-automation/tsconfig.json
+!apps/voice/call-automation/src
