@@ -71,6 +71,9 @@
     </send-request>
     <return-response>
       <set-status code="200" reason="OK" />
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
+      <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
       <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
       <set-header name="x-foundry-agent" exists-action="override"><value>udcsp-eligibility</value></set-header>
