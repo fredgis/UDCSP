@@ -564,10 +564,10 @@ Paste the `Voice.no` block produced by the B4.3 here-string into `scripts/instal
 <summary><b>B6. Run the Voice phase</b></summary>
 
 ```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev
+pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev -Zone no
 ```
 
-The DAG resolver re-includes Voice's prerequisites — every Bicep deploy is idempotent so this is safe and takes only seconds for already-up phases. The Voice phase itself provisions:
+The DAG resolver re-includes Voice's prerequisites (LandingZone, Identity, Security, Fabric, Foundry, APIM, LogicApps) — every Bicep deploy is idempotent so this is safe and just confirms existing resources for already-up phases. **`-Zone no`** restricts every upstream phase to the NO subscription only, skipping DK + SE entirely (~3× faster on a re-run). The Voice phase itself provisions:
 
 - `udcsp-no-acs` (Azure Communication Services, `dataLocation=Norway`)
 - `gpt-realtime-no` (Azure OpenAI deployment, 10k TPM by default, fallback to `swedencentral` if NO has zero quota)
