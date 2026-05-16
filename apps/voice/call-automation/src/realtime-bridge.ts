@@ -22,7 +22,7 @@ import type { Config } from './config.js';
 import type { IvrPack } from './ivr-loader.js';
 import type { LogContext } from './logger.js';
 import { logEvent, logError } from './logger.js';
-import { TOOL_DEFS, callTopicRouter } from './foundry-tool.js';
+import { TOOL_DEFS, buildToolDefs, callTopicRouter } from './foundry-tool.js';
 import { transferToD365Caseworker } from './d365-handoff.js';
 
 export interface BridgeOptions {
@@ -136,7 +136,7 @@ export class RealtimeBridge {
           silence_duration_ms: 1500,
           create_response: true,
         },
-        tools: TOOL_DEFS,
+        tools: buildToolDefs({ d365VoiceQueueId: this.cfg.d365.voiceWorkstreamQueueId }),
         tool_choice: 'auto',
         temperature: 0.6,
         max_response_output_tokens: 800,
