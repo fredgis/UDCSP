@@ -1156,7 +1156,7 @@ sequenceDiagram
     Citizen->>ACS: Calls country PSTN number
     ACS->>Orch: IncomingCall (Event Grid) → AnswerCall + media-streaming WSS
     Orch->>Realtime: Open Realtime WS (session.update with TOOL_DEFS + IVR welcome + recording disclosure)
-    ACS->>Orch: Bidirectional PCM 16k audio (citizen voice)
+    ACS->>Orch: Bidirectional PCM 24k mono frames<br/>(camelCase: kind/audioData/data)
     Orch->>Realtime: input_audio_buffer.append (frame proxy)
     Realtime-->>Realtime: server-VAD turn detection + barge-in
     Realtime->>Orch: response.function_call lookup_topic_router
@@ -1173,8 +1173,8 @@ sequenceDiagram
     TR-->>APIM: { reply, intent, escalate, citations }
     APIM-->>Orch: Same payload
     Orch->>Realtime: function_call_output → response.create
-    Realtime->>Orch: response.audio.delta (PCM 24k chunks)
-    Orch->>ACS: Audio frames
+    Realtime->>Orch: response.output_audio.delta (PCM 24k chunks)
+    Orch->>ACS: Audio frames<br/>(PascalCase: Kind/AudioData/Data + StopAudio:null)
     ACS->>Citizen: Spoken answer
     alt Citizen says "agent" or escalate=true
         Realtime->>Orch: response.function_call escalate_to_human
@@ -1182,6 +1182,15 @@ sequenceDiagram
         ACS->>D365: Warm transfer (caseworker sees summary)
     end
 ```
+
+> **Wire protocol notes (learned the hard way).** ACS Call Automation bidirectional media streaming uses an **asymmetric** wire format that the @azure/communication-call-automation TypeScript types do not strictly enforce — getting any of these wrong is silently dropped and the caller hears nothing:
+>
+> - **Direction matters.** Inbound (ACS → orchestrator) frames are camelCase `{ kind, audioData: { data } }`; outbound (orchestrator → ACS playback) frames are PascalCase `{ Kind, AudioData: { Data }, StopAudio: null }`. The `StopAudio: null` sibling is required even when not stopping playback.
+> - **`enableBidirectional: true`** must be set in `mediaStreamingOptions` on `answerCall`. The default is one-way (ACS → server only, for STT).
+> - **Sample rate** must match between the two legs. `gpt-realtime` (2025-08-28+) emits PCM 24 kHz mono; set `audioFormat: 'Pcm24KMono'` (PascalCase enum value) on ACS so it decodes at the right rate.
+> - **WebSocket URL has no callConnectionId**. ACS does not append the call ID to `transportUrl`. The orchestrator matches the incoming WS to the most recent "orphan" session that just answered. Concurrent calls in this design would need an extra correlation key in the URL we ourselves embed.
+> - **Realtime event names changed**. `gpt-4o-realtime-preview` emits `response.audio.delta`; `gpt-realtime` (2025-08-28+) emits `response.output_audio.delta`. The orchestrator accepts both, since the deployment can be either model.
+> - **`response.create` modalities** must be `['text']` or `['audio', 'text']`. `['audio']` alone is rejected with `invalid_value`. Audio output co-emits a text transcript that the orchestrator logs for the trace pipeline.
 
 ### 13.3 GDPR right-to-erasure with statutory archive hold
 
