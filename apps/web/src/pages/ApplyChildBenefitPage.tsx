@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { Flag } from '../components/Flag';
 import { appendCase } from '../utils/caseStore';
 import { uploadDocument } from '../utils/documentUpload';
 import { extractDocument } from '../utils/extractDocument';
@@ -51,7 +52,6 @@ export function ApplyChildBenefitPage() {
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
-  const flag = countries.find((c) => c.code === country)?.flag ?? '🌐';
 
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
@@ -254,7 +254,7 @@ export function ApplyChildBenefitPage() {
     <section aria-labelledby="cb-title" className="apply-page">
       <header className="apply-page__head">
         <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: RESIDENCE_LABEL[country] })}>
-          <span aria-hidden="true">{flag}</span>{' '}
+          <Flag countryCode={country} />{' '}
           <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: RESIDENCE_LABEL[country] }} />
         </span>
         <h1 id="cb-title"><FormattedMessage id="apply.childBenefit.title" defaultMessage="Child & family benefit" /></h1>
@@ -274,16 +274,16 @@ export function ApplyChildBenefitPage() {
         </div>
         <PlatformDiagram
           groups={[
-            { country: 'Denmark', flag: '🇩🇰', items: [
+            { country: 'Denmark', code: 'dk', items: [
               { label: 'Udbetaling DK', sub: 'Family benefits' },
               { label: 'lifeindenmark.dk', sub: 'EU/EEA flow' },
               { label: 'MitID', sub: 'eID' },
             ] },
-            { country: 'Sweden', flag: '🇸🇪', items: [
+            { country: 'Sweden', code: 'se', items: [
               { label: 'Försäkringskassan', sub: 'Barnbidrag (auto)' },
               { label: 'BankID', sub: 'eID' },
             ] },
-            { country: 'Norway', flag: '🇳🇴', items: [
+            { country: 'Norway', code: 'no', items: [
               { label: 'NAV', sub: 'Barnetrygd' },
               { label: 'NAV Utvidet', sub: 'Single parent' },
               { label: 'Altinn', sub: 'Forms' },

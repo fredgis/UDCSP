@@ -3,6 +3,7 @@ import { useMsal } from '@azure/msal-react';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { NordicMap } from '../components/NordicMap';
+import { Flag } from '../components/Flag';
 
 // Demo 2 surface — citizen-facing entry-point for the voice channel
 // (National Tax-administration). Three Nordic toll-free numbers route to
@@ -129,7 +130,7 @@ export function TaxAdministrationPage() {
         <div className="tax-admin__interactive-info" aria-live="polite">
           <div className={`tax-admin__country-card tax-admin__country-card--${active.code}`}>
             <div className="tax-admin__country-head">
-              <span className="tax-admin__country-flag" aria-hidden="true">{active.flag}</span>
+              <span className="tax-admin__country-flag" aria-hidden="true"><Flag countryCode={active.code} /></span>
               <div>
                 <h3>{active.authority}</h3>
                 <p className="tax-admin__country-sub">{active.authoritySub} · {active.name}</p>
@@ -166,7 +167,7 @@ export function TaxAdministrationPage() {
         <ul className="tax-admin__numbers-list">
           {COUNTRIES_RUNTIME.map((c) => (
             <li key={c.code}>
-              <span className="tax-admin__num-flag" aria-hidden="true">{c.flag}</span>
+              <span className="tax-admin__num-flag" aria-hidden="true"><Flag countryCode={c.code} /></span>
               <span className="tax-admin__num-country">{c.name}</span>
               <span className="tax-admin__num-authority">{c.authority}</span>
               <a href={`tel:${c.phoneDial}`} className="tax-admin__num-dial">{c.phoneDisplay}</a>

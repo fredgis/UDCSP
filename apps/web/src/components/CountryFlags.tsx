@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { countries, Country, getCountry, setCountry } from '../auth/msalConfig';
+import { Flag } from './Flag';
 
 /**
  * Compact country picker shown in the header. Switches the active country
@@ -46,7 +47,7 @@ export function CountryFlags({ disabled = false }: { disabled?: boolean }) {
           disabled={disabled}
           onClick={() => pick(c.code)}
         >
-          <span className="country-flags__flag" aria-hidden="true">{c.flag}</span>
+          <span className="country-flags__flag" aria-hidden="true"><Flag countryCode={c.code} /></span>
         </button>
       ))}
     </div>

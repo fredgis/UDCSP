@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useIsAuthenticated } from '@azure/msal-react';
 import { Link, useLocation } from 'react-router-dom';
 import { countries, getCountry } from './msalConfig';
+import { Flag } from '../components/Flag';
 
 const COUNTRY_LABEL: Record<string, string> = {
   dk: 'Denmark', se: 'Sweden', no: 'Norway',
@@ -18,7 +19,7 @@ export function AuthGate({ children, title = 'Sign in required' }: { children: R
   if (isAuth) return <>{children}</>;
 
   const country = getCountry();
-  const flag = countries.find((c) => c.code === country)?.flag || '🌐';
+  const known = countries.find((c) => c.code === country);
   const label = COUNTRY_LABEL[country] ?? country.toUpperCase();
   const eid = COUNTRY_EID[country] ?? { label: 'national eID', sub: '' };
   const returnTo = loc.pathname + (loc.search || '');
@@ -27,7 +28,7 @@ export function AuthGate({ children, title = 'Sign in required' }: { children: R
     <section aria-labelledby="gate-title" className="auth-gate">
       <div className="auth-gate__hero">
         <span className="auth-gate__country" aria-label={`${label} citizen portal`}>
-          <span aria-hidden="true">{flag}</span> {label}
+          {known && <Flag countryCode={country} ariaLabel={`${label} flag`} />} {label}
         </span>
         <h1 id="gate-title">{title}</h1>
         <p className="auth-gate__lede">

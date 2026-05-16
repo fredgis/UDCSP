@@ -4,7 +4,8 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
 import { listCases, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
-import { parseDescription, extractEligibility, humanTitle, applicationIcon, countryFlag, humanStatus } from '../utils/descriptionParser';
+import { parseDescription, extractEligibility, humanTitle, applicationIcon, humanStatus } from '../utils/descriptionParser';
+import { Flag } from '../components/Flag';
 
 type Case = {
   id: string;
@@ -250,7 +251,7 @@ export function MyCasesPage() {
             const pct = c.progress ? Math.round((c.progress.done / c.progress.total) * 100) : null;
             const appLabel = humanTitle(c.applicationType, c.title);
             const appIcon = applicationIcon(c.applicationType);
-            const flag = countryFlag(c.country);
+            const hasCountry = !!c.country && ['dk', 'se', 'no'].includes((c.country || '').toLowerCase());
             const statusKind = isCanceled ? 'canceled'
               : /complet|approved|done/i.test(c.status) ? 'completed'
               : /review|await|pending/i.test(c.status) ? 'review'
@@ -266,7 +267,7 @@ export function MyCasesPage() {
                   <Link to={`/cases/${c.id}`} className="case-row__title">
                     <span className="case-row__icon" aria-hidden="true">{appIcon}</span>
                     <span className="case-row__title-text">{appLabel}</span>
-                    {flag && <span className="case-row__flag" aria-label={c.country?.toUpperCase()}>{flag}</span>}
+                    {hasCountry && <span className="case-row__flag"><Flag countryCode={c.country!} ariaLabel={`${(c.country || '').toUpperCase()} flag`} /></span>}
                   </Link>
                   <div className="case-row__id">
                     <code title={c.id}>#{c.id.substring(0, 8)}</code>

@@ -4,6 +4,7 @@ import { useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
+import { Flag } from '../components/Flag';
 import { appendCase } from '../utils/caseStore';
 import { PlatformDiagram } from '../components/PlatformDiagram';
 
@@ -16,7 +17,6 @@ export function ApplyTaxCertPage() {
   const { accounts } = useMsal();
   const acc = accounts[0];
   const country = getCountry();
-  const flag = countries.find((c) => c.code === country)?.flag ?? '🌐';
 
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
@@ -59,7 +59,7 @@ export function ApplyTaxCertPage() {
     <section aria-labelledby="tax-title" className="apply-page">
       <header className="apply-page__head">
         <span className="apply-page__country" aria-label={intl.formatMessage({ id: 'apply.country.from', defaultMessage: 'Filing from {country}' }, { country: COUNTRY_LABEL[country] })}>
-          <span aria-hidden="true">{flag}</span>{' '}
+          <Flag countryCode={country} />{' '}
           <FormattedMessage id="apply.country.from" defaultMessage="Filing from {country}" values={{ country: COUNTRY_LABEL[country] }} />
         </span>
         <h1 id="tax-title"><FormattedMessage id="apply.taxCert.title" defaultMessage="Tax residency certificate" /></h1>
@@ -79,16 +79,16 @@ export function ApplyTaxCertPage() {
         </div>
         <PlatformDiagram
           groups={[
-            { country: 'Denmark', flag: '🇩🇰', items: [
+            { country: 'Denmark', code: 'dk', items: [
               { label: 'SKAT', sub: 'Form 02.050' },
               { label: 'MitID', sub: 'eID' },
             ] },
-            { country: 'Sweden', flag: '🇸🇪', items: [
+            { country: 'Sweden', code: 'se', items: [
               { label: 'Skatteverket', sub: 'Hemvistintyg' },
               { label: 'e-service', sub: 'since Feb 2026' },
               { label: 'SKV 2734', sub: 'Form (fallback)' },
             ] },
-            { country: 'Norway', flag: '🇳🇴', items: [
+            { country: 'Norway', code: 'no', items: [
               { label: 'Altinn', sub: 'Form RF-1306' },
               { label: 'Skatteetaten', sub: 'Issuing authority' },
               { label: 'ID-porten', sub: 'eID' },

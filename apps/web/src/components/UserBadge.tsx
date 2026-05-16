@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage } from 'react-intl';
-import { countries, getCountry } from '../auth/msalConfig';
+import { getCountry } from '../auth/msalConfig';
+import { Flag } from './Flag';
 
 const COUNTRY_NAME_LOCALIZED: Record<string, string> = {
   dk: 'Danmark', se: 'Sverige', no: 'Norge',
@@ -12,7 +13,6 @@ export function UserBadge() {
   const isAuth = useIsAuthenticated();
   const navigate = useNavigate();
   const country = getCountry();
-  const flag = countries.find((c) => c.code === country)?.flag || '🌐';
 
   if (!isAuth) {
     return (
@@ -51,7 +51,7 @@ export function UserBadge() {
         <span className="user-badge__meta">
           <span className="user-badge__name">
             <FormattedMessage id="header.greeting" defaultMessage="Hi {name}" values={{ name: first }} />{' '}
-            <span className="user-badge__flag" aria-hidden="true">{flag}</span>
+            <span className="user-badge__flag" aria-hidden="true"><Flag countryCode={country} /></span>
           </span>
           <span className="user-badge__country">
             <FormattedMessage

@@ -1,5 +1,7 @@
-type Authority = { label: string; sub?: string; flag?: string };
-type Group = { country: string; flag: string; items: Authority[] };
+import { Flag } from './Flag';
+
+type Authority = { label: string; sub?: string };
+type Group = { country: string; code: string; items: Authority[] };
 
 export type PlatformDiagramProps = {
   title?: string;
@@ -22,7 +24,7 @@ export function PlatformDiagram({ title, intro, groups }: PlatformDiagramProps) 
           {groups.map((g) => (
             <li key={g.country} className="platform-diagram__group">
               <div className="platform-diagram__country">
-                <span aria-hidden="true">{g.flag}</span> {g.country}
+                <Flag countryCode={g.code} ariaLabel={`${g.country} flag`} /> {g.country}
               </div>
               <ul className="platform-diagram__pills" role="list">
                 {g.items.map((it) => (
