@@ -41,6 +41,10 @@ UDCSP is a **unified citizen platform** that:
 > [!IMPORTANT]
 > **Target outcomes:** applications processed in **4 days instead of 28**, **+38 % citizen satisfaction**, **WCAG 2.1 AA** accessibility, and **2.1 M citizens** served via a single federated front door — without compromising national data sovereignty.
 
+<p align="center">
+  <img src="./images/carousel.gif" alt="UDCSP screen carousel — multilingual portal, residency wizard, child-benefit eligibility, voice channel, caseworker workspace" width="900" />
+</p>
+
 ---
 
 ## 🏛️ Simplified Architecture
