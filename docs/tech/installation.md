@@ -593,6 +593,11 @@ az role assignment create --assignee-object-id $uamiPrincipalId --assignee-princ
 az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Contributor" --scope $acsId --output none
 az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "AcrPull" --scope $acrId --output none
 
+# 0.2 Create the Event Grid dead-letter container on the country lake (the
+#     B6 step 4 EG subscription points at it; subscription create fails
+#     with 'Deadletter destination not found' if the container is missing).
+az storage container create --account-name udcspnoprodlake -n voice-deadletter --auth-mode login --output none
+
 # 1. gpt-realtime model deployment. The model is a sub-resource of the AOAI
 #    account 'udcspai', which lives in RG 'udcsp' in 'swedencentral' (NO has
 #    no realtime quota — audio still flows back through the NO orchestrator
