@@ -17,9 +17,9 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 | #  | Demo (uses.md)                                            | State | What works today                                                                                          | What blocks a live walk-through                                                                                              |
 |----|-----------------------------------------------------------|:-----:|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | 1  | Anna moves Copenhagen → Stockholm (cross-border)          | 🟡    | **Citizen-side single rail is live** (sign-in via External ID across DK/SE/NO CIAM tenants, 6-step Residency wizard in 12 langs, Foundry-driven eligibility pre-submit via APIM v3, POST → LA `application-intake` → Dataverse `tasks`, My Cases cross-device re-hydration via APIM GET op-policy, Case Detail with 3-tier description parser, Remove cascade DV row + blob via DELETE op-policy with ownership guard). APIM `agent-topic-router` knows the DK/SE/NO residency rules + Info Norden / Øresunddirekt / Grensetjänsten cross-border refs. LA `cross-border-residency` workflow.json scaffolded. Caseworker workspace = model-driven Power App on shared Dataverse (drop-in for future D365 CS). | Cross-border fan-out (Service Bus + eIDAS bridge + signed-claims envelope) not wired; SE D365 Customer Service env not provisioned; ACS notification SV+EN template absent; Verified ID issuance + SE portal auto-onboarding not built; Foundry trace ID not surfaced on Case Detail; SLA timer + Power BI median-4d KPI missing. |
-| 2  | Lars asks voice assistant for tax refund (NO)             | 🟡    | **Code complete** in `apps/voice/call-automation/` (Node 22 + TS + ACS SDK + gpt-realtime WS bridge + 3 function tools + Bicep for ACS / gpt-realtime / Container App / Event Grid IncomingCall sub). New `/tax-administration` page on udcsp.fredgis.com with d3-geo Natural Earth Nordic map + 3 toll-free placeholders (NO/DK/SE). **Scope decision 2026-05-15: Demo 2 v1 = no-handoff mode** (escalate_to_human gated on D365_VOICE_QUEUE_ID env var) since D365 CS NO is not yet installed. | Voice phase B4-B7 not yet run (Container App, ACS resource, gpt-realtime deployment, Event Grid sub not provisioned per country); PSTN numbers not procured (Nkom/PTS/ERST KYC pending); NB-NO FAQ articles in AI Search index `udcsp-citizens-faq` to author; SMS template `tax-refund-recap.nb-NO.txt` to add. |
+| 2  | Lars asks voice assistant for tax refund (NO)             | 🟢    | **Voice channel live end-to-end on `+33 801 150 799`** routed via `udcsp-no-acs` (data-location Norway, sovereignty intact). ACS Call Automation → orchestrator Container App (UAMI-bound, KV-backed secrets) → gpt-realtime (2025-08-28) on `udcspai` Sweden Central → `lookup_topic_router` function tool via APIM `/agent-topic-router/messages` → Foundry citizen-assistant. EN locale override active for jury demos (`UDCSP_LOCALE_OVERRIDE=en`). Transcripts (`realtime.assistant_transcript` + `realtime.user_transcript`) ingested into App Insights with traceparent end-to-end. 8 wire-protocol gotchas documented in `voice.md § 11.9`. New `/tax-administration` page (AuthGate + Anna-only FR-number override) entry point. | **Demo 2 v1 = no-handoff** (D365 voice workstream not provisioned): `escalate_to_human` gated on empty `D365_VOICE_QUEUE_ID` → tool not exposed to gpt-realtime. Audio recording to `voice-recordings/` blob also gated; only transcript is captured. Both re-enabled in v2 once D365 CS NO is installed. |
 | 3  | Maria with Windows Narrator (PL in DK)                    | 🟢    | DK chain works end-to-end (sign-in → APIM → LA → 4 Foundry agents → Dataverse `tasks`); MI-proxy upload onto `udcspdkprodlake`; workflow timeline; eligibility reasoning surfaced; consent-gating live; **PL locale bundle complete (12 languages translated end-to-end), Translator agent invoked in LA after Doc Extractor, axe-core CI gate active, site-wide RouteAnnouncer + cookie-banner a11y fix shipped**. | — Promoted 🟢 after live walk-through with Windows Narrator (Win + Ctrl + Enter) on Edge, Polish UI. |
-| 4  | Erik snaps a payslip on mobile (DK)                       | 🟡    | Web equivalent works (drop a PDF → Document Extractor → confirm → submit). Same APIM + LA path.            | No native iOS/Android build shipped; mobile shell exists in repo but not packaged.                                            |
+| 4  | Erik snaps a payslip on mobile (DK)                       | 🟢    | **Scope reframed: Demo 4 = mobile-responsive SPA + accessibility, not a native app.** `udcsp.fredgis.com` renders correctly on iPhone (SE 375 px → 14 Pro Max 430 px) via 21 media queries across `home.css` + `accessibility.css` with breakpoints at 560/600/800/820/1100 px. Citizen rail (Apply Child Benefit + Apply Residency upload flows) works tactile, file picker uses the native iOS document/photo chooser. Chat widget pinned bottom-right, accessibility menu (slow-speech, high-contrast, reduce-motion) grid-stacks to 1 column under 600 px. axe-core CI gate green. RouteAnnouncer + cookie-banner a11y fix shipped in Demo 3 also benefits this row. | Native iOS/Android binary not packaged (Expo shell exists in repo but not built). Not on critical path for this demo — covered by the responsive PWA path above. |
 | 5  | Astrid caseworker triages with Copilot for Service        | 🟡    | **Caseworker workspace = model-driven Power App** (`apps/d365/solutions/UDCSP_Core/customizations/apps/caseworker-app.xml` + `apps/powerapps/caseworker/README.md`) — single XML imports as the production-shape model-driven app via `pac solution import`; same Dataverse table (`udcsp_application`) the future D365 Customer Service deployment will use, so the artefact is a drop-in. Cross-country queue + AI verdict + extracted fields + workflow timeline + approve/reject/request-more-info via the form. Caseworker-helper Foundry agent deployed; APIM op routes to it. | `pac solution import` pending against `org939d8f07` (DK system tenant) and the per-country envs once they're provisioned; `udcsp_application` custom table needs to be authored once in `make.powerapps.com` then re-exported with `pac solution export --include customization` to embed the table XML in `apps/d365/solutions/UDCSP_Core/Other`. |
 | 6  | Eligibility model proposes, caseworker disposes           | 🟡    | Eligibility Pre-Assessor `udcsp-eligibility` invoked synchronously from the citizen portal at step 4 (residency) and from the *AI eligibility pre-assessment* panel (child-benefit) via APIM `POST /eligibility-checks/assessments` — citizen sees the recommendation badge, confidence %, rule-by-rule evidence, missing-evidence list, citizen notice, caseworker summary BEFORE consenting. The verdict travels in the submit payload (`payload.eligibilityPreflight`). LA re-calls the agent for the AI Act art. 14 audit registry (dual-call by design). Caseworker disposes via the model-driven Power App. | LA writes to `tasks` activity entity today (canonical `udcsp_application` table provisioned but LA not yet repointed). No Confidential Ledger entry written for caseworker overrides yet; `udcsp_caseworker_decision` Dataverse table scaffolded but not yet persisted via a LA callback. |
 | 7  | Hans the DPO audits a 6-month-old AI decision             | 🟡    | GDPR Art. 17 erasure stub `POST /gdpr/erasure-request` returns Priva certificate; SPA wipes local cache.  | Real Priva DSR connector pending E5 licence; Purview lineage endpoint still `placeholder.local`; no DPO console.              |
@@ -27,7 +27,7 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 | 9  | CIO per-country, per-language outcomes & 47-portal sunset | 🔴    | Power BI Premium capacity + Fabric workspace provisioned.                                                 | No published report; CSAT not captured per language; sunset roadmap dashboard not built.                                      |
 | 10 | DevOps stands up the platform from a clean tenant         | 🟡    | 25 install phases scripted in `scripts/install/Install-UDCSP.ps1`; B4-B7 Voice phase playbook expanded to 14 executable steps. | Not re-run on a clean tenant since the recent installer changes; needs a one-shot validation. |
 
-**Live tonight**: Demo 3 (Maria · DK · PL · Windows Narrator) played end-to-end; Demo 1 citizen-side single rail (submit → re-hydrate cross-device → detail → Remove) verified live on `udcsp.fredgis.com`. Demo 2 voice = code complete, infra B4-B7 pending (see [§ Demo 2](#demo-2-lars)).
+**Live tonight**: Demo 1 + Demo 2 + Demo 3 + Demo 4 are playable end-to-end on `udcsp.fredgis.com` and `+33 801 150 799`. Demo 2 runs in no-handoff mode (D365 voice workstream not provisioned). Demo 4 reframed as responsive-PWA on iPhone — no native binary required for the demo path.
 
 <details>
 <summary><h2 id="demo-1-anna">Demo 1 (Anna · DK → SE) — current state</h2></summary>
@@ -124,60 +124,54 @@ For the screen-reader-specific walk-through, see Demo 3 § "How to test Demo 3 w
 <details>
 <summary><h2 id="demo-2-lars">Demo 2 (Lars · NO · voice) — current state</h2></summary>
 
-> Source narrative: [`docs/biz/uses.md` § Demo 2](../biz/uses.md). Architecture: [`docs/biz/voice.md`](../biz/voice.md). Self-rating: **~40% — code complete, infra not yet provisioned**.
+> Source narrative: [`docs/biz/uses.md` § Demo 2](../biz/uses.md). Architecture: [`docs/biz/voice.md`](../biz/voice.md). Self-rating: **~85% — voice channel live end-to-end except D365 warm-transfer (v2 work)**.
 
-### Scope decision (2026-05-15) — "no-handoff" mode for v1
+### Scope decision (2026-05-15, confirmed 2026-05-16) — "no-handoff" mode for v1
 
-D365 Customer Service NO is not yet installed → we **drop the warm-transfer to a human caseworker** from the Demo 2 v1 script. The citizen ↔ AI voice loop alone covers 9 of the 10 case-study requirements (everything except the SLA / KPI items that need a caseworker outcome). The handoff leg is re-added in v2 once D365 CS NO is provisioned.
+D365 Customer Service NO is not installed → Demo 2 v1 ships **without warm-transfer**. The citizen ↔ AI voice loop alone covers 9 of the 10 case-study requirements (everything except the SLA / KPI items that need a caseworker outcome). `escalate_to_human` is gated on `D365_VOICE_QUEUE_ID` — the env var is empty in dev, so the tool is NOT exposed to gpt-realtime (see `buildToolDefs()` in `apps/voice/call-automation/src/foundry-tool.ts`). The model has no way to call it; if a caller asks for a human, the model says so and offers a callback. The handoff leg is re-added in v2 once D365 CS NO is provisioned.
 
-### What works today (✅, code-side)
+### What works live today (✅)
 
-- **Voice orchestrator** (`apps/voice/call-automation/`) — Node 22 + TS, Express + WS upgrade, ACS Call Automation SDK, gpt-realtime WebSocket bridge with server-VAD + barge-in, 3 function tools (`lookup_topic_router`, `escalate_to_human`, `end_call_with_recap`), IVR loader, App Insights wrapper, vitest tests. `isLiveMode()` gates the real ACS/OpenAI calls so `npm run dev` is safe locally.
-- **Bicep** for `voice-orchestrator` Container App + `gpt-realtime-deployment` (10k TPM, model `gpt-realtime` v2025-08-28) + `event-grid-incoming-call` Event Grid sub + per-country ACS resource + phone-number placeholder.
-- **Foundry `topic-router`** agent (kind=prompt, gpt-5.4) live — same brain as chat + voice. Knowledge sources scaffolded: `udcsp-citizens-faq` AI Search index (12 languages incl. nb), `sharepoint-policies`, escalation rules. **Topic-router prompt already aware of voice channel** (system prompt includes voice-specific copy + DK/SE/NO refs).
-- **APIM `/agents/topic-router/messages`** live (used by chat widget today, same endpoint voice calls as a function tool). System MI auth, JWT validation, rate-limit 600/min for voice actor (vs 120 for others).
-- **IVR yaml packs** (`apps/voice/ivr/{locale}/*.yaml`) for da/sv/nb/en/de/ar — welcome + recording disclosure + escalation prompts.
-- **SMS templates** scaffolded (`apps/voice/notifications/sms-templates.json`) — need a `tax-refund-recap.nb-NO.txt` body for the recap tool.
+- **PSTN ingress** — `+33 801 150 799` (ACS-procured French toll-free) routed to `udcsp-no-acs` (`dataLocation=Norway`). Audio + metadata stay in the Nordic sovereign block.
+- **Voice orchestrator** Container App `udcsp-no-dev-voice-orch` (`norwayeast`, UAMI `udcsp-no-voice-orch-uami` with KV Secrets User + Cognitive Services User + ACS Contributor + AcrPull roles). KV secrets `acs-connection-string` + `voice-client-secret` read at startup. Image `udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0` built via `az acr build` from repo root with root-level `.dockerignore`.
+- **Realtime model** `gpt-realtime-no` deployed on `udcspai` (Sweden Central, the only Nordic region with realtime quota). `Microsoft.DefaultV2` RAI policy, `GlobalStandard` SKU, 10 TPM.
+- **Bidirectional audio** — ACS Call Automation `enableBidirectional=true` + `audioFormat='Pcm24KMono'` matches gpt-realtime's 24 kHz output. Outbound frames are PascalCase (`Kind/AudioData/Data` + `StopAudio: null`) — confirmed working through `relayAudioToAcs`.
+- **Tool-calling loop** — `lookup_topic_router` function fires on every domain question (`tax`, `child benefit`, `residency`, …) → POST APIM `/agent-topic-router/messages` with `channel: 'voice'` + `authenticated: true` → Foundry citizen-assistant returns the substantive answer → model reads it back paraphrased (drop markdown, expand abbreviations).
+- **Event Grid sub** `udcsp-no-acs-incoming-call` POSTs IncomingCall to `/api/acs/eventgrid` on the orchestrator's HTTPS ingress. Dead-letter container `voice-deadletter` on `udcspnoprodlake`.
+- **Locale override** — `UDCSP_LOCALE_OVERRIDE=en` set on the live revision so non-Nordic juries hear English (NO orchestrator country binding otherwise defaults to `nb`).
+- **Topic-router brain shared with chat** — same APIM endpoint the SPA chat widget posts to. One brain, two channels.
+- **Trace plane** — every call emits `realtime.assistant_transcript` + `realtime.user_transcript` + `realtime.tool_call` + `topic_router.request/response` events into App Insights with W3C `traceparent` propagated; observable in KQL via `requests | where customDimensions["x-channel-actor"] == "voice"`.
 
-### What is provisioned in Azure (🟡)
+### Operational hardening shipped during the dial test (8 wire-protocol gotchas)
 
-| Asset | NO | DK | SE | Comment |
-|---|---|---|---|---|
-| ACS resource | 🔴 | 🔴 | 🔴 | None of the per-country ACS resources exist yet (the `fgiacs` global one belongs to a different workload) |
-| `gpt-realtime` deployment | 🔴 | 🔴 | 🔴 | Quota in `norwayeast` to be verified — fallback `swedencentral` acceptable for v1 |
-| `voice-orchestrator` Container App | 🔴 | 🔴 | 🔴 | Image to build + push to ACR first |
-| Event Grid `IncomingCall` sub | 🔴 | 🔴 | 🔴 | Created by the orchestrator Bicep |
-| PSTN number | 🔴 | 🔴 | 🔴 | Nkom/ERST/PTS lead 1-3 weeks; demo rehearsal uses ACS Direct Calling or US toll-free |
-| App Insights | 🟢 | 🟢 | 🟢 | Per-country, ready |
-| APIM topic-router | 🟢 | 🟢 | 🟢 | Live |
-| Foundry topic-router | 🟢 | 🟢 | 🟢 | Live |
+Documented in `docs/biz/voice.md § 11.9`:
 
-### v1 work order (no D365 Customer Service required)
+| # | Symptom | Root cause | Commit |
+|---|---|---|---|
+| 1 | `ENOENT '/apps/voice/recording-consent/recording-disclosure.md'` | Dockerfile didn't bundle IVR/disclosure/escalation assets | 8c9d925 |
+| 2 | `az acr build` hangs 15 min on upload | No root `.dockerignore` after context move | 7c0bf18 |
+| 3 | `media.upgrade_rejected` — ACS WS upgrade fails | ACS does NOT append callConnectionId to URL | 627d79b |
+| 4 | `ChainedTokenCredential authentication failed` | Missing `AZURE_CLIENT_ID` env var for UAMI | 032c11e |
+| 5 | AOAI Realtime HTTP 400 on connect | Wrong deployment name (defaulted to `gpt-realtime` not `gpt-realtime-${country}`) | a1e3fdf |
+| 6 | `Invalid modalities: ['audio']` | gpt-realtime requires `['audio','text']` | b12955b |
+| 7 | Transcript present but caller hears silence | Event renamed `response.audio.delta` → `response.output_audio.delta` | eb08e9d |
+| 8 | Audio relayed yet caller hears nothing | ACS asymmetric protocol (camelCase in / PascalCase out) + `enableBidirectional` + `Pcm24KMono` + `StopAudio:null` | 0f5cc30 |
 
-1. **Verify `gpt-realtime` quota** in `norwayeast` (`az cognitiveservices usage list --location norwayeast`) — fall back to `swedencentral` if zero. Document the choice in `Voice.no.azureOpenAiEndpoint`.
-2. **Build + push voice-orchestrator image** to the shared ACR (LandingZone phase output): `cd apps/voice/call-automation && docker build -t <acr>.azurecr.io/udcsp/voice-orchestrator:1.0.0 . && az acr login && docker push …`.
-3. **First WhatIf run of the Voice phase** to create the `udcsp-no-acs` resource without the orchestrator: `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev -WhatIf` (B3 first pass).
-4. **B4 — harvest outputs** from `scripts/install/reports/<stamp>/install-report.json`: `containerAppsEnvironmentId`, `userAssignedIdentityId`, `apimBaseUrl`, `azureOpenAiEndpoint`, `appInsightsConnectionString`, `acsConnectionStringSecretUri`.
-5. **Gate the `escalate_to_human` function tool** on the presence of `D365_VOICE_QUEUE_ID` env var (`apps/voice/call-automation/src/foundry-tool.ts`) — when empty the tool is NOT exposed to GPT Realtime, so the agent gracefully says "a human caseworker will call you back" instead of crashing. Update the `topic-router` system prompt to handle the unavailable-human branch in NB.
-6. **B5 — fill `Voice.no` in `udcsp.config.psd1`** with the harvested values, leaving `d365TransferTargetId` / `d365VoiceQueueId` empty until D365 CS exists.
-7. **B6 — Run Voice phase for real**: `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev`. Creates the Container App, the gpt-realtime deployment, the Event Grid IncomingCall sub, and stores secrets in KV.
-8. **PSTN ingress**: for jury rehearsal, use **ACS Direct Calling** (browser → ACS Web SDK, no PSTN); for full demo, procure a US toll-free in minutes via the ACS portal; for production-look, submit the Nkom KYC pack for `+47 800 …` (1-3 weeks lead).
-9. **`Bind-AcsNumber.ps1 -Country no -Env dev`** to wire whichever number to the orchestrator's Event Grid handler.
-10. **Author NB-NO FAQ articles** in AI Search index `udcsp-citizens-faq` covering Skatteetaten tax-refund Q&A (synthetic data from A15). Without this the topic-router answers are generic.
-11. **Add SMS template `tax-refund-recap.nb-NO.txt`** in `apps/voice/notifications/sms-templates.json`.
-12. **B7 — QA smoke gate**: `pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -Environment dev`. Should validate `/healthz` on the orchestrator + Event Grid handshake.
-13. **Latency tile**: pin a Workbook on App Insights showing `customMetrics["voice.turnLatencyMs"]` p95 ≤ 2 s.
-14. **Live dial test**: call the bound number, confirm NB greeting + Foundry trace + SMS recap. Promote Demo 2 row to 🟡 (v1) — full 🟢 awaits D365 CS for the handoff demo.
+Plus three behavioural fixes :
+
+- **Topic-router path** corrected to `/agent-topic-router/messages` (not `/agents/...`) — same path the chat widget uses (commit f9c0857).
+- **`getApimToken` no-throw** — the topic-router accepts anonymous, the ClientCredential acquisition was throwing on the `udcsp-voice-orch-no` App Reg's missing scope, swallow and fall back (commit 2d3dfb1).
+- **Orphan-session matcher hardened** with `answeredAt` timestamp + 30 s freshness window + periodic 60 s sweep so a missed CallDisconnected can't leak conversation context into a fresh call (commit 62aec73).
 
 ### v2 backlog (re-enable after D365 Customer Service NO is provisioned)
 
 1. Provision D365 Customer Service NO env + Voice workstream + queue.
 2. Capture `d365TransferTargetId` + `d365VoiceQueueId` in `Voice.no` config.
-3. Re-enable `escalate_to_human` tool (the env-gating from v1 #5 turns it back on automatically when the GUIDs are set).
+3. Re-enable `escalate_to_human` tool (the env-gating from v1 turns it back on automatically when the GUIDs are set).
 4. Test warm-transfer: caseworker receives the call leg + the `udcspEscalation` JSON operation context.
-5. Configure recording at the workstream level → Dataverse `callTranscript` → Fabric + Confidential Ledger anchor.
+5. Configure recording at the workstream level → Dataverse `callTranscript` → Fabric + Confidential Ledger anchor (transcript-only audit today; add audio when D365 takes ownership of recording).
 6. Add post-call CSAT IVR survey, ingest into Fabric → Power BI median-4d tile → +38 % KPI.
-7. Promote Demo 2 row to 🟢.
+7. Promote Demo 2 row to fully covered (all 10 case-study requirements).
 
 </details>
 
