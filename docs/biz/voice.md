@@ -43,6 +43,7 @@
 9. [📞 Getting a real phone number you can actually call](#9--getting-a-real-phone-number-you-can-actually-call)
 10. [The activation runbook](#10-the-activation-runbook)
 11. [🧱 Voice runtime — readiness vs scaffold (what's actually runnable today)](#11--voice-runtime--readiness-vs-scaffold-whats-actually-runnable-today)
+    - [11.9 Voice runtime gotchas (learned in production)](#119-voice-runtime-gotchas-learned-in-production)
 12. [How to test it (three levels)](#12-how-to-test-it-three-levels)
 13. [The demo script for a jury](#13-the-demo-script-for-a-jury)
 14. [Anti-patterns we avoid](#14-anti-patterns-we-avoid)
@@ -644,6 +645,28 @@ D365 voice channel still owns PSTN, queue routing, recording and the human casew
 | 🌐 **Chat with the same brain** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agents/topic-router/messages` → Foundry topic-router | Proves chat and voice share one brain — same APIM endpoint, different actor. |
 | 🚦 **Voice smoke test** | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev` | Hits `/healthz` and posts an EventGrid SubscriptionValidationEvent; asserts the orchestrator round-trips the validation code. |
 | 🧪 **Playwright trace simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | Web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. |
+
+### 11.9 Voice runtime gotchas (learned in production)
+
+Eight subtle bugs cost us a day of dial tests when first wiring the orchestrator end-to-end. They are baked into the current code/Docker/Bicep — listed here so the next person debugging "the call decroche mais je n'entends rien" can skip straight to the fix.
+
+| # | Symptom | Root cause | Fix (where) |
+|---|---|---|---|
+| 1 | `ENOENT '/apps/voice/recording-consent/recording-disclosure.md'` on first call | Dockerfile only copied `dist/` and missed the IVR + disclosure + escalation assets that `ivr-loader.ts` reads at runtime. | Dockerfile context = repo root; `COPY apps/voice/{recording-consent,ivr,escalation} /apps/voice/...` (commit 8c9d925). |
+| 2 | `az acr build` hangs 15+ min on upload | No `.dockerignore` at the repo root (the `apps/voice/call-automation/.dockerignore` no longer applies once the context is the repo root). | Top-level `.dockerignore` that keeps only the 6 paths the Dockerfile consumes (commit 7c0bf18). |
+| 3 | `media.upgrade_rejected — no callConnectionId in URL` | ACS Call Automation does **not** append `callConnectionId` to the `transportUrl`. Our upgrade handler required it and rejected the socket. | `findOrphanSessionId()` — fall back to the most recently answered session that has no bridge yet (commit 627d79b). |
+| 4 | `ChainedTokenCredential authentication failed — Unable to load the proper Managed Identity` | Container has UAMI but no system-assigned identity, and `DefaultAzureCredential` can't pick a UAMI without a hint. | Pass `AZURE_CLIENT_ID = uami.clientId` env var (bicep param `userAssignedIdentityClientId`, commit 032c11e). |
+| 5 | AOAI Realtime returns HTTP 400 on connect | Bicep default `AZURE_OPENAI_REALTIME_DEPLOYMENT=gpt-realtime` but the actual deployment is per-country (`gpt-realtime-no`). | Default = `gpt-realtime-${country}` (commit a1e3fdf). |
+| 6 | `Invalid modalities: ['audio']. Supported combinations are: ['text'] and ['audio', 'text'].` | AOAI Realtime rejects `['audio']` alone for `response.create`. | `modalities: ['audio', 'text']` (commit b12955b). |
+| 7 | Transcript reaches our logs but no audio reaches the caller | `gpt-realtime` (2025-08-28+) emits the new event `response.output_audio.delta`; legacy `gpt-4o-realtime-preview` emits `response.audio.delta`. We listened only for the legacy name. | Switch case handles both names (commit eb08e9d). |
+| 8 | Audio deltas relayed yet caller still hears nothing | Three asymmetric details of the ACS Call Automation media-streaming protocol: <br/>(a) bidirectional playback requires `mediaStreamingOptions.enableBidirectional = true` (default is ACS→server only); <br/>(b) sample rate: gpt-realtime emits 24 kHz PCM, ACS defaults to 16 kHz — set `audioFormat = 'Pcm24KMono'` (PascalCase enum value); <br/>(c) outbound frames are `{ Kind, AudioData: { Data }, StopAudio: null }` (PascalCase, with the `StopAudio` sibling), even though inbound is camelCase. | All three combined in commit 0f5cc30. |
+
+A few non-bug operational learnings worth keeping in mind:
+
+- **Container Apps + private ACR / KV**: while a container is running, the image cache lets you flip ACR public access OFF immediately after the deploy; same for KV (secrets cached for the container lifetime). Re-enable temporarily only when rebuilding an image, rotating a secret, or forcing a replica restart. See `installation.md` B4.1 / B6.2.
+- **Locale override**: the orchestrator binds the locale to its country (NO → `nb`). For demos to non-Nordic audiences set `UDCSP_LOCALE_OVERRIDE=en` (allowed: da, sv, nb, en, de, ar — must match a pack under `apps/voice/ivr/<locale>/`).
+- **Topic mention ≠ escalation**: the system prompt now explicitly tells the model that a topic keyword (`tax`, `residency`, `child benefit`) is a clarifying prompt opportunity, not a reason to call `escalate_to_human`. Without that nudge, the model jumped to escalation on every topic mention.
+- **Disclosure must match behaviour**: a recorded prompt that says "press 1 to consent" sets a contract the model can't keep (no DTMF wait state in the gpt-realtime turn loop today). The current EN disclosure says "By staying on the line you consent" — informational, matches the actual flow.
 
 ---
 

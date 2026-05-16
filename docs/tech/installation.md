@@ -669,6 +669,24 @@ curl "https://$fqdn/healthz"
 
 > **gpt-realtime quota fallback.** If step 1 fails with `InsufficientCapacity`, the deployment template targets the `udcspai` AOAI account in `swedencentral` (NO has no realtime quota). If `udcspai` itself runs out of capacity, request a quota increase on the `Tokens per Minute - gpt-realtime - GlobalStandard` quota in `swedencentral` via the portal, or override `--parameters capacity=5` to halve the requested TPM.
 
+> **What to look for in the live logs after `curl /healthz` returns 200.** Tail `az containerapp logs show -n udcsp-no-dev-voice-orch -g udcsp-no-voice --follow --tail 50` and dial the bound number. The happy path emits this exact sequence; if any step is missing, see the "Voice runtime gotchas" table in [`docs/biz/voice.md` § 11.9](../biz/voice.md#119-voice-runtime-gotchas-learned-in-production) for the canonical fix.
+>
+> 1. `call.answered` — ACS handed us the call
+> 2. `media.upgrade_accepted` — our orphan-session matcher attached the WS
+> 3. `call.media_started` — ACS confirmed media flow
+> 4. `realtime.opened` — Realtime WS to AOAI is up
+> 5. `realtime.event kind=session.created` then `session.updated`
+> 6. `realtime.event kind=response.created` then `response.output_item.added`
+> 7. Many `realtime.audio_delta bytes=…` (TTS chunks streamed to ACS)
+> 8. `realtime.assistant_transcript transcript=…` — disclosure + welcome readable in logs
+> 9. Caller hears the disclosure + welcome in the orchestrator locale (default = country; override with `UDCSP_LOCALE_OVERRIDE=en` for jury demos)
+>
+> Common failure modes and their fixes:
+> - `ENOENT '/apps/voice/…'` → image missing IVR assets; rebuild from repo root with the latest Dockerfile (commit 8c9d925+).
+> - `ChainedTokenCredential authentication failed` → `AZURE_CLIENT_ID` env var is missing; set it to the UAMI `clientId` (B6 step 0 captures it in `$uamiClientId`).
+> - HTTP 400 on Realtime WS → `AZURE_OPENAI_REALTIME_DEPLOYMENT` doesn't match the actual deployment name; it must be `gpt-realtime-${country}`.
+> - Transcript visible but caller hears silence → image predates commit 0f5cc30; rebuild to pick up `enableBidirectional + Pcm24KMono + PascalCase outbound frames + StopAudio:null`.
+
 ### B6.1 — Bind a phone number (or browser ingress) to the orchestrator
 
 Pick ONE of these three, in order of regulatory lead time:
@@ -769,9 +787,10 @@ az monitor app-insights query --app $appiId `
 End-to-end verification:
 
 1. **Call** the bound number (option B/C) or open the browser caller (option A).
-2. **Listen** — you should hear the recording-disclosure prompt in Norwegian, then a "How can I help?" greeting.
-3. **Say** in NB : *"Hvorfor er skatterefusjonen min så lav i år?"*
-4. **Confirm in App Insights** that the call hit Foundry through APIM:
+2. **Listen** — you should hear the recording-disclosure prompt followed by a "How can I help?" welcome. Default language matches the orchestrator country (NO → `nb`); set `UDCSP_LOCALE_OVERRIDE=en` on the Container App for non-Nordic jury demos.
+3. **Say** a topic keyword such as `tax`. The agent should ask a clarifying question (`"Sure, I can help with tax. What would you like to know?"`) instead of immediately escalating to a human caseworker. If it does escalate, the system prompt in `realtime-bridge.ts` needs the topic-mention-vs-escalation guidance (already in commit ecc93b6).
+4. **Ask a real question** (e.g. *"How do I get a tax residency certificate in Norway?"*). The agent calls the `lookup_topic_router` function tool, which hits APIM `/agent-topic-router/messages` and routes to the Foundry citizen-assistant. Expect a spoken answer in ≤ 3 s.
+5. **Confirm in App Insights** that the call hit Foundry through APIM:
    ```kusto
    requests
    | where url contains "/agents/topic-router/messages"
