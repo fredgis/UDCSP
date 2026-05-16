@@ -572,11 +572,24 @@ $rg                    = 'udcsp-no-voice'
 $location              = 'norwayeast'
 $caeId                 = az containerapp env show -n udcsp-no-voice-env -g $rg --query id -o tsv
 $uamiId                = az identity show -n udcsp-no-voice-orch-uami -g $rg --query id -o tsv
+$uamiPrincipalId       = az identity show -n udcsp-no-voice-orch-uami -g $rg --query principalId -o tsv
 $aiConn                = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query connectionString -o tsv
 $dlStorageId           = az storage account show -n udcspnoprodlake -g udcsp-no-prod-platform-rg --query id -o tsv
 $appId                 = az ad app list --display-name 'udcsp-voice-orch-no' --query '[0].appId' -o tsv
 $voiceClientSecretUri  = az keyvault secret show --vault-name udcsp-no-prod-kv -n voice-client-secret --query id -o tsv
 $acsCsUri              = az keyvault secret show --vault-name udcsp-no-prod-kv -n acs-connection-string --query id -o tsv
+
+# 0.1 Grant the UAMI the three runtime roles it needs (KV secret read, AOAI
+#     call for gpt-realtime, ACS Contributor for Call Automation). Idempotent —
+#     re-runs return the existing assignment. The original Install-Voice.psm1
+#     assumes these were granted upstream by Install-Identity; the inline
+#     B6 flow has to do it explicitly so the orchestrator deploys clean.
+$kvId   = az keyvault show --name udcsp-no-prod-kv --query id -o tsv
+$aoaiId = az cognitiveservices account show -n udcspai -g udcsp --query id -o tsv
+$acsId  = az communication show -n udcsp-no-acs -g $rg --query id -o tsv
+az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $kvId --output none
+az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Cognitive Services User" --scope $aoaiId --output none
+az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Contributor" --scope $acsId --output none
 
 # 1. gpt-realtime model deployment. The model is a sub-resource of the AOAI
 #    account 'udcspai', which lives in RG 'udcsp' in 'swedencentral' (NO has
