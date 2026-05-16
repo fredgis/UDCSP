@@ -108,14 +108,14 @@ export const TOOL_DEFS = [
     type: 'function',
     name: 'escalate_to_human',
     description:
-      "Hand the call to a D365 human caseworker queue. Use this when the citizen explicitly asks for a human, when sentiment becomes very negative, when the topic is sensitive (homelessness, domestic violence, child safety, identity theft), when the topic-router escalate flag is true, or when the question crosses a sovereignty border (cross_border).",
+      "Hand the call to a D365 human caseworker queue. ONLY use this when the citizen EXPLICITLY asks for a human (says 'human', 'agent', 'caseworker', 'speak to someone', 'real person', presses 0), or when the topic is genuinely sensitive (homelessness, domestic violence, child safety, identity theft, suicidal ideation), or when lookup_topic_router was already called and its response set escalate=true. DO NOT call this as a first action — always try lookup_topic_router first for any factual question. Difficulty of the topic is not a reason to escalate.",
     parameters: {
       type: 'object',
       properties: {
         reason: {
           type: 'string',
           enum: ['low_confidence', 'sensitive_topic', 'citizen_request', 'sentiment_negative', 'cross_border'],
-          description: 'Machine-readable reason aligned with foundry/agents/topic-router/escalation-rules.json.',
+          description: 'Machine-readable reason aligned with foundry/agents/topic-router/escalation-rules.json. low_confidence is only valid AFTER lookup_topic_router has been called.',
         },
         summary: { type: 'string', description: 'A 1-2 sentence summary of the conversation so far, attached to the warm transfer for the caseworker.' },
       },
