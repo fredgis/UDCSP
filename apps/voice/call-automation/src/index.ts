@@ -22,6 +22,7 @@ async function main(): Promise<void> {
   logEvent('boot', { country: cfg.country }, { liveMode: isLiveMode(cfg), publicBaseUrl: cfg.publicBaseUrl });
 
   const handler = new CallHandler(cfg);
+  handler.startOrphanCleanup();
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
