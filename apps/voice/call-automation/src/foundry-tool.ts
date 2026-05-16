@@ -85,54 +85,75 @@ export async function callTopicRouter(cfg: Config, req: TopicRouterRequest, ctx:
 // JSON-Schema definitions handed to GPT-4o Realtime when the session opens.
 // GPT Realtime calls these tools mid-conversation; our handler executes
 // the calls and returns the result as a `function_call_output` message.
-export const TOOL_DEFS = [
-  {
-    type: 'function',
-    name: 'lookup_topic_router',
-    description:
-      "Look up an answer for the citizen by routing the question through the Foundry topic-router. Use this for any factual / domain / eligibility question. Returns text grounded in UDCSP knowledge sources, with the recognised intent and citations.",
-    parameters: {
-      type: 'object',
-      properties: {
-        text: { type: 'string', description: 'The citizen question (verbatim or paraphrased) in the citizen language.' },
-        locale: {
-          type: 'string',
-          enum: ['da', 'sv', 'nb', 'en'],
-          description: 'Primary citizen locale (da | sv | nb | en); detailed BCP-47 region tag is inferred from country.',
-        },
+//
+// We expose tools dynamically: when D365 voice workstream is not configured
+// (D365_VOICE_QUEUE_ID empty) the escalate_to_human tool is omitted so the
+// model cannot call something we cannot fulfil. This also fixes a class of
+// dial-test bug where gpt-realtime picked escalate as a first action on
+// every domain question — by removing it from the tool set entirely, the
+// model is forced to use lookup_topic_router as it should.
+const TOOL_TOPIC_ROUTER = {
+  type: 'function' as const,
+  name: 'lookup_topic_router',
+  description:
+    "Look up an answer for the citizen by routing the question through the Foundry topic-router. Use this for any factual / domain / eligibility question. Returns text grounded in UDCSP knowledge sources, with the recognised intent and citations.",
+  parameters: {
+    type: 'object',
+    properties: {
+      text: { type: 'string', description: 'The citizen question (verbatim or paraphrased) in the citizen language.' },
+      locale: {
+        type: 'string',
+        enum: ['da', 'sv', 'nb', 'en'],
+        description: 'Primary citizen locale (da | sv | nb | en); detailed BCP-47 region tag is inferred from country.',
       },
-      required: ['text', 'locale'],
     },
+    required: ['text', 'locale'],
   },
-  {
-    type: 'function',
-    name: 'escalate_to_human',
-    description:
-      "Hand the call to a D365 human caseworker queue. ONLY use this when the citizen EXPLICITLY asks for a human (says 'human', 'agent', 'caseworker', 'speak to someone', 'real person', presses 0), or when the topic is genuinely sensitive (homelessness, domestic violence, child safety, identity theft, suicidal ideation), or when lookup_topic_router was already called and its response set escalate=true. DO NOT call this as a first action — always try lookup_topic_router first for any factual question. Difficulty of the topic is not a reason to escalate.",
-    parameters: {
-      type: 'object',
-      properties: {
-        reason: {
-          type: 'string',
-          enum: ['low_confidence', 'sensitive_topic', 'citizen_request', 'sentiment_negative', 'cross_border'],
-          description: 'Machine-readable reason aligned with foundry/agents/topic-router/escalation-rules.json. low_confidence is only valid AFTER lookup_topic_router has been called.',
-        },
-        summary: { type: 'string', description: 'A 1-2 sentence summary of the conversation so far, attached to the warm transfer for the caseworker.' },
+};
+
+const TOOL_ESCALATE = {
+  type: 'function' as const,
+  name: 'escalate_to_human',
+  description:
+    "Hand the call to a D365 human caseworker queue. ONLY use this when the citizen EXPLICITLY asks for a human (says 'human', 'agent', 'caseworker', 'speak to someone', 'real person', presses 0), or when the topic is genuinely sensitive (homelessness, domestic violence, child safety, identity theft, suicidal ideation), or when lookup_topic_router was already called and its response set escalate=true. DO NOT call this as a first action — always try lookup_topic_router first for any factual question. Difficulty of the topic is not a reason to escalate.",
+  parameters: {
+    type: 'object',
+    properties: {
+      reason: {
+        type: 'string',
+        enum: ['low_confidence', 'sensitive_topic', 'citizen_request', 'sentiment_negative', 'cross_border'],
+        description: 'Machine-readable reason aligned with foundry/agents/topic-router/escalation-rules.json. low_confidence is only valid AFTER lookup_topic_router has been called.',
       },
-      required: ['reason'],
+      summary: { type: 'string', description: 'A 1-2 sentence summary of the conversation so far, attached to the warm transfer for the caseworker.' },
     },
+    required: ['reason'],
   },
-  {
-    type: 'function',
-    name: 'end_call_with_recap',
-    description:
-      "End the call gracefully and send an SMS récap to the caller with the case number or follow-up steps. Use only when the citizen confirms they have everything they need.",
-    parameters: {
-      type: 'object',
-      properties: {
-        recapText: { type: 'string', description: 'Plain-text récap to send by SMS, in the citizen locale.' },
-      },
-      required: ['recapText'],
+};
+
+const TOOL_END_CALL = {
+  type: 'function' as const,
+  name: 'end_call_with_recap',
+  description:
+    "End the call gracefully and send an SMS récap to the caller with the case number or follow-up steps. Use only when the citizen confirms they have everything they need.",
+  parameters: {
+    type: 'object',
+    properties: {
+      recapText: { type: 'string', description: 'Plain-text récap to send by SMS, in the citizen locale.' },
     },
+    required: ['recapText'],
   },
-] as const;
+};
+
+export function buildToolDefs(opts: { d365VoiceQueueId?: string }): Array<typeof TOOL_TOPIC_ROUTER | typeof TOOL_ESCALATE | typeof TOOL_END_CALL> {
+  const tools: Array<typeof TOOL_TOPIC_ROUTER | typeof TOOL_ESCALATE | typeof TOOL_END_CALL> = [TOOL_TOPIC_ROUTER];
+  if (opts.d365VoiceQueueId && opts.d365VoiceQueueId.length > 0) {
+    tools.push(TOOL_ESCALATE);
+  }
+  tools.push(TOOL_END_CALL);
+  return tools;
+}
+
+// Legacy export (kept for any consumer that imports the array directly).
+// Prefer buildToolDefs() so escalate_to_human is dropped when D365 queue
+// is not configured.
+export const TOOL_DEFS = [TOOL_TOPIC_ROUTER, TOOL_ESCALATE, TOOL_END_CALL] as const;
