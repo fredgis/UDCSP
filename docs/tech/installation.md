@@ -731,7 +731,7 @@ curl -sI "https://udcsp.fredgis.com" | Select-String -Pattern 'HTTP/'
 
 # 2. APIM gateways respond (anonymous probes — should NOT need a bearer).
 foreach ($apim in 'udcsp-dk-prod-apim','udcsp-se-prod-apim','udcsp-no-prod-apim') {
-    $code = curl -s -o $null -w "%{http_code}" "https://$apim.azure-api.net/status-0123456789abcdef"
+    $code = curl.exe -s -o NUL -w "%{http_code}" "https://$apim.azure-api.net/status-0123456789abcdef"
     "  $apim → $code"   # 200 = APIM up; 404 = APIM up but no /status route (still fine)
 }
 
@@ -747,7 +747,7 @@ curl "https://$fqdn/healthz"
 
 # 5. Event Grid subscription is provisioned and the orchestrator answered its handshake.
 az eventgrid event-subscription show `
-    --name incoming-call `
+    --name "udcsp-no-acs-incoming-call" `
     --source-resource-id (az communication show -n udcsp-no-acs -g udcsp-no-voice --query id -o tsv) `
     --query "{state:provisioningState,endpoint:destination.endpointBaseUrl}" -o table
 # Expected: state=Succeeded, endpoint=https://<fqdn>/api/acs/eventgrid
