@@ -75,7 +75,7 @@ export function App({ locale, messages, onLocaleChange }: { locale: SupportedLan
                 <Route path="/apply/residency" element={<AuthGate title="Sign in to apply for residency"><ApplyResidencyPage /></AuthGate>} />
                 <Route path="/apply/tax-certificate" element={<AuthGate title="Sign in to request a tax certificate"><ApplyTaxCertPage /></AuthGate>} />
                 <Route path="/apply/child-benefit" element={<AuthGate title="Sign in to apply for child benefit"><ApplyChildBenefitPage /></AuthGate>} />
-                <Route path="/tax-administration" element={<TaxAdministrationPage />} />
+                <Route path="/tax-administration" element={<AuthGate title="Sign in to access the tax administration"><TaxAdministrationPage /></AuthGate>} />
                 <Route path="/cases" element={<AuthGate title="Sign in to view your cases"><MyCasesPage /></AuthGate>} />
                 <Route path="/cases/:id" element={<AuthGate title="Sign in to view this case"><CaseDetailPage /></AuthGate>} />
                 <Route path="/accessibility" element={<><AccessibilityStatementPage /><AccessibilityMenu /></>} />

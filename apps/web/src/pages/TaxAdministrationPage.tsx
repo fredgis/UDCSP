@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useMsal } from '@azure/msal-react';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router-dom';
 import { NordicMap } from '../components/NordicMap';
@@ -62,8 +63,29 @@ const COUNTRIES: Country[] = [
 ];
 
 export function TaxAdministrationPage() {
+  const { accounts } = useMsal();
+  const acct = accounts[0];
+  // Demo override: when the signed-in citizen is Anna, swap the Norwegian
+  // toll-free for the actual live ACS-procured FR toll-free number, so the
+  // demo audience can dial through the working end-to-end pipeline instead
+  // of the placeholder +47 800 12 345. Hardcoded on purpose — this rule is
+  // demo-only and does not belong in production config.
+  const isAnna = useMemo(() => {
+    const name = (acct?.name ?? '').toLowerCase();
+    const upn = (acct?.username ?? '').toLowerCase();
+    return name.includes('anna') || upn.includes('anna');
+  }, [acct]);
+  const COUNTRIES_RUNTIME = useMemo<Country[]>(() => {
+    if (!isAnna) return COUNTRIES;
+    return COUNTRIES.map((c) =>
+      c.code === 'no'
+        ? { ...c, phoneDisplay: '+33 801 150 799', phoneDial: '+33801150799' }
+        : c,
+    );
+  }, [isAnna]);
+
   const [selected, setSelected] = useState<CountryCode>('no');
-  const active = COUNTRIES.find((c) => c.code === selected)!;
+  const active = COUNTRIES_RUNTIME.find((c) => c.code === selected)!;
 
   return (
     <article className="tax-admin" aria-labelledby="tax-admin-title">
@@ -142,7 +164,7 @@ export function TaxAdministrationPage() {
           <FormattedMessage id="taxAdmin.numbers.title" defaultMessage="All numbers at a glance" />
         </h2>
         <ul className="tax-admin__numbers-list">
-          {COUNTRIES.map((c) => (
+          {COUNTRIES_RUNTIME.map((c) => (
             <li key={c.code}>
               <span className="tax-admin__num-flag" aria-hidden="true">{c.flag}</span>
               <span className="tax-admin__num-country">{c.name}</span>
