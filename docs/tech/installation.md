@@ -495,25 +495,42 @@ az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value
 >
 > The Container App pulls the secret via the KV private endpoint at runtime, so leaving public access `Disabled` after the setup is fine.
 
-### B4.3 — Harvest every other Resource ID / URI
+### B4.3 — Resolve the 3 dynamic values + pre-format the `Voice.no` block
 
-| Field in `Voice.<country>` | Source phase | Command / location |
-|---|---|---|
-| `containerAppsEnvironmentId` | `LandingZone` | `az containerapp env show -n <env-name> -g <rg> --query id -o tsv` |
-| `userAssignedIdentityId` | `Identity` | `az identity show -n <uami-name> -g <rg> --query id -o tsv` |
-| `image` | B4.1 above | `udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0` |
-| `azureOpenAiAccountName`, `azureOpenAiEndpoint` | `Foundry` | `udcspai` (shared) — `https://udcspai.openai.azure.com/`. If you provision a regional NO account, use that instead. |
-| `apimBaseUrl` | `Apim` | `https://udcsp-no-prod-apim.azure-api.net` |
-| `cognitiveServicesEndpoint` | `Foundry` | `https://udcspai.cognitiveservices.azure.com/` |
-| `voiceClientSecretUri` | B4.2 above | URI returned by `az keyvault secret set` |
-| `voiceClientId` | B4.2 above | `$app.appId` |
-| `appInsightsConnectionString` | `Observability` | `az monitor app-insights component show -a udcsp-no-prod-shared-appi -g <rg> --query connectionString -o tsv` |
-| `deadLetterStorageAccountId` | `LandingZone` | `az storage account list -g <rg> --query "[?contains(name,'udcspno')].id" -o tsv` |
-| `publicHostname` | (DNS) | Leave empty on first run — Container Apps assigns `*.azurecontainerapps.io` |
-| `acsResourceName` | first-pass Voice | Set to `udcsp-no-acs`; the Voice Bicep creates it on the first WhatIf pass |
-| `acsConnectionStringSecretUri` | filled after B4.4 | Filled after the ACS resource exists (B4.4) |
-| `d365TransferTargetId`, `d365VoiceQueueId` | `D365` Customer Service | **Leave empty for the no-handoff demo** (Demo 2 v1). Fill from the Customer Service admin centre once D365 CS NO is provisioned. |
-| `env`, `location`, `resourceGroup` | (config) | `dev` / `norwayeast` / `udcsp-no-voice` |
+Run this once — it resolves the Container Apps env id, the UAMI id and the App Insights connection string, then prints a ready-to-paste `Voice.no` block (you'll just need to add the two `voiceClientSecretUri` / `acsConnectionStringSecretUri` URIs returned by B4.2 / B4.4).
+
+```powershell
+$caeId       = az containerapp env show -n udcsp-no-voice-env -g udcsp-no-voice --query id -o tsv
+$uamiId      = az identity show -n udcsp-no-voice-orch-uami -g udcsp-no-voice --query id -o tsv
+$aiConn      = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query connectionString -o tsv
+$dlStorageId = az storage account show -n udcspnoprodlake -g udcsp-no-prod-platform-rg --query id -o tsv
+
+@"
+Voice.no = @{
+    env                          = 'dev'
+    resourceGroup                = 'udcsp-no-voice'
+    location                     = 'norwayeast'
+    containerAppsEnvironmentId   = '$caeId'
+    userAssignedIdentityId       = '$uamiId'
+    image                        = 'udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0'
+    azureOpenAiAccountName       = 'udcspai'
+    azureOpenAiEndpoint          = 'https://udcspai.openai.azure.com/'
+    apimBaseUrl                  = 'https://udcsp-no-prod-apim.azure-api.net'
+    cognitiveServicesEndpoint    = 'https://udcspai.cognitiveservices.azure.com/'
+    acsConnectionStringSecretUri = '<filled in B4.4>'
+    voiceClientSecretUri         = '<URI from B4.2 voice-client-secret>'
+    voiceClientId                = '$appId'
+    appInsightsConnectionString  = '$aiConn'
+    publicHostname               = ''
+    d365TransferTargetId         = ''
+    d365VoiceQueueId             = ''
+    deadLetterStorageAccountId   = '$dlStorageId'
+    acsResourceName              = 'udcsp-no-acs'
+}
+"@
+```
+
+Copy the printed block into `scripts/install/config/udcsp.config.psd1`. Swap the two `<...>` placeholders with the URIs from B4.2 (`voice-client-secret`) and B4.4 (`acs-connection-string`).
 
 ### B4.4 — First-pass Voice WhatIf to seed the ACS resource
 
@@ -533,33 +550,10 @@ az keyvault secret set --vault-name $kvName --name "acs-connection-string" --val
 <details>
 <summary><b>B5. Configure the Voice block from first-pass outputs</b></summary>
 
-Open `scripts/install/config/udcsp.config.psd1` and fill the country block under `Voice` with the values harvested in B4. Example for the Demo 2 no-handoff target (Norway):
+Paste the `Voice.no` block produced by the B4.3 here-string into `scripts/install/config/udcsp.config.psd1`, then fill the two `<...>` URI placeholders:
 
-```powershell
-Voice = @{
-    no = @{
-        env                          = 'dev'
-        resourceGroup                = 'udcsp-no-voice'
-        location                     = 'norwayeast'
-        containerAppsEnvironmentId   = '/subscriptions/.../managedEnvironments/<name>'   # B4.3
-        userAssignedIdentityId       = '/subscriptions/.../userAssignedIdentities/<name>' # B4.3
-        image                        = 'udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' # B4.1
-        azureOpenAiAccountName       = 'udcspai'
-        azureOpenAiEndpoint          = 'https://udcspai.openai.azure.com/'
-        apimBaseUrl                  = 'https://udcsp-no-prod-apim.azure-api.net'
-        cognitiveServicesEndpoint    = 'https://udcspai.cognitiveservices.azure.com/'
-        acsConnectionStringSecretUri = 'https://udcsp-no-kv.vault.azure.net/secrets/acs-connection-string/...' # B4.4
-        voiceClientSecretUri         = 'https://udcsp-no-kv.vault.azure.net/secrets/voice-client-secret/...'   # B4.2
-        voiceClientId                = '<App Registration client-id>'                                          # B4.2
-        appInsightsConnectionString  = '<connection string>'                                                   # B4.3
-        publicHostname               = ''
-        d365TransferTargetId         = ''   # ⚠️ empty until D365 Customer Service NO is installed
-        d365VoiceQueueId             = ''   # ⚠️ idem — re-enables escalate_to_human warm-transfer
-        deadLetterStorageAccountId   = '/subscriptions/.../storageAccounts/<name>'                             # B4.3
-        acsResourceName              = 'udcsp-no-acs'
-    }
-}
-```
+- `voiceClientSecretUri` ← URI returned by `az keyvault secret set --name voice-client-secret …` (B4.2).
+- `acsConnectionStringSecretUri` ← URI returned by `az keyvault secret set --name acs-connection-string …` (B4.4).
 
 > ⚠️ **`d365TransferTargetId` / `d365VoiceQueueId` left empty** means the voice orchestrator skips the `escalate_to_human` function tool. The AI assistant will answer questions and decline warm-transfer gracefully ("a human caseworker will call you back") until D365 Customer Service is provisioned. See [`inprogress.md`](./inprogress.md) § "Demo 2" for the v2 plan.
 
