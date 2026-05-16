@@ -5,7 +5,8 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { countries, getCountry } from '../auth/msalConfig';
 import { appendCase } from '../utils/caseStore';
-import { uploadDocument, readFileAsBase64 } from '../utils/documentUpload';
+import { uploadDocument } from '../utils/documentUpload';
+import { extractDocument } from '../utils/extractDocument';
 import { ConsentNotice } from '../components/ConsentNotice';
 import { PlatformDiagram } from '../components/PlatformDiagram';
 import { runEligibility, recommendationToDecision, type EligibilityResponse } from '../utils/eligibility';
@@ -173,11 +174,7 @@ export function ApplyResidencyPage() {
       setDocBlobUrl(upload.blobUrl);
       setDocBlobName(upload.blobName);
       setDocStorageAccount(upload.storageAccount);
-      const b64 = await readFileAsBase64(file);
-      const r = await apiFetch<ExtractResult>('/agent-doc-extractor/extract', {
-        method: 'POST',
-        body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream', contentBase64: b64 }),
-      });
+      const r = await extractDocument({ file, blobUrl: upload.blobUrl, documentKind: 'employment-contract' });
       setExtracted(r);
       // Pre-fill employer fields from the extraction so step 6 shows real values.
       const empName = r.fields?.employer || r.fields?.employerName || r.fields?.companyName;
