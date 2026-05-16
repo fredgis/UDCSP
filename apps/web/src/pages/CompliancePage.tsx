@@ -4,70 +4,97 @@ import { PlatformDiagram } from '../components/PlatformDiagram';
 
 type Pillar = {
   ref: string;
+  short: string;
   title: string;
   what: string;
   how: string;
   citizen: string;
+  axis: 'data' | 'ai' | 'identity' | 'security' | 'channels' | 'national';
 };
 
 const pillars: Pillar[] = [
   {
     ref: 'Reg. EU 2016/679',
+    short: 'GDPR',
     title: 'GDPR — General Data Protection Regulation',
     what: 'Every personal data point we hold has a documented legal basis, a finite retention period, and a tested removal path.',
     how: 'Lawful basis Art. 6(1)(e) "task carried out in the public interest". Data minimisation by design. Right-to-erasure cascade tested across five storage zones in ≤ 30 days. Microsoft Purview maintains the Record of Processing Activities (RoPA).',
     citizen: 'You may request access, correction, export or deletion of your data at any time, in your own language.',
+    axis: 'data',
   },
   {
     ref: 'Reg. EU 2024/1689',
+    short: 'AI Act',
     title: 'EU AI Act',
     what: 'You are always informed when an AI system is involved, and a qualified human takes the final decision on any matter that affects you.',
     how: 'Each agent is registered in the Foundry AI Act Registry with a conformity dossier. The Eligibility Pre-Assessor is classified High-Risk (Annex III): it proposes, a caseworker disposes. Operational logs are retained ≥ 6 months (Art. 26(6)).',
     citizen: 'You may request the reasoning behind any AI-assisted recommendation and ask a human to review it.',
+    axis: 'ai',
   },
   {
     ref: 'Operating model',
+    short: 'Bridge',
     title: 'Bridge to national authorities',
     what: 'UDCSP is the unified digital front door. The competent national authority remains the controller and decision-maker for the substantive case.',
     how: 'When you submit, only the data the authority requires is transmitted. The decision, certificate or residency record is issued by CPR, Skatteverket, NAV, SKAT, Försäkringskassan, Udbetaling Danmark, Altinn, UDI or ID-porten — never by UDCSP.',
     citizen: 'Appeals and access to your official file are addressed to the authority that issued the decision; UDCSP indicates which one and how to reach it.',
+    axis: 'national',
   },
   {
     ref: 'Reg. EU 910/2014',
+    short: 'eIDAS',
     title: 'eIDAS — Electronic Identification',
     what: 'You authenticate with your own national eID. UDCSP recognises EU/EEA electronic identities through the eIDAS interoperability bridge.',
     how: 'Supported eIDs: MitID (DK), BankID and Freja+ (SE), MinID and ID-porten (NO). Credentials never reach UDCSP — only a signed assertion at the assurance level required for the action. EU Digital Identity Wallet (eIDAS 2.0) is on the roadmap.',
     citizen: 'No additional credential to manage. The eID you already trust nationally is the eID accepted by UDCSP.',
+    axis: 'identity',
   },
   {
     ref: 'Dir. 2002/58/EC',
+    short: 'ePrivacy',
     title: 'ePrivacy — Electronic Communications',
     what: 'Voice, SMS, email and chat interactions are treated as confidential electronic communications.',
     how: 'A standing notice is delivered at the start of each interaction. Voice recordings are purged at 90 days. The platform operates on a public-interest legal basis (Art. 6(1)(e)), not on consent — which would be inappropriate for a regalian service.',
     citizen: 'No marketing repurposing of any interaction. No silent recording. Each channel discloses its retention rule upfront.',
+    axis: 'channels',
   },
   {
     ref: 'Dir. EU 2022/2555',
+    short: 'NIS2',
     title: 'NIS2 — Network and Information Security',
     what: 'Public administration is an "essential entity". A tested security programme and a 24-hour incident-notification chain to the national CSIRT are mandatory.',
     how: 'ISO 27001-aligned risk management. Microsoft Defender for Cloud, Microsoft Sentinel as SIEM, customer-managed keys per country, managed identities, Azure Policy as code. Supply-chain assurance via Microsoft attestations.',
     citizen: 'In the event of a serious incident, the responsible national authority is notified within 24 hours.',
+    axis: 'security',
   },
   {
     ref: 'Dir. EU 2016/2102 · WCAG 2.1 AA',
+    short: 'WCAG',
     title: 'Web Accessibility',
     what: 'Every channel — web, mobile, chat, voice IVR, SMS, email, caseworker — is built and tested to WCAG 2.1 Level AA.',
     how: 'Keyboard operability, screen-reader semantics, captioned voice flows, alt text, focus management, scalable typography, contrast compliance. A dated accessibility statement per country with a feedback channel in 12 languages.',
     citizen: 'Report a barrier through the Accessibility tab; we are bound to acknowledge and provide a remediation path.',
+    axis: 'channels',
   },
   {
     ref: 'DK · SE · NO',
+    short: 'National',
     title: 'National administrative law',
     what: 'Each country applies its own administrative-law obligations — Forvaltningsloven (DK / NO) and Förvaltningslagen (SE) — on top of the EU baseline.',
     how: 'Per-country tenant, per-country data residency, per-country Microsoft Purview retention policies that extend (never shorten) the EU baseline. National Data Protection Authority is the citizen\'s point of contact.',
     citizen: 'Your data is held within your country. The supervisory authority for any complaint is the DPA of your country of residence.',
+    axis: 'national',
   },
 ];
+
+const AXIS_LABEL: Record<Pillar['axis'], { label: string; color: string }> = {
+  data: { label: 'Data', color: '#1565c0' },
+  ai: { label: 'AI', color: '#7b1fa2' },
+  identity: { label: 'Identity', color: '#0277bd' },
+  security: { label: 'Security', color: '#c62828' },
+  channels: { label: 'Channels', color: '#2e7d32' },
+  national: { label: 'National', color: '#e65100' },
+};
 
 const rights = [
   { article: 'Art. 15', title: 'Right of access', text: 'Within 30 days, free of charge, in the language of your choice.' },
@@ -87,6 +114,45 @@ const auditPack = [
   { title: 'Accessibility statement', text: 'Dated, per country, with a working feedback channel.' },
 ];
 
+// At-a-glance posture overview — one chip per regulation, grouped by axis.
+function ComplianceOverview() {
+  return (
+    <figure className="compliance-overview" aria-labelledby="overview-caption">
+      <figcaption id="overview-caption" className="compliance-overview__caption">
+        Compliance posture at a glance — 8 regulatory regimes mapped onto 6 architecture axes.
+      </figcaption>
+      <div className="compliance-overview__chart" role="img" aria-label="8 regulations grouped under Data, AI, Identity, Security, Channels and National axes; all marked covered.">
+        {(['data', 'ai', 'identity', 'security', 'channels', 'national'] as const).map((axis) => {
+          const items = pillars.filter((p) => p.axis === axis);
+          const meta = AXIS_LABEL[axis];
+          return (
+            <div key={axis} className="compliance-axis" style={{ ['--axis-color' as any]: meta.color }}>
+              <div className="compliance-axis__head">
+                <span className="compliance-axis__dot" aria-hidden="true" />
+                <span className="compliance-axis__label">{meta.label}</span>
+                <span className="compliance-axis__count">{items.length}</span>
+              </div>
+              <ul className="compliance-axis__items">
+                {items.map((p) => (
+                  <li key={p.title} className="compliance-axis__pill" title={`${p.ref} · ${p.title}`}>
+                    <span className="compliance-axis__pill-name">{p.short}</span>
+                    <span className="compliance-axis__pill-check" aria-hidden="true">✓</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <p className="compliance-overview__legend">
+        Each pill represents one regulation UDCSP must satisfy. The ✓ confirms that the corresponding
+        implementation (policy, control or audit artefact) is in place. Expand the sections below for
+        the obligation, the platform response, and the citizen-facing effect of each.
+      </p>
+    </figure>
+  );
+}
+
 export function CompliancePage() {
   return (
     <section aria-labelledby="compliance-title" className="compliance-page">
@@ -105,14 +171,20 @@ export function CompliancePage() {
           </dl>
         </header>
 
+        <ComplianceOverview />
 
-        <section className="compliance-block" aria-labelledby="frame-title">
-          <h2 id="frame-title"><span className="compliance-num">01</span> <FormattedMessage id="compliance.section.framework" defaultMessage="Regulatory framework" /></h2>
-          <p className="compliance-lede">
-            The eight regimes overlap on every interaction — a single voice call is GDPR, ePrivacy, AI
-            Act, NIS2, eIDAS and Accessibility at once. Compliance by design is one of the platform&rsquo;s
-            ten architecture principles, not a project deliverable.
-          </p>
+        <details className="compliance-section">
+          <summary>
+            <span className="compliance-section__num">01</span>
+            <span className="compliance-section__head">
+              <h2><FormattedMessage id="compliance.section.framework" defaultMessage="Regulatory framework" /></h2>
+              <p>
+                Eight regimes overlap on every interaction — one voice call is at once GDPR, ePrivacy,
+                AI Act, NIS2, eIDAS and Accessibility. Expand to see how UDCSP responds to each.
+              </p>
+            </span>
+            <span className="compliance-section__chevron" aria-hidden="true">▾</span>
+          </summary>
           <ol className="compliance-pillars">
             {pillars.map((p, idx) => (
               <li key={p.title} className="compliance-pillar">
@@ -134,14 +206,20 @@ export function CompliancePage() {
               </li>
             ))}
           </ol>
-        </section>
+        </details>
 
-        <section className="compliance-block" aria-labelledby="rights-title">
-          <h2 id="rights-title"><span className="compliance-num">02</span> <FormattedMessage id="compliance.section.rights" defaultMessage="Citizen rights and operational service levels" /></h2>
-          <p className="compliance-lede">
-            The seven core data-subject rights of the GDPR are delivered through automated workflows
-            rather than paper procedures. Each right has a measurable service level.
-          </p>
+        <details className="compliance-section">
+          <summary>
+            <span className="compliance-section__num">02</span>
+            <span className="compliance-section__head">
+              <h2><FormattedMessage id="compliance.section.rights" defaultMessage="Citizen rights and operational service levels" /></h2>
+              <p>
+                The seven core data-subject rights of the GDPR are delivered through automated workflows,
+                each with a measurable service level. Expand for the table.
+              </p>
+            </span>
+            <span className="compliance-section__chevron" aria-hidden="true">▾</span>
+          </summary>
           <table className="compliance-table" aria-label="Citizen rights and service levels">
             <thead>
               <tr><th scope="col">Article</th><th scope="col">Right</th><th scope="col">Operational commitment</th></tr>
@@ -156,14 +234,24 @@ export function CompliancePage() {
               ))}
             </tbody>
           </table>
-        </section>
+        </details>
 
-        <section className="compliance-block" aria-labelledby="bridge-title">
-          <h2 id="bridge-title"><span className="compliance-num">03</span> <FormattedMessage id="compliance.section.controllership" defaultMessage="Controllership boundary" /></h2>
+        <details className="compliance-section">
+          <summary>
+            <span className="compliance-section__num">03</span>
+            <span className="compliance-section__head">
+              <h2><FormattedMessage id="compliance.section.controllership" defaultMessage="Controllership boundary" /></h2>
+              <p>
+                UDCSP is the unified front door; the competent national authority remains controller and
+                decision-maker. Expand for the routing topology to CPR, Skatteverket, NAV, Altinn, etc.
+              </p>
+            </span>
+            <span className="compliance-section__chevron" aria-hidden="true">▾</span>
+          </summary>
           <p className="compliance-lede">
-            UDCSP is the unified front door — it captures, validates and routes the citizen&rsquo;s request.
-            The substantive decision, the official record and the certificate are produced by the
-            competent national authority. The diagram below shows this routing topology.
+            UDCSP captures, validates and routes the citizen&rsquo;s request. The substantive decision, the
+            official record and the certificate are produced by the competent national authority. The
+            diagram below shows this routing topology.
           </p>
           <PlatformDiagram
             title="Routing to national authorities"
@@ -190,14 +278,20 @@ export function CompliancePage() {
               ]},
             ]}
           />
-        </section>
+        </details>
 
-        <section className="compliance-block" aria-labelledby="evidence-title">
-          <h2 id="evidence-title"><span className="compliance-num">04</span> <FormattedMessage id="compliance.section.evidence" defaultMessage="Evidence pack available to a regulator" /></h2>
-          <p className="compliance-lede">
-            Should a Data Protection Authority, the AI Office or a national supervisory body request
-            evidence, the following dossier is generated on demand from the platform&rsquo;s control plane.
-          </p>
+        <details className="compliance-section">
+          <summary>
+            <span className="compliance-section__num">04</span>
+            <span className="compliance-section__head">
+              <h2><FormattedMessage id="compliance.section.evidence" defaultMessage="Evidence pack available to a regulator" /></h2>
+              <p>
+                Five artefacts generated on demand from the control plane, ready for a Data Protection
+                Authority, the AI Office or a national supervisory body.
+              </p>
+            </span>
+            <span className="compliance-section__chevron" aria-hidden="true">▾</span>
+          </summary>
           <ul className="compliance-evidence">
             {auditPack.map((a) => (
               <li key={a.title}>
@@ -206,14 +300,20 @@ export function CompliancePage() {
               </li>
             ))}
           </ul>
-        </section>
+        </details>
 
-        <section className="compliance-block compliance-block--neutral" aria-labelledby="exposure-title">
-          <h2 id="exposure-title"><span className="compliance-num">05</span> <FormattedMessage id="compliance.section.exposure" defaultMessage="Exposure for non-compliance" /></h2>
-          <p className="compliance-lede">
-            Statutory maxima are recorded for completeness; UDCSP treats them as the consequence of
-            failure, not the threshold of acceptability.
-          </p>
+        <details className="compliance-section compliance-section--neutral">
+          <summary>
+            <span className="compliance-section__num">05</span>
+            <span className="compliance-section__head">
+              <h2><FormattedMessage id="compliance.section.exposure" defaultMessage="Exposure for non-compliance" /></h2>
+              <p>
+                Statutory maxima recorded for completeness — treated as consequences of failure, not as
+                thresholds of acceptability.
+              </p>
+            </span>
+            <span className="compliance-section__chevron" aria-hidden="true">▾</span>
+          </summary>
           <table className="compliance-table" aria-label="Statutory maxima">
             <thead>
               <tr><th scope="col">Regulation</th><th scope="col">Maximum administrative fine</th></tr>
@@ -229,7 +329,7 @@ export function CompliancePage() {
             Beyond fines: erosion of citizen trust and possible operating restrictions imposed by the
             supervisory authority.
           </p>
-        </section>
+        </details>
 
         <footer className="compliance-foot">
           <p>
