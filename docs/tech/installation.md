@@ -392,20 +392,10 @@ Once B3 has run, all the Voice prerequisites are in place (ACR, Container Apps e
 Verify the upstream phases produced what Voice depends on:
 
 ```powershell
-# Container Apps Environment per country
-az containerapp env list `
-  --query "[?contains(name,'udcsp-no')].[name,resourceGroup,id]" -o table
-
-# UAMI for the voice orchestrator
-az identity list `
-  --query "[?contains(name,'voice')&&contains(name,'no')].[name,id]" -o table
-
-# Key Vault per country
-az keyvault list --query "[?contains(name,'udcsp-no')].name" -o tsv
-
-# gpt-realtime quota in the target region — fall back to swedencentral if 0
-az cognitiveservices usage list --location norwayeast `
-  --query "[?contains(name.value,'realtime')].[name.localizedValue,limit,currentValue]" -o table
+az containerapp env list -o table | findstr udcsp-no
+az identity list -o table | findstr voice
+az keyvault list -o table | findstr udcsp-no
+az cognitiveservices usage list --location norwayeast -o table | findstr -i realtime
 ```
 
 If the Container Apps env or UAMI are missing, run the upstream phases first:
@@ -431,16 +421,16 @@ cd ../../..
 The orchestrator uses OAuth client-credentials to call APIM `/agents/topic-router/messages`. Create a dedicated App Registration and stash its secret in the country Key Vault.
 
 ```powershell
-# (a) App Registration
-$app  = az ad app create --display-name "udcsp-voice-orch-no" --query "{appId:appId,id:id}" -o json | ConvertFrom-Json
-az ad sp create --id $app.appId --query id -o tsv | Out-Null
-$cred = az ad app credential reset --id $app.appId --append --query "{password:password}" -o json | ConvertFrom-Json
-"voiceClientId    : $($app.appId)"
-"voiceClientSecret: $($cred.password)"
+# (a) App Registration — capture appId + secret directly (no JMESPath dict, cmd-safe)
+$appId = az ad app create --display-name "udcsp-voice-orch-no" --query appId -o tsv
+az ad sp create --id $appId --query id -o tsv | Out-Null
+$secret = az ad app credential reset --id $appId --append --query password -o tsv
+"voiceClientId    : $appId"
+"voiceClientSecret: $secret"
 
 # (b) Stash the secret in the country Key Vault
-$kvName = az keyvault list --query "[?contains(name,'udcsp-no')] | [0].name" -o tsv
-az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value $cred.password --query id -o tsv
+$kvName = az keyvault list -o tsv --query "[?contains(name,'udcsp-no')].name" | Select-Object -First 1
+az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value $secret --query id -o tsv
 # Save the returned URI — that's the value for `voiceClientSecretUri`.
 ```
 
