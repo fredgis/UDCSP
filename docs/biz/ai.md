@@ -289,7 +289,7 @@ The post-audit decision removes the redundant conversational façade. Foundry al
 flowchart LR
     WEB["💻 Web chat"] --> APIM["APIM<br/>/agents/topic-router"]
     MOB["📱 Mobile chat"] --> APIM
-    VOX["📞 Voice<br/>ACS + voice orchestrator + GPT-4o Realtime"] --> APIM
+    VOX["📞 Voice<br/>ACS + voice orchestrator + gpt-realtime"] --> APIM
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> CLS["Classifier"]
     ROUTER --> AST["Citizen Assistant"]
@@ -450,7 +450,7 @@ flowchart LR
     end
 
     subgraph AIPRIM["🎤 Azure AI primitives"]
-        SPK["GPT-4o Realtime (live audio path)<br/>+ Azure AI Speech (D365 IVR menus<br/>+ post-call analytics only)"]
+        SPK["gpt-realtime (live audio path)<br/>+ Azure AI Speech (D365 IVR menus<br/>+ post-call analytics only)"]
         DI["Document Intelligence"]
         SAFE["Content Safety"]
     end
@@ -498,16 +498,16 @@ flowchart LR
 
 ### 7.2 📞 Voice channel
 
-> *PSTN → ACS → voice orchestrator → **GPT-4o Realtime** (one stream, native STT+reasoning+TTS) → APIM `/agents/topic-router` as a function tool.*  
+> *PSTN → ACS → voice orchestrator → **gpt-realtime** (one stream, native STT+reasoning+TTS) → APIM `/agents/topic-router` as a function tool.*  
 > 📖 *Architecture deep-dive: [`voice.md`](./voice.md). Procurement of a real Nordic toll-free number lives in § 9 of that doc.*
 
 | | |
 |---|---|
-| 🗣️ **Façade** | Voice orchestrator Container App (`apps/voice/call-automation/`) bridges ACS audio ↔ GPT-4o Realtime; calls Foundry `topic-router` via APIM as a function tool |
+| 🗣️ **Façade** | Voice orchestrator Container App (`apps/voice/call-automation/`) bridges ACS audio ↔ gpt-realtime; calls Foundry `topic-router` via APIM as a function tool |
 | 🤖 **Foundry agents** | topic-router (orchestrator) → Citizen Assistant (RAG) → optional Eligibility (HIGH-RISK) → optional Translator (out-of-locale escalation summary) |
-| 🎤 **Azure AI primitives** | **GPT-4o Realtime** for live STT + reasoning + TTS in one stream (12 languages, neural voices native to the model); **Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics — not in the live audio path**; Content Safety (input + output) |
+| 🎤 **Azure AI primitives** | **gpt-realtime** for live STT + reasoning + TTS in one stream (12 languages, neural voices native to the model); **Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics — not in the live audio path**; Content Safety (input + output) |
 | ⏱️ **Latency budget** | ≤ 2 s p95 from end-of-utterance to start-of-TTS |
-| 🌍 **Multilingual mechanism** | GPT-4o Realtime detects locale natively; in-call language switch supported |
+| 🌍 **Multilingual mechanism** | gpt-realtime detects locale natively; in-call language switch supported |
 | 🛡️ **Safety extras** | Voice-specific jailbreak panel (audio prompt-injection, "read these instructions"); barge-in handled server-side by GPT Realtime |
 | 📋 **EU AI Act class triggered** | Eligibility = HIGH-RISK when invoked; Citizen Assistant + Classifier = limited risk |
 

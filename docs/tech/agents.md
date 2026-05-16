@@ -177,13 +177,13 @@ gantt
 | Voice runtime end-to-end (May 2026) — `apps/voice/call-automation/` (8 src + 3 bicep + 3 ps1 + APIM API + module + 2 vitest specs + readme + `voice.md` § 11 rewrite) | **≈ 14 min** | **≈ 38 min** | **~2.7×** orchestrator-led |
 | **Cumulative (sum of wall-clock)** | **≈ 43 min** | **≈ 147 min 15 s** | **~3.4×** weighted average |
 
-> **Reading note.** The "cumulative wall-clock" is the developer's lived clock-on-the-wall: how long the human was waiting on the multi-agent system to deliver. The "sequential equivalent" is what an unparallelised run of the same work would have cost. The platform — IaC, apps, foundry, governance, security, BCDR, post-audit refactor, **voice runtime code end-to-end (PSTN ↔ ACS Call Automation ↔ GPT-4o Realtime ↔ Foundry topic-router as a function tool, with D365 warm-transfer wired but gated behind a D365_VOICE_QUEUE_ID env var — Demo 2 v1 runs no-handoff until D365 Customer Service is provisioned)**, all docs in 12 sections each — is therefore delivered in **under 45 wall-clock minutes** of agent compute, against a ≈ 2 h 27 min sequential baseline.
+> **Reading note.** The "cumulative wall-clock" is the developer's lived clock-on-the-wall: how long the human was waiting on the multi-agent system to deliver. The "sequential equivalent" is what an unparallelised run of the same work would have cost. The platform — IaC, apps, foundry, governance, security, BCDR, post-audit refactor, **voice runtime code end-to-end (PSTN ↔ ACS Call Automation ↔ gpt-realtime ↔ Foundry topic-router as a function tool, with D365 warm-transfer wired but gated behind a D365_VOICE_QUEUE_ID env var — Demo 2 v1 runs no-handoff until D365 Customer Service is provisioned)**, all docs in 12 sections each — is therefore delivered in **under 45 wall-clock minutes** of agent compute, against a ≈ 2 h 27 min sequential baseline.
 
 ### 4-bis.5 Voice runtime breakdown (May 2026)
 
 | Sub-task | Output | Files | Tools used |
 |---|---|---:|---|
-| Architecture decision | Microsoft Agent Framework (MAF) vs Bot Framework SDK (rejected — deprecated end-2025) vs direct ACS Call Automation + GPT-4o Realtime as a Foundry function tool (chosen); justified in §11.2 of `docs/biz/voice.md` | 0 (decision) | web search, github search |
+| Architecture decision | Microsoft Agent Framework (MAF) vs Bot Framework SDK (rejected — deprecated end-2025) vs direct ACS Call Automation + gpt-realtime as a Foundry function tool (chosen); justified in §11.2 of `docs/biz/voice.md` | 0 (decision) | web search, github search |
 | Source files | `src/{config,logger,ivr-loader,foundry-tool,d365-handoff,realtime-bridge,call-handler,index}.ts` | 8 | create |
 | Bicep | `infra/{voice-orchestrator,event-grid-incoming-call,gpt-realtime-deployment}.bicep` | 3 | create + `az bicep build` |
 | PS scripts | `scripts/{Deploy-Voice,Test-Voice,Bind-AcsNumber}.ps1` (real, not stubs) | 3 | create |
