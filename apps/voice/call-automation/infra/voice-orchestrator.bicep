@@ -110,6 +110,12 @@ resource voice 'Microsoft.App/containerApps@2024-03-01' = {
           }
         ]
       }
+      registries: [
+        {
+          server: split(image, '/')[0]
+          identity: userAssignedIdentityId
+        }
+      ]
       secrets: [
         {
           name: 'acs-connection-string'

@@ -587,9 +587,11 @@ $acsCsUri              = az keyvault secret show --vault-name udcsp-no-prod-kv -
 $kvId   = az keyvault show --name udcsp-no-prod-kv --query id -o tsv
 $aoaiId = az cognitiveservices account show -n udcspai -g udcsp --query id -o tsv
 $acsId  = az communication show -n udcsp-no-acs -g $rg --query id -o tsv
+$acrId  = az acr show -n udcspnoprodacr --query id -o tsv
 az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Key Vault Secrets User" --scope $kvId --output none
 az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Cognitive Services User" --scope $aoaiId --output none
 az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "Contributor" --scope $acsId --output none
+az role assignment create --assignee-object-id $uamiPrincipalId --assignee-principal-type ServicePrincipal --role "AcrPull" --scope $acrId --output none
 
 # 1. gpt-realtime model deployment. The model is a sub-resource of the AOAI
 #    account 'udcspai', which lives in RG 'udcsp' in 'swedencentral' (NO has
