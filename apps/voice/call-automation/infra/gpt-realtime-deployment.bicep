@@ -26,6 +26,9 @@ param modelVersion string = '2025-08-28'
 @description('Capacity in thousands of TPM; default 10 (10k TPM) for case-study scale.')
 param capacity int = 10
 
+@description('Content safety RAI policy. Use Microsoft.DefaultV2 unless a custom udcsp-voice-rai policy has been pre-provisioned on the account.')
+param raiPolicyName string = 'Microsoft.DefaultV2'
+
 var tags = {
   country: country
   env: env
@@ -55,7 +58,7 @@ resource deployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01
       version: modelVersion
     }
     versionUpgradeOption: 'OnceCurrentVersionExpired'
-    raiPolicyName: 'udcsp-voice-rai'
+    raiPolicyName: raiPolicyName
     currentCapacity: capacity
   }
 }
