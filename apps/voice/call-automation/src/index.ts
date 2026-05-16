@@ -56,13 +56,23 @@ async function main(): Promise<void> {
       socket.destroy();
       return;
     }
-    const callConnectionId = url.searchParams.get('callConnectionId') ?? '';
+    // ACS Call Automation does not append a callConnectionId to the media
+    // streaming URL. Prefer an explicit query parameter when present (so
+    // future ACS versions or test harnesses can scope the connection
+    // deterministically), otherwise fall back to the most-recent orphan
+    // session that just answered a call and is waiting for its media WS.
+    let callConnectionId = url.searchParams.get('callConnectionId') ?? '';
     if (!callConnectionId) {
+      callConnectionId = handler.findOrphanSessionId() ?? '';
+    }
+    if (!callConnectionId) {
+      logEvent('media.upgrade_rejected', {}, { reason: 'no_orphan_session', url: req.url ?? '' });
       socket.destroy();
       return;
     }
     wss.handleUpgrade(req, socket, head, async (ws) => {
       try {
+        logEvent('media.upgrade_accepted', { callConnectionId }, {});
         await handler.attachMediaSocket(callConnectionId, ws);
       } catch (err) {
         logError(err, { callConnectionId });

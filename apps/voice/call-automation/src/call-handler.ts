@@ -150,7 +150,20 @@ export class CallHandler {
   }
 
   // Called by index.ts when a new WebSocket connection arrives at /api/acs/media.
-  // ACS opens this socket once MediaStreaming is active.
+  // ACS opens this socket once MediaStreaming is active. ACS does NOT include
+  // callConnectionId in the WebSocket URL — instead we match against the most
+  // recently created session that has no bridge yet ('orphan session'). For a
+  // single-call demo this is unambiguous; concurrent calls would need ACS to
+  // tag the URL itself (no public ACS API for that today) or to inspect the
+  // first AudioMetadata frame.
+  findOrphanSessionId(): string | null {
+    let candidateId: string | null = null;
+    for (const [id, s] of sessions) {
+      if (!s.bridge) candidateId = id;
+    }
+    return candidateId;
+  }
+
   async attachMediaSocket(callConnectionId: string, socket: WebSocket): Promise<void> {
     const session = sessions.get(callConnectionId);
     if (!session) {
