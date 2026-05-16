@@ -3,8 +3,8 @@ version: 1
 locale: en
 id: welcome
 prompts:
-  normal: "Welcome to Unified Digital Citizen Services. Say residency, tax, child benefit, or press 1, 2, or 3."
-  slowSpeech: "Welcome to Unified Digital Citizen Services. Say residency, tax, child benefit, or press 1, 2, or 3."
+  normal: "Welcome to Unified Digital Citizen Services. I can help you with residency, tax, child benefit, and other government services across Denmark, Sweden, and Norway. What can I do for you today?"
+  slowSpeech: "Welcome to Unified Digital Citizen Services. I can help with residency, tax, child benefit, and other government services. Please ask me your question — for example: how do I get a tax residency certificate, or, am I eligible for child benefit."
 bargeIn: true
 dtmfFallback:
   '*': repeat
