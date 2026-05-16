@@ -532,18 +532,19 @@ Voice.no = @{
 
 Copy the printed block into `scripts/install/config/udcsp.config.psd1`. Swap the two `<...>` placeholders with the URIs from B4.2 (`voice-client-secret`) and B4.4 (`acs-connection-string`).
 
-### B4.4 — First-pass Voice WhatIf to seed the ACS resource
+### B4.4 — Pre-create the ACS resource + stash its connection string
 
-The ACS connection string only exists after the ACS resource has been created by the Voice Bicep. Run a dry-pass to provision ACS, then capture the connection string.
+The Container App deploy needs `acsConnectionStringSecretUri` to exist in the vault before it runs, but the ACS resource doesn't exist yet. Pre-create ACS in NO, fetch its primary connection string, and stash it in KV — that closes the chicken-and-egg loop and lets the full `-Phase Voice` run without `-WhatIf` later.
 
 ```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev -WhatIf
+az communication create -n udcsp-no-acs -g udcsp-no-voice --location global --data-location Norway
 
-# Now ACS exists — read its primary connection string and stash in KV
 $acsCs = az communication list-key --name udcsp-no-acs -g udcsp-no-voice --query primaryConnectionString -o tsv
-az keyvault secret set --vault-name $kvName --name "acs-connection-string" --value $acsCs --query id -o tsv
-# Save the URI — that's `acsConnectionStringSecretUri`.
+az keyvault secret set --vault-name udcsp-no-prod-kv --name "acs-connection-string" --value $acsCs --query id -o tsv
+# Save the returned URI — that's the value for `acsConnectionStringSecretUri` in B5.
 ```
+
+> ACS resources are **regional via `--data-location`** but their control-plane is always `--location global`. `--data-location Norway` pins the call media (audio, recordings, telephony) to Norway region for sovereignty. The Voice phase Bicep (B6) detects ACS already exists and skips its creation — only the orchestrator Container App + Event Grid sub + gpt-realtime deployment are created.
 
 </details>
 
