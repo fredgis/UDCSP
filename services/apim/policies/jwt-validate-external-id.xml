@@ -1,3 +1,9 @@
 <fragment>
-  <validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer"><openid-config url="{{external-id-openid-config-url}}" /><audiences><audience>{{external-id-api-audience}}</audience></audiences></validate-jwt>
+  <!-- Audience block intentionally omitted: the deployed APIMs validate signature
+       + issuer via openid-config only. Each country APIM is wired to its own
+       External ID CIAM tenant via {{external-id-openid-config-url}}, which is
+       enough to ensure tokens come from the right tenant for the right country.
+       Once the External ID Application ID URI is confirmed, re-enable the
+       <audiences> block here and pin {{external-id-api-audience}} accordingly. -->
+  <validate-jwt header-name="Authorization" failed-validation-httpcode="401" require-scheme="Bearer"><openid-config url="{{external-id-openid-config-url}}" /></validate-jwt>
 </fragment>

@@ -66,13 +66,22 @@ function Install-Apim {
                         # Per-NV stub values that satisfy APIM validators (CORS origin
                         # forbids paths; OIDC discovery must resolve; audience can be
                         # any string). Use realistic public endpoints where remote
-                        # validation kicks in.
+                        # validation kicks in. OIDC + audience are per-country so each
+                        # APIM trusts only its own External ID CIAM tenant.
                         $stubValue = switch -Wildcard ($nv.name) {
                             'portal-origin'                       { 'https://udcsp.fredgis.com' }
                             'entra-openid-config-url'             { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
-                            'external-id-openid-config-url'       { 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration' }
+                            'external-id-openid-config-url'       { "https://udcsp$($country.ToLower()).ciamlogin.com/udcsp$($country.ToLower()).onmicrosoft.com/v2.0/.well-known/openid-configuration" }
                             'entra-api-audience'                  { 'api://udcsp-stub' }
-                            'external-id-api-audience'            { 'api://udcsp-stub' }
+                            'external-id-api-audience'            {
+                                $clientId = switch ($country.ToLower()) {
+                                    'dk' { '2f69440c-f6c8-49f2-847f-e2f63e376102' }
+                                    'se' { 'd555626f-2b56-42f6-b58d-23d4c7a92cff' }
+                                    'no' { '81943b88-b137-4c9e-82dd-68ce98dffe84' }
+                                    default { 'udcsp-stub' }
+                                }
+                                "api://$clientId"
+                            }
                             default                               { 'https://placeholder.local' }
                         }
                         $body = [ordered]@{
