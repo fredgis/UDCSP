@@ -561,27 +561,84 @@ Paste the `Voice.no` block produced by the B4.3 here-string into `scripts/instal
 </details>
 
 <details>
-<summary><b>B6. Run the Voice phase</b></summary>
+<summary><b>B6. Deploy the Voice phase (inline — no Install script)</b></summary>
+
+Same approach as B4.4: run the four `az deployment group create` calls that `Install-Voice.psm1` would run, but inline so the DAG resolver doesn't drag LandingZone / Identity / Apim back in. Re-uses the variables resolved in B4.3 (`$caeId`, `$uamiId`, `$aiConn`, `$dlStorageId`, `$appId`) plus the two KV secret URIs (`$voiceClientSecretUri`, `$acsCsUri`) returned by B4.2 / B4.4.
 
 ```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev -ExcludePhase LandingZone,Identity,Security,Fabric,Foundry,Apim,LogicApps
-```
+# 0. Re-resolve every value (idempotent — skip blocks you've already exported).
+$repo                  = (Get-Location).Path
+$rg                    = 'udcsp-no-voice'
+$location              = 'norwayeast'
+$caeId                 = az containerapp env show -n udcsp-no-voice-env -g $rg --query id -o tsv
+$uamiId                = az identity show -n udcsp-no-voice-orch-uami -g $rg --query id -o tsv
+$aiConn                = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query connectionString -o tsv
+$dlStorageId           = az storage account show -n udcspnoprodlake -g udcsp-no-prod-platform-rg --query id -o tsv
+$appId                 = az ad app list --display-name 'udcsp-voice-orch-no' --query '[0].appId' -o tsv
+$voiceClientSecretUri  = az keyvault secret show --vault-name udcsp-no-prod-kv -n voice-client-secret --query id -o tsv
+$acsCsUri              = az keyvault secret show --vault-name udcsp-no-prod-kv -n acs-connection-string --query id -o tsv
 
-`-ExcludePhase` skips every upstream phase that's already in place (they're idempotent but each one takes ~30-60 s per country to confirm). Only the Voice phase actually runs, and it skips DK + SE automatically (no `Voice.dk` / `Voice.se` block in config). The Voice phase itself provisions:
+# 1. gpt-realtime model deployment (NO has no quota → set this to swedencentral if NO fails).
+az deployment group create `
+    --resource-group $rg `
+    --name udcsp-no-dev-voice-realtime `
+    --template-file "$repo/apps/voice/call-automation/infra/gpt-realtime-deployment.bicep" `
+    --parameters country=no env=dev location=$location azureOpenAiAccountName=udcspai `
+    --output none
 
-- `udcsp-no-acs` (Azure Communication Services, `dataLocation=Norway`)
-- `gpt-realtime-no` (Azure OpenAI deployment, 10k TPM by default, fallback to `swedencentral` if NO has zero quota)
-- `udcsp-no-dev-voice-orch` (Container App, UAMI-bound, KV-backed secrets, ingress `transport: auto` for WSS)
-- Event Grid `IncomingCall` subscription pointing at the orchestrator's `/api/acs/eventgrid` route
+# 2. Voice orchestrator Container App, first pass — publicHostname='' until ingress FQDN is known.
+az deployment group create `
+    --resource-group $rg `
+    --name udcsp-no-dev-voice-orch-pre `
+    --template-file "$repo/apps/voice/call-automation/infra/voice-orchestrator.bicep" `
+    --parameters country=no env=dev location=$location `
+        containerAppsEnvironmentId=$caeId `
+        image='udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' `
+        userAssignedIdentityId=$uamiId `
+        publicHostname='' `
+        azureOpenAiEndpoint='https://udcspai.openai.azure.com/' `
+        apimBaseUrl='https://udcsp-no-prod-apim.azure-api.net' `
+        cognitiveServicesEndpoint='https://udcspai.cognitiveservices.azure.com/' `
+        appInsightsConnectionString=$aiConn `
+        acsConnectionStringSecretUri=$acsCsUri `
+        voiceClientSecretUri=$voiceClientSecretUri `
+        voiceClientId=$appId `
+    --output none
 
-Verify the orchestrator is live:
+# 3. Fetch the ingress FQDN now that the Container App exists, then patch publicHostname.
+$fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g $rg --query "properties.configuration.ingress.fqdn" -o tsv
+az deployment group create `
+    --resource-group $rg `
+    --name udcsp-no-dev-voice-orch `
+    --template-file "$repo/apps/voice/call-automation/infra/voice-orchestrator.bicep" `
+    --parameters country=no env=dev location=$location `
+        containerAppsEnvironmentId=$caeId `
+        image='udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0' `
+        userAssignedIdentityId=$uamiId `
+        publicHostname=$fqdn `
+        azureOpenAiEndpoint='https://udcspai.openai.azure.com/' `
+        apimBaseUrl='https://udcsp-no-prod-apim.azure-api.net' `
+        cognitiveServicesEndpoint='https://udcspai.cognitiveservices.azure.com/' `
+        appInsightsConnectionString=$aiConn `
+        acsConnectionStringSecretUri=$acsCsUri `
+        voiceClientSecretUri=$voiceClientSecretUri `
+        voiceClientId=$appId `
+    --output none
 
-```powershell
-$fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g udcsp-no-voice `
-    --query "properties.configuration.ingress.fqdn" -o tsv
+# 4. Event Grid subscription on the ACS resource → orchestrator's /api/acs/eventgrid route.
+az deployment group create `
+    --resource-group $rg `
+    --name udcsp-no-dev-voice-eventgrid `
+    --template-file "$repo/apps/voice/call-automation/infra/event-grid-incoming-call.bicep" `
+    --parameters acsResourceName=udcsp-no-acs orchestratorFqdn=$fqdn deadLetterStorageAccountId=$dlStorageId `
+    --output none
+
+# 5. Live smoke-test.
 curl "https://$fqdn/healthz"
 # Expected: 200 OK with { "status": "ok", "mode": "live" }
 ```
+
+> **gpt-realtime quota fallback.** If step 1 fails with `InsufficientCapacity` in `norwayeast`, re-run it pointing at `swedencentral` — change `location=$location` to `location=swedencentral` and use a Sweden Central AOAI account name (`udcspai` is already there). Audio still flows back through the NO orchestrator and ACS-Norway data-location keeps recordings sovereign.
 
 ### B6.1 — Bind a phone number (or browser ingress) to the orchestrator
 
@@ -598,7 +655,7 @@ Pick ONE of these three, in order of regulatory lead time:
 pwsh ./apps/voice/scripts/Bind-AcsNumber.ps1 -Country no -Env dev `
     -PhoneNumber "+1XXXXXXXXXX" `
     -AcsResourceName udcsp-no-acs `
-    -ResourceGroup udcsp-no-voice `
+    -ResourceGroup $rg `
     -OrchestratorFqdn $fqdn
 ```
 
