@@ -42,7 +42,8 @@ param publicHostname string
 param azureOpenAiEndpoint string
 
 @description('Name of the gpt-realtime model deployment in Azure OpenAI.')
-param azureOpenAiRealtimeDeployment string = 'gpt-realtime'
+@description('Model deployment name. Must match the name created by gpt-realtime-deployment.bicep (gpt-realtime-${country}).')
+param azureOpenAiRealtimeDeployment string = 'gpt-realtime-${country}'
 
 @description('Public APIM gateway base URL (e.g. https://udcsp-apim-no.azure-api.net).')
 param apimBaseUrl string
