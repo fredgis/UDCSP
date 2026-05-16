@@ -81,9 +81,13 @@ export class RealtimeBridge {
 
   async start(token: string): Promise<void> {
     const url = realtimeUrl(this.cfg);
+    // Azure OpenAI Realtime accepts either api-key (key auth) OR
+    // Authorization: Bearer (AAD auth). Sending both confuses some
+    // server-side variants and triggered a 400 on first connect when we
+    // were sending the MI bearer in both headers. Use Bearer only — the
+    // managed identity acquires a token for cognitiveservices.azure.com.
     this.realtime = new WebSocket(url, {
       headers: {
-        'api-key': token, // For Azure OpenAI key auth; managed identity uses a Bearer token instead.
         Authorization: `Bearer ${token}`,
       },
     });
