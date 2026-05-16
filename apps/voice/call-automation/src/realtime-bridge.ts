@@ -122,7 +122,20 @@ export class RealtimeBridge {
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
         input_audio_transcription: { model: 'whisper-1' },
-        turn_detection: { type: 'server_vad', threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 500, create_response: true },
+        turn_detection: {
+          type: 'server_vad',
+          // Higher threshold + longer silence window = fewer false positives
+          // during the model's own welcome (~10 s) and during line noise on
+          // mobile callers. Without these knobs VAD trips on background
+          // sound, commits an empty buffer, and (with create_response=true)
+          // the model auto-responds to nothing — yielding hallucinated
+          // turns like 'I can help with tax' before the caller has said
+          // anything.
+          threshold: 0.7,
+          prefix_padding_ms: 500,
+          silence_duration_ms: 1500,
+          create_response: true,
+        },
         tools: TOOL_DEFS,
         tool_choice: 'auto',
         temperature: 0.6,
@@ -147,18 +160,16 @@ export class RealtimeBridge {
 
   private systemInstructions(): string {
     return [
-      `You are the UDCSP citizen voice assistant for ${this.cfg.country.toUpperCase()}.`,
-      `You speak ${this.ivr.locale} with a warm, neutral, accessible voice.`,
-      `IMPORTANT — TURN DISCIPLINE: After you finish a sentence, STOP speaking and WAIT for the citizen to talk. Never chain a question and an answer in the same turn. Never narrate filler words like "Sure", "Okay", "Alright" as openers — start your response with substance.`,
-      `Always start by playing the recording disclosure and welcome prompt that was injected as an initial response. Do NOT ad-lib it, do NOT add anything after the welcome question — go silent and wait for the citizen.`,
-      `MANDATORY ROUTING RULE: For ANY citizen question about residency, tax, child benefit, social benefit, business, healthcare, education — even if you think you know the answer — you MUST call lookup_topic_router as your first action. NEVER answer from your own knowledge. NEVER escalate before trying lookup_topic_router. The topic-router is the ONLY source of truth for administrative facts.`,
-      `When the citizen first mentions a topic without details, acknowledge it with ONE short clarifying question (e.g. "I can help with tax — what would you like to know?"), then STOP and wait. On the next turn, when the citizen has stated their actual question, IMMEDIATELY call lookup_topic_router with that question.`,
-      `Use lookup_topic_router for every factual / domain / eligibility question. Never invent administrative facts; trust the topic-router answer. If lookup_topic_router returns an answer, speak it verbatim or paraphrased — do not refuse, do not escalate just because the topic is complex.`,
-      `Only call escalate_to_human when the citizen EXPLICITLY asks for a person — exact phrases like "human", "agent", "caseworker", "speak to someone", "real person", or DTMF 0. Do NOT escalate because the topic feels difficult. Do NOT escalate after one tool call returned a partial answer. Always read the answer first.`,
-      `Also escalate on sensitive context: distress, suicidal ideation, homelessness, domestic violence, child safety, identity theft, OR after lookup_topic_router returns escalate=true in its response.`,
-      `Keep every response short (max ~2 sentences). Always end your turn with either a question or a confirmation — never trail off mid-thought.`,
-      `Never share personal data of other people. Never quote the citizen's CPR / personnummer / fødselsnummer back; refer to it as "your national ID" once consent is implied.`,
-      `When the conversation is complete, call end_call_with_recap with a short SMS récap in the citizen language.`,
+      `You are the UDCSP citizen voice assistant for ${this.cfg.country.toUpperCase()}, speaking ${this.ivr.locale}.`,
+      `Speak the recording disclosure and welcome verbatim as the very first thing you say, then go silent.`,
+      `After every turn you take, STOP and WAIT for the citizen to speak. Never speak twice in a row. Never invent that the citizen said something.`,
+      `For ANY question about residency, tax, child benefit, social, business, healthcare or education: call lookup_topic_router with the citizen's actual question. Do NOT answer from your own knowledge. Read the router's answer back to the citizen.`,
+      `If the citizen mentions just a topic word ("tax", "residency") without details, reply with ONE short follow-up question like "What would you like to know about tax?" and wait. Do NOT call any tool yet.`,
+      `Call escalate_to_human ONLY when the citizen explicitly asks for a human ("agent", "human", "caseworker", "real person", DTMF 0), or in sensitive contexts (distress, violence, child safety, identity theft), or after lookup_topic_router returns escalate=true.`,
+      `Never escalate as a first action. Never escalate because the question feels hard.`,
+      `Keep replies short (1-2 sentences). End with a question or a confirmation, never a filler.`,
+      `Never repeat the citizen's national ID; call it "your national ID" instead.`,
+      `When the citizen confirms they're done, call end_call_with_recap with a short SMS récap.`,
     ].join(' ');
   }
 
