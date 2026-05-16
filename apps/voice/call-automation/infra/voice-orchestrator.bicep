@@ -32,6 +32,9 @@ param image string
 @description('Resource ID of the user-assigned managed identity that holds Key Vault Secrets User + ACS Contributor + Cognitive Services User roles.')
 param userAssignedIdentityId string
 
+@description('Client (app) ID of the user-assigned managed identity. Passed to the container as AZURE_CLIENT_ID so DefaultAzureCredential targets the right UAMI when multiple identities are attached or the system-assigned identity is absent.')
+param userAssignedIdentityClientId string
+
 @description('Public hostname (FQDN) the Container App is reachable at; passed to the app so it can build callback URLs.')
 param publicHostname string
 
@@ -157,6 +160,7 @@ resource voice 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'VOICE_CLIENT_ID', value: voiceClientId }
             { name: 'VOICE_CLIENT_SECRET', secretRef: 'voice-client-secret' }
             { name: 'AZURE_TENANT_ID', value: tenantId }
+            { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
             { name: 'D365_VOICE_QUEUE_ID', value: d365VoiceQueueId }
             { name: 'D365_TRANSFER_TARGET_ID', value: d365TransferTargetId }
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'app-insights-connection' }
