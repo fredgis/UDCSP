@@ -675,13 +675,20 @@ Pick ONE of these three, in order of regulatory lead time:
 | **C — Real Nordic toll-free** (`+47 800…` / `+45 80…` / `+46 20…`) | 1–3 weeks | Submit the Nkom / ERST / PTS KYC pack via the ACS portal; production-grade. |
 
 ```powershell
-# Option B / C — bind the procured number to this orchestrator
+# Option B / C — bind the procured number to this orchestrator.
+# Re-export $rg + $fqdn first if you opened a fresh shell after B6:
+$rg   = 'udcsp-no-voice'
+$fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g $rg --query "properties.configuration.ingress.fqdn" -o tsv
+
 pwsh ./apps/voice/scripts/Bind-AcsNumber.ps1 -Country no -Env dev `
-    -PhoneNumber "+1XXXXXXXXXX" `
+    -PhoneNumber "+XXXXXXXXXXX" `
     -AcsResourceName udcsp-no-acs `
     -ResourceGroup $rg `
-    -OrchestratorFqdn $fqdn
+    -OrchestratorFqdn $fqdn `
+    -NumberType tollFree
 ```
+
+> `-NumberType` is `tollFree` for `+47 800…` / `+45 80…` / `+46 20…` / `+33 80…` (Norway/Denmark/Sweden/France numéros verts) and `geographic` for regular city-bound numbers. The script writes the binding to `apps/voice/acs/phone-number-bindings.yaml` — that file is versioned, so `git checkout -- apps/voice/acs/phone-number-bindings.yaml` after the bind if the procured number is private.
 
 ### B6.2 — Lock down ACR + Key Vault after deploy (post-deploy hardening)
 
