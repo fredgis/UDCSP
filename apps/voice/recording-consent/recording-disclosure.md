@@ -7,7 +7,7 @@ These scripts are placeholders for legal review and should align with `apps/web/
 - **nb**: Samtalen kan tas opp og transkriberes for å behandle saken din. Trykk 1 for å godta eller 0 for en saksbehandler.
 - **nn**: Samtalen kan takast opp og transkriberast for å handsame saka di. Trykk 1 for å godta eller 0 for ein saksbehandlar.
 - **se**: Sáhttá leat ahte ságastallan báddjejuvvo ja čállojuvvo ášši gieđahallama várás. Deaddil 1 miehtan várás dahje 0 olbmo várás.
-- **en**: This call may be recorded and transcribed to process your case. Press 1 to consent or 0 for a human agent where non-recorded handling is available.
+- **en**: This call is recorded and transcribed to process your case. By staying on the line you consent; you can ask for a human agent at any time.
 - **de**: Dieser Anruf kann aufgezeichnet und transkribiert werden, um Ihren Fall zu bearbeiten. Drücken Sie 1 zur Zustimmung oder 0 für eine Person.
 - **fr**: Cet appel peut être enregistré et transcrit afin de traiter votre dossier. Appuyez sur 1 pour consentir ou sur 0 pour un agent.
 - **pl**: Ta rozmowa może być nagrywana i transkrybowana w celu obsługi sprawy. Naciśnij 1, aby wyrazić zgodę, lub 0, aby połączyć się z pracownikiem.
