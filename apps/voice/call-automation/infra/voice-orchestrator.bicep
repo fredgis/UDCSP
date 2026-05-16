@@ -157,7 +157,7 @@ resource voice 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'AZURE_OPENAI_REALTIME_DEPLOYMENT', value: azureOpenAiRealtimeDeployment }
             { name: 'AZURE_OPENAI_API_VERSION', value: '2025-04-01-preview' }
             { name: 'APIM_BASE_URL', value: apimBaseUrl }
-            { name: 'APIM_TOPIC_ROUTER_PATH', value: '/agents/topic-router/messages' }
+            { name: 'APIM_TOPIC_ROUTER_PATH', value: '/agent-topic-router/messages' }
             { name: 'VOICE_CLIENT_ID', value: voiceClientId }
             { name: 'VOICE_CLIENT_SECRET', secretRef: 'voice-client-secret' }
             { name: 'AZURE_TENANT_ID', value: tenantId }
