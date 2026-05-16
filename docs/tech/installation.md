@@ -7,15 +7,14 @@
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
 
-This guide is split into **5 collapsible sections**. Click any ▶ to expand.
+This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 
 | Section | What it is | When to use |
 |---|---|---|
 | **🟦 A — Prerequisites** | Things you do **once** on your workstation and Microsoft Cloud tenants before touching the installer. | Day-1 setup. |
 | **🟩 B — Mandatory install** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
-| **🟨 C — Optional** | Things you can skip for a basic install (PSTN, evaluator HTML, conversational smoke, tear-down). | Demos & audits. |
-| **🟪 D — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
-| **🟧 E — Post-install checklist** | What the installer covers vs. what stays manual on a real MCAPS sandbox tenant — gaps, licences to obtain, follow-up actions. | After a green install run. |
+| **🟨 C — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
+| **🟪 D — Post-install checklist** | What the installer covers vs. what stays manual on a real MCAPS sandbox tenant — gaps, licences to obtain, follow-up actions. | After a green install run. |
 
 ---
 
@@ -800,80 +799,18 @@ End-to-end verification:
    ```
    Expect a single HTTP 200 with a `traceparent` linking back to the ACS call leg.
 
-✅ **Section B done — the platform is fully running, including the voice channel.** Move to section C if you need optional features, otherwise jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios.
+✅ **Section B done — the platform is fully running, including the voice channel.** Jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios, or to section C if you need to troubleshoot or re-run a phase.
 
 </details>
 
 </details>
 
 ---
+<details>
+<summary><h2>🟨 C — RE-RUN / TROUBLESHOOTING</h2></summary>
 
 <details>
-<summary><h2>🟨 C — OPTIONAL (only if you need them)</h2></summary>
-
-<details>
-<summary><b>C1. Bind a real PSTN number</b></summary>
-
-Required only for the live voice demo in [`recipe.md`](../biz/recipe.md) Scenario 2. After acquiring a Nordic toll-free or local number through ACS:
-
-```powershell
-pwsh apps/voice/scripts/Bind-AcsNumber.ps1 -Country dk -Env dev `
-  -PhoneNumber +45XXXXXXXX -AcsResourceName udcsp-dk-acs `
-  -ResourceGroup udcsp-dk-voice -OrchestratorFqdn voice-dk.udcsp.dk `
-  -NumberType tollFree
-```
-
-The script overwrites the matching `placeholder: true` entry in `apps/voice/acs/phone-number-bindings.yaml` in-place, so the next `Install-Voice` run re-binds without operator action.
-
-</details>
-
-<details>
-<summary><b>C2. Generate the evaluator HTML report</b></summary>
-
-```powershell
-pwsh ./scripts/install/Install-UDCSP.ps1 -Phase QA -SmokeOnly -EvaluatorMode
-```
-
-`-EvaluatorMode` writes `scripts/install/reports/<runStamp>/install-report.html` (single artefact for the case-study evaluator) in addition to the JSON report. The smoke kicks off:
-
-1. `tests/e2e/tests/scenario-09-devops-installer.spec.ts` — installer reproducibility check.
-2. `tests/eval/pipelines/nightly-classifier.yaml` — reduced sample.
-3. `tests/accessibility/automated/axe-runner.spec.ts` — homepage axe scan.
-4. `tests/load/k6/citizen-application-submit.k6.js` — short ramp.
-
-</details>
-
-<details>
-<summary><b>C3. Conversational data smoke checks</b></summary>
-
-- **SMS** — send a test SMS; verify it lands in the `sms_activity` Dataverse table and in the `acs-events/` ADLS container.
-- **Voice** — make a test voice call; verify the `.wav` lands in `voice-recordings/` ADLS, the STT transcript is stored alongside it, and the dialog turn is emitted by the Foundry `topic-router` into App Insights traces.
-- **Email** — send a test email with attachment; verify the body is in the `email_activity` Dataverse table and the attachment is in `email-attachments/` ADLS.
-- **Foundry trace** — trigger a Foundry agent invocation; verify the trace is in App Insights and mirrored to OneLake Bronze.
-- **Right-to-erasure** — `POST /privacy/erase/{test_citizen_id}`; verify deletion cascades across all 5 zones within 30 minutes in test mode.
-
-</details>
-
-<details>
-<summary><b>C4. Tear-down</b></summary>
-
-```powershell
-pwsh ./scripts/cleanup/Remove-UDCSP.ps1 -Environment dev -Confirm
-```
-
-Removes every resource group tagged `costCenter=UDCSP` across all configured subscriptions, unregisters Purview sources tagged for the environment, and disables (does **not** delete) the Microsoft Entra app registrations tagged `udcsp-env-<env>`. External ID tenants are intentionally not deleted automatically — delete them manually from the Entra admin centre when no longer needed. Refuses to run against `prod` unless `-Force` is supplied.
-
-</details>
-
-</details>
-
----
-
-<details>
-<summary><h2>🟪 D — RE-RUN / TROUBLESHOOTING</h2></summary>
-
-<details>
-<summary><b>D1. Re-run a single phase (after a code change)</b></summary>
+<summary><b>C1. Re-run a single phase (after a code change)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Foundry,D365,Apps -Environment dev
@@ -884,7 +821,7 @@ Each phase is idempotent — safe to re-run.
 </details>
 
 <details>
-<summary><b>D2. Re-run an offline self-test for one phase</b></summary>
+<summary><b>C2. Re-run an offline self-test for one phase</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Phase Foundry
@@ -893,7 +830,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -TestOnly -Phase Foundry
 </details>
 
 <details>
-<summary><b>D3. Run only the Voice orchestrator (after voice code change)</b></summary>
+<summary><b>C3. Run only the Voice orchestrator (after voice code change)</b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev `
@@ -905,7 +842,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase Voice -Environment dev `
 </details>
 
 <details>
-<summary><b>D4. <code>-Environment prod</code> requires <code>-Force</code></b></summary>
+<summary><b>C4. <code>-Environment prod</code> requires <code>-Force</code></b></summary>
 
 ```powershell
 pwsh ./scripts/install/Install-UDCSP.ps1 -Environment prod -Force
@@ -916,7 +853,7 @@ Without `-Force`, a `prod` invocation prints a warning and exits without making 
 </details>
 
 <details>
-<summary><b>D5. Common errors</b></summary>
+<summary><b>C5. Common errors</b></summary>
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
@@ -933,7 +870,7 @@ Without `-Force`, a `prod` invocation prints a warning and exits without making 
 </details>
 
 <details>
-<summary><b>D6. Reading the install reports</b></summary>
+<summary><b>C6. Reading the install reports</b></summary>
 
 Every run produces:
 
@@ -954,13 +891,13 @@ Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|
 ---
 
 <details>
-<summary><h2>🟧 E — POST-INSTALL CHECKLIST (what's done, what's still manual)</h2></summary>
+<summary><h2>🟪 D — POST-INSTALL CHECKLIST (what's done, what's still manual)</h2></summary>
 
 > Read this **after** your first successful end-to-end install run on a sandbox tenant. The installer is honest: when an Azure resource type, M365 SKU or first-party app is **not procurable via API**, the corresponding phase logs `[skip]` and the orchestrator marks the phase ✅ on the basis of the validation script (which only checks that source artefacts exist, not that Azure/M365 actually accepted them). This section lists the gaps and how to close them.
 
 ---
 
-### E1 — Lessons learned from real runs (May 2026 sandbox campaign)
+### D1 — Lessons learned from real runs (May 2026 sandbox campaign)
 
 These are the issues we hit on a fresh `MngEnvMCAP294737.onmicrosoft.com` MCAPS sandbox and the fixes now baked into the installer. **You should not have to redo these** — they are documented so you understand the `[skip]` lines you will see in the logs.
 
@@ -977,7 +914,7 @@ These are the issues we hit on a fresh `MngEnvMCAP294737.onmicrosoft.com` MCAPS 
 
 ---
 
-### E2 — Status matrix: what you have vs. what's still manual
+### D2 — Status matrix: what you have vs. what's still manual
 
 After a green run on a clean MCAPS sandbox using the `dev` config, the table below is what a reviewer should expect.
 
@@ -998,7 +935,7 @@ After a green run on a clean MCAPS sandbox using the `dev` config, the table bel
 | `Purview` (account) | Tenant-level Purview Enterprise account | ❌ if a tenant-level Purview already exists (1-per-tenant limit) → installer reuses it | If no Purview exists, installer creates it. Otherwise edit `scripts/install/config/udcsp.config.psd1` `PurviewAccount = @{ ... }` to point to the existing one |
 | `Purview` (sources) | Register Dataverse + Storage + Postgres + Fabric as scan sources | ⚠️ | Source registration requires Purview Data Curator role on the SP — assign it manually (`az purview account add-root-collection-admin` or via portal) |
 | `SyntheticData` | Faker pipelines + scrubbed datasets uploaded to Storage | ✅ | — |
-| `Voice` | ACS Call Automation + gpt-realtime tool wiring | ✅ | PSTN inbound number purchase is **manual** (see C1) |
+| `Voice` | ACS Call Automation + gpt-realtime tool wiring | ✅ | PSTN inbound number purchase is **manual** (see B6.1 — Bind a phone number) |
 | `Ciem` | Microsoft Entra Permissions Management onboarding | ⚠️ | Permissions Management standalone licence required **per tenant** (CSP order on real tenants; trial on sandbox may not exist) |
 
 #### Microsoft 365 / Power Platform / Dynamics 365
@@ -1030,7 +967,7 @@ After a green run on a clean MCAPS sandbox using the `dev` config, the table bel
 
 ---
 
-### E3 — How to close the licence gaps (sandbox tenant)
+### D3 — How to close the licence gaps (sandbox tenant)
 
 #### Microsoft 365 E5 (unlocks Priva + Information Protection + Defender for Cloud Apps)
 
@@ -1066,7 +1003,7 @@ Set-MgUserLicense -UserId $upn -AddLicenses @(@{SkuId=$sku.SkuId}) -RemoveLicens
 
 ---
 
-### E4 — Verification commands
+### D4 — Verification commands
 
 After closing licence gaps + re-running the installer, verify each layer:
 
@@ -1100,16 +1037,16 @@ Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|
 
 ---
 
-### E5 — Definition of Done for a clean install
+### D5 — Definition of Done for a clean install
 
 A reviewer should consider the installation **complete on a sandbox** when:
 
 - [ ] All phases in `install-report.json` show `status:OK`
-- [ ] Section E2 status matrix has been walked through and each ❌/🟡 either closed or **explicitly waived** with a note in `install-report.json`
+- [ ] Section D2 status matrix has been walked through and each ❌/🟡 either closed or **explicitly waived** with a note in `install-report.json`
 - [ ] At least one E5 trial or equivalent licence has been requested (so Priva / IP / DLP are not silently skipped)
 - [ ] Customer Service first-party app installed in **at least one** Dataverse env (DK recommended, the demo env)
 - [ ] Web SWA URL serves the citizen portal (CSP / HSTS headers present)
-- [ ] One end-to-end smoke (`-Phase QA -SmokeOnly`) passes — see C2
+- [ ] One end-to-end smoke (`-Phase QA -SmokeOnly`) passes
 
 For **production** tenants, additionally:
 
@@ -1425,7 +1362,7 @@ Invoke-RestMethod -Uri "https://udcsp-<c>-prod-apim.azure-api.net/documents/uplo
 
 ### Step 9 — GDPR Article 17 erasure endpoint (D6)
 
-The Consent & privacy page exposes a "Delete my data" button. It POSTs to APIM `POST /gdpr/erasure-request` which returns a Priva-style certificate with a 30-day SLA. Today the operation is a deterministic stub (no real Priva connector); it will be migrated to the real Priva DSR API once the Microsoft 365 E5 licence is provisioned (see § E3).
+The Consent & privacy page exposes a "Delete my data" button. It POSTs to APIM `POST /gdpr/erasure-request` which returns a Priva-style certificate with a 30-day SLA. Today the operation is a deterministic stub (no real Priva connector); it will be migrated to the real Priva DSR API once the Microsoft 365 E5 licence is provisioned (see § D3).
 
 ```powershell
 # A. Apply the operation policy in DK / SE / NO
