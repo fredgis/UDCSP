@@ -401,14 +401,8 @@ az cognitiveservices usage list --location norwayeast -o table | findstr -i real
 If the Container Apps env or UAMI are missing, you can either run the upstream phases via the installer (idempotent — re-applies LandingZone + Identity for every country) **or**, if you want to scope the change to NO only and avoid touching other countries:
 
 ```powershell
-# Step 1 — find the NO Log Analytics workspace (copy <law-name> + <law-rg> from the output)
-az monitor log-analytics workspace list -o table | findstr udcsp-no
-```
-
-```powershell
-# Step 2 — paste the values, then create RG + UAMI + ACA env
-$LAW_RG   = '<paste rg here>'
-$LAW_NAME = '<paste workspace name here>'
+$LAW_RG   = 'udcsp-no-observability-rg'
+$LAW_NAME = 'udcsp-no-prod-law'
 $LAWCustomerId = az monitor log-analytics workspace show -g $LAW_RG -n $LAW_NAME --query customerId -o tsv
 $LAWKey        = az monitor log-analytics workspace get-shared-keys -g $LAW_RG -n $LAW_NAME --query primarySharedKey -o tsv
 
@@ -418,6 +412,8 @@ az group create -n $RG -l $LOC -o none
 az identity create -g $RG -n udcsp-no-voice-orch-uami -l $LOC -o none
 az containerapp env create -g $RG -n udcsp-no-voice-env -l $LOC --logs-workspace-id $LAWCustomerId --logs-workspace-key $LAWKey -o none
 ```
+
+> The Log Analytics workspace name (`udcsp-no-prod-law` in `udcsp-no-observability-rg`) and the voice RG / UAMI / ACA-env names follow the canonical pattern emitted by `Install-UDCSP.ps1 -Phase Observability,LandingZone,Identity`, so they're the same on every clean install. If you bootstrapped with custom names, run `az monitor log-analytics workspace list -o table | findstr udcsp-no` and substitute.
 
 > 💡 **gpt-realtime: fallback to `swedencentral`.** Norway East doesn't ship `gpt-realtime` yet (region-limited preview). Swedencentral is the only Nordic region with quota — keep `Voice.no.azureOpenAiEndpoint = 'https://udcspai.openai.azure.com/'` (the default). ACS audio remains pinned to Norway East, so media sovereignty is preserved; only the LLM inference crosses to SE.
 
