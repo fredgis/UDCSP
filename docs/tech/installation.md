@@ -383,7 +383,9 @@ This runs **23 of the 25 phases** sequentially in dependency order, idempotent, 
 <details>
 <summary><b>B4. Harvest Voice outputs from B3</b></summary>
 
-Once B3 has run, all the Voice prerequisites are in place (ACR, Container Apps env, UAMI, Key Vault, APIM, Foundry, App Insights). This step **collects the IDs / URIs / connection strings** that the Voice phase needs in `Voice.<country>`. Do it once per country you want to enable voice on (NO for Demo 2 voice; DK alone is enough for the rest of the case-study demo).
+Once B3 has run, all the Voice prerequisites are in place (ACR, Container Apps env, UAMI, Key Vault, APIM, Foundry, App Insights). This step **collects the IDs / URIs / connection strings** that the Voice phase needs in `Voice.<country>`. Do it once per country you want to enable voice on.
+
+> 💡 **For Demo 2 (Lars · NB · Norway), `Voice.no` is enough.** The whole scenario lives in NO (Skatteetaten, Norwegian Bokmål, Norway East sovereignty). All commands in B4 → B7 below already target NO only (`udcspnoprodacr`, `udcsp-no-acs`, `udcsp-no-voice`, `norwayeast`); leave the `Voice.dk` / `Voice.se` blocks empty in `udcsp.config.psd1` and the `Install-UDCSP.ps1 -Phase Voice` loop skips them automatically. Re-apply the same B4 → B7 sequence later if you need DK or SE voice too — nothing changes beyond the country prefix.
 
 ### B4.0 — Pre-flight checks
 
