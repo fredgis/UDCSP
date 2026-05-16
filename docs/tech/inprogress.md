@@ -233,6 +233,92 @@ The same flow works with NVDA, JAWS or VoiceOver — only the modifier key diffe
 </details>
 
 <details>
+<summary><h2 id="demo-9-cio">Demo 9 (CIO outcomes dashboard) — feasibility check</h2></summary>
+
+> Source narrative: [`docs/biz/uses.md` § Demo 9](../biz/uses.md). Architecture target: end-to-end visibility on platform health + AI-decision audit + per-country, per-language CSAT + 47-portal sunset progress. Self-rating today: **~30 % shipped, ~70 % achievable from existing assets without new code**.
+
+### What's already in place
+
+| Asset | Status | Where |
+|---|:-:|---|
+| Application Insights (per country) | 🟢 | `udcsp-{dk,se,no}-prod-shared-appi` — already ingesting all the events the demo needs (citizen apply, eligibility verdict, MyCases GET, voice tool_call, transcript, topic_router request/response, traceparent E2E) |
+| Log Analytics workspaces (obs + sentinel × 3 countries) | 🟢 | `udcsp-{dk,se,no}-prod-{law,sentinel-law}` provisioned |
+| Workbook JSON templates | 🟡 | `infra/observability/workbooks/{ai-decision-traces,citizen-journey-funnel,platform-health}.json` — **authored but not imported** into the live App Insights instances |
+| Alert rule templates | 🟡 | 6 alerts under `infra/observability/alerts/` (`apim-5xx-spike`, `d365-sla-breach-risk`, `external-id-error-rate`, `fabric-pipeline-failure`, `foundry-eval-degradation`, `logicapp-run-failure`) — **JSON ready, not deployed** |
+| Data Collection Rules | 🟡 | DCRs for AKS / Functions / VM in `infra/observability/dcr/` — not yet bound to live resources |
+| Correlation ID strategy | 🟢 | W3C `traceparent` propagated end-to-end (proven by voice dial test) |
+| Fabric capacity | 🟡 | 12 capacities exist on the tenant (`fgisweden F64` is sovereign EU); **no UDCSP workspace bound yet** |
+| Power BI Premium / Fabric workspace for UDCSP | 🔴 | Not provisioned. Need a workspace, a semantic model, and a report file |
+| Dataverse `udcsp_application` table | 🟡 | LA currently writes to the system `task` entity; canonical table designed but not authored in maker UI |
+| CSAT capture | 🔴 | No post-interaction survey yet — neither in SPA nor in voice flow |
+| Sunset roadmap data | 🔴 | No data source for "47 portals decommissioned over time"; would need a static lookup + manual checkpoint table |
+
+### What's *demoable today* with zero new code (15 min of click-ops)
+
+The fastest jury-grade artefact is to **import the 3 existing workbooks into the live App Insights** so the operator can click Azure Portal → App Insights → Workbooks and demo each tab on real data already flowing :
+
+```powershell
+# Per country, deploy the 3 workbook templates against the live AI instance.
+$apps = @(
+  @{rg='udcsp-dk-observability-rg'; name='udcsp-dk-prod-shared-appi'},
+  @{rg='udcsp-se-observability-rg'; name='udcsp-se-prod-shared-appi'},
+  @{rg='udcsp-no-observability-rg'; name='udcsp-no-prod-shared-appi'}
+)
+foreach ($a in $apps) {
+  $aiId = az monitor app-insights component show -g $a.rg -a $a.name --query id -o tsv
+  foreach ($wb in 'ai-decision-traces','citizen-journey-funnel','platform-health') {
+    az monitor app-insights workbook create `
+      --resource-group $a.rg `
+      --name $wb-$($a.name) `
+      --display-name $wb `
+      --serialized-data @"infra/observability/workbooks/$wb.json" `
+      --source-id $aiId `
+      --category workbook
+  }
+}
+```
+
+Each workbook already contains the right KQL — `requests | summarize` over `customDimensions["x-channel-actor"]`, `customMetrics["voice.turnLatencyMs"]`, `customDimensions["intent"]`, etc. They will light up against the data the dial tests and citizen flows are emitting tonight.
+
+### What would make this an end-to-end CIO dashboard (~1 day of work)
+
+If you want a *real Power BI report* instead of an App Insights Workbook (which the rubric will reward as "Implementation completeness" 5/5), this is the minimum viable path:
+
+1. **Bind a Fabric workspace to UDCSP**. Use the existing `fgisweden` F64 capacity (EU sovereign) — create a workspace `UDCSP-Platform-Reporting` and assign it.
+2. **Author a semantic model** from two sources:
+   - Direct query into the 3 App Insights via Azure Monitor connector (or Log Analytics direct query) — pulls `requests`, `customEvents`, `customMetrics`
+   - Direct query into Dataverse `task` (case status, country, channel, intent)
+3. **Define 5 measures** that map directly to the CIO narrative :
+   - `Cases submitted (last 30 d)` — count of `apply.submit` events
+   - `AI-decided %` — share where `eligibilityPreflight.decision == 'likely-eligible'` AND no caseworker override
+   - `Median lead time` — `dateDiff(applied, decided)` across closed cases
+   - `Voice share` — `customDimensions["x-channel-actor"] == "voice"` over total interactions
+   - `Per-language activity` — group by `customDimensions["locale"]`, count
+4. **3-page Power BI report** (`apps/reporting/cio-dashboard.pbix`) :
+   - Page 1 — Platform health (uptime per country, alert count, 5xx rate, voice p95 latency)
+   - Page 2 — Citizen outcomes (cases trend, AI-decided %, median lead time, channel mix)
+   - Page 3 — AI Act audit (top intents, escalation reasons, content safety blocks)
+5. **Publish to the workspace** + take a shareable view-link for the demo.
+
+### Optional v2 (not needed for the rubric, but nice for the story)
+
+- **OneLake medallion ingestion** — wire a Fabric pipeline that reads App Insights + Dataverse into Bronze → Silver → Gold lakehouse, then Power BI on Gold. Demonstrates Fabric end-to-end and survives App Insights' 30-day retention cap.
+- **Sunset progress table** — add a static `governance/portal-sunset/decommissioned-portals.csv` (date, country, portal name, replaced-by) and a 4th Power BI page that shows cumulative-over-time of decommissioned portals against the 47 baseline.
+- **CSAT capture** — for voice : post-call IVR "Press 1 if helpful". For web : a one-question NPS on the case-detail page when `status: closed`. Both write into Dataverse `udcsp_csat_response` (new table). Power BI page 2 gains a "Citizen-rated CSAT" tile.
+- **Alert rules deployment** — `az monitor scheduled-query create --rule-file infra/observability/alerts/*.json` to wire the 6 prebuilt alerts into the live LAW. Buy Action Groups for Teams / SMS escalation.
+
+### Recommended minimal scope for tonight's demo
+
+If you want the row to go **🟡 → 🟢** without a Power BI build :
+
+1. Import the 3 Workbooks per country (15 min, command block above).
+2. Take a screenshot of each — they will already have real data because the citizen rail and voice dial tests have been generating telemetry all evening.
+3. Demo path : Azure Portal → App Insights `udcsp-no-prod-shared-appi` → Workbooks → `platform-health` → walk through the 4-5 charts pre-built.
+4. Mention "the Power BI report on Fabric is the v2 — same KQL underneath, same numbers, just packaged as a Premium-capacity-published report for executive consumption". This is true and defensible.
+
+</details>
+
+<details>
 <summary><h2 id="reference">📂 Reference &amp; operational notes</h2></summary>
 
 ### 🤖 Foundry agents (DK/SE/NO — same project, new Agents v1 API)
