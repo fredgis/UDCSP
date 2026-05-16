@@ -484,6 +484,16 @@ az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value
 > $kvId  = az keyvault show --name udcsp-no-prod-kv --query id -o tsv
 > az role assignment create --assignee-object-id $myOid --assignee-principal-type User --role "Key Vault Secrets Officer" --scope $kvId
 > ```
+>
+> If you then hit `(Forbidden) Public network access is disabled ... ForbiddenByConnection`, the vault is locked to private endpoints. Toggle public access for the setup window (same pattern as the ACR fix in B4.1):
+>
+> ```powershell
+> az keyvault update --name udcsp-no-prod-kv --public-network-access Enabled
+> # run all your `az keyvault secret set` commands now (B4.2 + B4.4)
+> az keyvault update --name udcsp-no-prod-kv --public-network-access Disabled
+> ```
+>
+> The Container App pulls the secret via the KV private endpoint at runtime, so leaving public access `Disabled` after the setup is fine.
 
 ### B4.3 — Harvest every other Resource ID / URI
 
