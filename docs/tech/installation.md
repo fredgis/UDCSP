@@ -425,12 +425,16 @@ pwsh ./scripts/install/Install-UDCSP.ps1 -Phase LandingZone,Identity -Environmen
 
 ### B4.1 — Build + push the orchestrator image to ACR
 
-The Voice Bicep needs a real image to deploy. Build once, push to the country ACR. Re-do this whenever you change anything under `apps/voice/call-automation/`.
+The Voice Bicep needs a real image to deploy. Build once, push to the country ACR. Re-do this whenever you change anything under `apps/voice/call-automation/` **or** under the sibling asset folders `apps/voice/recording-consent/`, `apps/voice/ivr/`, `apps/voice/escalation/` (the Dockerfile bundles them so the runtime can `readFileSync` the IVR YAMLs and the recording disclosure script).
 
 ```powershell
-cd apps/voice/call-automation
-az acr build --registry udcspnoprodacr --image udcsp/voice-orchestrator:1.0.0 .
-cd ../../..
+# Build context = repo root (the Dockerfile sits in apps/voice/call-automation/
+# but the asset folders it COPYs live two levels up, so we need the larger
+# context).
+az acr build --registry udcspnoprodacr `
+    --image udcsp/voice-orchestrator:1.0.0 `
+    --file apps/voice/call-automation/Dockerfile `
+    .
 ```
 
 > If `az acr build` fails with `denied: client with IP ... is not allowed access`, the ACR firewall is blocking even its own build agents. Two cases:
@@ -452,11 +456,9 @@ cd ../../..
 > `az acr build` runs `docker build` + `docker push` on the ACR cloud agents — no local Docker daemon required. If you prefer a local build (faster on subsequent builds because of layer caching, but needs Docker Desktop running):
 >
 > ```powershell
-> cd apps/voice/call-automation
-> docker build -t udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0 .
+> docker build -f apps/voice/call-automation/Dockerfile -t udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0 .
 > az acr login --name udcspnoprodacr
 > docker push udcspnoprodacr.azurecr.io/udcsp/voice-orchestrator:1.0.0
-> cd ../../..
 > ```
 
 ### B4.2 — Provision the voice App Registration + KV client secret
