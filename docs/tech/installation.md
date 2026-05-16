@@ -471,8 +471,8 @@ $secret = az ad app credential reset --id $appId --append --query password -o ts
 "voiceClientId    : $appId"
 "voiceClientSecret: $secret"
 
-# (b) Stash the secret in the country Key Vault
-$kvName = az keyvault list -o tsv --query "[?contains(name,'udcsp-no')].name" | Select-Object -First 1
+# (b) Stash the secret in the country Key Vault (canonical name from LandingZone)
+$kvName = 'udcsp-no-prod-kv'
 az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value $secret --query id -o tsv
 # Save the returned URI — that's the value for `voiceClientSecretUri`.
 ```
