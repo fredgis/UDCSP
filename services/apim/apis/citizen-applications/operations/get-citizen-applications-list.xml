@@ -49,6 +49,9 @@
       <when condition="@(string.IsNullOrEmpty((string)context.Variables["citizenUpn"]))">
         <return-response>
           <set-status code="401" reason="Unauthorized" />
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
+      <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
           <set-body>{"error":"missing_citizen_claim","message":"JWT must carry preferred_username / email / emails / upn for case lookup."}</set-body>
         </return-response>
@@ -75,6 +78,9 @@
     </send-request>
     <return-response>
       <set-status code="200" reason="OK" />
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
+      <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
       <set-header name="x-citizen-upn" exists-action="override"><value>@((string)context.Variables["citizenUpn"])</value></set-header>
       <set-header name="x-dv-status" exists-action="override"><value>@(((IResponse)context.Variables["dvResp"]).StatusCode.ToString())</value></set-header>
@@ -132,6 +138,9 @@
     <set-header name="x-correlation-id" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header>
     <return-response>
       <set-status code="500" reason="Internal Server Error" />
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
+      <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
       <set-body>@{
           return new JObject {

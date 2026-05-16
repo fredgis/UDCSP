@@ -5,6 +5,9 @@
     <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
     <return-response>
       <set-status code="202" reason="Accepted" />
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
+      <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="content-type" exists-action="override">
         <value>application/json</value>
       </set-header>
