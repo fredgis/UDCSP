@@ -23,6 +23,13 @@
 
 ## ✨ The Story in One Page
 
+<table>
+  <tr>
+    <td width="50%"><img src="./images/screen1.png" alt="UDCSP citizen portal homepage — multilingual unified front door" /></td>
+    <td width="50%"><img src="./images/screen2.png" alt="UDCSP case dashboard — eligibility verdict, workflow timeline, evidence pack" /></td>
+  </tr>
+</table>
+
 Three Nordic governments collectively serve **2.1 million citizens** through **47 disconnected legacy portals**. A citizen who moves from Copenhagen to Stockholm has to re-submit identity documents, wait **28 days** for a residency decision, navigate a portal that may not speak their language, and which may not be accessible to them at all.
 
 UDCSP is a **unified citizen platform** that:
@@ -36,8 +43,6 @@ UDCSP is a **unified citizen platform** that:
 
 > [!IMPORTANT]
 > **Target outcomes:** applications processed in **4 days instead of 28**, **+38 % citizen satisfaction**, **WCAG 2.1 AA** accessibility, and **2.1 M citizens** served via a single federated front door — without compromising national data sovereignty.
-
-> ℹ️ **Live deployment vs roadmap.** This README describes the **target platform**. Today the live citizen portal runs on `udcsp.fredgis.com` with Demo 3 (Maria · PL screen reader) end-to-end and the Demo 1 citizen-side single rail (sign-in, /apply, eligibility, My Cases, Remove cascade). **Demo 2 voice runs in no-handoff mode** (citizen↔AI loop, verbal callback closure) because per-country **D365 Customer Service** is not yet installed. **Verified ID, cross-border eIDAS fan-out, PSTN numbers (Nkom/PTS/ERST)** are still roadmap. For the canonical live-vs-roadmap split see [`docs/tech/inprogress.md`](./docs/tech/inprogress.md).
 
 ---
 
