@@ -65,7 +65,9 @@ function loadDialog(locale: Locale, id: string): IvrDialog {
 }
 
 export function loadIvrPack(country: Country): IvrPack {
-  const locale = COUNTRY_LOCALES[country];
+  const override = process.env.UDCSP_LOCALE_OVERRIDE?.toLowerCase() as Locale | undefined;
+  const allowed: Locale[] = ['da', 'sv', 'nb', 'en', 'de', 'ar'];
+  const locale: Locale = override && allowed.includes(override) ? override : COUNTRY_LOCALES[country];
   const disclosure = loadDisclosureScripts();
   return {
     locale,
