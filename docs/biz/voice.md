@@ -34,6 +34,7 @@
 1. [Why a voice channel at all](#1-why-a-voice-channel-at-all)
 2. [The mental model in one picture](#2-the-mental-model-in-one-picture)
 3. [The call lifecycle, step by step](#3-the-call-lifecycle-step-by-step)
+   - [3.1 The same flow as a runtime topology (operator view)](#31-the-same-flow-as-a-runtime-topology-operator-view)
 4. [The six building blocks](#4-the-six-building-blocks)
 5. [Multilingual — 12 languages × neural voices](#5-multilingual--12-languages--neural-voices)
 6. [Accessibility — DTMF, slow-speech, recording disclosure](#6-accessibility--dtmf-slow-speech-recording-disclosure)
@@ -139,6 +140,78 @@ sequenceDiagram
 | Foundry citizen-assistant | ~600 ms | Streaming responses, partial TTS playback |
 | TTS streaming | ~200 ms / phrase | Streaming TTS (no buffer-then-play) |
 | ACS → citizen | ~150 ms | Same-country edge |
+
+### 3.1 The same flow as a runtime topology (operator view)
+
+The sequence diagram above shows *who talks to whom*. The ASCII below shows *which resource hosts which step* — useful when you're debugging from logs or planning a multi-region failover and want to see the actual Azure resources on each hop.
+
+```text
+Caller (+33 mobile)
+  │
+  │ 1. PSTN / SIP
+  ▼
+Global telco operator
+  │
+  │ 2. ACS PSTN voice plane (data-location = Norway)
+  ▼
+udcsp-no-acs                      ← Azure Communication Services, Norway
+  │
+  │ 3. Microsoft.Communication.IncomingCall event
+  ▼
+Event Grid system topic           ← sub: udcsp-no-acs-incoming-call
+  │
+  │ 4. HTTPS POST application/json
+  ▼
+https://udcsp-no-dev-voice-orch.<env>.norwayeast.azurecontainerapps.io
+       /api/acs/eventgrid
+  │
+  │ 5. CallHandler.handleEventGrid → answerIncomingCall
+  ▼
+ACS Call Automation answer() ─────┐
+                                   │ 6. Bidirectional WebSocket
+                                   │    (audio in PCM 16 kHz)
+                                   ▼
+                          Voice orchestrator
+                          Container App, NO, UAMI-bound
+                                   │
+              ┌────────────────────┼────────────────────┐
+              │                    │                    │
+   7. TTS disclosure       8. Realtime              9. Tool calls
+   "Cette conversation     model session            (function calling)
+   est enregistrée…"       gpt-realtime-no                │
+   (lu depuis              sur udcspai             → topic-router via APIM
+   recording-disclosure.md)(Sweden Central)               │
+                                   │             udcsp-no-prod-apim
+                                   │             /agent-topic-router/messages
+                                   │             (header x-channel-actor=voice)
+                                   │                      │
+                                   │                      ▼
+                                   │              Foundry agent
+                                   │              udcsp-citizen-assistant
+                                   │              → texte de réponse
+                                   │                      │
+                                   │   ◄──────────────────┘
+                                   ▼
+                          STT → LLM → TTS
+                          audio out (PCM)
+              ▲
+              │ retour via WebSocket
+              │
+       ACS Call Automation
+              │
+       Retour audio dans la ligne PSTN → oreille du citoyen
+```
+
+**Étapes clés** :
+
+1. L'**opérateur télécom** route l'appel vers la PSTN gateway d'ACS Norvège (le numéro a été *procured* chez ACS, donc routing direct sans détour SIP externe).
+2. **ACS émet un `IncomingCall`** — JSON avec `callerId`, `to`, `correlationId`, `serverCallId` et `incomingCallContext` (le token qu'il faudra renvoyer pour décrocher).
+3. **Event Grid system topic** (sub `udcsp-no-acs-incoming-call`) filtre `Microsoft.Communication.IncomingCall` et POST l'événement sur l'orchestrator.
+4. L'**orchestrator** (`call-handler.ts`) charge le pack IVR de la locale (NB pour NO → `apps/voice/ivr/nb/*.yaml`) et le script de disclosure (`apps/voice/recording-consent/recording-disclosure.md`), puis appelle `ACS.answer()` avec l'`incomingCallContext`.
+5. La **WebSocket Realtime** s'ouvre — l'orchestrator négocie une session `gpt-realtime` sur `udcspai` (Sweden Central, seule région Nordic avec quota realtime). Audio bidirectionnel en PCM low-latency.
+6. Le **LLM realtime** lit d'abord le disclosure (TTS direct dans le pipeline), puis "How can I help?", puis écoute le citoyen.
+7. **Tool calls** — si le citoyen demande une action métier (statut d'un dossier, classification d'un cas…), le model appelle `topic_router` via function calling → POST APIM `/agent-topic-router/messages` avec `channel: "voice"` → réponse Foundry → speakée en retour via le pipeline TTS du Realtime.
+8. **Souveraineté** — audio + recordings ACS restent à `dataLocation=Norway`, le modèle realtime tourne à Sweden Central (bloc Nordic, EU). Pas d'audio sortant de la zone Nordic. Le `traceparent` généré au moment du POST EventGrid est propagé jusqu'à App Insights, ce qui permet la corrélation KQL bout-en-bout.
 
 ---
 
