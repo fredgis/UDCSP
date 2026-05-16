@@ -1,0 +1,48 @@
+<policies>
+  <inbound>
+    <cors allow-credentials="true">
+      <allowed-origins>
+        <origin>https://udcsp.fredgis.com</origin>
+        <origin>https://icy-dune-01c23d903.7.azurestaticapps.net</origin>
+        <origin>http://localhost:3000</origin>
+        <origin>http://localhost:5173</origin>
+      </allowed-origins>
+      <allowed-methods preflight-result-max-age="3600">
+        <method>GET</method>
+        <method>POST</method>
+        <method>PUT</method>
+        <method>DELETE</method>
+        <method>OPTIONS</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>*</header>
+      </allowed-headers>
+      <expose-headers>
+        <header>x-correlation-id</header>
+      </expose-headers>
+    </cors>
+  </inbound>
+  <backend></backend>
+  <outbound></outbound>
+  <!-- Safety net: when an op-level <return-response> in on-error replaces the
+       response (e.g. validate-jwt failures wrapped to 500), the global <cors>
+       policy does NOT add ACAO headers to that synthetic response. Without
+       them, browsers refuse to expose the body to the SPA and report
+       "Failed to fetch" even for valid 4xx/5xx responses. Echo the request
+       Origin here so error bodies are readable cross-origin. -->
+  <on-error>
+    <choose>
+      <when condition="@(context.Request.Headers.GetValueOrDefault(&quot;Origin&quot;,&quot;&quot;).Length > 0)">
+        <set-header name="Access-Control-Allow-Origin" exists-action="override">
+          <value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value>
+        </set-header>
+        <set-header name="Access-Control-Allow-Credentials" exists-action="override">
+          <value>true</value>
+        </set-header>
+        <set-header name="Vary" exists-action="override">
+          <value>Origin</value>
+        </set-header>
+      </when>
+    </choose>
+  </on-error>
+</policies>

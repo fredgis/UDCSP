@@ -145,6 +145,32 @@ function Install-Apim {
             }
         }
 
+        # Push the global service-level APIM policy (cors + on-error safety net).
+        # Versioned in services/apim/global-policy.xml so re-running the phase
+        # converges back to the right CORS rules and the on-error CORS injection
+        # that keeps the SPA from seeing "Failed to fetch" on synthetic errors.
+        $globalPolicyFile = Join-Path $repo 'services\apim\global-policy.xml'
+        if (Test-Path $globalPolicyFile) {
+            $globalXml = Get-Content $globalPolicyFile -Raw
+            if ($PSCmdlet.ShouldProcess("global policy@$apimName", 'az rest PUT service/policies/policy')) {
+                $gpBody = [ordered]@{
+                    properties = [ordered]@{
+                        format = 'rawxml'
+                        value  = $globalXml
+                    }
+                }
+                $gpFile = Join-Path $ReportDir "apim-global-policy-$($country.ToLower()).json"
+                $gpBody | ConvertTo-Json -Depth 6 | Set-Content $gpFile -Encoding utf8
+                $gpUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/policies/policy?api-version=2022-08-01"
+                $gpSink = Join-Path $ReportDir "apim-global-policy-$($country.ToLower()).resp"
+                Invoke-NativeCommand `
+                    -Command @('az','rest','--method','PUT','--url',$gpUrl,'--body',"@$gpFile",
+                               '--only-show-errors','--output-file',$gpSink) `
+                    -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+            }
+        }
+
+
         $apis = Get-ChildItem (Join-Path $repo 'services\apim\apis') -Directory -ErrorAction SilentlyContinue
         foreach ($a in $apis) {
             $openapi = Join-Path $a.FullName 'openapi.yaml'
@@ -277,6 +303,37 @@ function Install-Apim {
                 Invoke-NativeCommand `
                     -Command @('az','storage','container','create','--subscription',$sub,
                                '--account-name',$lakeName,'-n','citizen-uploads','--auth-mode','login',
+                               '--only-show-errors','--output','none') `
+                    -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+            }
+
+            # Blob CORS — the SPA uploads via APIM MI proxy (so technically does
+            # not need browser CORS), but the citizen ALSO renders previews and
+            # the optional direct-PUT fallback uses browser → blob, which fails
+            # if CORS is empty. The landing-zone Bicep does not manage blob
+            # CORS, so each Install-Apim run reasserts the rules here to keep
+            # the env self-healing after partial re-runs.
+            $corsBody = [ordered]@{
+                properties = [ordered]@{
+                    cors = [ordered]@{
+                        corsRules = @(
+                            [ordered]@{
+                                allowedOrigins  = @('https://udcsp.fredgis.com','https://icy-dune-01c23d903.7.azurestaticapps.net','http://localhost:5173')
+                                allowedMethods  = @('GET','PUT','POST','OPTIONS','DELETE','HEAD')
+                                maxAgeInSeconds = 3600
+                                exposedHeaders  = @('*')
+                                allowedHeaders  = @('*')
+                            }
+                        )
+                    }
+                }
+            }
+            $corsFile = Join-Path $ReportDir "blob-cors-$($country.ToLower()).json"
+            $corsBody | ConvertTo-Json -Depth 8 | Set-Content $corsFile -Encoding utf8
+            $corsUrl = "/subscriptions/$sub/resourceGroups/$lakeRg/providers/Microsoft.Storage/storageAccounts/$lakeName/blobServices/default?api-version=2023-01-01"
+            if ($PSCmdlet.ShouldProcess("$lakeName blob CORS", 'az rest PUT blobServices/default')) {
+                Invoke-NativeCommand `
+                    -Command @('az','rest','--method','PUT','--url',$corsUrl,'--body',"@$corsFile",
                                '--only-show-errors','--output','none') `
                     -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
             }
