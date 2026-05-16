@@ -80,12 +80,15 @@ export class CallHandler {
         contentType: 'audio',
         audioChannelType: 'mixed',
         startMediaStreaming: true,
-        // gpt-realtime 2025-08-28 emits 24 kHz PCM mono by default (the
-        // 'pcm16' output_audio_format in our session.update sets bit-depth,
-        // not sample rate). ACS Call Automation defaults to 16 kHz unless
-        // we explicitly negotiate 24 kHz — without this the audio bytes
-        // were being decoded at the wrong rate and the caller heard nothing.
-        audioFormat: 'pcm24KMono',
+        // enableBidirectional=true is REQUIRED for server→ACS playback; the
+        // default is one-way (ACS→server, for STT only). Without it ACS
+        // accepts our outbound audio frames silently and never plays them.
+        enableBidirectional: true,
+        // gpt-realtime 2025-08-28 emits 24 kHz PCM mono (the 'pcm16' in
+        // session.update is bit-depth only). ACS defaults to 16 kHz; force
+        // 24 kHz here so the rates match. The enum value is PascalCase
+        // 'Pcm24KMono' per @azure/communication-call-automation v1.x.
+        audioFormat: 'Pcm24KMono',
       } as any,
     };
 
