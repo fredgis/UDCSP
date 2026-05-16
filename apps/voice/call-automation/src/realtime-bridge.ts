@@ -164,10 +164,14 @@ export class RealtimeBridge {
     }
     switch (msg.type) {
       case 'response.audio.delta':
+      case 'response.output_audio.delta':
         // GPT Realtime streams base64-encoded PCM audio chunks; relay to ACS.
+        // The legacy gpt-4o-realtime-preview model uses response.audio.delta;
+        // gpt-realtime (2025-08-28+) uses response.output_audio.delta. Handle both.
         this.relayAudioToAcs(msg.delta);
         break;
       case 'response.audio_transcript.done':
+      case 'response.output_audio_transcript.done':
         logEvent('realtime.assistant_transcript', this.ctx, { transcript: msg.transcript });
         break;
       case 'conversation.item.input_audio_transcription.completed':
