@@ -45,6 +45,10 @@ UDCSP is a **unified citizen platform** that:
   <img src="./images/carousel.gif" alt="UDCSP screen carousel — multilingual portal, residency wizard, child-benefit eligibility, voice channel, caseworker workspace" width="900" />
 </p>
 
+<p align="center">
+  <img src="./images/mobile-patchwork.png" alt="UDCSP mobile views — responsive iPhone screenshots of the citizen portal across sign-in, services, apply flows, My Cases and the chat assistant" width="900" />
+</p>
+
 ---
 
 ## 🏛️ Simplified Architecture
