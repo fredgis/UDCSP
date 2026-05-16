@@ -23,6 +23,7 @@ interface CallSession {
   bridge?: RealtimeBridge;
   ivr: IvrPack;
   ctx: LogContext;
+  answeredAt: number;
 }
 
 const sessions = new Map<string, CallSession>();
@@ -106,6 +107,7 @@ export class CallHandler {
         serverCallId,
         ivr,
         ctx: { ...ctx, callConnectionId, locale: COUNTRY_LOCALES[this.cfg.country] },
+        answeredAt: Date.now(),
       };
       sessions.set(callConnectionId, session);
       logEvent('call.answered', session.ctx, { callerId, serverCallId });
@@ -161,16 +163,41 @@ export class CallHandler {
   // Called by index.ts when a new WebSocket connection arrives at /api/acs/media.
   // ACS opens this socket once MediaStreaming is active. ACS does NOT include
   // callConnectionId in the WebSocket URL — instead we match against the most
-  // recently created session that has no bridge yet ('orphan session'). For a
-  // single-call demo this is unambiguous; concurrent calls would need ACS to
-  // tag the URL itself (no public ACS API for that today) or to inspect the
-  // first AudioMetadata frame.
+  // recently created session that has no bridge yet AND was answered within
+  // the last 30 seconds. The freshness window protects against orphans left
+  // over by missed CallDisconnected events (otherwise a new call would inherit
+  // the conversation context of a stale session and skip the disclosure).
   findOrphanSessionId(): string | null {
+    const now = Date.now();
     let candidateId: string | null = null;
+    let candidateAge = Infinity;
     for (const [id, s] of sessions) {
-      if (!s.bridge) candidateId = id;
+      if (s.bridge) continue;
+      const age = now - s.answeredAt;
+      if (age > 30_000) continue;
+      if (age < candidateAge) {
+        candidateAge = age;
+        candidateId = id;
+      }
+    }
+    if (candidateId) {
+      logEvent('media.orphan_matched', { callConnectionId: candidateId }, { ageMs: candidateAge });
     }
     return candidateId;
+  }
+
+  // Periodically purge stale orphan sessions (e.g. missed CallDisconnected).
+  // The handler instantiates this on boot — cheap (one map scan per minute).
+  startOrphanCleanup(): void {
+    setInterval(() => {
+      const now = Date.now();
+      for (const [id, s] of sessions) {
+        if (!s.bridge && now - s.answeredAt > 60_000) {
+          logEvent('session.purged_stale', { callConnectionId: id }, {});
+          sessions.delete(id);
+        }
+      }
+    }, 30_000).unref();
   }
 
   async attachMediaSocket(callConnectionId: string, socket: WebSocket): Promise<void> {
