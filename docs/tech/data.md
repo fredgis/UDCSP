@@ -55,7 +55,7 @@ The case study mandates **GDPR + EU AI Act compliance** for a platform that serv
 | Previously implicit | Now explicit (this document) |
 |---|---|
 | "Conversation transcripts are in App Insights" | § 3 Zone 3 — **explicit pipeline**: Foundry topic-router → App Insights traces + Dataverse `bot_session` mirror → nightly mirror to OneLake bronze (≥ 6 months on hot tier) |
-| "Voice uses GPT-4o Realtime in the live audio path (Azure AI Speech reserved for pre-orchestrator menus + post-call analytics only)" | § 3 Zone 3 — **dedicated ADLS account** `voice-recordings/`, WORM-locked 90 days, lifecycle-purged automatically |
+| "Voice uses gpt-realtime in the live audio path (Azure AI Speech reserved for pre-orchestrator menus + post-call analytics only)" | § 3 Zone 3 — **dedicated ADLS account** `voice-recordings/`, WORM-locked 90 days, lifecycle-purged automatically |
 | "Email is via D365 email-to-case" | § 3 Zone 3 — **separated**: email *body* in Dataverse, **attachments** in dedicated ADLS `email-attachments/` (cost + perf) |
 | "AI remembers the citizen" | § 3 Zone 4 — **dedicated Azure AI Search vector store** for per-citizen long-term conversational memory, ACL'd row-level by `citizen_id`, TTL 12 months rolling |
 | "Logs are kept appropriately" | § 5 — **anchored** on EU AI Act Art. 26(6): "at least six months from the date each log is created" for high-risk AI deployers |

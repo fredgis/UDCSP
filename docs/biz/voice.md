@@ -21,7 +21,7 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services Call Automation** answers → the **voice orchestrator Container App** (`apps/voice/call-automation/`) opens a bidirectional WebSocket to **Azure OpenAI GPT-4o Realtime** for native low-latency STT + reasoning + TTS in one stream → from inside that stream the orchestrator calls **APIM** `/agents/topic-router` as a **function tool** to fan out to the same Foundry agents that power web/mobile → on `escalate=true` the call is **warm-transferred** to a D365 voice workstream queue. **Azure AI Speech is kept only for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11). **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
+> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services Call Automation** answers → the **voice orchestrator Container App** (`apps/voice/call-automation/`) opens a bidirectional WebSocket to **Azure OpenAI gpt-realtime** for native low-latency STT + reasoning + TTS in one stream → from inside that stream the orchestrator calls **APIM** `/agents/topic-router` as a **function tool** to fan out to the same Foundry agents that power web/mobile → on `escalate=true` the call is **warm-transferred** to a D365 voice workstream queue. **Azure AI Speech is kept only for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11). **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
 >
 > | Field | Value |
 > |---|---|
@@ -75,7 +75,7 @@ The design principle, codified in `docs/biz/uses.md` § Demo 2:
 flowchart TB
     PHONE["☎️ Citizen phone"] -->|PSTN| ACS["Azure Communication Services<br/>Call Automation"]
     ACS <-->|bidirectional audio WS| ORCH["Voice orchestrator Container App<br/>apps/voice/call-automation/"]
-    ORCH <-->|GPT-4o Realtime WS<br/>native STT + TTS| GPTRT["Azure OpenAI<br/>gpt-realtime"]
+    ORCH <-->|gpt-realtime WS<br/>native STT + TTS| GPTRT["Azure OpenAI<br/>gpt-realtime"]
     ORCH -->|function tool: lookup_topic_router| APIM["APIM<br/>/agents/topic-router"]
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility · doc-extractor · caseworker-helper"]
@@ -89,7 +89,7 @@ flowchart TB
     class D365,SPEECH v2
 ```
 
-> 📖 **Reading the picture.** Voice keeps ACS for telephony and **GPT-4o Realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **The dashed D365 leg is enabled only in v2** (when Customer Service is provisioned per country); v1 — Demo 2 no-handoff — runs the citizen↔AI loop without warm-transfer (see § 11.4b). **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
+> 📖 **Reading the picture.** Voice keeps ACS for telephony and **gpt-realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **The dashed D365 leg is enabled only in v2** (when Customer Service is provisioned per country); v1 — Demo 2 no-handoff — runs the citizen↔AI loop without warm-transfer (see § 11.4b). **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
 
 ---
 
@@ -101,7 +101,7 @@ sequenceDiagram
     actor C as 📞 Citizen
     participant ACS as 🛰️ ACS (PSTN)
     participant ORCH as 🎚️ Voice orchestrator
-    participant GPTRT as 🧠 GPT-4o Realtime
+    participant GPTRT as 🧠 gpt-realtime
     participant API as 🚪 APIM
     participant R as 🧠 Foundry topic-router
     participant F as 🤖 Foundry agents
@@ -476,7 +476,7 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 ## 11. 🧱 Voice runtime — implemented (Phase A complete)
 
 > [!IMPORTANT]
-> **Status update.** The Phase A bridge between **Dynamics 365 Customer Service voice channel** (telephony / IVR / queue routing / recording) and the **Foundry `topic-router` agent** (the brain) is **implemented in `apps/voice/call-automation/`**. A real human dialling a real PSTN number bound to the country ACS resource will reach a low-latency conversational agent backed by Azure OpenAI **GPT-4o Realtime** (native STT + reasoning + TTS in one stream). The same orchestrator can warm-transfer the call to a D365 voice workstream queue when the citizen asks for a human or the topic-router flips `escalate=true`.
+> **Status update.** The Phase A bridge between **Dynamics 365 Customer Service voice channel** (telephony / IVR / queue routing / recording) and the **Foundry `topic-router` agent** (the brain) is **implemented in `apps/voice/call-automation/`**. A real human dialling a real PSTN number bound to the country ACS resource will reach a low-latency conversational agent backed by Azure OpenAI **gpt-realtime** (native STT + reasoning + TTS in one stream). The same orchestrator can warm-transfer the call to a D365 voice workstream queue when the citizen asks for a human or the topic-router flips `escalate=true`.
 
 ### 11.1 The two layers in the voice story
 
@@ -514,7 +514,7 @@ The earlier audit noted that the Bot Framework SDK is being **deprecated end of 
 
 #### 11.4a A call, end to end, in 5 steps
 
-The orchestrator is **not the AI** — it's a **WebSocket bridge** between three systems that don't natively talk to each other (ACS, GPT-4o Realtime, APIM/Foundry).
+The orchestrator is **not the AI** — it's a **WebSocket bridge** between three systems that don't natively talk to each other (ACS, gpt-realtime, APIM/Foundry).
 
 ```mermaid
 sequenceDiagram
@@ -523,7 +523,7 @@ sequenceDiagram
     participant ACS as 🛰️ ACS Call Automation<br/>(Norway East)
     participant EG as 🔔 Event Grid
     participant ORCH as 🎚️ Voice orchestrator<br/>(Container App)
-    participant GPT as 🧠 GPT-4o Realtime
+    participant GPT as 🧠 gpt-realtime
     participant API as 🚪 APIM<br/>/agents/topic-router
     participant FND as 🤖 Foundry topic-router<br/>+ AI Search FAQ
     participant D365 as 📋 D365 voice queue<br/>(v2 · optional)
@@ -582,7 +582,7 @@ Same flow as the narrative below, hop by hop:
 
 1. **ACS answers the call.** The number `+47 800 …` is bound (via `Bind-AcsNumber.ps1`) to the `udcsp-no-acs` resource pinned to **Norway East** (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
 2. **ACS opens a bidirectional audio WebSocket** to `/api/acs/media?callConnectionId={id}`. PCM 16 kHz frames flow in both directions.
-3. **The orchestrator opens a second WebSocket** to `wss://{aoai}/openai/realtime?deployment=gpt-realtime` (UAMI auth, audience `https://cognitiveservices.azure.com`). It configures server-VAD + barge-in, then proxies base64 PCM frames in both directions. GPT-4o Realtime does **everything in one stream**: Whisper STT, GPT reasoning, neural TTS. **Latency p95 < 2 s** end-to-end.
+3. **The orchestrator opens a second WebSocket** to `wss://{aoai}/openai/realtime?deployment=gpt-realtime` (UAMI auth, audience `https://cognitiveservices.azure.com`). It configures server-VAD + barge-in, then proxies base64 PCM frames in both directions. gpt-realtime does **everything in one stream**: Whisper STT, GPT reasoning, neural TTS. **Latency p95 < 2 s** end-to-end.
 4. **GPT Realtime invokes function tools.** The system prompt declares three tools (see `src/foundry-tool.ts`):
    - `lookup_topic_router(text, locale)` → POSTs to APIM `/agents/topic-router/messages` with `x-channel-actor: voice`. APIM hits the **same Foundry topic-router agent** that powers the web chat (gpt-5.4, prompt + AI Search FAQ index `udcsp-citizens-faq`). Returns `{text, escalate, confidence, trace}`. GPT Realtime turns the text into voice and speaks it back to Lars.
    - `escalate_to_human(reason, summary)` → `transferCallToParticipant` with the D365 voice workstream queue id; the caseworker sees the `udcspEscalation` JSON context (transcript summary, traceparent, AI verdict) on screen before they answer.
@@ -610,7 +610,7 @@ This mode covers **9 of the 10 case-study requirements** for Demo 2 (everything 
 The earlier plan asked for a small Bot Framework SDK bot registered in the D365 voice workstream's *Bots* panel. We dropped that for three reasons:
 
 1. **End-of-life clock.** Bot Framework SDK ends 31 Dec 2025; we would have shipped a Phase A artefact destined for immediate deprecation.
-2. **Latency.** A bot adapter inside the D365 workstream pipeline adds at minimum one extra hop and serialises to text, losing the GPT-4o Realtime native audio + barge-in capability.
+2. **Latency.** A bot adapter inside the D365 workstream pipeline adds at minimum one extra hop and serialises to text, losing the gpt-realtime native audio + barge-in capability.
 3. **Brain duplication risk.** Embedding dialog state in the bot would have created a second state machine alongside Foundry. The orchestrator pattern keeps GPT Realtime as a stateless "voice cortex" and Foundry as the only stateful brain.
 
 D365 voice channel still owns PSTN, queue routing, recording and the human caseworker experience — it just no longer owns the IVR turns.
@@ -641,7 +641,7 @@ D365 voice channel still owns PSTN, queue routing, recording and the human casew
 
 | Demo | Path | What it actually exercises |
 |---|---|---|
-| 📞 **End-to-end voice** | Dial the procured PSTN number → ACS → orchestrator → GPT-4o Realtime ↔ Foundry topic-router | Full citizen ↔ agent voice conversation, with warm transfer to D365 on "agent please". |
+| 📞 **End-to-end voice** | Dial the procured PSTN number → ACS → orchestrator → gpt-realtime ↔ Foundry topic-router | Full citizen ↔ agent voice conversation, with warm transfer to D365 on "agent please". |
 | 🌐 **Chat with the same brain** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agents/topic-router/messages` → Foundry topic-router | Proves chat and voice share one brain — same APIM endpoint, different actor. |
 | 🚦 **Voice smoke test** | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev` | Hits `/healthz` and posts an EventGrid SubscriptionValidationEvent; asserts the orchestrator round-trips the validation code. |
 | 🧪 **Playwright trace simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | Web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. |

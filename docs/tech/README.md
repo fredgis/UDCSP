@@ -59,7 +59,7 @@
 |:-:|---|---|:-:|
 | 1 | **Microsoft Entra External ID** | CIAM citoyen — 1 CIAM tenant per country (DK / SE / NO). Substitutes Azure AD B2C (retired 2025-05-01). | ✅ Bicep |
 | 2 | **Microsoft Entra ID** | Workforce identity (caseworkers, SREs). | ⚠️ CLI / API |
-| 3 | **Azure OpenAI** *(via Foundry)* | LLMs (GPT-4o, GPT-4o Realtime, embeddings). | ⚠️ CLI / API *(Realtime model has Bicep; rest via Foundry)* |
+| 3 | **Azure OpenAI** *(via Foundry)* | LLMs (GPT-4o, gpt-realtime, embeddings). | ⚠️ CLI / API *(Realtime model has Bicep; rest via Foundry)* |
 | 4 | **Microsoft Fabric** | Federated lakehouse + analytics, one workspace per country. | ✅ Bicep *(capacity)* + ⚠️ REST *(content)* |
 | 5 | **Dynamics 365 Customer Service** | Case management, omnichannel, Copilot for Service. | ⚠️ `pac` CLI *(solutions only — env pre-exists)* |
 | 6 | **Azure API Management** | Single API front door for the 47 consolidated portals. | ✅ Bicep |
@@ -86,7 +86,7 @@
 | | Azure Service Bus | ✅ Bicep |
 | | Azure Event Grid | ✅ Bicep |
 | | Azure Communication Services *(voice + phone numbers)* | ✅ Bicep |
-| | Voice orchestrator *(Container App + GPT-4o Realtime)* | ✅ Bicep |
+| | Voice orchestrator *(Container App + gpt-realtime)* | ✅ Bicep |
 | 💾 **Data** | Azure Database for PostgreSQL Flexible *(replaces SQL DB + Cosmos DB)* | ✅ Bicep |
 | | Azure Cache for Redis Enterprise *(topic-router sessions)* | ✅ Bicep |
 | | Azure Storage / ADLS Gen2 *(3 accounts per country)* | ✅ Bicep |
