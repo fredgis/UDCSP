@@ -64,6 +64,18 @@ export async function callTopicRouter(cfg: Config, req: TopicRouterRequest, ctx:
       channel: 'voice',
       locale: req.locale,
       text: req.text,
+      // Voice callers are implicitly authenticated by their PSTN number +
+      // the recording disclosure they accepted by staying on the line.
+      // Telling the topic-router 'authenticated=true' prevents it from
+      // appending 'sign in with BankID' caveats that don't make sense in
+      // an audio context and confused gpt-realtime into refusing answers.
+      authenticated: true,
+      citizen: {
+        name: null,
+        givenName: null,
+        upn: null,
+        country: req.locale === 'nb' ? 'no' : req.locale === 'sv' ? 'se' : req.locale === 'da' ? 'dk' : 'no',
+      },
     }),
   });
   if (!res.ok) {
