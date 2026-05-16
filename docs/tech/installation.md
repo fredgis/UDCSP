@@ -477,6 +477,14 @@ az keyvault secret set --vault-name $kvName --name "voice-client-secret" --value
 # Save the returned URI — that's the value for `voiceClientSecretUri`.
 ```
 
+> If `az keyvault secret set` returns `(Forbidden) ... ForbiddenByRbac`, your az-login identity lacks the data-plane role on the vault. Grant it once (wait ~30 s after for propagation):
+>
+> ```powershell
+> $myOid = az ad signed-in-user show --query id -o tsv
+> $kvId  = az keyvault show --name udcsp-no-prod-kv --query id -o tsv
+> az role assignment create --assignee-object-id $myOid --assignee-principal-type User --role "Key Vault Secrets Officer" --scope $kvId
+> ```
+
 ### B4.3 — Harvest every other Resource ID / URI
 
 | Field in `Voice.<country>` | Source phase | Command / location |
