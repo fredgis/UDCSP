@@ -190,8 +190,7 @@ The discipline that made parallelism possible was strict folder ownership. No tw
 
 The platform is not built for an abstract "user". It is built for **seven named personas** the case study calls out, each with a real journey, a real channel and a real demand. The next pages walk through each one in turn.
 
-![Anna — Danish citizen moving DK to SE; flagship cross-border story.](images/Demo1.png){width=35%}
-
+\persona{images/Demo1.png}{Anna — Danish citizen moving DK to SE}
 **Anna** is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
 
 In under four seconds, the AI extracts the structured fields, translates the lease into Swedish, and proposes an eligibility verdict with the rule-by-rule evidence. Anna consents on the explanation, not on the verdict.
@@ -200,8 +199,7 @@ The platform orchestrates the case to the Danish authority, receives a signed co
 
 What used to take 28 days now takes 4.
 
-![Lars — blind Norwegian citizen on the voice channel; gpt-realtime plus function tools.](images/Demo2.png){width=35%}
-
+\persona{images/Demo2.png}{Lars — blind Norwegian citizen on voice}
 **Lars** is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
 
 The AI brain answers him in Norwegian without a single button to press. When his question hits a tax-refund topic, the model autonomously routes to the right Foundry agent under the hood — the citizen never knows the architecture, only the conversation.
@@ -210,38 +208,33 @@ When Lars asks to speak with a human, the call is warm-transferred to a casework
 
 Voice latency p95 ≤ 2 seconds. Lars is treated as a first-class citizen on the platform, not an accessibility afterthought.
 
-![Maria — Polish caregiver in Denmark using NVDA; accessibility as a citizen right.](images/Demo3.png){width=35%}
-
+\persona{images/Demo3.png}{Maria — Polish caregiver in Denmark with NVDA}
 **Maria** is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
 
 The portal loads in Polish, end-to-end — labels, error messages, AI summary, consent text. The accessibility CI gate has been green for months. The Translator agent localises the citizen-facing summary.
 
 If a model promotion ever regresses Polish more than 0.4 below the Swedish baseline, the promotion is blocked. Accessibility is not a feature on this platform — it is a citizen right under the Web Accessibility Directive and WCAG 2.1 AA.
 
-![Erik — Danish SMB owner on iPhone; responsive PWA, native iOS document chooser.](images/Demo4.png){width=35%}
-
+\persona{images/Demo4.png}{Erik — Danish SMB owner on iPhone}
 **Erik** runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
 
 The portal is the same SPA Anna used on her laptop — there is no separate native binary, no separate mobile codebase. Twenty-one media queries reflow the layout from a 375 px iPhone SE to a 430 px Pro Max. The native iOS document picker captures his payslip; the AI returns the structured fields and an eligibility verdict inline.
 
 Mobile parity is built in, not bolted on.
 
-![Prompt injection contained at three independent layers.](images/Demo8.png){width=35%}
-
+\persona{images/Demo8.png}{Prompt injection contained at three layers}
 **A hostile prompt** arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
 
 The security playbook isolates the session, recovers the citizen flow, and exports the audit pack. The containment takes 38 seconds. No citizen data is exposed.
 
-![Hans — Danish DPO replaying a six-month-old AI decision in under ten minutes.](images/Demo7.png){width=35%}
-
+\persona{images/Demo7.png}{Hans — Danish DPO replaying an AI decision}
 **Hans** is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
 
 Hans opens the per-country Log Analytics workspace, filters by the citizen's correlation ID, and reconstructs the full decision — the model deployment, the tokens consumed, the verdict, the human disposition, the cryptographic ledger anchor.
 
 The decision happened six months ago. It is still queryable two years out, configured to twice the AI Act minimum retention. The full audit pack assembles in under ten minutes.
 
-![Ole — DevOps engineer onboarding a clean MCAPS tenant in a single command.](images/Demo10.png){width=35%}
-
+\persona{images/Demo10.png}{Ole — DevOps engineer onboarding a tenant}
 **Ole** is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
 
 Twenty-five phases execute in dependency order. The synthetic-data agent seeds tens of thousands of personas and conversations into Fabric and Foundry in parallel with the frontend deployment. The smoke suite runs at the end and the HTML report is green across the board.
