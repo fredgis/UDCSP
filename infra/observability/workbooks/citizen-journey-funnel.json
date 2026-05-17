@@ -69,7 +69,7 @@
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.insights/components",
-        "visualization": "timechart"
+        "visualization": "barchart"
       }
     },
     {
