@@ -1060,6 +1060,183 @@ For **production** tenants, additionally:
 ---
 
 <details open>
+<summary><h2>📊 PLATFORM MONITORING — App Insights workbooks & telemetry wiring</h2></summary>
+
+This section deploys the **9 operator workbooks** (3 per country × DK/SE/NO) into the live App Insights instances and documents the **telemetry wiring** behind them. It is the operator surface of Demo 9 (CIO dashboard) — the executive Power BI surface is built separately in `apps/reporting/cio-dashboard.pbix`.
+
+> ⚠️ **No application code is modified in this section.** Every command below either (a) deploys a workbook resource into Azure Monitor, or (b) creates a `Microsoft.Insights/diagnosticSettings` child resource on an existing platform resource. Both are pure Azure plane configuration — the SPA, APIM policies, Logic Apps and the voice orchestrator are untouched.
+
+### M1 — Telemetry wiring status (audit, May 2026)
+
+| Source | App Insights wired? | How | Notes |
+|---|:-:|---|---|
+| Voice orchestrator `udcsp-no-dev-voice-orch` (Container App) | 🟢 | `APPLICATIONINSIGHTS_CONNECTION_STRING` env var, sourced from KV secret `app-insights-connection`, points at `udcsp-no-prod-shared-appi`. OTEL service name set. | Emits `requests`, `dependencies`, `traces`, `customEvents` (incl. realtime transcripts) when calls land. Verified by reading the ACA revision spec. |
+| Web SPA `udcsp-web-dev` (Static Web App) | 🔴 | No SDK in `apps/web/`, no `VITE_APPLICATIONINSIGHTS_CONNECTION_STRING` in SWA app settings. | **Out of scope of this section** — instrumentation would require adding the JS SDK to the SPA bundle. Listed here for awareness only. |
+| APIM gateways × 3 (`udcsp-{c}-prod-apim`) | 🔴 → 🟡 after M3 | 0 APIM loggers, 0 diagnostic-settings as of May 2026. **Wired by M3** via Azure Monitor diagnostic-settings → LAW (non-invasive). | The richer integration (APIM logger pointing to AI per API/operation, producing native `requests`) requires editing API operation `diagnostic` blocks — that is application config and **excluded from this section**. |
+| Logic Apps × N (`udcsp-{c}-dev-*`) | 🔴 → 🟡 after M3 | No diagnostic-settings. **Wired by M3** to LAW. | LA runtime logs become available in `AzureDiagnostics` / `WorkflowRuntime` tables in LAW. |
+| ACS `udcsp-no-acs` | 🔴 → 🟡 after M3 | No diagnostic-settings. **Wired by M3** to LAW. | Surfaces `CallSummary` / `CallDiagnostics` / `EmailSummary` etc. |
+| Foundry / AOAI `udcspai` | 🟡 | Native Foundry diagnostics already on the resource. | Reachable from workbooks via cross-resource query if needed. |
+
+### M2 — Deploy the 9 workbooks (~3 min, CLI)
+
+> ⚠️ **The `az monitor app-insights workbook create` command in `application-insights` extension 1.2.3 has a bug** — it silently drops `--kind` and returns `BadRequest: Value cannot be null. Parameter name: kind`. We bypass it with a direct ARM PUT via `az rest`. The block below was validated on the live tenant.
+
+```powershell
+$apps = @(
+  @{rg='udcsp-dk-observability-rg'; name='udcsp-dk-prod-shared-appi'; loc='northeurope'},
+  @{rg='udcsp-se-observability-rg'; name='udcsp-se-prod-shared-appi'; loc='swedencentral'},
+  @{rg='udcsp-no-observability-rg'; name='udcsp-no-prod-shared-appi'; loc='norwayeast'}
+)
+$workbooks = 'ai-decision-traces','citizen-journey-funnel','platform-health'
+$subId = az account show --query id -o tsv
+
+foreach ($a in $apps) {
+  $aiId = az monitor app-insights component show -g $a.rg -a $a.name --query id -o tsv
+  foreach ($wb in $workbooks) {
+    $json = Get-Content "infra/observability/workbooks/$wb.json" -Raw
+    $wbName = [guid]::NewGuid().ToString()
+    $body = @{
+      location = $a.loc
+      kind = 'shared'
+      properties = @{
+        displayName    = $wb
+        serializedData = $json
+        category       = 'workbook'
+        sourceId       = $aiId
+        version        = 'Notebook/1.0'
+      }
+    } | ConvertTo-Json -Compress -Depth 5
+    $tmp = New-TemporaryFile
+    $body | Out-File -FilePath $tmp.FullName -Encoding utf8 -NoNewline
+    az rest --method PUT `
+      --uri "https://management.azure.com/subscriptions/$subId/resourceGroups/$($a.rg)/providers/Microsoft.Insights/workbooks/$wbName`?api-version=2022-04-01" `
+      --body "@$($tmp.FullName)" --query "properties.displayName" -o tsv | Out-Null
+    Remove-Item $tmp.FullName -Force
+    if ($LASTEXITCODE -eq 0) { Write-Host "✅ $($a.name) ← $wb" }
+  }
+}
+```
+
+Verify:
+
+```powershell
+foreach ($rg in 'udcsp-dk-observability-rg','udcsp-se-observability-rg','udcsp-no-observability-rg') {
+  $uri = "https://management.azure.com/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$rg/providers/Microsoft.Insights/workbooks?api-version=2022-04-01"
+  az rest --method GET --uri $uri --query "value[].properties.displayName" -o tsv
+}
+# Expected per RG: ai-decision-traces, citizen-journey-funnel, platform-health
+```
+
+Open in portal — once deployed, the workbooks appear in:
+
+```
+Azure Portal → Application Insights → udcsp-{c}-prod-shared-appi → Workbooks → Shared workbooks
+```
+
+### M3 — (Optional, non-invasive) Wire diagnostic-settings → Log Analytics
+
+These commands add a `Microsoft.Insights/diagnosticSettings` child resource to APIM × 3, ACS NO and Logic Apps × N, pushing platform logs/metrics into the per-country Log Analytics workspace (`udcsp-{c}-prod-law`). Pure Azure plane config — additive, non-destructive, no runtime impact on the resources themselves.
+
+```powershell
+# Per country: APIM + LAW IDs
+$pairs = @(
+  @{c='dk'; apim='udcsp-dk-prod-apim'; apimRg='udcsp-dk-apim-rg'; lawRg='udcsp-dk-observability-rg'; lawName='udcsp-dk-prod-law'},
+  @{c='se'; apim='udcsp-se-prod-apim'; apimRg='udcsp-se-apim-rg'; lawRg='udcsp-se-observability-rg'; lawName='udcsp-se-prod-law'},
+  @{c='no'; apim='udcsp-no-prod-apim'; apimRg='udcsp-no-apim-rg'; lawRg='udcsp-no-observability-rg'; lawName='udcsp-no-prod-law'}
+)
+foreach ($p in $pairs) {
+  $apimId = az resource show -n $p.apim -g $p.apimRg --resource-type Microsoft.ApiManagement/service --query id -o tsv
+  $lawId  = az monitor log-analytics workspace show -n $p.lawName -g $p.lawRg --query id -o tsv
+  az monitor diagnostic-settings create `
+    --name "to-law" --resource $apimId --workspace $lawId `
+    --logs   '[{"category":"GatewayLogs","enabled":true},{"category":"WebSocketConnectionLogs","enabled":true}]' `
+    --metrics '[{"category":"AllMetrics","enabled":true}]' | Out-Null
+  Write-Host "✅ $($p.apim) → $($p.lawName)"
+}
+
+# ACS NO
+$acsId = az communication show -n udcsp-no-acs -g udcsp-no-voice --query id -o tsv
+$lawId = az monitor log-analytics workspace show -n udcsp-no-prod-law -g udcsp-no-observability-rg --query id -o tsv
+az monitor diagnostic-settings create `
+  --name "to-law" --resource $acsId --workspace $lawId `
+  --logs   '[{"category":"CallSummary","enabled":true},{"category":"CallDiagnostics","enabled":true},{"category":"CallAutomationOperational","enabled":true},{"category":"CallRecordingSummary","enabled":true}]' `
+  --metrics '[{"category":"AllMetrics","enabled":true}]' | Out-Null
+
+# Logic Apps (per country — only enable on the LA you actually want to surface in the dashboard)
+foreach ($la in 'udcsp-no-dev-application-intake','udcsp-no-dev-cross-border-residency','udcsp-no-dev-escalation-to-human') {
+  $laId = az logic workflow show -n $la -g udcsp-no-rg --query id -o tsv 2>$null
+  if (-not $laId) { continue }
+  az monitor diagnostic-settings create `
+    --name "to-law" --resource $laId --workspace $lawId `
+    --logs   '[{"category":"WorkflowRuntime","enabled":true}]' `
+    --metrics '[{"category":"AllMetrics","enabled":true}]' | Out-Null
+  Write-Host "✅ $la → law"
+}
+```
+
+### M4 — Test telemetry end-to-end
+
+> **Do not generate artificial traffic.** Play the live demos yourself (citizen rail on `https://udcsp.fredgis.com`, voice on `+33 801 150 799`), then wait ~2 min for ingestion and run the queries below.
+
+Per-instance smoke (uses Application Insights `appId` GUID, not the resource name):
+
+```powershell
+$apps = @(
+  @{rg='udcsp-dk-observability-rg'; name='udcsp-dk-prod-shared-appi'; flag='🇩🇰'},
+  @{rg='udcsp-se-observability-rg'; name='udcsp-se-prod-shared-appi'; flag='🇸🇪'},
+  @{rg='udcsp-no-observability-rg'; name='udcsp-no-prod-shared-appi'; flag='🇳🇴'}
+)
+$query = 'union withsource=Tbl * | where timestamp > ago(1h) | summarize n=count(), latest=max(timestamp) by Tbl | order by n desc'
+foreach ($a in $apps) {
+  $appId = az monitor app-insights component show -g $a.rg -a $a.name --query appId -o tsv
+  Write-Host "`n$($a.flag) $($a.name) — telemetry last 1h:"
+  az monitor app-insights query --app $appId --analytics-query $query --query "tables[0].rows" -o table
+}
+```
+
+Per-LAW smoke (after M3 wiring):
+
+```powershell
+$lawId = az monitor log-analytics workspace show -n udcsp-no-prod-law -g udcsp-no-observability-rg --query customerId -o tsv
+az monitor log-analytics query -w $lawId `
+  --analytics-query 'union ApiManagementGatewayLogs, AzureDiagnostics, ACSCallSummary, ACSCallDiagnostics | where TimeGenerated > ago(1h) | summarize count() by Type' `
+  --query "tables[0].rows" -o table
+```
+
+Expected after a live citizen rail + dial test:
+- 🇳🇴 `udcsp-no-prod-shared-appi` shows `traces` / `customEvents` / `requests` rows (voice orchestrator emits them).
+- 🇩🇰 / 🇸🇪 remain empty until M3 wiring is applied **and** APIM gateways receive traffic for those countries.
+- LAW shows `ApiManagementGatewayLogs` rows for each country once M3 is wired and APIM is hit.
+
+### M5 — What to know for the demo
+
+1. **The 9 workbook scaffolds are minimal** (one chart over `requests | summarize`). They are sufficient for an operator walk-through; the rich CIO view is the Power BI report (`apps/reporting/cio-dashboard.pbix`).
+2. **Voice telemetry flows immediately** once a call lands on `+33 801 150 799` — the NO orchestrator has been wired since the B6 phase.
+3. **APIM / ACS / Logic Apps telemetry only appears after M3** is applied. Skip M3 if you want a workbooks-only demo limited to the voice signal.
+4. **Workbook resource names are GUIDs** — the human-readable label is `properties.displayName`. The portal lists by display name, so it's transparent at demo time.
+
+### M6 — Tear-down (rollback this section without side effects)
+
+```powershell
+# Remove workbooks
+$subId = az account show --query id -o tsv
+foreach ($rg in 'udcsp-dk-observability-rg','udcsp-se-observability-rg','udcsp-no-observability-rg') {
+  $uri = "https://management.azure.com/subscriptions/$subId/resourceGroups/$rg/providers/Microsoft.Insights/workbooks?api-version=2022-04-01"
+  $ids = az rest --method GET --uri $uri --query "value[].id" -o tsv
+  foreach ($id in $ids) {
+    az rest --method DELETE --uri "https://management.azure.com$id`?api-version=2022-04-01" | Out-Null
+  }
+}
+
+# Remove diagnostic-settings (per resource, per setting name)
+# az monitor diagnostic-settings delete --name to-law --resource <id>
+```
+
+</details>
+
+---
+
+<details open>
 <summary><h2>🪪 POST CONFIGURATION — External ID app registrations (DK / SE / NO)</h2></summary>
 
 The installer creates the **3 CIAM tenants** (`udcspdk` / `udcspse` / `udcspno`) but cannot create the **user flow** or the **SPA app registration** inside them — both of those are portal-only operations on a CIAM tenant (Graph application API is gated and the user flow polymorphic schema is not supported by `Microsoft.Graph` PowerShell as of May 2026).
