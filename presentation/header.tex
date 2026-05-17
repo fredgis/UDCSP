@@ -38,13 +38,26 @@
       {\fontsize{28}{36}\selectfont\bfseries\color{blue!70!black} \@title \par}
       \vspace{1cm}
       {\Large\color{gray!60!black} \@docsubtitle \par}
-      \vspace{2cm}
+      \vspace{1cm}
       {\large\color{gray!50!black} \@date \par}
+      \vspace{1.5cm}
+      \includegraphics[width=0.78\textwidth]{images/Demofull.png}
     \end{center}
     \vfill
   \end{titlepage}
 }
 \makeatother
+
+% Screen-shot frame helper — bordered figure for UI captures
+\newcommand{\screenfig}[3]{%
+  \begin{figure}[H]%
+  \centering%
+  \setlength{\fboxsep}{0pt}%
+  \setlength{\fboxrule}{1.2pt}%
+  \fcolorbox{gray!50!black}{white}{\includegraphics[width=#1]{#2}}%
+  \caption{#3}%
+  \end{figure}%
+}
 
 % Page header/footer (dynamic title in footer)
 \usepackage{fancyhdr}
