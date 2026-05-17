@@ -226,6 +226,21 @@ export function DemosIndexPage() {
         </p>
       </header>
 
+      <figure style={{ margin: 'var(--space-4) 0 var(--space-6)', textAlign: 'center' }}>
+        <img
+          src="/images/Demofull.png"
+          alt="UDCSP — 10 demos at a glance: citizen rail, voice, accessibility, mobile, caseworker, AI oversight, audit replay, SOC, CIO outcomes and DevOps installer"
+          style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-md, 8px)' }}
+          loading="lazy"
+        />
+        <figcaption style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+          <FormattedMessage
+            id="demos.scenarios.overview-caption"
+            defaultMessage="The ten scenarios on a single page — channels, personas and the cross-cutting watch-for list."
+          />
+        </figcaption>
+      </figure>
+
       <div className="section-heading">
         <div>
           <h2><FormattedMessage id="demos.architecture.heading" defaultMessage="How everything is wired" /></h2>
@@ -262,21 +277,6 @@ export function DemosIndexPage() {
           );
         })}
       </ul>
-
-      <figure style={{ margin: 'var(--space-6) 0 0', textAlign: 'center' }}>
-        <img
-          src="/images/Demofull.png"
-          alt="UDCSP — 10 demos at a glance: citizen rail, voice, accessibility, mobile, caseworker, AI oversight, audit replay, SOC, CIO outcomes and DevOps installer"
-          style={{ maxWidth: '100%', height: 'auto', borderRadius: 'var(--radius-md, 8px)' }}
-          loading="lazy"
-        />
-        <figcaption style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-          <FormattedMessage
-            id="demos.scenarios.overview-caption"
-            defaultMessage="The ten scenarios on a single page — channels, personas and the cross-cutting watch-for list."
-          />
-        </figcaption>
-      </figure>
     </section>
   );
 }
