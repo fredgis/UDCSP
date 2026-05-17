@@ -22,7 +22,7 @@
           <mxGeometry x="100" y="125" width="50" height="60" as="geometry" />
         </mxCell>
 
-        <mxCell id="afd" value="Azure Front Door&#10;Premium + WAF" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#0072C6;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.azure.front_door;" vertex="1" parent="1">
+        <mxCell id="afd" value="Azure Front Door&#10;Premium + WAF&#10;DefaultRuleSet 2.1 · Bot · RateLimit" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#0072C6;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.azure.front_door;" vertex="1" parent="1">
           <mxGeometry x="240" y="120" width="50" height="50" as="geometry" />
         </mxCell>
 
@@ -51,12 +51,27 @@
           <mxGeometry x="2080" y="115" width="240" height="80" as="geometry" />
         </mxCell>
 
-        <!-- =================== HUB (optional) =================== -->
-        <mxCell id="hubZone" value="Federation Hub VNet (optional · hubVnetId param)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#607D8B;dashed=1;fontStyle=2;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="60" y="230" width="2280" height="60" as="geometry" />
+        <!-- =================== FEDERATION HUB (production) =================== -->
+        <mxCell id="hubZone" value="Federation Hub VNet · production · per sovereign zone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;dashed=0;fontStyle=1;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="230" width="2280" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="hubLabel" value="Shared egress · Private DNS · Inter-country APIs (allow-listed)" style="text;html=1;align=center;fontSize=10;fontColor=#455A64;fillColor=none;" vertex="1" parent="1">
-          <mxGeometry x="60" y="255" width="2280" height="30" as="geometry" />
+        <mxCell id="hubFw" value="🔥 Azure Firewall Premium&#10;forced egress (UDR 0.0.0.0/0)&#10;FQDN allow-list · TLS inspection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="258" width="350" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="hubDns" value="🧭 Private DNS Zones&#10;13 privatelink.* surfaces&#10;linked to country VNet only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="258" width="350" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="hubMtls" value="🤝 mTLS Partner Gateway&#10;eIDAS · EU SDG · OOTS&#10;per-country client certs + Idempotency-Key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="258" width="380" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="hubLighthouse" value="🪟 Azure Lighthouse&#10;SRE delegated access to the 3 zones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="258" width="320" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="hubB2b" value="🛂 Cross-tenant B2B&#10;caseworker guest access (case-lifetime, MFA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="258" width="320" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="hubSentinel" value="🛡️ Hub-level Sentinel&#10;cross-zone correlation rules" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="258" width="380" height="46" as="geometry" />
         </mxCell>
 
         <!-- =================== DK SPOKE (DETAILED) =================== -->
@@ -142,7 +157,7 @@
         </mxCell>
 
         <!-- ai subnet -->
-        <mxCell id="dkAi" value="subnet: ai · 10.10.5.0/24" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="dkAi" value="subnet: ai · 10.10.5.0/24 · 🧠 DK Foundry hub (sovereign per country)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="1940" y="370" width="380" height="180" as="geometry" />
         </mxCell>
         <mxCell id="dkAiNsg" value="NSG: ai-nsg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=8;" vertex="1" parent="1">
@@ -206,14 +221,14 @@
         </mxCell>
 
         <!-- =================== SE / NO COMPACT LANES =================== -->
-        <mxCell id="seVnet" value="SE · spoke VNet · 10.20.0.0/16 · region: swedencentral · RG: udcsp-se-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#006064;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="seVnet" value="SE · spoke VNet · 10.20.0.0/16 · region: swedencentral · RG: udcsp-se-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 SE Foundry hub) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#006064;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="60" y="1050" width="1140" height="120" as="geometry" />
         </mxCell>
         <mxCell id="seVnetTitle" value="SE spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#006064;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="80" y="1058" width="200" height="20" as="geometry" />
         </mxCell>
 
-        <mxCell id="noVnet" value="NO · spoke VNet · 10.30.0.0/16 · region: norwayeast · RG: udcsp-no-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="noVnet" value="NO · spoke VNet · 10.30.0.0/16 · region: norwayeast · RG: udcsp-no-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 NO Foundry hub — gpt-realtime via SE hub until norwayeast quota) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="1200" y="1050" width="1140" height="120" as="geometry" />
         </mxCell>
         <mxCell id="noVnetTitle" value="NO spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#E65100;fillColor=none;" vertex="1" parent="1">
@@ -228,14 +243,14 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <!-- Hub peering arrows -->
-        <mxCell id="hubToDk" value="optional peering" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;fontSize=8;" edge="1" parent="1" source="hubZone" target="dkVnet">
+        <!-- Hub peering arrows (production: always-on, UDR-forced egress) -->
+        <mxCell id="hubToDk" value="VNet peering · UDR 0.0.0.0/0 → hub firewall" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#E65100;strokeWidth=2;fontSize=8;" edge="1" parent="1" source="hubZone" target="dkVnet">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="hubToSe" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;" edge="1" parent="1" source="hubZone" target="seVnet">
+        <mxCell id="hubToSe" value="VNet peering · UDR → hub firewall" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#E65100;strokeWidth=2;fontSize=8;" edge="1" parent="1" source="hubZone" target="seVnet">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="hubToNo" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#607D8B;dashed=1;" edge="1" parent="1" source="hubZone" target="noVnet">
+        <mxCell id="hubToNo" value="VNet peering · UDR → hub firewall" style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeColor=#E65100;strokeWidth=2;fontSize=8;" edge="1" parent="1" source="hubZone" target="noVnet">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 

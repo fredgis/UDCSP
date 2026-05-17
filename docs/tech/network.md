@@ -5,11 +5,11 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** Each country (DK · SE · NO) runs in its own `/16` spoke VNet, in its own Azure region, in its own RG. Every PaaS that touches citizen data is reached via **Private Endpoint** with `publicNetworkAccess: Disabled`. The **only public IP per country** is the Azure Bastion PIP — all admin access funnels through it (no jump-box, no public NICs). The **LandingZone module is the single ARM owner of every subnet** (including `AzureBastionSubnet`); all downstream modules reference subnets via `existing` to keep redeploys idempotent. One **Azure DDoS Protection Standard** plan covers all 3 spokes via one association per VNet.
+> **TL;DR.** Each country (DK · SE · NO) runs in its own `/16` spoke VNet, in its own Azure region, in its own RG, with its own **Foundry hub** in the `ai` subnet. Every PaaS that touches citizen data is reached via **Private Endpoint** with `publicNetworkAccess: Disabled`. The **only public IP per country** is the Azure Bastion PIP — all admin access funnels through it (no jump-box, no public NICs). The **federation hub VNet** is a **production-grade always-on component** that hosts the **Azure Firewall Premium** (forced egress + FQDN allow-list + TLS inspection), the **Private DNS zones** (linked per country only), the **mTLS partner gateway** (eIDAS / EU SDG / OOTS), the **Azure Lighthouse + cross-tenant B2B** plane, and a **hub-level Sentinel** for cross-zone correlation. The **LandingZone module is the single ARM owner of every subnet** (including `AzureBastionSubnet`); all downstream modules reference subnets via `existing` to keep redeploys idempotent. One **Azure DDoS Protection Standard** plan covers all 3 spokes via one association per VNet.
 >
 > 📐 The accompanying schematic is generated from [`network.drawio`](./network.drawio) and exported below as [`network.png`](./network.png). Re-render with the `drawio2png` skill if you edit the source.
 >
-> 🔧 **Owner:** Landing Zone module · **Implemented in:** `infra/landing-zone/modules/networking.bicep` · **Last reviewed:** 2026-05-11.
+> 🔧 **Owner:** Landing Zone module · **Implemented in:** `infra/landing-zone/modules/networking.bicep` · **Last reviewed:** 2026-05-17.
 
 ![UDCSP network topology](./network.png)
 
@@ -35,7 +35,7 @@
 | # | Principle | Why |
 |---|-----------|-----|
 | 1 | **Per-country sovereign spoke VNet** | Each citizen-data plane (DK, SE, NO) lives in its own VNet, in its own Azure region, in its own resource group. No cross-country data path at network layer. |
-| 2 | **Hub-and-spoke ready** | Each spoke optionally peers to a federation hub VNet (`hubVnetId` parameter) for shared egress, DNS, and inter-country APIs that are explicitly allow-listed. Today the federation hub is not deployed; the parameter is left empty. |
+| 2 | **Hub-and-spoke production topology** | Each spoke peers to the **federation hub VNet** per sovereign zone. The hub is **always deployed in production** (no longer optional) and hosts: Azure Firewall Premium (forced egress for every spoke via UDR `0.0.0.0/0`), the per-country Private DNS Zones, the mTLS partner gateway, the Lighthouse/B2B plane, and the hub-level Sentinel. The `hubVnetId` parameter on each spoke is mandatory in PROD. |
 | 3 | **Private endpoints by default** | Every PaaS service that touches citizen data (Key Vault, Storage Account, ACR, PostgreSQL, Redis Enterprise, Recovery Services Vault) has `publicNetworkAccess: Disabled` and is reached via a Private Endpoint inside the spoke. |
 | 4 | **One public IP exception: Azure Bastion** | The only public IP per country is the Bastion `pip`. All admin sessions go through Bastion → no jump-box, no NIC-level public IPs anywhere else. Tagged `publicIpException: 'azure-bastion-only'` for Policy enforcement. |
 | 5 | **NSG per subnet, not per workload** | Each named subnet (web, app, data, integration, ai) gets its own NSG. Default-deny inbound from Internet; rules are added by capability modules. |
