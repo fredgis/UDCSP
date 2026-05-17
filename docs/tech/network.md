@@ -41,6 +41,9 @@
 | 5 | **NSG per subnet, not per workload** | Each named subnet (web, app, data, integration, ai) gets its own NSG. Default-deny inbound from Internet; rules are added by capability modules. |
 | 6 | **LandingZone owns ALL subnets** | The LZ is the single ARM owner of subnet definitions including `AzureBastionSubnet`. Every other module (Bastion, future Postgres delegated subnet, APIM premium, etc.) references subnets via `existing` so re-deploying the LZ stays idempotent and cannot accidentally drop in-use subnets. |
 | 7 | **DDoS Protection Plan attached** | One Azure Standard DDoS Protection Plan in the shared region covers all 3 spoke VNets. The attachment is performed by re-deploying the LandingZone with `ddosProtectionPlanId` set, so the VNet stays owned by a single Bicep module (no risk of subnet wipe). |
+| 8 | **Azure Firewall Premium as the single egress** | One Azure Firewall Premium per sovereign zone (in the federation hub VNet) is the only path out of any spoke subnet. UDRs on every spoke subnet force `0.0.0.0/0` to the firewall; FQDN allow-lists enforce least-privilege egress per workload type. TLS inspection is on for non-Microsoft destinations. |
+| 9 | **Per-country Private DNS Zones** | One zone per `privatelink.*` surface, linked to the country VNet only. No cross-country DNS resolution; a DK workload cannot resolve a SE Private Endpoint FQDN even if it had network reachability. See §5 for the zone inventory. |
+| 10 | **mTLS to every national authority** | Logic App `partner-cert-rotate` rotates per-partner client certs in the country Key Vault; APIM presents the cert on every outbound call. Inbound from partners (when applicable) is the same pattern reversed. |
 
 ---
 
@@ -77,39 +80,54 @@ The Bastion subnet sits at `.250.0/26` (offset index `1000` in `cidrSubnet(addr,
 flowchart TB
     Internet(["🌍 Internet<br/>citizens · operators"]):::internet
 
-    subgraph Hub["🔗 Federation Hub VNet · optional · <code>hubVnetId</code> param"]
-        direction LR
-        HubDNS["🧭 Private DNS<br/>shared zones"]:::hub
-        HubEgress["🚪 Shared egress<br/>NAT / Firewall"]:::hub
+    subgraph FD["🛡️ Front Door Premium + WAF<br/>DefaultRuleSet 2.1 · Bot · RateLimit"]
+        FDoor["Azure Front Door"]:::edge
+    end
+
+    subgraph Hub["🔗 Federation Hub VNet · per sovereign zone"]
+        direction TB
+        HubDNS["🧭 Private DNS<br/>13 privatelink zones · linked per country"]:::hub
+        HubFW["🔥 Azure Firewall Premium<br/>egress · FQDN allow-list · TLS inspect"]:::hub
+        HubGW["🤝 mTLS partner gateway<br/>eIDAS · SDG · OOTS"]:::hub
     end
 
     subgraph DK["🇩🇰 DK spoke · northeurope · 10.10.0.0/16"]
         direction TB
         DKsubs["web · app · data · integration · ai<br/>10.10.{1..5}.0/24"]:::subnet
         DKbas["🛡️ AzureBastionSubnet<br/>10.10.250.0/26"]:::bastion
+        DKfnd["🧠 DK Foundry hub<br/>(in 'ai' subnet)"]:::foundry
     end
 
     subgraph SE["🇸🇪 SE spoke · swedencentral · 10.20.0.0/16"]
         direction TB
         SEsubs["web · app · data · integration · ai<br/>10.20.{1..5}.0/24"]:::subnet
         SEbas["🛡️ AzureBastionSubnet<br/>10.20.250.0/26"]:::bastion
+        SEfnd["🧠 SE Foundry hub<br/>(in 'ai' subnet)"]:::foundry
     end
 
     subgraph NO["🇳🇴 NO spoke · norwayeast · 10.30.0.0/16"]
         direction TB
         NOsubs["web · app · data · integration · ai<br/>10.30.{1..5}.0/24"]:::subnet
         NObas["🛡️ AzureBastionSubnet<br/>10.30.250.0/26"]:::bastion
+        NOfnd["🧠 NO Foundry hub<br/>(in 'ai' subnet)"]:::foundry
     end
 
     DDoS{{"🛡️ Azure DDoS Protection Standard<br/>1 plan · 3 associations"}}:::ddos
 
-    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> DK
-    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> SE
-    Internet -- "Front Door · APIM · ACS · Bastion PIP" --> NO
+    Internet --> FDoor
+    FDoor -- "Static Web App PE · APIM External · ACS · Bastion PIP" --> DK
+    FDoor -- "Static Web App PE · APIM External · ACS · Bastion PIP" --> SE
+    FDoor -- "Static Web App PE · APIM External · ACS · Bastion PIP" --> NO
 
-    Hub -. "peering<br/>(when deployed)" .-> DK
-    Hub -. "peering<br/>(when deployed)" .-> SE
-    Hub -. "peering<br/>(when deployed)" .-> NO
+    DK -- "UDR 0.0.0.0/0" --> HubFW
+    SE -- "UDR 0.0.0.0/0" --> HubFW
+    NO -- "UDR 0.0.0.0/0" --> HubFW
+    HubFW -- "mTLS allow-list" --> HubGW
+    HubGW -- "national authorities · per country" --> Internet
+
+    HubDNS -. "links per country only" .-> DK
+    HubDNS -. "links per country only" .-> SE
+    HubDNS -. "links per country only" .-> NO
 
     DDoS --- DK
     DDoS --- SE
@@ -120,20 +138,23 @@ flowchart TB
     DK x--x NO
 
     classDef internet fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef edge fill:#E0F7FA,stroke:#006064,stroke-width:2px,color:#004D40
     classDef hub fill:#FFF8E1,stroke:#F9A825,stroke-width:1.5px,color:#E65100
     classDef subnet fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20
     classDef bastion fill:#FCE4EC,stroke:#AD1457,stroke-width:1.5px,color:#880E4F
+    classDef foundry fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C
     classDef ddos fill:#EDE7F6,stroke:#4527A0,stroke-width:2px,color:#311B92
 
     style DK fill:#FFEBEE,stroke:#C62828,stroke-width:2px,color:#B71C1C
     style SE fill:#E1F5FE,stroke:#0277BD,stroke-width:2px,color:#01579B
     style NO fill:#FFF3E0,stroke:#EF6C00,stroke-width:2px,color:#E65100
     style Hub fill:#FFFDE7,stroke:#F9A825,stroke-width:2px,color:#F57F17
+    style FD fill:#E0F7FA,stroke:#006064,stroke-width:2px,color:#004D40
 ```
 
-> **Legend** — solid arrows = Internet ingress; dashed arrows = optional hub peering (today `hubVnetId` is empty); `x--x` lines = **no** spoke-to-spoke peering (cross-country flows must traverse the hub when deployed, and are explicitly allow-listed by APIM policy).
+> **Legend** — solid arrows = ingress through Front Door + WAF, or forced egress through Azure Firewall; dashed arrows = Private DNS zone-to-VNet links (one zone linked to one country only); `x--x` lines = **no** spoke-to-spoke peering (cross-country flows must traverse the federation hub via the mTLS gateway, and are explicitly allow-listed by APIM policy + Azure Firewall application rules).
 
-The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke peering. Cross-country flows always traverse the federation hub (when deployed) and are policy-controlled.
+The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke peering. **Egress is forced through Azure Firewall** so a workload cannot break out directly to the Internet. **Private DNS zones are linked per country only** so the FQDN of a SE Private Endpoint cannot be resolved from a DK workload. Cross-country flows always traverse the federation hub and are policy-controlled at both the L7 (APIM) and L3/L4 (Azure Firewall) layers.
 
 ---
 
@@ -143,17 +164,21 @@ The 3 spokes are isolated from each other at L3 — there is no spoke-to-spoke p
 
 | Surface | Path | Notes |
 |---------|------|-------|
-| Citizen web/chat UI | Internet → Azure Front Door (Premium, WAF) → origin = Static Web App PE in `web` subnet | TLS 1.2+; WAF in Prevention mode; Defender for APIs onboarded |
-| Citizen voice | Internet → ACS (managed) → voice orchestrator Container App in `app` subnet | ACS is a Microsoft-hosted PaaS; the orchestrator runtime is private. PSTN numbers not yet procured (Nkom/PTS/ERST KYC pending). |
-| APIM gateway | Internet → APIM (External, Premium) → backends via VNet integration in `app` / `integration` | APIM rate-limit policy enforced for `/agents/topic-router/messages` (see `services/apim`) |
-| Admin (operators only) | Internet → Azure Bastion PIP → SSH/RDP to NICs inside the spoke | Only one public IP per country; Conditional Access + PIM required; tagged `publicIpException: 'azure-bastion-only'` |
+| Citizen web/chat UI | Internet → Azure Front Door (**Premium, WAF**) → origin = Static Web App PE in `web` subnet | TLS 1.3; WAF in **Prevention** mode with `DefaultRuleSet 2.1` (OWASP CRS 3.3-derived) + `MicrosoftDefaultRuleSet 1.0` for bot protection + a tenant `RateLimitRuleSet` per citizen IP (200 req / 5 min on `/api/*`); Defender for APIs onboarded. |
+| Citizen voice | Internet → ACS (managed) → voice orchestrator Container App in `app` subnet | ACS is a Microsoft-hosted PaaS; the orchestrator runtime is private. One toll-free PSTN number per country. |
+| APIM gateway | Internet → APIM (External, Premium) → backends via VNet integration in `app` / `integration` | APIM rate-limit policy enforced for `/agents/topic-router/messages` (see `services/apim`); per-channel actor enforcement; mTLS to partner backends. |
+| Admin (operators only) | Internet → Azure Bastion PIP → SSH/RDP to NICs inside the spoke | Only one public IP per country; Conditional Access + PIM required; tagged `publicIpException: 'azure-bastion-only'`. |
 
 ### 4.2 Outbound (spoke → Internet / Azure)
 
-- **Default**: NAT Gateway in each spoke for workload egress (planned) — currently Azure default outbound (to be replaced before GA).
-- **Private**: Foundry, Storage, KV, ACR, Postgres, Redis, RSV, Confidential Ledger are reached via **Private Endpoint only**; their public endpoints are disabled (`publicNetworkAccess: Disabled`).
-- **Microsoft Graph** (Identity / Verified ID / Priva / Purview management): reached via Service Tag rules in NSGs; APIs are public Microsoft endpoints.
-- **National-authority bridge egress** (unified-platform integration plane): Logic Apps + APIM in `integration` reach the public HTTPS endpoints of the national authorities listed in `architecture.md §2.3` — borger.dk / lifeindenmark.dk / SKAT / Udbetaling DK (DK), Skatteverket / Försäkringskassan / BankID / Freja+ (SE), Skatteetaten / NAV / Altinn / UDI / ID-porten (NO). Egress is per-country sovereign (DK Logic Apps only call DK authorities, never SE or NO), via NAT Gateway with the per-country PIP allow-listed at the partner endpoint where the partner publishes such an allow-list. eIDAS / EU SDG / OOTS gateways follow the same egress rule.
+- **Default egress** — **Azure Firewall Premium** in the country federation hub (one per sovereign zone). All workload egress is forced via UDR through the firewall — no Internet break-out from any spoke subnet. Per-workload FQDN allow-lists enforce least privilege:
+  - Agents (`ai` subnet) reach `*.cognitiveservices.azure.com`, `*.openai.azure.com`, `*.api.cognitive.microsoft.com` only.
+  - Logic Apps (`integration` subnet) reach the published partner-agency endpoints listed in [`architecture.md §2.3`](./architecture.md) plus eIDAS / EU SDG / OOTS gateways — strictly per-country (DK LA never reaches a SE partner).
+  - Container Apps (`app` subnet) reach ACR, Microsoft Graph, Entra token endpoints.
+  - TLS inspection is on for HTTP egress to non-Microsoft destinations (citizen documents never leak through an unintended TLS path).
+- **Private** — Foundry, Storage, KV, ACR, Postgres, Redis, RSV, Confidential Ledger, AI Search are reached via **Private Endpoint only**; their public endpoints are disabled (`publicNetworkAccess: Disabled`).
+- **Microsoft Graph** (Identity / Verified ID / Priva / Purview management) — reached via Service Tag rules in NSGs + Azure Firewall application rules; APIs are public Microsoft endpoints under EU Data Boundary.
+- **National-authority bridge egress** (unified-platform integration plane) — Logic Apps + APIM in `integration` reach the public HTTPS endpoints of the national authorities listed in `architecture.md §2.3` — borger.dk / lifeindenmark.dk / SKAT / Udbetaling DK (DK), Skatteverket / Försäkringskassan / BankID / Freja+ (SE), Skatteetaten / NAV / Altinn / UDI / ID-porten (NO). All egress is **mTLS to the partner**, with client certs in the country Key Vault rotated by Logic App `partner-cert-rotate`. Egress is per-country sovereign (DK Logic Apps only call DK authorities, never SE or NO), and the per-country NAT/Firewall PIP is allow-listed at the partner endpoint where the partner publishes such an allow-list. eIDAS / EU SDG / OOTS gateways follow the same mTLS pattern with EU-trust-list issued certificates.
 
 ### 4.4 Public ingress hostnames (production)
 
@@ -193,6 +218,28 @@ Added by capability modules:
 | Recovery Services Vault | `data` | `infra/security/backup-asr/recovery-services-vault-country.bicep` |
 | Confidential Ledger | `data` | `infra/security/confidential-ledger/confidential-ledger.bicep` |
 | Foundry / AI Services | `ai` | `infra/foundry/*` |
+| Azure AI Search | `ai` | `infra/data/ai-search/*` |
+| Service Bus | `integration` | `infra/integration/service-bus/*` |
+
+### 5.1 Private DNS Zones (one per surface, per country)
+
+| Zone | Linked to VNet(s) | Resolved Private Endpoints |
+|---|---|---|
+| `privatelink.vaultcore.azure.net` | DK · SE · NO (3 zones, 1 link each) | Key Vault |
+| `privatelink.dfs.core.windows.net` | DK · SE · NO | ADLS Gen2 / Storage |
+| `privatelink.blob.core.windows.net` | DK · SE · NO | Blob endpoint of ADLS |
+| `privatelink.azurecr.io` | DK · SE · NO | ACR |
+| `privatelink.postgres.database.azure.com` | DK · SE · NO | PostgreSQL Flexible |
+| `privatelink.redisenterprise.cache.azure.net` | DK · SE · NO | Redis Enterprise |
+| `privatelink.confidential-ledger.azure.com` | DK · SE · NO | Confidential Ledger |
+| `privatelink.cognitiveservices.azure.com` | DK · SE · NO | Foundry hub + AI Services |
+| `privatelink.openai.azure.com` | DK · SE · NO | AOAI deployments (per-hub) |
+| `privatelink.search.windows.net` | DK · SE · NO | AI Search (per-hub) |
+| `privatelink.servicebus.windows.net` | DK · SE · NO | Service Bus |
+| `privatelink.azure-api.net` | DK · SE · NO | APIM (if private) |
+| `privatelink.eventgrid.azure.net` | DK · SE · NO | Event Grid topics |
+
+> **Sovereignty enforcement.** A given zone is **linked to its country VNet only**. A DK workload cannot resolve a SE Private Endpoint FQDN even if a network path existed — the DNS resolution itself fails. This is the second line of defence on top of the no-spoke-peering rule in §3.
 
 All PE-fronted resources have `publicNetworkAccess: Disabled` enforced in their bicep.
 

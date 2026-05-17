@@ -614,7 +614,7 @@ graph TB
         APIM_RT["/agents/topic-router"]
     end
 
-    subgraph FOUNDRY["Microsoft Foundry — Hub & Project"]
+    subgraph FOUNDRY["Microsoft Foundry — 3 sovereign hubs (DK · SE · NO)"]
         AG_TR["Agent — Topic Router<br/>(12 languages · multi-turn · slot-filling)"]
         AG_CLASS["Agent — Request Classifier<br/>(intent, agency, language)"]
         AG_TRANS["Agent — Translator orchestrator"]
@@ -622,9 +622,9 @@ graph TB
         AG_ASSIST["Agent — Citizen Assistant<br/>(RAG over knowledge base)"]
         AG_DOC["Agent — Document Extractor"]
         AG_CASE["Agent — Caseworker Copilot helper"]
-        MODELS["Model Catalog<br/>Azure OpenAI · open-source · fine-tuned"]
-        EVALS["Evaluations<br/>(accuracy · groundedness · safety · bias)"]
-        TRACE["Tracing & Observability"]
+        MODELS["Model Catalog (per hub)<br/>gpt-realtime · gpt-4o · gpt-4o-mini<br/>+ open-source · fine-tuned"]
+        EVALS["Evaluations<br/>(accuracy · groundedness · safety · bias · per-locale parity)"]
+        TRACE["Tracing & Observability<br/>per-country App Insights"]
         SAFETY["Azure AI Content Safety"]
         REGISTRY["AI Act Risk Registry<br/>+ Confidential Ledger (immutable)"]
     end
@@ -642,7 +642,13 @@ graph TB
     subgraph DATA_AI["Data services for AI"]
         TRANS["Azure AI Translator"]
         DOCINT["Azure AI Document Intelligence"]
-        SPEECH["Azure AI Speech (D365 IVR menus + post-call analytics only — not in live audio path)"]
+        SPEECH["Azure AI Speech<br/>(post-call analytics + D365 IVR fallback only<br/>— not in live audio path)"]
+    end
+
+    subgraph VOICE_RT["Voice runtime (per country)"]
+        ACS["ACS Call Automation<br/>+ toll-free PSTN number"]
+        ACA["ACA orchestrator<br/>(WebSocket bridge)"]
+        RT["gpt-realtime deployment<br/>(in-country hub or sovereign fallback)"]
     end
 
     subgraph SESSION["Conversational session state"]
@@ -651,8 +657,10 @@ graph TB
 
     WEB_AI --> APIM_RT
     MOB_AI --> APIM_RT
-    IVR_AI --> SPEECH
-    SPEECH --> APIM_RT
+    IVR_AI --> ACS
+    ACS --> ACA
+    ACA <--> RT
+    ACA -- "function tool" --> APIM_RT
     BO --> AG_CASE
     APIM_RT --> AG_TR
     AG_TR --> AG_CLASS
@@ -701,6 +709,7 @@ graph TB
     classDef kb fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
     classDef dai fill:#FFF9C4,stroke:#F9A825,color:#F57F17
     classDef ses fill:#EDE7F6,stroke:#5E35B1,color:#311B92
+    classDef voice fill:#FCE4EC,stroke:#AD1457,color:#880E4F,stroke-width:2px
 
     class WEB_AI,MOB_AI,IVR_AI,BO chan
     class APIM_RT apim
@@ -709,6 +718,7 @@ graph TB
     class SP,FAB_KB,WEB_KB kb
     class TRANS,DOCINT,SPEECH dai
     class REDIS_S ses
+    class ACS,ACA,RT voice
 ```
 
 ### 5.1 Agent Catalogue
@@ -725,12 +735,40 @@ graph TB
 
 ### 5.2 Foundry Operating Model
 
-- **Hub** per region (3) sharing model deployments where compliant; **Project** per agent or agent family.
-- **Evaluations** are versioned, run in CI/CD on every prompt or model change, and gate promotion to PROD.
-- **Tracing** is continuous and stored in a dedicated Application Insights workspace exported to Fabric.
-- **Content Safety** filters every input and output; high-risk events are sent to Sentinel.
-- **AI Act Registry** in Foundry + Purview holds the risk classification, the technical documentation, the post-market monitoring plan, and the conformity declaration for every agent. **Post-audit refactor:** every high-risk decision (Eligibility) is also written to **Azure Confidential Ledger** (CCF-backed, tamper-evident) for cryptographic proof of integrity beyond what App Insights / Fabric can offer.
-- **Confidential Computing** wraps the Eligibility inference orchestration in a TEE (SEV-SNP-attested Confidential Container App), so citizen PII is encrypted in memory during the cross-border DK→SE / SE→NO scenarios documented in §13.1.
+- **3 sovereign Foundry hubs in production — one per country.** Each hub is deployed in its country's region: **DK hub** in `northeurope`, **SE hub** in `swedencentral`, **NO hub** in `norwayeast`. Each hub hosts the 7 agents (Topic Router, Classifier, Translator, Eligibility, Citizen Assistant, Doc Extractor, Caseworker Helper) with country-specific model deployments, evaluation suites, knowledge bases and AI Act registry entries. **No agent call ever crosses a national border**: a DK citizen interaction stays in DK hub, a SE interaction in SE hub, etc. APIM `udcsp-{c}-prod-apim` only ever talks to the in-country hub.
+- **Project per agent or agent family**, inside each hub. The same project name (`udcsp-eligibility`, `udcsp-topic-router`, …) exists in all 3 hubs — only the model deployments differ when a model is not yet available in a country region.
+- **gpt-realtime sovereignty exception (documented).** Microsoft has rolled out `gpt-realtime` to `swedencentral` and `northeurope` but **not yet to `norwayeast`** as of GA. The target architecture accepts the following compensation while we wait for the rollout: the NO voice orchestrator (ACS Call Automation + Container App in `norwayeast`) opens its bidirectional WebSocket to the **SE hub's** `gpt-realtime` deployment. Audio streams are protected by Microsoft EU Data Boundary + Nordic-DPA cross-border cooperation framework. **Citizen-side audio + STT transcripts persist only in NO** (ADLS Gen2 `voice-recordings/` in `norwayeast`). The day `gpt-realtime` lands in `norwayeast`, a single Bicep parameter flip moves the inference to NO hub — no application change.
+- **Foundry continuity (no single-region SPOF).** Because there are 3 hubs, the loss of one region does not stop the platform globally: a failed `norwayeast` hub only impacts NO citizens. Per-country failover is described in §10 BCDR (RPO ≤ 15 min / RTO ≤ 4 h to paired EU region within the same sovereign zone).
+- **Evaluations** are versioned, run in CI/CD on every prompt or model change, and gate promotion to PROD. Each hub has its own eval suite per language (DK runs DA + multilingual gold, SE runs SV + multilingual gold, NO runs NB + NN + Sámi + multilingual gold).
+- **Tracing** is continuous and stored in the **per-country Application Insights** (`udcsp-{c}-prod-shared-appi`) — never cross-region. The 3 LAWs feed Fabric per country, then a Power BI Premium semantic model aggregates Gold-zone outputs server-side for the executive view (no raw rows traverse borders).
+- **Content Safety** filters every input and output, deployed inside each hub; high-risk events are sent to the in-country Sentinel.
+- **AI Act Registry** in Foundry + Purview holds the risk classification, the technical documentation, the post-market monitoring plan, and the conformity declaration for every agent in every hub. Every high-risk decision (Eligibility) is also written to the in-country **Azure Confidential Ledger** (CCF-backed, tamper-evident) for cryptographic proof of integrity beyond what App Insights / Fabric can offer.
+- **Confidential Computing** wraps the Eligibility inference orchestration in a TEE (SEV-SNP-attested Confidential Container App) in each country, so citizen PII is encrypted in memory during inference — including cross-border DK→SE / SE→NO scenarios documented in §13.1.
+
+#### 5.2.1 Eligibility model lifecycle (high-risk, AI Act Annex III §5b)
+
+Production lifecycle for the only high-risk agent, applied identically in each of the 3 hubs:
+
+| Stage | Mechanism | Gating |
+|---|---|---|
+| **Promotion** | Champion-challenger via Foundry deployment aliases: 5 % traffic shadow on the challenger for 1 week, then evaluation. | Promotion blocks on > 1 % regression on any guarded metric (accuracy, groundedness, safety, per-locale parity, bias index). |
+| **Drift detection** | Daily KS-test on input feature distribution (age, locale, channel, document type) and on output distribution (decision class, confidence). | Drift alert → Sentinel incident → mandatory re-eval before next promotion. |
+| **Per-locale parity gate** | Each promotion runs the gold-eval set in all 12 languages; any locale > 0.4 below the SV baseline (cf. Demo 9 narrative in `uses.md`) is flagged. | Promotion blocks until the gap is < 0.4 or an explicit waiver is recorded in the AI Act registry. |
+| **Bias monitoring** | Statistical-parity tests on protected attributes (age band, locale, channel) computed daily on the past 30 days of verdicts. | Threshold breach → caseworker queue routed to a senior reviewer for manual recalibration. |
+| **Shadow mode** | The Logic App `ai-decision-shadow-mode` replays anonymised production prompts through the challenger in parallel and records the delta. | Delta > 3 % → blocks promotion until investigated. |
+| **Rollback** | Agent versions are immutable (`<name>:<n>`). Foundry deployment alias flip restores the previous version in seconds. | Fully auditable: the alias change is recorded in the AI Act registry. |
+
+#### 5.2.2 Knowledge base / RAG architecture
+
+Per-country RAG stack (one per hub):
+
+| Layer | Choice | Per-country isolation |
+|---|---|---|
+| **Vector store** | **Azure AI Search** in each country region (sovereign-clean), with ACL row-level by `citizen_id` and `country_code`. | DK Search only indexes DK KBs; idem SE / NO. No cross-country search. |
+| **Ingestion pipeline** | Logic App `kb-sync` per country, scheduled hourly, pulls from SharePoint / public agency websites / Fabric Gold-zone case-history (anonymised). Triggers a Foundry indexing run. | Per country; partner agency URL allow-list per spoke. |
+| **Freshness SLO** | ≤ 1 h staleness for KB updates; ≤ 24 h for closed-case retraining feeds. | Monitored by the synthetic monitoring step "KB-freshness" in §11. |
+| **Citation enforcement** | Citizen Assistant system prompt requires every answer to cite a KB doc by `docId`; answers without a citation are blocked by an APIM response policy. | Foundry evaluation suite includes a citation-rate metric; threshold 99 % per locale. |
+| **Knowledge graph (D365)** | Caseworker-side knowledge base in D365 Customer Service KB, mirrored read-only into Foundry RAG per country. | Caseworker drafts cannot leave the country D365 environment. |
 
 ---
 
@@ -994,25 +1032,31 @@ graph TB
 | **ePrivacy Directive (2002/58/EC, art. 5(1))** | Cookie banner with a per-purpose consent log; non-essential cookies (Microsoft Clarity, product analytics) are gated behind explicit opt-in. |
 | **ISO 27001 / SOC 2** *(operational baseline)* | Defender for Cloud, Sentinel, Key Vault, managed identities, Azure Policy initiatives at [`infra/security/azure-policy/baseline-initiative.json`](../../infra/security/azure-policy/baseline-initiative.json) (MCSB + NIST 800-53 + ISO 27001:2013 built-in initiatives). |
 
-**Storage retention and right-to-erasure operational playbook**: documented in [`data.md`](./data.md) §§ 5, 6, and 9.
+**Storage retention and right-to-erasure operational playbook**: documented in [`data.md`](./data.md) §§ 5, 6, and 9. The citizen-facing GDPR + AI Act narrative is in [`../biz/traceability.md`](../biz/traceability.md); the technical observability + KQL recipe for audit replay is in [`monitoring.md`](./monitoring.md) § 5.6 ("EU AI Act evidence trail in 4 minutes").
 
 ---
 
 ## 10. Security & Network Architecture
 
-- **Network** — Hub-and-spoke per sovereign zone, peered via the federation hub VNet. **Private Endpoints** on every PaaS service. No public ingress except via **Azure Front Door + WAF** and APIM's external gateway. **Azure DDoS Protection Standard** is bound to every VNet that fronts a public IP (NIS2 Art. 21(2)(c) — defence in depth at L3/L4 in addition to the L7 protection from Front Door).
+> See [`network.md`](./network.md) for the L3 topology, address plan, NSG matrix, Private DNS zones, and Private Endpoint inventory. The bullets below are the architectural commitments that `network.md` implements.
+
+- **Network** — Hub-and-spoke per sovereign zone, peered via the federation hub VNet. **Private Endpoints** on every PaaS service. No public ingress except via **Azure Front Door Premium + WAF** (Microsoft `DefaultRuleSet 2.1` + `MicrosoftDefaultRuleSet 1.0` for bot protection + a tenant-managed `RateLimitRuleSet` per citizen IP) and APIM's external gateway. **Azure DDoS Protection Standard** is bound to every VNet that fronts a public IP (NIS2 Art. 21(2)(c) — defence in depth at L3/L4 in addition to the L7 protection from Front Door).
+- **Egress control** — **Azure Firewall Premium** in the federation hub (one per sovereign zone) is the only egress path for spoke workloads. FQDN allow-lists are explicit per workload: agents reach `*.cognitiveservices.azure.com`, Logic Apps reach the published partner-agency endpoints listed in §2.3, container apps reach ACR + Microsoft Graph + Entra. Citizen documents never traverse a default route. Azure Firewall TLS inspection is on for HTTP egress to non-Microsoft destinations.
+- **Private DNS** — Per-country **Private DNS Zones** for every Private Endpoint surface (`privatelink.vaultcore.azure.net`, `privatelink.dfs.core.windows.net`, `privatelink.postgres.database.azure.com`, `privatelink.redisenterprise.cache.azure.net`, `privatelink.azurecr.io`, `privatelink.cognitiveservices.azure.com`, `privatelink.confidential-ledger.azure.com`). Zones are linked to the country VNet only (no cross-country resolution).
+- **Partner integration** — **Mutual TLS** to every national-authority endpoint. Client certificates issued by the country's IT (CPR / Skatteverket / NAV cert authority) are stored in country Key Vault and rotated via Logic App `partner-cert-rotate`. eIDAS / EU SDG / OOTS gateways use the same mTLS pattern with EU-trust-list issued certificates.
 - **Identity** — Managed identities everywhere; no service principals with secrets in code; PIM for elevated access; Conditional Access on the workforce tenant. **Microsoft Entra Permissions Management (CIEM)** continuously inventories effective entitlements across the 3 sovereign tenants and produces drift alerts; **Azure Bastion (Standard)** is the only path for caseworker / SRE shell access — no jump boxes, no public RDP/SSH.
-- **Verifiable credentials** — **Microsoft Entra Verified ID** is the issuer + verifier surface for the EUDI Wallet bridge (eIDAS 2.0). The OpenID4VP / OpenID4VCI flows live in `infra/identity/verified-id/`; see [`governance/identity/eudi-wallet-readiness.md`](../../governance/identity/eudi-wallet-readiness.md) for the rollout matrix per country.
+- **Verifiable credentials & selective disclosure** — **Microsoft Entra Verified ID** is the issuer + verifier surface for the EUDI Wallet bridge (eIDAS 2.0). The OpenID4VP / OpenID4VCI flows live in `infra/identity/verified-id/`. Citizen-controlled selective disclosure determines which attributes traverse a border: a DK→SE residency case requires only `{givenName, familyName, dateOfBirth, addressCountry, eIDAS-LoA}` (minimum disclosure envelope documented in `governance/identity/eidas-envelope-schema.json`). Citizens with an EUDI Wallet validate each disclosure interactively.
+- **Caseworker cross-tenant model** — For cross-border cases (Anna DK→SE), the originating country's caseworker (SE in the Anna scenario) is granted **B2B guest access** in the partner workforce tenant via **Microsoft Entra cross-tenant access settings**, with: scoped resource permissions (read-only on DK case, full on SE case), `userType=Guest`, MFA + Conditional Access required, time-bound (case-lifetime + 90 days). SREs operate the 3 sovereign zones from one operator hub via **Azure Lighthouse delegated access** (read + targeted contributor scopes), with role activation through PIM.
 - **Secrets** — **Azure Key Vault** with RBAC and Private Endpoint; secrets accessed via managed identity references; no plain-text secrets in app settings.
 - **Threat protection** — **Microsoft Defender for Cloud** (CSPM + workload protection), **Microsoft Defender for APIs** plugged into APIM (runtime protection on the only ingress point of the 47 consolidated portals — discovers shadow APIs, detects anomalies in token use, sensitive-data leakage), **Microsoft Sentinel** as SIEM/SOAR, with playbooks for AI-specific incidents (e.g. prompt injection, model exfiltration). Defender for Storage scans every inbound document and emits an Event Grid event consumed by `func-document-virus-scan` (Clean → tag · Malicious → tag + quarantine + Sentinel incident · Unknown → manual-review queue).
-- **Confidential computing for high-risk AI** — The Eligibility Pre-Assessor (AI Act high-risk) inference orchestration runs inside an **Azure Confidential Container App** (SEV-SNP attested TEE). The citizen prompt and the data fetched from cross-border partners are encrypted in memory during inference; attestation evidence is stored alongside the decision in **Azure Confidential Ledger** (CCF-backed, tamper-evident) for AI Act Art. 26(6) compliance.
-- **Audit retention** — Sentinel + Log Analytics retain audit and security telemetry for **180 days hot** then 7 years in cold archive (NIS2 Art. 21(2)(g) + Art. 23 evidence baseline). **Confidential Ledger** holds the cryptographic ledger of every high-risk AI decision indefinitely (append-only, hardware-attested).
-- **BCDR — Backup & Site Recovery** — **Azure Backup** vaults are deployed per country (Postgres + Redis + critical Storage accounts + VMs hosting agent runtimes); **Azure Site Recovery** replicates to a paired in-EU region within the same sovereign zone. RPO ≤ 15 min, RTO ≤ 4 h documented in `infra/security/backup-asr/`. Mandatory for ISO 27001:2022 A.5.30 + NIS2 Art. 21(2)(c) audit.
-- **Resilience proof — Chaos engineering** — **Azure Chaos Studio** experiments target the citizen-facing path (Front Door → APIM → Container Apps → Postgres) on a monthly cadence. The 99.9 % SLO announced in §11 is empirically validated through experiments that inject region failover, NSG isolation and Postgres failover.
+- **Confidential computing for high-risk AI** — The Eligibility Pre-Assessor (AI Act high-risk) inference orchestration runs inside an **Azure Confidential Container App** (SEV-SNP attested TEE) in each country. The citizen prompt and the data fetched from cross-border partners are encrypted in memory during inference; attestation evidence is stored alongside the decision in **Azure Confidential Ledger** (CCF-backed, tamper-evident) for AI Act Art. 26(6) compliance.
+- **Audit retention** — Sentinel + Log Analytics retain audit and security telemetry for **180 days hot** then 7 years in cold archive (NIS2 Art. 21(2)(g) + Art. 23 evidence baseline). AI-decision logs in LAW are configured to the **730-day** ceiling (2× the AI Act Art. 12.3 minimum). **Confidential Ledger** holds the cryptographic ledger of every high-risk AI decision indefinitely (append-only, hardware-attested). The unified retention matrix sits in `data.md §5`.
+- **BCDR — Backup & Site Recovery** — **Azure Backup** vaults are deployed per country (Postgres + Redis + critical Storage accounts + VMs hosting agent runtimes); **Azure Site Recovery** replicates to a paired in-EU region within the same sovereign zone. **Per-country topology is active-passive** with DNS-level failover at Front Door: when a primary region degrades, Front Door priority-routing flips traffic to the passive paired region within ≤ 5 min. RPO ≤ 15 min, RTO ≤ 4 h documented per workload in `infra/security/backup-asr/` and validated by Chaos Studio (§10 *Resilience proof*). Mandatory for ISO 27001:2022 A.5.30 + NIS2 Art. 21(2)(c) audit.
+- **Resilience proof — Chaos engineering** — **Azure Chaos Studio** experiments target the citizen-facing path (Front Door → APIM → Container Apps → Postgres → Foundry hub) on a **monthly** cadence in non-prod and a **quarterly** cadence in prod (live drill). The 99.9 % SLO announced in §11 is empirically validated through experiments that inject region failover, NSG isolation, Postgres failover, and a deliberate per-country Foundry hub blackout.
 - **Citizen-side privacy controls** — ePrivacy-compliant **cookie consent banner** with per-purpose toggles; Microsoft Clarity and any product analytics are gated behind explicit opt-in. Mobile push notifications (`apps/mobile/src/notifications/registerPushToken.ts`) require an in-app consent flag *before* the OS-level prompt is requested.
 - **Subject Rights Requests** — **Microsoft Priva** industrialises the GDPR DSR fulfilment pipeline (right of access, erasure, portability, rectification). The legacy `gdpr-data-erase` and `gdpr-data-export` Logic Apps still run as the *executor*, but Priva is the **system of record** for SLA tracking and DPA evidence. See [`governance/priva/`](../../governance/priva/) for the operating model.
 - **Container supply chain** — Images signed and scanned; **ACR** with content trust; SBOM generated and stored.
-- **Data protection** — At-rest encryption with customer-managed keys (per country); TLS 1.3 in transit; field-level encryption for the most sensitive PII (e.g. national ID). Operational stores are now **Azure Database for PostgreSQL Flexible Server** + **Azure Cache for Redis** (post-audit consolidation; Azure SQL and Cosmos DB removed — see [`plan_post_audit.md`](./plan_post_audit.md)).
+- **Data protection** — At-rest encryption with customer-managed keys (per country); TLS 1.3 in transit; field-level encryption for the most sensitive PII (e.g. national ID). Operational stores are **Azure Database for PostgreSQL Flexible Server** + **Azure Cache for Redis** (post-audit consolidation; Azure SQL and Cosmos DB removed — see [`plan_post_audit.md`](./plan_post_audit.md)).
 - **API security** — OAuth 2.0 + PKCE on all citizen flows; mutual TLS for partner integrations; APIM rate-limiting and IP filtering; OWASP Top 10 + LLM Top 10 controls; Defender for APIs runtime detection on every published API.
 - **Sovereignty enforcement (policy-as-code)** — Five Azure Policy initiatives in [`infra/landing-zone/azure-policy/`](../../infra/landing-zone/azure-policy/) and [`infra/security/azure-policy/`](../../infra/security/azure-policy/) deny non-EU regions, public IPs on data resources, missing tags, missing encryption-at-rest, and missing CMK; covered end-to-end by the conformance test pack at [`tests/conformance/sovereignty/`](../../tests/conformance/sovereignty/).
 
@@ -1020,15 +1064,53 @@ graph TB
 
 ## 11. Observability & Operations
 
-| Concern | Tool |
+> Full implementation recipe and per-source state in [`monitoring.md`](./monitoring.md). This section is the architectural commitment.
+
+### 11.1 Telemetry pillars
+
+| Pillar | Tool | Sovereignty |
+|---|---|---|
+| Metrics & logs | **Azure Monitor + Log Analytics** per country (3 workspaces), **180-day hot** retention, 7 y cold archive. | 1 LAW per country — never federated. |
+| Distributed tracing | **Application Insights** per country (3 instances), W3C `traceparent` propagated from Front Door → APIM → Logic Apps → Functions → D365 → Foundry agent → AOAI model call. | 1 AI per country — never federated. |
+| AI quality | **Foundry Evaluations** (continuous) + drift monitors + per-locale parity tests; alerts on safety / accuracy regressions. | Per-hub eval suite. |
+| AI Act evidence | **Confidential Ledger** anchors per high-risk decision; cross-resource KQL joins LAW (AOAI logs) ↔ App Insights (citizen events) ↔ Dataverse (caseworker disposition). | Per country. |
+
+### 11.2 SLOs and error budgets
+
+| Surface | SLO | Error budget | Burn-rate alerts |
+|---|---|---|---|
+| Citizen web portal (per country) | 99.9 % availability over 28 days | 40 min / month | 2 % budget burnt in 1 h → page on-call; 5 % in 6 h → manager escalation |
+| Voice channel (per country) | 99.5 % call answer rate, p95 turn latency ≤ 2 s | 22 h / month, p95 ≤ 2 s | latency p95 > 2 s sustained 5 min → page; answer-rate breach → page |
+| Topic-router agent | 99.5 %, p95 ≤ 1 s | 22 h / month | identical pattern |
+| Eligibility verdict | 99.9 %, p95 ≤ 3 s | 40 min / month | identical |
+| Case-creation in D365 | 99.5 %, p95 ≤ 5 s | 22 h / month | identical |
+
+### 11.3 Active monitoring
+
+- **Synthetic monitoring** — Azure Application Insights availability tests run from 5 external regions (DE, FR, UK, ES, IT) every 60 s against each citizen URL + the IVR test number; failures trigger the burn-rate alerts above. Includes a multi-step login test that exercises the full External ID → SPA → APIM → topic-router path weekly per country.
+- **Real-User Monitoring (RUM)** — Application Insights JavaScript SDK on the SPA captures TTFB, LCP, INP, CLS per page per locale per country. Per-locale slices feed the executive Power BI semantic model so a Polish-CSAT-style gap surfaces in raw telemetry before it appears in the case data.
+- **Service map** — Application Map auto-generated per country App Insights; reviewed in the monthly SRE review.
+
+### 11.4 Dashboards (operator + executive)
+
+- **Operator (per country)** — 3 Azure Workbooks per country (`platform-health`, `citizen-journey-funnel`, `ai-decision-traces`) with cross-resource panels reading from the country LAW for APIM / ACS / Logic Apps / AOAI logs. Same definition file deployed 9 times.
+- **Executive (cross-country)** — Power BI Premium semantic model on the Fabric F64 capacity in the sovereign EU region, Direct Query against the 3 App Insights + 3 LAWs + Dataverse; raw rows never leave their country.
+- **Auditor** — Drill from the `ai-decision-traces` workbook to App Insights Transaction Search, then to the Confidential Ledger entry; reading list in `monitoring.md §5.5`.
+
+### 11.5 Alerting
+
+Azure Monitor scheduled-query alerts → Action Groups → on-call rotation in **Teams** + **PagerDuty** + the country's **Sentinel** for security-class incidents. Six prebuilt rule sets (`infra/observability/alerts/`): APIM 5xx spike, D365 SLA breach risk, External ID error rate, Fabric pipeline failure, Foundry eval degradation, Logic App run failure.
+
+### 11.6 FinOps
+
+| Concern | Mechanism |
 |---|---|
-| Metrics & logs | **Azure Monitor + Log Analytics** (per zone) federated into a shared workspace, **180-day** hot retention. |
-| Distributed tracing | **Application Insights** with a unified `correlation-id` propagated from APIM through Logic Apps, Functions, D365 plugins, and Foundry traces. |
-| Dashboards | **Power BI** for business KPIs; Azure Workbooks for SRE; Foundry built-in dashboards for AI quality. |
-| Alerting | Azure Monitor alerts → Action Groups → on-call rotation in PagerDuty / Teams. |
-| AI quality | Foundry **Evaluations** (continuous) + drift monitors; alerts on safety / accuracy regressions. |
-| Document virus-scan telemetry | Defender-for-Storage scan results emit Event Grid events consumed by `func-document-virus-scan`; outcomes (`Clean` / `Malicious` / `Unknown`) carry the `traceparent` and the country tag and surface in the same App Insights dashboard. |
-| SLOs | Citizen-facing channels: 99.9 %; AI agent latency p95 < 2 s; case-creation latency p95 < 5 s. |
+| **Cost allocation** | Tags `country`, `workload`, `cost-center`; Management Group hierarchy mirrors sovereign zones; Cost Management views per country and per workload. |
+| **Token budget** | Per-agent monthly budget declared in `foundry/projects/*/agent.yaml`; CI fails if total declared > pool capacity. Power BI exec page slices tokens by agent / channel / language. |
+| **Reserved + spot** | Reserved AOAI PTU pool for the baseline (gpt-4o + gpt-realtime); pay-as-you-go for elastic peaks (gpt-4o-mini). |
+| **Anomaly detection** | Azure Cost Management anomaly alerts on every subscription; thresholds set per country at +30 % d/d. |
+| **Showback** | Cross-country chargeback rendered by Cost Management exports → Fabric Gold zone → Power BI exec page; each ministry sees its country's cost broken down by workload. |
+| **Document virus-scan telemetry** | Defender-for-Storage scan results emit Event Grid events consumed by `func-document-virus-scan`; outcomes (`Clean` / `Malicious` / `Unknown`) carry the `traceparent` and the country tag and surface in the same App Insights dashboard. |
 
 ---
 
@@ -1108,33 +1190,43 @@ sequenceDiagram
     participant Web as Web Portal (SE)
     participant EXTID as Microsoft Entra External ID SE
     participant Entra as Entra Hub
-    participant APIM as API Management
-    participant Class as Foundry — Classifier
-    participant Trans as Foundry — Translator
-    participant Doc as Foundry — Doc Extractor
-    participant Elig as Foundry — Eligibility
+    participant APIM_SE as APIM SE
+    participant SE_Hub as SE Foundry hub
     participant LA as Logic Apps SE
     participant D365 as D365 SE
-    participant DK as Partner DK Agency
+    participant Hub as Federation Hub (Azure Firewall + mTLS gateway)
+    participant DK as Partner DK Agency (CPR)
     Citizen->>Web: Start "Move to Sweden" application
-    Web->>EXTID: Login (BankID)
+    Web->>EXTID: Login (BankID + Verified ID wallet attribute disclosure)
     EXTID->>Entra: Federated login
-    Entra-->>Web: ID token (with country claim)
-    Citizen->>Web: Upload DK passport, lease
-    Web->>APIM: Submit application
-    APIM->>Class: Classify intent + language
-    APIM->>Trans: Translate uploaded docs DA→SV
-    APIM->>Doc: Extract data from passport & lease
-    APIM->>Elig: Pre-assess eligibility
-    Elig-->>APIM: Recommendation + lineage
-    APIM->>LA: Trigger workflow
-    LA->>DK: Request residency confirmation (claims-based, no PII copy)
-    DK-->>LA: Confirmation token
-    LA->>D365: Create case + attach AI recommendation
-    D365-->>Citizen: Status notification (via ACS, in DA + SV)
-    Note over D365: Caseworker reviews AI recommendation, decides
+    Entra-->>Web: ID token (country claim · LoA · selective-disclosure attributes)
+    Citizen->>Web: Upload DK passport + lease
+    Web->>APIM_SE: Submit application (Idempotency-Key: <uuid>)
+    APIM_SE->>SE_Hub: Classify + Translate + Extract + Eligibility (all in SE hub)
+    SE_Hub-->>APIM_SE: Verdict + traceparent + Confidential-Ledger anchor
+    APIM_SE->>LA: Trigger workflow (correlation-id propagated)
+    LA->>Hub: Cross-border claims envelope (signed JWS, see §13.1.x)
+    Hub->>DK: mTLS → POST /residency/confirm with minimum-disclosure envelope
+    DK-->>Hub: Signed confirmation token (eIDAS LoA-high)
+    Hub-->>LA: Confirmation forwarded
+    LA->>D365: Create case + attach AI verdict + Ledger anchor
+    D365-->>Citizen: Status notification (ACS, in DA + SV)
+    Note over D365: Caseworker reviews AI verdict; disposition written to Confidential Ledger
     D365-->>Citizen: Final decision (4 days target)
 ```
+
+#### 13.1.1 Cross-border message envelope contract
+
+| Aspect | Value |
+|---|---|
+| **Transport** | mTLS over HTTPS through the federation hub Azure Firewall Premium; client cert issued by the country trust list. |
+| **Payload schema** | Signed JWS (JSON Web Signature, RFC 7515) with `eIDAS-LoA`, `givenName`, `familyName`, `dateOfBirth`, `originatingCountry`, `targetCountry`, `correlationId`, `idempotencyKey`. **No** national ID number, **no** copy of the document — only attested attributes (selective disclosure). Schema in `governance/identity/eidas-envelope-schema.json`. |
+| **Idempotency** | `Idempotency-Key` is a UUID v4 generated by APIM at the start of the flow; partner is required to return the same response for the same key over a 24 h window. Replays do not double-create a case. |
+| **Retry semantics** | Exponential backoff (1 s, 4 s, 16 s, 64 s) with deadline 5 min; after deadline the Logic App routes the case to a caseworker with `crossBorderPartnerUnreachable=true`. |
+| **Circuit breaker** | APIM `circuit-breaker` policy per partner endpoint (50 % failure over 60 s → open for 5 min). When open, the LA fast-fails to the manual queue. |
+| **SLA** | Each partner agency publishes p95 ≤ 10 s for synchronous calls, p95 ≤ 24 h for asynchronous confirmations. SLA breaches feed Sentinel. |
+| **Audit** | Both sides write the same `correlationId` to their respective audit logs (UDCSP App Insights + LAW + Confidential Ledger ; partner's national audit system). A regulator can reconstruct the cross-border interaction by matching on `correlationId`. |
+| **Replay protection** | The JWS `iat` (issued-at) is verified within ±5 min; the `jti` (JWT ID) is recorded for 24 h to reject replays. |
 
 ### 13.2 Citizen Assistant (voice) answering a tax question
 
@@ -1310,7 +1402,7 @@ UDCSP therefore substitutes Microsoft Entra External ID for Azure AD B2C across 
 | **Azure Storage / ADLS Gen2** | Three per-country Storage accounts: citizen-uploads/ (documents), voice-recordings/ (PSTN audio + STT transcripts, WORM 90 days), email-attachments/ (email binaries). All CMK-encrypted. See data.md § 3.2. |
 | **Azure Backup + Azure Site Recovery** | BCDR for Postgres + Redis + critical Storage + agent VMs / Container App environments; per-country vaults; RPO ≤ 15 min / RTO ≤ 4 h. *(Post-audit addition; previously absent.)* Bicep at [`infra/security/backup-asr/`](../../infra/security/backup-asr/). |
 | **Azure Confidential Ledger** | Tamper-evident, CCF-backed log of every high-risk AI decision (AI Act Art. 26(6)) and every Foundry lineage event that needs cryptographic integrity beyond what App Insights / Fabric can offer. *(Post-audit addition.)* Bicep at [`infra/security/confidential-ledger/`](../../infra/security/confidential-ledger/). |
-| **Azure Chaos Studio** | Resilience experiments (region failover, NSG isolation, Postgres failover) that empirically validate the 99.9 % citizen-channel SLO. *(Post-audit addition.)* Bicep at [`infra/security/chaos-studio/`](../../infra/security/chaos-studio/). |
+| **Azure Chaos Studio** | Resilience experiments (region failover, NSG isolation, Postgres failover, per-country Foundry hub blackout) that empirically validate the 99.9 % citizen-channel SLO. Monthly cadence in non-prod, quarterly drill in prod. *(Post-audit addition.)* Bicep at [`infra/security/chaos-studio/`](../../infra/security/chaos-studio/). |
 | **Azure Bastion (Standard)** | Sole admin shell-access path for SREs and caseworker support — no jump boxes, no public RDP/SSH. *(Post-audit addition.)* Bicep at [`infra/identity/bastion/`](../../infra/identity/bastion/). |
 | **Microsoft Entra Permissions Management (CIEM)** | Cross-tenant entitlement audit + drift detection across the 3 sovereign tenants. *(Post-audit addition.)* Onboarding model at [`infra/identity/ciem/`](../../infra/identity/ciem/). |
 | **Microsoft Entra Verified ID** | Issuer + verifier surface for the EUDI Wallet bridge (eIDAS 2.0). OpenID4VP / OpenID4VCI flows in [`infra/identity/verified-id/`](../../infra/identity/verified-id/). *(Post-audit addition — moves the platform from "EUDI readiness" to active VC issuance/verification.)* |
@@ -1411,7 +1503,7 @@ The case study mandates 18 Azure services as the *demo* surface. The platform de
 | **Azure Confidential Computing (CVMs / Confidential Containers)** | Hosts the high-risk Eligibility agent so the citizen prompt + payslip data are protected by a TEE during inference, even from a privileged Azure operator. | `ConfidentialCompute` |
 | **Microsoft Defender for APIs** | Runtime protection on APIM (the entry point for every channel + every cross-zone call). Detects credential stuffing, schema violations, anomalous payloads. | `Security` (Defender plan toggle) |
 | **Azure Backup + Azure Site Recovery** | Per-zone BCDR baseline (PostgreSQL flexible-server PITR, ADLS soft-delete, ASR replication of the Container Apps environment to the paired region). Without this an ISO 27001 / NIS2 audit fails. | `BackupAsr` |
-| **Azure Chaos Studio** | Quarterly fault-injection campaign that proves the 99.9 % SLO advertised on the citizen surfaces — not run on every install, but the experiments and target identities exist. | `ChaosStudio` |
+| **Azure Chaos Studio** | Quarterly fault-injection campaign that proves the 99.9 % SLO advertised on the citizen surfaces — not run on every install, but the experiments and target identities exist. Monthly cadence in non-prod is documented in §10 *Resilience proof*. | `ChaosStudio` |
 
 > **Why call this out?** Every service above is a *production* concern, not a demo concern. Listing them honestly in the architecture document avoids the impression that the demo surface is the entire platform. The installer treats them as first-class phases — they have `-TestOnly` checks, `-WhatIf` plans, and dedicated `Test-<Phase>` smoke verbs — so an operator can prove the audit posture without running a citizen scenario through them.
 

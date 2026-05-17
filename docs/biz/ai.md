@@ -847,13 +847,14 @@ sequenceDiagram
 
 | Concern | Approach |
 |---|---|
-| **Regions** | Foundry hubs in Sweden Central (DK + SE workloads) and Norway East (NO workloads). Cross-border calls go through APIM only. |
-| **Model deployments** | One PTU pool per hub for `gpt-4o`, one pay-as-you-go pool for `gpt-4o-mini`. Capacity reserved for Eligibility (high-risk SLA). |
-| **Capacity governance** | `foundry/projects/*/agent.yaml` declares `min_tps` and `max_tps`. CI fails if total declared > pool capacity. |
-| **Cost guardrails** | Per-project budget alerts in Cost Management; Foundry tracing exports `tokens_in/out` per agent; Power BI dashboard slices cost by agent / channel / language. |
-| **Promotion** | DEV → STAGING → PROD via GitHub Actions. Every promotion runs the gold + bias + adversarial evals; promotion blocks on regression > 1 % on any guarded metric. |
-| **Rollback** | `agent_version` is immutable; rollback flips a Foundry deployment alias and is fully auditable. |
-| **DR** | Foundry config is in code (Bicep + YAML); Sweden Central DR pair is Sweden South (citizen-facing) + Norway East (workforce). |
+| **Regions** | **3 sovereign Foundry hubs in production — one per country.** DK hub in `northeurope`, SE hub in `swedencentral`, NO hub in `norwayeast`. Each country's citizen interaction stays in its country's hub end-to-end; no agent call ever crosses a national border. Cross-country case handoffs travel as signed claims envelopes through APIM + the federation-hub mTLS gateway (see `architecture.md §13.1.1`). |
+| **gpt-realtime sovereignty exception** | Microsoft `gpt-realtime` is currently rolled out to `swedencentral` and `northeurope` but **not yet to `norwayeast`**. The NO voice orchestrator (ACS Call Automation + Container App, both in NO) opens its WebSocket to the SE hub's gpt-realtime under Microsoft EU Data Boundary + Nordic-DPA cross-border cooperation. Citizen-side audio + STT transcripts persist only in NO. The day gpt-realtime lands in `norwayeast`, a single Bicep parameter flip moves the inference to NO hub. |
+| **Model deployments** | Per hub: one PTU pool for `gpt-realtime` (voice baseline) + one PTU pool for `gpt-4o` (eligibility + assistant) + one pay-as-you-go pool for `gpt-4o-mini` (classifier + doc extractor). Capacity reserved for Eligibility (high-risk SLA). |
+| **Capacity governance** | `foundry/projects/*/agent.yaml` declares `min_tps` and `max_tps` per hub. CI fails if total declared > pool capacity. |
+| **Cost guardrails** | Per-project + per-hub budget alerts in Cost Management; Foundry tracing exports `tokens_in/out` per agent per country; Power BI dashboard slices cost by agent / channel / language / country (see `architecture.md §11.6`). |
+| **Promotion** | DEV → STAGING → PROD via GitHub Actions, replicated in each of the 3 hubs. Every promotion runs the gold + bias + adversarial + per-locale parity evals; promotion blocks on regression > 1 % on any guarded metric. Champion-challenger pattern with 5 % shadow traffic for high-risk Eligibility (see `architecture.md §5.2.1`). |
+| **Rollback** | `<agent_name>:<version>` is immutable; rollback flips a Foundry deployment alias and is fully auditable. Per-hub, so a rollback in DK does not affect SE or NO. |
+| **DR** | Foundry config is in code (Bicep + YAML); active-passive per country with paired EU region within the same sovereign zone (RPO ≤ 15 min, RTO ≤ 4 h). Active-active across the 3 hubs is implicit because each hub serves only its country — the loss of one hub never stops the platform globally. |
 
 ---
 
