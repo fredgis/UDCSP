@@ -96,35 +96,23 @@ Citizen-side audio and STT transcripts persist only in Norway in the ADLS Gen2 `
 
 UDCSP is built on a deliberate stack of well-named design patterns, each chosen because it solves a concrete problem.
 
-The voice channel is the most agentic of the three. When a Norwegian citizen named Lars dials the toll-free number, the call lands on Azure Communication Services in Norway, Event Grid routes the call event to a Container App orchestrator running in `norwayeast`, and the orchestrator opens a bidirectional WebSocket to Azure OpenAI gpt-realtime — a single stream that combines speech-to-text, reasoning, and text-to-speech.
+The voice channel is the most agentic. When a citizen dials the toll-free number, the call lands on Azure Communication Services, a Container App orchestrator picks it up, and a bidirectional WebSocket opens to Azure OpenAI gpt-realtime — a single stream that combines speech-to-text, reasoning, and text-to-speech. Inside that stream, the LLM autonomously decides whether to answer directly, to route the request to a specialist agent, or to warm-transfer the call to a human caseworker. This is the Microsoft Agent Framework Agents-as-Tools pattern, applied to a real phone call.
 
-Inside that stream, the LLM autonomously decides whether to answer directly, to invoke the `lookup_topic_router` function tool, or to invoke `escalate_to_human`. This is the Microsoft Agent Framework Agents-as-Tools pattern, applied to a real PSTN channel — not a chatbot inside a browser, but a citizen with a phone.
+The application-intake path uses saga orchestration. A Logic App walks the case through six named states with explicit compensating actions when any step fails. The partner-agency call is wrapped in a circuit breaker — a sustained failure rate opens the breaker, the upstream falls fast to a manual caseworker queue, and citizens never see a thirty-second timeout. Every cross-border message carries an idempotency key and a replay-protected signed envelope.
 
-The application-intake path uses saga orchestration. The Logic App `cross-border-residency` is a six-step orchestration with named states — `document-uploaded`, `extracted`, `translated`, `pre-assessed`, `partner-confirmed`, `case-created` — and explicit compensating actions when any step fails.
+The data path uses a read-write split. Writes go through Logic Apps and end up in Dataverse; reads go through the API gateway directly to Dataverse with response caching. The caseworker workspace is built as a strangler fig — today it writes to a generic activity table, tomorrow to the canonical case entity when D365 Customer Service licences land. Same schema, single repointing, no UI change.
 
-The partner-agency call is wrapped in a circuit breaker at the APIM layer. Fifty per cent failure over sixty seconds opens the breaker for five minutes; the upstream is guarded from a partner outage and falls fast to a manual caseworker queue when the breaker is open. Every cross-border message carries an `Idempotency-Key` (UUID v4) and a signed JWS — `iat ± 5 minutes`, `jti` recorded for 24 hours — so a partner replay does not double-create a case and a hostile replay is rejected outright.
-
-The data path uses a CQRS-light split. The write path goes through the Logic App `application-intake` and ends up in Dataverse; the read path goes through an APIM op-policy directly on Dataverse for *My cases*, with response caching at the gateway. The caseworker workspace is built as a strangler fig: today the SPA writes to the Dataverse `task` activity entity, tomorrow when D365 Customer Service licences land it will write to the canonical `udcsp_application` entity — same schema, single Logic App repointing, no SPA change.
-
-The defence-in-depth posture is the most visible pattern. Six independent layers each block a different class of threat: Front Door + WAF at L7, DDoS Protection Standard at L3/L4, Azure Firewall Premium at egress, APIM rate-limit + Defender for APIs at the API surface, Private Endpoints + per-country Private DNS at the data plane, and Azure AI Content Safety + jailbreak detector + Eligibility deterministic rule plug-in at the AI surface. A malicious prompt attempting to pivot the Eligibility verdict has to defeat all six. It cannot.
+The defence-in-depth posture is the most visible pattern. Six independent layers each block a different class of threat — Front Door with WAF at L7, DDoS Protection Standard at L3/L4, Azure Firewall Premium at egress, the API gateway rate-limiting and runtime API protection, Private Endpoints with per-country Private DNS at the data plane, and Content Safety with a jailbreak detector and deterministic rule plug-ins at the AI surface. A malicious prompt attempting to pivot the eligibility verdict has to defeat all six. It cannot.
 
 # Security
 
-Security is principle P3 of the architecture — a platform-level invariant, not a project-level afterthought. The implementation spans nine security subdomains and eight identity subdomains.
+Security is principle P3 of the architecture — a platform-level invariant, not a project-level afterthought. The implementation spans nine security subdomains and eight identity subdomains, but the story rests on three pillars.
 
-On the data and decision side, the Eligibility Pre-Assessor agent — the only high-risk AI under Annex III §5(b) of the EU AI Act — runs inside an Azure Confidential Container App with SEV-SNP attestation. Every prompt and every fragment of partner-agency data fetched for the verdict are encrypted in memory during inference, even from a privileged Azure operator.
+The high-risk AI agent — the Eligibility Pre-Assessor — runs inside a SEV-SNP attested Trusted Execution Environment. Every prompt and every fragment of partner-agency data is encrypted in memory during inference, even from a privileged operator. Every verdict is hashed and appended to Azure Confidential Ledger, a tamper-evident log that gives cryptographic proof of integrity. The caseworker disposition that follows is anchored to the same ledger entry. Six months later, a regulator can reconstruct the decision end-to-end.
 
-Once a verdict is computed, it is hashed and appended to Azure Confidential Ledger, a CCF-backed tamper-evident log that gives cryptographic proof of integrity beyond what Application Insights or Microsoft Fabric can offer. The caseworker disposition that follows — confirm, adjust, reject, request more info — is anchored to the same ledger entry. Six months later, a regulator can reconstruct the decision end-to-end from the ledger anchor.
+Identity is sovereign. Three CIAM tenants federate citizens through their national eIDs — MitID for Denmark, BankID and Freja+ for Sweden, ID-porten and MinID for Norway. Microsoft Entra Verified ID handles the EUDI Wallet bridge with selective disclosure, so a cross-border case only crosses with the minimum attributes required — no national ID number, no document copy. CIEM continuously inventories entitlements across the three tenants. Azure Bastion is the only path for caseworker and SRE shell access; the only public IP per country is the Bastion endpoint.
 
-On the identity side, three CIAM tenants federate citizens through their national eIDs. MitID for Denmark, BankID and Freja+ for Sweden, ID-porten and MinID for Norway, via certified OIDC brokers.
-
-Microsoft Entra Verified ID is the issuer and verifier for the EUDI Wallet bridge under eIDAS 2.0, with selective disclosure built in. A DK to SE residency case only crosses the border with the minimum disclosure envelope `{givenName, familyName, dateOfBirth, addressCountry, eIDAS-LoA}` — no national ID number, no document copy. Citizens holding an EUDI Wallet validate each disclosure interactively.
-
-Microsoft Entra Permissions Management (CIEM) continuously inventories entitlements across the three sovereign tenants and produces drift alerts. Azure Bastion (Standard) is the only path for caseworker and SRE shell access — there are no jump boxes, no public RDP, no public SSH anywhere on the platform. The only public IP per country is the Bastion PIP.
-
-On the network side, Azure Firewall Premium is the single egress path for every spoke workload, with FQDN allow-lists per workload. The Foundry agents reach `*.cognitiveservices.azure.com` only, the Logic Apps reach the published national-authority endpoints only. TLS inspection is on for any HTTP egress to a non-Microsoft destination. Citizen documents never leak through an unintended TLS path.
-
-On the response side, Microsoft Defender for Cloud covers CSPM and workload protection. Microsoft Defender for APIs covers the APIM surface. Microsoft Sentinel is the SIEM and SOAR with AI-specific playbooks for prompt injection and model exfiltration. Microsoft Defender for Storage scans every inbound document — `Clean` lets it through, `Malicious` quarantines it and opens a Sentinel incident, `Unknown` routes it to a manual-review queue.
+The network is locked down at egress, not just at ingress. Azure Firewall Premium is the single egress for every spoke workload, with FQDN allow-lists per workload type. The Foundry agents reach only the Cognitive Services endpoints. The Logic Apps reach only the published partner-agency endpoints. TLS inspection is on for any non-Microsoft destination. Citizen documents cannot leak through an unintended path.
 
 # Compliance
 
@@ -172,23 +160,13 @@ Burn-rate alerts page the on-call when 2 % of the monthly budget burns in 1 hour
 
 FinOps is a first-class observability concern. Every resource is tagged with `country`, `workload` and `cost-center`. The Management Group hierarchy mirrors the sovereign zones. The per-agent monthly token budget lives in `foundry/projects/*/agent.yaml` and CI fails when the total declared budget exceeds the AOAI pool capacity. Reserved PTU baseline covers the steady-state of gpt-5.4 and gpt-realtime; pay-as-you-go covers elastic peaks on gpt-5.4-mini.
 
-![One Azure Workbook in production — the `ai-decision-traces` view used by Hans for his six-month audit replay.](images/screen11.png){width=70%}
-
 # Agentic behaviour
 
 UDCSP is multi-agent by construction, not by veneer.
 
-The most visible agentic moment is the voice channel. When Lars asks for help with his tax refund, gpt-realtime receives his audio, reasons over the request, and decides on its own whether to answer, to invoke `lookup_topic_router` (which routes to one of the six downstream Foundry experts), or to invoke `escalate_to_human` (which performs the warm transfer to a D365 voice workstream). The LLM is treated as a tool-using agent in the canonical Microsoft Agent Framework sense.
+The most visible agentic moment is the voice channel. When the citizen asks for help, the LLM receives the audio, reasons over the request, and decides on its own whether to answer directly, to route the question to a specialist agent, or to escalate to a human. The model is treated as a tool-using agent — the canonical Microsoft Agent Framework pattern.
 
-Beyond voice, UDCSP demonstrates four further coordination patterns.
-
-Handoff is the bread and butter. The Topic Router passes the conversation to the Citizen Assistant, the Doc Extractor, the Classifier, the Translator or the Eligibility Pre-Assessor depending on intent, and each can hand back.
-
-State-graph orchestration is what Logic Apps deliver. `cross-border-residency` is a six-step graph with named states and compensating actions on partner-agency failure.
-
-Reflection and critique is how the Eligibility verdict is consumed. The Caseworker Helper takes the verdict, surfaces the confidence and the missing evidence in natural language, and the caseworker's disposition is recorded back as ground truth — feeding the next training iteration.
-
-Shadow and canary is how new models reach production. A challenger gets 5 % of production traffic. The Logic App `ai-decision-shadow-mode` replays anonymised prompts in parallel through the challenger. The deployment alias is autonomously flipped only if every guarded metric passes.
+Beyond voice, UDCSP demonstrates four further coordination patterns. **Handoff** is the bread and butter — the Topic Router passes the conversation to one of six specialised downstream agents depending on intent. **State-graph orchestration** is what Logic Apps deliver — the cross-border case is a six-step graph with named states and compensating actions. **Reflection** is how the eligibility verdict is consumed — the Caseworker Helper surfaces the confidence and missing evidence in natural language, and the caseworker's disposition feeds the next training iteration as ground truth. **Shadow and canary** is how new models reach production — a challenger gets 5 % of production traffic, an automated job replays anonymised prompts through it, and the alias is autonomously flipped only if every guarded metric passes.
 
 The agentic story is not a chatbot. It is a system of seven specialised experts, two function tools, one orchestrator, five coordination patterns — all under the supervision of one human caseworker.
 
@@ -210,71 +188,65 @@ The net result is the platform you see today. Forty-seven Bicep modules. Twenty-
 
 The discipline that made parallelism possible was strict folder ownership. No two agents wrote to overlapping paths. Contracts between agents — registry entry IDs, ICU catalogue keys, OpenAPI specs, mirroring configuration — were resolved at orchestrator finalisation. Risks observed during the build — sub-agents writing to overlapping folders, inconsistent IDs, i18n drift, installer modules referencing missing test scripts — were caught by the orchestrator before any sub-agent could create a regression.
 
-# Demonstration scenarios
+# Personas — who actually uses the platform
 
-The live walkthrough covers seven scenarios — four citizen journeys, one security incident, one compliance audit, one DevOps onboarding. Each is directly executable on the deployed platform, with a named persona and a clear hook for the executive audience.
+The platform is not built for an abstract "user". It is built for **seven named personas** the case study calls out, each with a real journey, a real channel and a real demand. The next pages walk through each one in turn.
 
 ![Anna — Danish citizen moving DK to SE; flagship cross-border story.](images/Demo1.png){width=35%}
 
-Anna lands on the Swedish portal in Danish (auto-detected from her browser, switchable to Swedish or English), signs in with her Danish eID through External ID federation, and starts a residency application. She uploads her DK passport and her Stockholm lease.
+**Anna** is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
 
-The Document Extractor returns structured fields in under four seconds. The Translator turns the lease from Danish into Swedish, preserving the administrative vocabulary the Skatteverket caseworker expects. The Eligibility Pre-Assessor returns a confidence-scored verdict with the rule-by-rule evidence trail and the list of missing documents. Anna consents on the explanation — not on the verdict alone — and submits.
+In under four seconds, the AI extracts the structured fields, translates the lease into Swedish, and proposes an eligibility verdict with the rule-by-rule evidence. Anna consents on the explanation, not on the verdict.
 
-The Logic App `cross-border-residency` orchestrates the case through the federation hub mTLS gateway to the Danish CPR partner, receives the signed claims confirmation token, and creates the case in the Swedish D365 environment with the AI verdict attached. A Swedish caseworker reviews and disposes.
+The platform orchestrates the case to the Danish authority, receives a signed confirmation, and creates the case in the Swedish caseworker queue. A human caseworker reviews and decides.
 
-SLA target: four days, against the 28-day baseline.
+What used to take 28 days now takes 4.
 
 ![Lars — blind Norwegian citizen on the voice channel; gpt-realtime plus function tools.](images/Demo2.png){width=35%}
 
-Lars is blind. He dials `+33 801 150 799`, the Norwegian toll-free number bound to the Norwegian Azure Communication Services resource. Event Grid routes the call event to the Container App voice orchestrator running in `norwayeast`.
+**Lars** is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
 
-The orchestrator opens its WebSocket to gpt-realtime and the conversation begins. Lars speaks Norwegian. The model answers in Norwegian. On the question about his tax refund, the LLM invokes the `lookup_topic_router` function tool, the Topic Router routes to the Citizen Assistant, the Citizen Assistant grounds its answer on the Skatteetaten knowledge base, and the voice channel returns the result.
+The AI brain answers him in Norwegian without a single button to press. When his question hits a tax-refund topic, the model autonomously routes to the right Foundry agent under the hood — the citizen never knows the architecture, only the conversation.
 
-When Lars asks to speak with a human, the model invokes `escalate_to_human` and the call is warm-transferred to a D365 voice workstream queue with the full context attached. Audio and STT transcript persist in `voice-recordings/` with WORM 90 days.
+When Lars asks to speak with a human, the call is warm-transferred to a caseworker queue with the full context attached. The transcript stays in Norway.
 
-Every turn is in the Norwegian Application Insights workbook within two minutes, with a clickable `operation_Id` that drills into the full traceparent chain.
+Voice latency p95 ≤ 2 seconds. Lars is treated as a first-class citizen on the platform, not an accessibility afterthought.
 
 ![Maria — Polish caregiver in Denmark using NVDA; accessibility as a citizen right.](images/Demo3.png){width=35%}
 
-Maria is a Polish caregiver living in Denmark. She uses NVDA on Windows 11 and keyboard navigation. The SPA loads in Polish, end-to-end — labels, error messages, AI summary, consent text.
+**Maria** is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
 
-The axe-core CI gate has been green on the citizen rail for months. The RouteAnnouncer and the cookie-banner accessibility patches shipped earlier in the year mean every route change is announced and every consent prompt is reachable by keyboard.
+The portal loads in Polish, end-to-end — labels, error messages, AI summary, consent text. The accessibility CI gate has been green for months. The Translator agent localises the citizen-facing summary.
 
-The citizen-journey-funnel workbook lights up with `customDimensions['locale']='pl'`. The per-locale evaluation suite has the Polish gold dataset in CI — if a model promotion regresses Polish more than 0.4 below the Swedish baseline, it blocks.
-
-Accessibility is not a feature in UDCSP. It is a citizen right under the Web Accessibility Directive 2016/2102 and WCAG 2.1 AA.
+If a model promotion ever regresses Polish more than 0.4 below the Swedish baseline, the promotion is blocked. Accessibility is not a feature on this platform — it is a citizen right under the Web Accessibility Directive and WCAG 2.1 AA.
 
 ![Erik — Danish SMB owner on iPhone; responsive PWA, native iOS document chooser.](images/Demo4.png){width=35%}
 
-Erik runs a small construction business in Aarhus. He starts an income-based benefit application on his iPhone, on the same `udcsp.fredgis.com` URL Anna used on her laptop. Twenty-one media queries cover the responsive breakpoints from a 375 px iPhone SE to a 430 px iPhone 14 Pro Max.
+**Erik** runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
 
-He uses the native iOS document picker to snap a photo of his April payslip. The Document Extractor returns the structured fields. The AI eligibility verdict appears inline with the explanation. Submit. *My cases* timeline updates in real time.
+The portal is the same SPA Anna used on her laptop — there is no separate native binary, no separate mobile codebase. Twenty-one media queries reflow the layout from a 375 px iPhone SE to a 430 px Pro Max. The native iOS document picker captures his payslip; the AI returns the structured fields and an eligibility verdict inline.
 
-Demo 4 proves there is no separate native binary, no separate codebase, no separate caseworker workflow. Mobile parity is built in, not bolted on.
+Mobile parity is built in, not bolted on.
 
-![Prompt injection contained at three independent layers — APIM, Content Safety, deterministic rules.](images/Demo8.png){width=35%}
+![Prompt injection contained at three independent layers.](images/Demo8.png){width=35%}
 
-A red-team prompt arrives on the chat widget attempting to extract the system prompt, then to pivot the Eligibility verdict by injecting a tool-call.
+**A hostile prompt** arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
 
-APIM rate-limits the spike within the rolling 60-second window. Microsoft Defender for APIs scores the request as anomalous and writes a Sentinel incident. The Foundry Content Safety jailbreak detector emits a `safety.block` `customEvent`. The Eligibility deterministic rule plug-in rejects the request before LLM inference ever fires.
-
-The Sentinel playbook automatically isolates the offending session, recovers the citizen flow, and exports the audit pack with the full `correlationId` chain attached. The whole containment takes 38 seconds. No citizen data was exposed.
+The security playbook isolates the session, recovers the citizen flow, and exports the audit pack. The containment takes 38 seconds. No citizen data is exposed.
 
 ![Hans — Danish DPO replaying a six-month-old AI decision in under ten minutes.](images/Demo7.png){width=35%}
 
-Hans is the Danish DPO. A citizen has filed an Article 15 subject access request, asking for every AI decision UDCSP made about her over the past six months.
+**Hans** is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
 
-Hans opens Log Analytics workspace `udcsp-dk-prod-law`, filters `AzureDiagnostics` on `ResourceProvider == "MICROSOFT.COGNITIVESERVICES"` and the citizen's `correlationId`, pulls the exact model deployment name, prompt tokens, completion tokens, latency and status code for every model call. He pivots to `ApiManagementGatewayLogs` on the same `operation_Id` and gets every inbound request. He pivots to Dataverse for the caseworker disposition. He checks the Confidential Ledger entry for the tamper-evident anchor.
+Hans opens the per-country Log Analytics workspace, filters by the citizen's correlation ID, and reconstructs the full decision — the model deployment, the tokens consumed, the verdict, the human disposition, the cryptographic ledger anchor.
 
-The decision happened six months ago — well within the 730-day LAW retention configured to honour the EU AI Act Article 12.3 minimum of six months, with a 2× safety margin. The full audit pack assembles in under ten minutes.
+The decision happened six months ago. It is still queryable two years out, configured to twice the AI Act minimum retention. The full audit pack assembles in under ten minutes.
 
 ![Ole — DevOps engineer onboarding a clean MCAPS tenant in a single command.](images/Demo10.png){width=35%}
 
-Ole is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean MCAPS sandbox tenant, authenticates with `az login`, `pac auth create` and `Connect-MgGraph`, then runs the master installer.
+**Ole** is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
 
-Twenty-five phases execute in dependency order — Landing Zone, Identity, Security, Data, Observability, APIM, Foundry, D365, Frontend, Voice, Governance, QA. The A15 synthetic-data agent seeds tens of thousands of personas, applications and multilingual conversations into Fabric and Foundry, in parallel with the frontend deployment.
-
-The A14 smoke suite runs at the end — identity, APIM health, Foundry agent reachability, D365 case creation, Power BI dataset refresh, accessibility quick-scan. The HTML report is green across the board.
+Twenty-five phases execute in dependency order. The synthetic-data agent seeds tens of thousands of personas and conversations into Fabric and Foundry in parallel with the frontend deployment. The smoke suite runs at the end and the HTML report is green across the board.
 
 From `git clone` to a working federated platform with realistic data: one command. The same script runs in CI on every PR that touches infrastructure or apps.
 
