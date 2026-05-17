@@ -137,6 +137,8 @@ If the evaluator wants a focused tour of one channel, here is the recommended de
 
 ### 🌐 Demo 1 — Anna moves from Copenhagen to Stockholm (flagship)
 
+<p align="center"><img src="../../images/Demo1.png" alt="Demo 1 — Anna cross-border DK→SE" width="480" /></p>
+
 > The scenario the entire platform was built for. **Cross-border residency transfer in 4 days, end to end.**
 > 📖 *This demo crosses three channels — see the deep-dives:* 🌐 [`web.md`](./web.md) · 📱 [`mobile.md`](./mobile.md) · 🧑‍💼 [`caseworker.md`](./caseworker.md) · 📲 [`sms.md`](./sms.md) · 📧 [`email.md`](./email.md).
 
@@ -206,6 +208,8 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 
 ### 🌐 Demo 2 — Lars asks the voice assistant about his tax refund (Norwegian)
 
+<p align="center"><img src="../../images/Demo2.png" alt="Demo 2 — Lars NO voice channel" width="480" /></p>
+
 > **Voice channel + multilingual GenAI assistant + safe escalation to a human.**
 > 📖 *For the full architecture of this channel — call lifecycle, neural voices, accessibility, sovereignty, and **how to procure a real Nordic toll-free number** — see [`voice.md`](./voice.md).*
 
@@ -262,6 +266,8 @@ Lars dials the national tax-administration toll-free number. He is greeted in No
 ---
 
 ### 🌐 Demo 3 — Maria submits a benefit application with a screen reader (Polish in Denmark)
+
+<p align="center"><img src="../../images/Demo3.png" alt="Demo 3 — Maria Polish + screen reader in DK" width="480" /></p>
 
 > **Accessibility (WCAG 2.1 AA) + minority language + AI helps without taking control.**
 > 📖 *For the full architecture of this channel — landmarks, focus management, axe-core CI, contrast tokens, dyslexic font, accessibility statement — see* 🌐 [`web.md`](./web.md). *AI assistance side: see* 💬 [`chat.md`](./chat.md).
@@ -380,6 +386,8 @@ NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader fr
 
 ### 🌐 Demo 4 — Erik snaps a payslip for an income-based benefit (Danish, mobile)
 
+<p align="center"><img src="../../images/Demo4.png" alt="Demo 4 — Erik mobile payslip upload" width="480" /></p>
+
 > **Mobile + AI Document Intelligence + Eligibility — a paper-heavy process, paperless.**
 > 📖 *For the full architecture of this channel — Expo native camera bridge, biometric MSAL re-auth, push notifications, OS-level a11y — see* 📱 [`mobile.md`](./mobile.md).
 
@@ -437,6 +445,8 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 
 ### 🛠️ Demo 5 — Astrid the caseworker triages a queue with Copilot for Service
 
+<p align="center"><img src="../../images/Demo56.png" alt="Demo 5/6 — Astrid caseworker + AI pre-assessment" width="480" /></p>
+
 > **Caseworker productivity — the back-office story.**
 > 📖 *For the full architecture of this channel — D365 Customer Service, Copilot for Service prompts, eligibility AI as recommendation-not-decision, per-country Dataverse, EU AI Act Art. 14 oversight — see* 🧑‍💼 [`caseworker.md`](./caseworker.md).
 
@@ -488,6 +498,8 @@ Astrid opens her queue. Copilot for Service summarises each case in SV, suggests
 
 ### 🛠️ Demo 6 — Eligibility model proposes, caseworker disposes (human in the loop)
 
+<p align="center"><img src="../../images/Demo56.png" alt="Demo 5/6 — AI proposes, caseworker disposes" width="480" /></p>
+
 > **EU AI Act high-risk system in production — with the safety net visible.**
 
 | | |
@@ -537,6 +549,8 @@ A case where the AI says "ineligible — confidence 0.71" but Astrid disagrees. 
 ---
 
 ### 🛡️ Demo 7 — Hans the DPO audits a six-month-old AI decision
+
+<p align="center"><img src="../../images/Demo7.png" alt="Demo 7 — Hans DPO 6-month audit replay" width="480" /></p>
 
 > **Trust, by construction. Trace any decision, any day.**
 
@@ -589,6 +603,8 @@ A citizen complains that an eligibility decision from six months ago was unfair.
 
 ### 🛡️ Demo 8 — A prompt-injection attempt is contained and investigated
 
+<p align="center"><img src="../../images/Demo8.png" alt="Demo 8 — Prompt-injection containment + SOC" width="480" /></p>
+
 > **Security — AI safety as a SOC concern, not just a model concern.**
 
 | | |
@@ -637,6 +653,8 @@ A malicious citizen attempts to make the Citizen Assistant exfiltrate caseworker
 ---
 
 ### 📊 Demo 9 — CIO reviews per-country, per-language outcomes & 47-portal sunset
+
+<p align="center"><img src="../../images/Demo9.png" alt="Demo 9 — CIO outcomes + 47-portal sunset" width="480" /></p>
 
 > **Outcomes, in one place. The view that wins the budget conversation.**
 
@@ -690,6 +708,8 @@ Henrik opens his single executive workspace. He sees the 28d→4d trend, the +38
 ---
 
 ### 💻 Demo 10 — DevOps stands up the entire platform from a clean tenant
+
+<p align="center"><img src="../../images/Demo10.png" alt="Demo 10 — DevOps one-shot installer" width="480" /></p>
 
 > **One command, zero magic — from empty Azure tenant to running platform with realistic data.**
 
