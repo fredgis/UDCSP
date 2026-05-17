@@ -253,6 +253,8 @@ Twenty-five phases execute in dependency order. The synthetic-data agent seeds t
 
 From `git clone` to a working federated platform with realistic data: one command. The same script runs in CI on every PR that touches infrastructure or apps.
 
+
+
 # Performance and reliability
 
 Reliability is engineered, not assumed.
