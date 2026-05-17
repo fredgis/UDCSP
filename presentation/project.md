@@ -64,8 +64,6 @@ The citizen-facing front door is Azure Front Door Premium with WAF, using Micros
 
 Behind Front Door, Azure API Management Premium is the gateway — one APIM instance per country, never shared. APIM enforces the OAuth 2.0 + PKCE flow on every citizen call, validates the External ID-issued bearer token, decorates every request with a W3C `traceparent` header, applies per-channel rate limits, runs the Microsoft Defender for APIs runtime protection (shadow-API discovery, sensitive-data leakage detection, anomalous token use), and proxies to Logic Apps Standard workflows and Microsoft Foundry agents as the only allowed backends.
 
-The submission ships 868 tracked files, fourteen markdown documents totalling more than thirteen thousand lines, 47 Bicep modules, 25 PowerShell install modules, a network diagram authored as `network.drawio` and rendered to PNG via a custom skill that bypasses the known drawio CLI bounding-box bug.
-
 # The AI Brain
 
 UDCSP runs seven Microsoft Foundry agents in production, replicated identically across the three country hubs. The seven agents are not seven chatbots — they are seven specialised experts who hand work to each other under the supervision of one orchestrator, the Topic Router.
@@ -126,7 +124,7 @@ Article 14 requires human oversight. Every Eligibility verdict is a proposal to 
 
 Annex III §5(b) classifies access to essential public services as high-risk. The Eligibility agent is registered as `risk: high` in the `governance/ai-act/registry/eligibility-model.yaml` dossier with its intended purpose, training data summary, performance metrics, known limitations and post-market monitoring plan.
 
-![The AI Act evidence chain — citizen action → W3C traceparent → AOAI logs → ledger anchor → auditor reconstruction.](images/aiact-evidence.png){width=80%}
+![The AI Act evidence chain — citizen action → W3C traceparent → Azure OpenAI logs → ledger anchor → auditor reconstruction.](images/aiact-evidence.png){width=80%}
 
 Article 50 of the EU AI Act requires transparency: citizens must know they are interacting with an AI. The voice channel plays a spoken disclosure on the first call turn in twelve languages. The chat widget shows an AI badge above the conversation. The Citizen Assistant agent prefixes complex answers with *"Based on UDCSP guidance…"*.
 
@@ -144,11 +142,11 @@ Observability is the contract between the operator and the citizen. Every intera
 
 UDCSP keeps three sovereign Application Insights instances (one per country) and three sovereign Log Analytics workspaces. The instances are never federated. A Danish citizen interaction lands only in the Danish App Insights.
 
-A W3C `traceparent` is propagated end-to-end through every channel — from Azure Front Door at the edge, to APIM, to Logic Apps, to Azure Functions, to D365 plugins, to the Foundry agent, to the AOAI model call, and back.
+A W3C `traceparent` is propagated end-to-end through every channel — from Azure Front Door at the edge, to APIM, to Logic Apps, to Azure Functions, to D365 plugins, to the Foundry agent, to the Azure OpenAI model call, and back.
 
 Every event the platform emits — a citizen page view, a consent acceptance, a document upload, a model invocation, a caseworker disposition, a Sentinel incident, a Confidential Ledger anchor — carries the same `traceparent`. A DPO or a regulator can pick any `operation_Id` in the operator workbook, drill into Application Insights Transaction Search, and replay the full causal chain from the citizen's browser to the model's response in seconds.
 
-The operator-facing surface is nine Azure Workbooks — three per country, deployed live as shared workbooks. `platform-health` shows request volume, p50/p95/p99 latency, dependency success and failure, exceptions and AOAI tokens by model deployment. `citizen-journey-funnel` shows the funnel from page view to case open, activity per language so a per-locale gap surfaces in raw telemetry before it appears in case data, channel mix. `ai-decision-traces` shows every verdict with confidence, decision, locale, channel, agent and an `operation_Id` that drills to Transaction Search.
+The operator-facing surface is nine Azure Workbooks — three per country, deployed live as shared workbooks. `platform-health` shows request volume, p50/p95/p99 latency, dependency success and failure, exceptions and Azure OpenAI tokens by model deployment. `citizen-journey-funnel` shows the funnel from page view to case open, activity per language so a per-locale gap surfaces in raw telemetry before it appears in case data, channel mix. `ai-decision-traces` shows every verdict with confidence, decision, locale, channel, agent and an `operation_Id` that drills to Transaction Search.
 
 The executive surface is on Microsoft Fabric F64 in the sovereign EU capacity, with a Power BI Premium semantic model that uses Direct Query against the three App Insights and the three LAWs and Dataverse. The aggregation happens server-side at Fabric. Raw rows never leave their country.
 
@@ -156,7 +154,7 @@ SLOs are explicit and budgeted. The citizen web portal is 99.9 % over 28 days pe
 
 Burn-rate alerts page the on-call when 2 % of the monthly budget burns in 1 hour and escalate to a manager at 5 % in 6 hours. Synthetic monitoring runs from five external regions every minute against each citizen URL and the IVR test number. Real-User Monitoring on the SPA captures TTFB, LCP, INP and CLS per page per locale per country.
 
-FinOps is a first-class observability concern. Every resource is tagged with `country`, `workload` and `cost-center`. The Management Group hierarchy mirrors the sovereign zones. The per-agent monthly token budget lives in `foundry/projects/*/agent.yaml` and CI fails when the total declared budget exceeds the AOAI pool capacity. Reserved PTU baseline covers the steady-state of gpt-5.4 and gpt-realtime; pay-as-you-go covers elastic peaks on gpt-5.4-mini.
+FinOps is a first-class observability concern. Every resource is tagged with `country`, `workload` and `cost-center`. The Management Group hierarchy mirrors the sovereign zones. The per-agent monthly token budget lives in `foundry/projects/*/agent.yaml` and CI fails when the total declared budget exceeds the Azure OpenAI pool capacity. Reserved PTU baseline covers the steady-state of gpt-5.4 and gpt-realtime; pay-as-you-go covers elastic peaks on gpt-5.4-mini.
 
 # Agentic behaviour
 
@@ -188,7 +186,7 @@ The discipline that made parallelism possible was strict folder ownership. No tw
 
 # Personas — who actually uses the platform
 
-The platform is not built for an abstract "user". It is built for **seven named personas** the case study calls out, each with a real journey, a real channel and a real demand. The next pages walk through each one in turn.
+The platform is not built for an abstract "user". It is built for **named people on real journeys** — six citizens and operators with concrete demands, plus one threat scenario that shows what the defences do when the platform is attacked. They are the seven vignettes that follow.
 
 \persona{images/Demo1.png}{Anna — Danish citizen moving DK to SE}
 **Anna** is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
@@ -283,4 +281,4 @@ The platform is invisible to her. That is exactly the point.
 
 ---
 
-*Document built by the `md2pdf` Copilot CLI skill (pandoc + xelatex + Mermaid pre-rendering) from `github.com/fredgis/UDCSP/presentation/project.md`. Cover image is the ten-personas overview; technical companion docs live under `docs/biz/` and `docs/tech/` in the same repository.*
+*Document built by the `md2pdf` Copilot CLI skill (pandoc + xelatex + Mermaid pre-rendering) from `github.com/fredgis/UDCSP/presentation/project.md`. Cover image is the ten-demo overview; technical companion docs live under `docs/biz/` and `docs/tech/` in the same repository.*
