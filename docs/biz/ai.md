@@ -708,8 +708,8 @@ UDCSP supports **12 languages by design**, not as a translation add-on.
 **Mechanisms:**
 - **Detection** at every entry point (Classifier sets `language`).
 - **Foundry agents** receive `language` as a first-class parameter; prompts have language-specific variants when terminology matters (admin language).
-- **Translator orchestrator** calls Azure AI Translator for bulk content and uses `gpt-4o` to align administrative terminology against per-country glossaries stored in Fabric.
-- **Voice** uses Azure AI Speech with locale-pinned voices.
+- **Translator orchestrator** calls Azure AI Translator for bulk content and uses `gpt-5.4` to align administrative terminology against per-country glossaries stored in Fabric.
+- **Voice** uses `gpt-realtime` for native multilingual STT + TTS in one stream (12 languages); Azure AI Speech is reserved for D365 pre-orchestrator IVR menus + post-call analytics, not the live audio path.
 - **Eval** suites in Foundry run cross-language consistency tests (the same benefit eligibility outcome must be produced for the same case regardless of input language).
 
 ---
