@@ -46,7 +46,7 @@
       "name": "chart-funnel",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| extend Step = case(\n    name startswith 'page.',         '1. Page view',\n    name startswith 'apply.start',   '2. Apply start',\n    name startswith 'eligibility.',  '3. Eligibility check',\n    name startswith 'apply.submit',  '4. Submit',\n    name startswith 'my-cases.',     '5. My cases',\n    name startswith 'voice.',        '6. Voice turn',\n    'other')\n| where Step != 'other'\n| summarize Count=count() by Step\n| order by Step asc",
+        "query": "customEvents\n| extend Step = case(\n    name startswith 'page.',                                                  '1. Page view',\n    name startswith 'apply.start',                                            '2. Apply start',\n    name startswith 'eligibility.',                                           '3. Eligibility check',\n    name startswith 'apply.submit',                                           '4. Submit',\n    name startswith 'my-cases.',                                              '5. My cases',\n    name startswith 'call.' or name startswith 'realtime.' or name startswith 'voice.' or name startswith 'topic_router.',\n                                                                              '6. Voice / assistant turn',\n    'other')\n| where Step != 'other'\n| summarize Count=count() by Step\n| order by Step asc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,

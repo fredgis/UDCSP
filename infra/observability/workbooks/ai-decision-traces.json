@@ -46,7 +46,7 @@
       "name": "chart-mix",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend decision = tostring(coalesce(\n    customDimensions['decision'],\n    customDimensions['verdict'],\n    customDimensions['intent']))\n| where isnotempty(decision)\n| summarize Count=count() by decision\n| order by Count desc",
+        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic_router', 'tool_call', 'intent')\n| extend decision = tostring(coalesce(\n    customDimensions['decision'],\n    customDimensions['verdict'],\n    customDimensions['intent'],\n    customDimensions['tool'],\n    customDimensions['routedTo']))\n| where isnotempty(decision)\n| summarize Count=count() by decision\n| order by Count desc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
@@ -64,7 +64,7 @@
       "name": "chart-timeline",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend agent = tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName, 'unknown'))\n| summarize Verdicts=count() by bin(timestamp, 5m), agent\n| order by timestamp asc",
+        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic_router', 'tool_call', 'intent')\n| extend agent = tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName, 'unknown'))\n| summarize Verdicts=count() by bin(timestamp, 5m), agent\n| order by timestamp asc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
@@ -82,7 +82,7 @@
       "name": "table-verdicts",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend\n    decision   = tostring(coalesce(customDimensions['decision'], customDimensions['verdict'], customDimensions['intent'])),\n    confidence = tostring(coalesce(customDimensions['confidence'], customDimensions['score'])),\n    locale     = tostring(customDimensions['locale']),\n    channel    = tostring(customDimensions['x-channel-actor']),\n    agent      = tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName))\n| project timestamp, agent, decision, confidence, locale, channel, name, operation_Id\n| order by timestamp desc\n| take 100",
+        "query": "customEvents\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic_router', 'tool_call', 'intent')\n| extend\n    decision   = tostring(coalesce(customDimensions['decision'], customDimensions['verdict'], customDimensions['intent'], customDimensions['tool'], customDimensions['routedTo'])),\n    confidence = tostring(coalesce(customDimensions['confidence'], customDimensions['score'])),\n    locale     = tostring(customDimensions['locale']),\n    channel    = tostring(customDimensions['x-channel-actor']),\n    agent      = tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName))\n| project timestamp, agent, decision, confidence, locale, channel, name, operation_Id\n| order by timestamp desc\n| take 100",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
