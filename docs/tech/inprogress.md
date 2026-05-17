@@ -381,6 +381,99 @@ Get-ChildItem infra/observability/alerts/*.json | ForEach-Object {
 
 </details>
 
+<details open>
+<summary><h2 id="presentation">🎤 Presentation (45 min) — Azure Master Architect Program submission</h2></summary>
+
+### Rubric self-score — **55 / 60 → A (Exceptional)**
+
+| Bucket | Score | Why it lands here | What still costs us a point |
+|---|:-:|---|---|
+| **Design — Architecture** | 5/5 | 3 sovereign zones (DK/SE/NO), hub-spoke, 47 Bicep modules, 25 install PSMs, `architecture.md` with mermaids, `runbook-dr.md`, Postgres Flex + Redis Enterprise + Fabric F64, ACA autoscale 1-6, APIM Premium | — |
+| **Design — Patterns** | 5/5 | Multi-agent fan-out, topic-router as function tool (Agents-as-Tools), BFF (APIM ↔ LA ↔ Foundry), saga (cross-border-residency LA), strangler fig (`tasks` → `incidents`), CQRS-light, sidecar (orchestrator + realtime-bridge) | — |
+| **Design — Security** | 5/5 | 9 security subdomains (Confidential Ledger/Compute, DDoS, BackupASR, Chaos, Defender, Sentinel, Azure Policy, Priva), 8 identity subdomains (Verified ID, CIEM, Bastion, PIM, Conditional Access, 3 CIAM External ID tenants), MI-only auth, Content Safety, AI Act registry, ROPA, DPIA | — |
+| **Dev — Demo** | 5/5 | Demos 1+2+3+4 live end-to-end; voice on real PSTN `+33 801 150 799`; 12-language SPA; Narrator-validated | risk drops to 4/5 if voice dial flakes during the live → bring a 30 s backup recording |
+| **Dev — Completeness** | 4/5 | 9 mandatory services all wired, demos 1-4 green, observability live | Demo 9 PBI exec dashboard not built (workbooks only), Demo 5 caseworker = Power Apps shell (D365 CS licence pending), demos 7-8-10 still 🟡 |
+| **Monitoring** | 4/5 | structured `logEvent` + W3C `traceparent` end-to-end, 9 workbooks live with histograms + funnels + decision pies + recent-verdicts table with `operation_Id` drill, 3 LAW + 3 Sentinel LAW | SPA not instrumented (no JS SDK), APIM/LA/ACS `diagnostic-settings` not wired by default (M3 in `installation.md` is the recipe, kept optional so we don't touch APIM at the last minute) |
+| **AI — Use** | 5/5 | 7 Foundry agents purpose-bound to workflows, gpt-realtime for voice, Translator/Speech/Document Intelligence (mandatory), AI Search, Content Safety on every prompt+response, AI Act registry entry per agent | — |
+| **AI — Model selection** | 5/5 | gpt-5.4 + gpt-5.4-mini + gpt-realtime; documented swap from gpt-5.5 (no quota); Entra-only no API keys; sovereignty trade-off NO→swedencentral documented in `voice.md` | — |
+| **Agentic — Autonomy** | 4/5 | topic-router decides intent, gpt-realtime invokes `lookup_topic_router` + `escalate_to_human` as function tools, LA `application-intake` fans out to 4 agents | no goal-pursuing long-running agent; flows are all synchronous-reactive |
+| **Agentic — Multi-agent** | 4/5 | handoff (topic-router → 6 subagents), voice → topic-router via function tool, LA cross-border-residency multi-pays, D365 warm-transfer (gated on queue ID) | no explicit reflection loop or state-graph executor (LAs are procedural Azure Logic Apps, not a graph runtime) |
+| **Additional — Perf/reliability** | 4/5 | DDoS Standard, BackupASR, Chaos Studio, Confidential Compute+Ledger, ACA autoscale 1-6, APIM Premium zone-redundant, Redis Enterprise | live DR failover not exercised on the sandbox (MCAPS region gating), zone-redundancy assessment not run |
+| **Presentation/Doc** | 5/5 | 13 k+ lines of structured docs, biz/tech split, 10 demos persona-driven in `uses.md`, `recipe.md` acceptance walk, `data.md` retention matrix, per-channel docs (voice/chat/web/mobile/sms/email/caseworker ~500-700 lines each), `installation.md` 1 710 lines with 5 sections | — |
+| **TOTAL** | **55/60** | **A — Exceptional** | path to A+ in "Path to A+" below |
+
+### Path to A+ (3 points to gain)
+
+Each item lifts one row by 1 point and is feasible in < 2 h.
+
+1. **Build `apps/reporting/cio-dashboard.pbix`** on Fabric F64 `fgisweden` (Roadmap phases 1-5 of Demo 9 just above) → **Dev Completeness 4 → 5**.
+2. **Execute M3** from `installation.md` § Platform monitoring (APIM/ACS/LA `diagnostic-settings` → LAW) → **Monitoring 4 → 5**. ~5 min CLI, zero code touched.
+3. **Add a reflection loop** — wire `caseworker-helper` as a critique step on top of `eligibility` output, with a confidence-score callback that re-prompts on disagreement (declared in `architecture.md` agent catalogue + smoke-tested) → **Agentic Multi-agent 4 → 5**.
+
+Hitting any 1 → **56/60**, any 2 → **57**, all 3 → **58/60 = A+ ceiling reached**.
+
+### 45-min presentation outline
+
+**Total budget: 42 min spoken + 3 min buffer.** Demos eat 17 min; everything else is 25 min spoken + 3 buffer.
+
+| # | Section | Time | What you actually do |
+|--:|---|:-:|---|
+| 1 | **Hook & context** | 3 min | Problem: 11 countries, 47 portals, 28 d processing, fragmented identity. Vision: 1 portal, 12 langs, +38 % CSAT, 4 d. *"I'll prove it with real Azure, not slides — let's start by dialling the live phone number now while I introduce the platform."* (kick the dial — see Demo 2) |
+| 2 | **Architecture overview** | 6 min | Mermaid from `architecture.md` § 2.2: 3 sovereign zones, hub-spoke, mandatory 9 services + 10 additional, traceparent E2E. Punch line: *"47 Bicep modules, 25 install PSMs, 1 command, 868 tracked files."* |
+| 3 | **AI & agentic design** | 6 min | 7 Foundry agents catalogue (`architecture.md` § 5) — show the topic-router-as-function-tool pattern (Agents-as-Tools). Models: gpt-5.4 + 5.4-mini + gpt-realtime. AI Act registry binds each agent. Content Safety on every prompt+response. Punch line: *"agents are tools, not chatbots — the LLM decides which expert to consult"*. |
+| 4 | **LIVE Demo 1 — Citizen rail** | 5 min | Anna (DK) signs in on `udcsp.fredgis.com`, switches to SE locale, walks the 6-step residency wizard, eligibility verdict pre-submit, submit → My Cases. Punch: *"1 SPA, 12 langs, 3 CIAM tenants, one consent-gated flow"*. |
+| 5 | **LIVE Demo 2 — Voice on PSTN** ⭐ hero | 7 min | The dial from #1 should now be ringing. Pick up via headset; speak NB/EN to gpt-realtime; trigger `lookup_topic_router` ("I need help with my tax refund"). Hang up. **Refresh the App Insights workbook in tab 2** → the `call.connected` + `realtime.assistant_transcript` + `topic_router.request` events have landed. Click an `operation_Id` → Transaction search → show the W3C traceparent chain ACS → ACA → APIM → Foundry. Punch: *"real PSTN, real audio, real audit row #15 in 30 seconds"*. |
+| 6 | **LIVE Demo 9 — Sovereignty in monitoring** | 5 min | Same workbook still open on NO → populated. Edit URL `udcsp-no-…` → `udcsp-dk-…` → empty. Same on SE → empty. Punch: *"sovereignty isn't a checkbox, it's the silence in DK and SE when NO is alive. You see it."* Then `citizen-journey-funnel` locale split + `ai-decision-traces` decision pie. |
+| 7 | **Reliability, security, BCDR** | 5 min | Walk `architecture.md` § 10 (security + network mermaid). Mention Confidential Ledger (caseworker overrides immutable), Confidential Compute (eligibility eval), DDoS Standard, Bastion Standard, CIEM, BackupASR (with the MCAPS `crossRegionRestoreFlag=false` gotcha shipped as a code defence — your repo memory). Chaos Studio scaffolded. Punch: *"defence in depth — 9 mandatory + 10 additional services, every one with its install module"*. |
+| 8 | **Closing — replicable, not bespoke** | 5 min | One-shot installer demo: scroll `Install-UDCSP.ps1` ValidateSet (25 phases), show the `installation.md` Section B table, mention `Bootstrap-DevEnv.ps1`. Roadmap: PBI exec dashboard (75-90 min away), CSAT capture, multi-region active-active. Punch: *"from `git clone` to running platform: 1 command, 25 phases, replicable on every PR via CI."* |
+| 9 | **Q&A** | 3 min | Pre-loaded answers below. |
+
+### Pre-loaded Q&A (memorise these — they will be asked)
+
+| Question | Your answer (verbatim-ish) |
+|---|---|
+| *"Where's the executive Power BI dashboard?"* | *"Workbooks are the operator view — live, raw KQL, refresh in 1 minute. The CIO packaging on Fabric F64 sovereign EU is in the roadmap — same KQL underneath, 75 min of Power BI Desktop. Phases documented in `inprogress.md` Demo 9 § Executive surface roadmap. I demoted it from tonight's scope to keep voice + sovereignty the headline."* |
+| *"Why is the caseworker UI a Power App instead of D365 Customer Service?"* | *"D365 Customer Service licence is pending on the MCAPS sandbox. The caseworker workspace runs on the same Dataverse env, with the canonical `udcsp_application` schema designed for drop-in `incident` migration once the licence lands. The Logic App `Create_D365_case` swap + APIM `case-management` policy flip are pre-written in `inprogress.md` § D365 Customer Service migration checklist."* |
+| *"Have you tested disaster recovery?"* | *"BackupASR provisioned per country, ASR DR runbook documented in `docs/tech/runbook-dr.md`. Live failover not exercised — MCAPS sandbox blocks `norwaywest` paired-region, the installer captures that gotcha and skips cross-region restore on RSV (memory: `crossRegionRestoreFlag=false`). For production this becomes a monthly Chaos Studio drill — Chaos resources are scaffolded under `infra/security/chaos-studio/`."* |
+| *"How is this 'multi-agent' if it's all Foundry agents?"* | *"Topic-router is invoked as a function tool by gpt-realtime in voice and by the citizen-assistant in chat. The LLM picks which downstream expert to consult — that's the Microsoft Agent Framework Agents-as-Tools pattern. Behind topic-router, 6 Foundry agents are addressable by name+version through APIM. Cross-border flows go through Logic Apps which orchestrate multi-step handoffs (eligibility → doc-extractor → translator → classifier → caseworker-helper)."* |
+| *"What's your AI Act conformance story?"* | *"Every agent has a registry entry in `governance/ai-act/registry/` with risk classification (eligibility-model = high-risk per Annex III §5b, others limited). The `ai-decision-traces` workbook shows each verdict with its `operation_Id` → drill into Transaction search → W3C traceparent chain → that's the art. 14 evidence trail. Human override is logged in Dataverse `udcsp_caseworker_decision` (scaffolded; persistence pending the LA callback)."* |
+| *"Why 3 separate App Insights and not one?"* | *"Data residency. Citizen telemetry from NO must not leave NO (Norwegian DSL / Datatilsynet); same for DK (Datatilsynet) and SE (IMY). 3 separate App Insights in 3 regions, 3 LAWs, 3 Sentinel LAWs. The CIO sees them stitched in Power BI (Direct Query across all 3) without any data leaving the residency zones."* |
+| *"Voice goes to `swedencentral` for gpt-realtime — sovereignty issue?"* | *"Documented trade-off in `voice.md` § 11.2. `norwayeast` has zero gpt-realtime quota as of May 2026. Audio packets traverse via the NO orchestrator (Container App, NO region) — they reach gpt-realtime over a private link to a Microsoft-owned Cognitive Services account in `swedencentral`. Citizen-side audio stays in NO; only the realtime inference happens in SE. Norway-Sweden data flow is permitted under the Nordic-DPA cooperation framework. When `norwayeast` lights up gpt-realtime quota, the deployment moves with a single Bicep flip."* |
+
+### Pre-flight checklist (run 10 min before the slot)
+
+```powershell
+# 1. Warm the voice ACA (1 replica min already, but ensure it answered)
+curl -sS https://udcsp-no-dev-voice-orch.happysand-65f2a633.norwayeast.azurecontainerapps.io/api/healthz
+# Expected: { "status": "ok", "mode": "live" }
+
+# 2. Dial test
+# Composer +33 801 150 799 depuis le téléphone, parler 5 s, raccrocher.
+# Le test fait deux choses : (a) ACA pré-chauffé pour le live ; (b) workbook NO contient une trace fraîche.
+
+# 3. Pré-charger les onglets dans l'ordre du show :
+#    Tab 1 — https://udcsp.fredgis.com (signed-out)
+#    Tab 2 — Workbook platform-health NO (Time range = Last hour)
+#    Tab 3 — App Insights NO → Transaction search (vide)
+#    Tab 4 — architecture.md mermaid § 2.2 (rendered via GitHub or VS Code)
+#    Tab 5 — installation.md § B Mandatory install (collapsed table)
+
+# 4. Vérifier que le SPA charge propre (cache vidé) sur Edge et Safari iPhone si tu fais Demo 4.
+
+# 5. Backup vidéo Demo 2 (30 s capture d'un appel précédent) prête à coller si PSTN flake.
+```
+
+### Talking-points reference card (one-pager to print)
+
+- **Hero number** : `+33 801 150 799` (toll-free NO, ACS, real PSTN)
+- **Hero URL** : `https://udcsp.fredgis.com` (SWA, custom domain, 12 langues)
+- **Sovereignty proof** : *"silence in DK / SE = no data leaves NO"*
+- **AI Act drill** : `operation_Id` → Transaction search → traceparent end-to-end
+- **Cost** : 9 mandatory services + 10 additional, **single installer**, 25 phases
+- **Differentiators** : Confidential Ledger (immutable caseworker decisions), Confidential Compute (eligibility eval), Verified ID (eIDAS-ready), Priva (GDPR-DSR automation), Foundry Agents-as-Tools (modern multi-agent)
+
+</details>
+
 <details>
 <summary><h2 id="reference">📂 Reference &amp; operational notes</h2></summary>
 
