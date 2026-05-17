@@ -27,6 +27,10 @@
   <img src="./images/screen1.png" alt="UDCSP citizen portal — multilingual unified front door across DK · SE · NO" width="900" />
 </p>
 
+<p align="center">
+  <img src="./images/UDCSPv3.png" alt="UDCSP architecture overview — sovereign 3-zone topology, mandatory 9 Azure services + multi-agent Foundry layer" width="900" />
+</p>
+
 Three Nordic governments collectively serve **2.1 million citizens** through **47 disconnected legacy portals**. A citizen who moves from Copenhagen to Stockholm has to re-submit identity documents, wait **28 days** for a residency decision, navigate a portal that may not speak their language, and which may not be accessible to them at all.
 
 UDCSP is a **unified citizen platform** that:
