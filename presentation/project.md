@@ -199,6 +199,8 @@ The platform orchestrates the case to the Danish authority, receives a signed co
 
 What used to take 28 days now takes 4.
 
+\bigskip
+
 \persona{images/Demo2.png}{Lars — blind Norwegian citizen on voice}
 **Lars** is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
 
@@ -208,12 +210,16 @@ When Lars asks to speak with a human, the call is warm-transferred to a casework
 
 Voice latency p95 ≤ 2 seconds. Lars is treated as a first-class citizen on the platform, not an accessibility afterthought.
 
+\bigskip
+
 \persona{images/Demo3.png}{Maria — Polish caregiver in Denmark with NVDA}
 **Maria** is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
 
 The portal loads in Polish, end-to-end — labels, error messages, AI summary, consent text. The accessibility CI gate has been green for months. The Translator agent localises the citizen-facing summary.
 
 If a model promotion ever regresses Polish more than 0.4 below the Swedish baseline, the promotion is blocked. Accessibility is not a feature on this platform — it is a citizen right under the Web Accessibility Directive and WCAG 2.1 AA.
+
+\bigskip
 
 \persona{images/Demo4.png}{Erik — Danish SMB owner on iPhone}
 **Erik** runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
@@ -222,10 +228,14 @@ The portal is the same SPA Anna used on her laptop — there is no separate nati
 
 Mobile parity is built in, not bolted on.
 
+\bigskip
+
 \persona{images/Demo8.png}{Prompt injection contained at three layers}
 **A hostile prompt** arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
 
 The security playbook isolates the session, recovers the citizen flow, and exports the audit pack. The containment takes 38 seconds. No citizen data is exposed.
+
+\bigskip
 
 \persona{images/Demo7.png}{Hans — Danish DPO replaying an AI decision}
 **Hans** is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
@@ -233,6 +243,8 @@ The security playbook isolates the session, recovers the citizen flow, and expor
 Hans opens the per-country Log Analytics workspace, filters by the citizen's correlation ID, and reconstructs the full decision — the model deployment, the tokens consumed, the verdict, the human disposition, the cryptographic ledger anchor.
 
 The decision happened six months ago. It is still queryable two years out, configured to twice the AI Act minimum retention. The full audit pack assembles in under ten minutes.
+
+\bigskip
 
 \persona{images/Demo10.png}{Ole — DevOps engineer onboarding a tenant}
 **Ole** is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
