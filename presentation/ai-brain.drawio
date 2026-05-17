@@ -1,0 +1,139 @@
+<mxfile host="app.diagrams.net" modified="2026-05-17T18:00:00.000Z" agent="udcsp" version="24.0.0">
+  <diagram id="udcsp-aibrain" name="UDCSP — The AI Brain">
+    <mxGraphModel dx="1900" dy="1200" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="UDCSP — The AI Brain · Microsoft Foundry" style="text;html=1;align=center;fontSize=22;fontStyle=1;fillColor=none;fontColor=#0a1929;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1920" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Three sovereign hubs (DK · SE · NO) · 7 agents per hub · Topic Router as the only orchestrator · Eligibility as the single high-risk agent · Content Safety + Evaluations + AI Act registry as transverse controls" style="text;html=1;align=center;fontSize=12;fontStyle=2;fillColor=none;fontColor=#64748b;" vertex="1" parent="1">
+          <mxGeometry x="40" y="54" width="1920" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ===== CHANNELS BAND ===== -->
+        <mxCell id="ch" value="🌐 Citizen channels (the AI Brain is invoked from)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;strokeWidth=2;fontStyle=1;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="1880" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ch-web" value="🌐 Web SPA&#10;udcsp.fredgis.com&#10;chat widget + Apply forms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="135" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ch-mob" value="📱 Mobile PWA&#10;same SPA, responsive&#10;native iOS doc picker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="135" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ch-voice" value="📞 Voice channel&#10;PSTN toll-free per country → ACS Call Automation → ACA orchestrator → 🎯 gpt-realtime&#10;the LLM invokes lookup_topic_router as a function tool" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#AD1457;fontSize=10;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="780" y="135" width="700" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="ch-cw" value="🧑‍💼 Caseworker&#10;D365 Customer Service&#10;+ Copilot for Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#EF6C00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1500" y="135" width="400" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== APIM ===== -->
+        <mxCell id="apim" value="🚪 Azure API Management Premium (per country) · /agents/topic-router/messages · OAuth+PKCE · W3C traceparent · rate-limit per channel-actor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="250" width="1880" height="46" as="geometry" />
+        </mxCell>
+
+        <!-- ===== THE AI BRAIN ===== -->
+        <mxCell id="brain" value="🧠 THE AI BRAIN · Microsoft Foundry · same 7 agents replicated identically across 3 sovereign hubs (DK northeurope · SE swedencentral · NO norwayeast)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;strokeWidth=3;fontStyle=1;fontSize=13;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="325" width="1880" height="630" as="geometry" />
+        </mxCell>
+
+        <!-- Topic Router (orchestrator) - centered at top of brain -->
+        <mxCell id="tr" value="🎯 Topic Router&#10;gpt-5.4-mini · 12 languages · multi-turn slot-filling in Redis · escalation rules&#10;THE ONLY ORCHESTRATOR — citizen and voice talk to this agent only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1C4E9;strokeColor=#4527A0;strokeWidth=3;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="650" y="370" width="700" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- 6 downstream agents — 2 rows of 3 -->
+        <mxCell id="ag-cls" value="🤖 Classifier&#10;gpt-5.4-mini&#10;intent · agency · language · urgency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="490" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ag-trans" value="🤖 Translator&#10;gpt-5.4 + Azure AI Translator&#10;12 langs · admin glossary preserved" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="425" y="490" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ag-doc" value="🤖 Doc Extractor&#10;gpt-5.4-mini + AI Document Intelligence&#10;structured fields · &lt; 4 s · PII redacted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="730" y="490" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ag-asst" value="🤖 Citizen Assistant&#10;gpt-5.4 grounded · RAG + citation enforcement&#10;APIM blocks reply without docId citation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1035" y="490" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ag-cwh" value="🤖 Caseworker Helper&#10;gpt-5.4 grounded · case-record + KB&#10;drafts replies · NBA · never operative" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="490" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Eligibility — HIGH RISK — second row centered -->
+        <mxCell id="ag-elig" value="⚖️ Eligibility Pre-Assessor · HIGH RISK (EU AI Act Annex III §5b)&#10;gpt-5.4 + deterministic rule plug-ins · runs in Confidential Container App (SEV-SNP TEE)&#10;verdict hashed to Azure Confidential Ledger · champion-challenger 5% shadow · per-locale parity gate · drift KS-test · bias monitoring · alias-flip rollback&#10;output: { recommendation, score, evidence[], counter-evidence[], rules[] } · NEVER a final decision — always reviewed by a human caseworker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;strokeWidth=3;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="610" width="1290" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Voice tools row -->
+        <mxCell id="tool-router" value="🛠️ function tool: lookup_topic_router(query, locale)&#10;invoked by gpt-realtime → APIM → Topic Router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="740" width="600" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="tool-esc" value="🛠️ function tool: escalate_to_human(reason)&#10;invoked by gpt-realtime → D365 voice workstream queue (warm transfer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="740" width="600" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Transverse: Content Safety, Evaluations, Registry -->
+        <mxCell id="cs" value="🛡️ Azure AI Content Safety · every input and every output · 7 categories + jailbreak + prompt-injection · safety.block customEvent → Sentinel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="810" width="1820" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="eval" value="📊 Foundry Evaluations · gold + bias + adversarial + per-locale parity in 12 languages · CI-gated · drift KS-test daily · promotion blocks on regression > 1 %" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="852" width="1820" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="reg" value="📋 EU AI Act registry (per agent · per hub · governance/ai-act/registry/*.yaml) — risk class · intended purpose · post-market monitoring · conformity declaration · DK/SE/NO authority contact" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#EF6C00;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="894" width="1820" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ===== KNOWLEDGE BAND ===== -->
+        <mxCell id="kb" value="📚 Per-country knowledge (Azure AI Search per hub · ACL by citizen_id + country_code · LA kb-sync hourly · freshness SLO ≤ 1 h)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1565C0;fontStyle=1;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="985" width="1880" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="kb-sp" value="📁 SharePoint&#10;agency documents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1020" width="380" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kb-fab" value="🐟 Microsoft Fabric&#10;anonymised case history (Gold zone)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="1020" width="430" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kb-web" value="🌐 National-authority websites&#10;borger.dk · skatteverket.se · skatteetaten.no · NAV · Altinn · Info Norden" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="950" y="1020" width="570" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="kb-d365" value="🧑‍💼 D365 KB&#10;read-only mirror per country" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="1020" width="360" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ARROWS ===== -->
+        <!-- Channels to APIM -->
+        <mxCell id="a-web-apim" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;" edge="1" parent="1" source="ch-web" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-mob-apim" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;" edge="1" parent="1" source="ch-mob" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-voice-apim" value="function tool" style="endArrow=classic;html=1;rounded=0;strokeColor=#AD1457;strokeWidth=2;fontSize=9;fontStyle=2;dashed=1;" edge="1" parent="1" source="ch-voice" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-cw-apim" style="endArrow=classic;html=1;rounded=0;strokeColor=#EF6C00;strokeWidth=2;" edge="1" parent="1" source="ch-cw" target="apim"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- APIM to Topic Router -->
+        <mxCell id="a-apim-tr" style="endArrow=classic;html=1;rounded=0;strokeColor=#E65100;strokeWidth=2;" edge="1" parent="1" source="apim" target="tr"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Topic Router to downstream agents -->
+        <mxCell id="a-tr-cls" style="endArrow=classic;html=1;rounded=0;strokeColor=#4527A0;" edge="1" parent="1" source="tr" target="ag-cls"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-tr-trans" style="endArrow=classic;html=1;rounded=0;strokeColor=#4527A0;" edge="1" parent="1" source="tr" target="ag-trans"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-tr-doc" style="endArrow=classic;html=1;rounded=0;strokeColor=#4527A0;" edge="1" parent="1" source="tr" target="ag-doc"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-tr-asst" style="endArrow=classic;html=1;rounded=0;strokeColor=#4527A0;" edge="1" parent="1" source="tr" target="ag-asst"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-tr-cwh" style="endArrow=classic;html=1;rounded=0;strokeColor=#4527A0;" edge="1" parent="1" source="tr" target="ag-cwh"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-tr-elig" style="endArrow=classic;html=1;rounded=0;strokeColor=#C62828;strokeWidth=2;" edge="1" parent="1" source="tr" target="ag-elig"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- Reflection / critique from Eligibility to Caseworker Helper -->
+        <mxCell id="a-elig-cwh" value="reflection / critique" style="endArrow=classic;html=1;rounded=0;strokeColor=#C62828;fontSize=9;fontStyle=2;dashed=1;" edge="1" parent="1" source="ag-elig" target="ag-cwh"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- KB to agents (RAG) -->
+        <mxCell id="a-kb-asst" value="RAG (Azure AI Search · citation enforcement)" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;fontSize=9;fontStyle=2;dashed=1;" edge="1" parent="1" source="kb-web" target="ag-asst"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="a-kb-cwh" value="RAG" style="endArrow=classic;html=1;rounded=0;strokeColor=#1565C0;fontSize=9;fontStyle=2;dashed=1;" edge="1" parent="1" source="kb-d365" target="ag-cwh"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <!-- ===== FOOTER ===== -->
+        <mxCell id="footer" value="ONE BRAIN PATTERN, THREE SOVEREIGN INSTANCES — the same 7-agent topology is deployed in DK (northeurope), SE (swedencentral), NO (norwayeast). Per-country isolation at the model deployment, the agent registry, the evaluation suite, the knowledge base. Sovereignty exception: gpt-realtime is not yet GA in norwayeast — NO voice orchestrator uses SE hub's deployment under Microsoft EU Data Boundary + Nordic-DPA cooperation; citizen audio + transcripts persist only in NO." style="text;html=1;align=center;fontSize=10;fontStyle=2;fillColor=none;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1100" width="1880" height="60" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

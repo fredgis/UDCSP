@@ -54,7 +54,7 @@ UDCSP runs in three sovereign Azure zones, one per country. Denmark sits in `nor
 
 A Foundry hub in production is a country boundary. A Danish citizen interaction stays in the Danish hub, a Norwegian voice call stays in the Norwegian hub. The three hubs share no model deployment and no agent registry.
 
-![A simplified executive view of the platform — citizens, identity, the AI Brain, orchestration, the bridge to national authorities.](images/arch-simplified.png){width=85%}
+![A simplified executive view of the multi-country dispatch — citizens by country routed to their sovereign spoke, federation hub on top, national authorities below.](images/architecture-multicountry.png){width=92%}
 
 The platform is hub-and-spoke. Each country spoke peers to a federation hub VNet — production-grade, always-on, never optional.
 
@@ -72,7 +72,7 @@ The submission ships 868 tracked files, fourteen markdown documents totalling mo
 
 UDCSP runs seven Microsoft Foundry agents in production, replicated identically across the three country hubs. The seven agents are not seven chatbots — they are seven specialised experts who hand work to each other under the supervision of one orchestrator, the Topic Router.
 
-![The AI Brain — seven specialised agents inside Microsoft Foundry, with the Topic Router as the only orchestrator citizen and voice ever talk to directly.](images/ai-brain.png){width=85%}
+![The AI Brain — Topic Router as the only orchestrator, six specialised downstream agents, Eligibility as the single high-risk component, two function tools for the voice channel, Content Safety + Evaluations + AI Act registry as transverse layers, RAG knowledge per country.](images/ai-brain.png){width=92%}
 
 Each agent has a stable name with auto-incrementing versions, an Entra-only authentication contract (no API keys, period), a managed identity per agent version, a registered EU AI Act risk class, and an evaluation suite that gates every promotion through CI.
 
