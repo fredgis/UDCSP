@@ -22,31 +22,29 @@ Three sovereign data zones never share a citizen's data without an explicit, sig
 
 This document is the architect's submission for the Azure Master Architect Program.
 
-![Ten end-to-end scenarios — citizen journeys, security, compliance and DevOps in a single frame.](images/Demofull.png){width=80%}
-
 # The citizen experience
 
 UDCSP is one platform, three surfaces, one identity. The same citizen — Anna, Lars, Maria, Erik — meets the platform on `udcsp.fredgis.com` from a desktop browser, opens the same site on an iPhone or an Android, or dials a toll-free Nordic phone number.
 
 The shell is responsive, the language is auto-detected and switchable to eleven others, the accessibility menu offers slow speech, high contrast and reduce-motion modes, and the chat widget is pinned in the bottom-right corner waiting for a question.
 
-![The citizen portal home — single sign-in, language picker, demo index, accessibility menu.](images/screen1.png){width=65%}
+\screenfig{0.85\linewidth}{images/screen1.png}{The citizen portal home — single canonical entry across DK, SE, NO with the language picker, accessibility menu, demo index and a pinned chat widget bottom-right.}
 
-The portal walks the citizen through every flow as a numbered wizard with clear progress, explicit consent prompts, AI-assisted summaries, and a *My cases* timeline that never resets. The eligibility step is the only place the citizen sees the AI verdict before consenting — confidence percentage, rule-by-rule evidence, missing-evidence list, citizen-friendly summary, caseworker summary — all four shown side by side, never the bare AI conclusion.
+\screenfig{0.85\linewidth}{images/screen11.png}{The sign-in landing — per-country External ID federation behind the same `udcsp.fredgis.com` URL; each country uses its national eID broker (MitID · BankID + Freja+ · ID-porten + MinID).}
 
-![The sign-in landing — federated External ID across DK, SE, NO with the national eID brokers.](images/screen2.png){width=65%}
+\screenfig{0.85\linewidth}{images/screen2.png}{The contact page — a citizen can pick up a phone and dial the country toll-free number; the voice channel is a first-class peer of web and mobile.}
 
-![The Apply for Child Benefit page — AI eligibility pre-assessment with confidence and rule-by-rule evidence.](images/screen3.png){width=65%}
+\screenfig{0.85\linewidth}{images/screen3.png}{The *My cases* timeline — every interaction, every AI verdict, every caseworker disposition, with the official decision mirrored back from the national authority.}
 
-![Document upload — the Doc Extractor returns structured fields in under four seconds.](images/screen4.png){width=65%}
+\screenfig{0.85\linewidth}{images/screen4.png}{The Citizen Assistant — a chat widget grounded on the national-authority knowledge base, with mandatory citation for every reply; the same widget the voice channel reaches through a function tool.}
 
-![My cases — a timeline of every interaction, every AI verdict, every caseworker disposition.](images/screen8.png){width=65%}
+\screenfig{0.85\linewidth}{images/screen8.png}{The cross-border transfer request — Anna's DK to SE residency form, with the AI eligibility verdict (confidence + rule-by-rule evidence + missing documents) shown *before* the citizen consents.}
 
 The mobile experience is the same SPA, not a separate native binary. Twenty-one media queries cover the responsive breakpoints from a 375 px iPhone SE to a 430 px iPhone 14 Pro Max.
 
 The accessibility menu reflows to a single column under 600 px, the chat widget pins to the bottom-right with a thumb-reachable target, and the file picker uses the native iOS document and photo chooser.
 
-![A patchwork of the mobile experience — sign-in, demos index, apply wizard, document upload, my cases timeline.](images/mobile-patchwork.png){width=70%}
+![A patchwork of the mobile experience — sign-in, demos index, apply wizard, document upload, my cases timeline.](images/mobile-patchwork.png){width=72%}
 
 # Architecture
 
@@ -174,7 +172,7 @@ The agentic story is not a chatbot. It is a system of seven specialised experts,
 
 UDCSP itself is the product of three multi-agent development campaigns. The platform was scaffolded, refactored and hardened by AI coding agents, end to end, with measurable parallelism factors.
 
-![Three campaigns, one platform — from initial scaffold to a CLEAN twenty-fourth audit round.](images/build-campaigns.png){width=85%}
+![Three campaigns, one platform — the end-to-end build timeline from initial 17-agent scaffold to the fully CLEAN twenty-fourth audit round.](images/build-timeline.png){width=92%}
 
 The first campaign was the initial build. Seventeen plan-agents (A0 to A16) were declared in `docs/tech/plan.md` and collapsed into six vertical sub-agents that owned non-overlapping folder trees: `agent-platform` owned `infra/`, `agent-data-gov` owned the Fabric and governance assets, `agent-foundry` owned the Foundry agents and the multilingual catalogue, `agent-services` owned APIM, Logic Apps and D365, `agent-frontend` owned the web, mobile and voice apps, and `agent-qa` owned the test suite. An orchestrator session wrote the installer, the master documents and the CI plumbing concurrently with the six verticals.
 
@@ -275,3 +273,7 @@ Every architectural decision is anchored to a regulation — GDPR, the EU AI Act
 The citizen who started this story — Anna in Copenhagen — does not need to know any of this. She signs in once, fills in one form, gets her residency decision in four days instead of twenty-eight.
 
 The platform is invisible to her. That is exactly the point.
+
+---
+
+*Document built by the `md2pdf` Copilot CLI skill (pandoc + xelatex + Mermaid pre-rendering) from `github.com/fredgis/UDCSP/presentation/project.md`. Cover image is the ten-personas overview; technical companion docs live under `docs/biz/` and `docs/tech/` in the same repository.*
