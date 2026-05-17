@@ -261,7 +261,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 1 — Anna moves DK → SE.
 
-![bg right:32% w:280](images/Demo1.png)
+![bg right:28% w:240](images/Demo1.png)
 
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Anna signs in to the SE portal with her Danish eID</strong><span>External ID federation · Verified ID attribute disclosure</span></div></div>
@@ -276,7 +276,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 2 — Lars asks the voice assistant. ⭐ hero
 
-![bg right:32% w:280](images/Demo2.png)
+![bg right:28% w:240](images/Demo2.png)
 
 - Lars (blind, NO) dials **`+33 801 150 799`**
 - ACS Call Automation NO → Container App → gpt-realtime
@@ -291,7 +291,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 3 — Maria with Windows Narrator.
 
-![bg right:32% w:280](images/Demo3.png)
+![bg right:28% w:240](images/Demo3.png)
 
 - Polish caregiver, lives in Denmark, applies for child benefit
 - **SPA fully in Polish** end-to-end (12 languages shipped)
@@ -306,7 +306,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 4 — Erik snaps a payslip on iPhone.
 
-![bg right:32% w:280](images/Demo4.png)
+![bg right:28% w:240](images/Demo4.png)
 
 - Danish SMB owner, on mobile
 - Responsive PWA on `udcsp.fredgis.com` (21 media queries, breakpoints 375 → 430 px)
@@ -321,7 +321,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo — Security: prompt-injection contained.
 
-![bg right:32% w:280](images/Demo8.png)
+![bg right:28% w:240](images/Demo8.png)
 
 A malicious prompt attempting to extract the system prompt or pivot the eligibility verdict is caught at **three layers**:
 
@@ -337,7 +337,7 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — Compliance: Hans the DPO audits a 6-month-old decision.
 
-![bg right:32% w:280](images/Demo7.png)
+![bg right:28% w:240](images/Demo7.png)
 
 ![w:520](images/aiact-evidence.png)
 
@@ -347,7 +347,7 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — DevOps: one-shot installer.
 
-![bg right:32% w:280](images/Demo10.png)
+![bg right:28% w:240](images/Demo10.png)
 
 ```powershell
 git clone https://github.com/fredgis/UDCSP
@@ -369,9 +369,26 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 <!-- _class: chapter -->
 <div class="num">04</div>
 
+# How we built it.
+
+## Three multi-agent campaigns · 5× parallelism · 19 audit cycles · ~45 wall-clock minutes
+
+---
+
+# UDCSP itself was built by an agent swarm.
+
+![w:1000](images/build-campaigns.png)
+
+> Three campaigns produced the platform. Each round of audit produced fix commits until the twenty-fourth round was the first fully **CLEAN** round. The Demo 10 one-shot installer is the **executable summary** of the work.
+
+---
+
+<!-- _class: chapter -->
+<div class="num">05</div>
+
 # Security &<br>compliance.
 
-## Defence in depth · GDPR · EU AI Act · ePrivacy · eIDAS 2.0 · NIS2 · WCAG
+## Six defence layers · 8 regulations mapped · AI Act art. 12 + 14 + Annex III §5(b)
 
 ---
 
@@ -436,7 +453,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 ---
 
 <!-- _class: chapter -->
-<div class="num">05</div>
+<div class="num">06</div>
 
 # Monitoring &<br>FinOps.
 
@@ -536,7 +553,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 ---
 
 <!-- _class: chapter -->
-<div class="num">06</div>
+<div class="num">07</div>
 
 # Reliability.
 
@@ -563,7 +580,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 ---
 
 <!-- _class: chapter -->
-<div class="num">07</div>
+<div class="num">08</div>
 
 # Closing.
 
