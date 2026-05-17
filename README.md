@@ -36,10 +36,15 @@ Three Nordic governments collectively serve **2.1 million citizens** through **4
 UDCSP is a **unified citizen platform** that:
 
 - 🌐 **Unifies the front door** — the 47 national portals are rationalised into a single citizen experience across web, mobile and telephone in **12 languages**, **multilingual and inclusive by design** (voice, screen-reader, plain language) — while each country keeps its sovereign back-office systems intact.
+  
 - 🤝 **Bridges to the national authorities, never replaces them** — every transaction is pre-filled, validated, then **submitted to the competent authority** (CPR / borger.dk / SKAT / Udbetaling DK in 🇩🇰, Skatteverket / Försäkringskassan in 🇸🇪, Skatteetaten / NAV / Altinn / UDI in 🇳🇴) and the official decision, certificate or status is mirrored back into the citizen's *My cases* timeline. UDCSP itself never issues residency, tax or benefit decisions.
+  
 - 🔐 **Federates identity** across the three countries while preserving national data sovereignty (MitID · BankID · Freja+ · ID-porten · MinID via certified OIDC brokers).
+  
 - 🧠 **Puts AI at the center, under human control** — a Microsoft Foundry-hosted set of agents and models classifies requests, translates content, pre-determines benefit eligibility and answers citizen questions in natural language. **Every model recommendation is traceable, explainable and systematically validated or adjusted by a human caseworker** before any final decision (AI-first, but supervised).
+  
 - ⚙️ **Automates back-office routing** through Azure Logic Apps and a Dynamics 365 case-management spine.
+  
 - 📊 **Closes the loop** with a unified data and governance layer powered by Microsoft Fabric, Power BI and **Microsoft Purview** — a single governance fabric (catalog, AI Act registry, end-to-end traceability) that makes cross-border data sharing strictly compliant with **GDPR, the EU AI Act and sector-specific EU directives — by design, not as an afterthought**.
 
 > [!IMPORTANT]
