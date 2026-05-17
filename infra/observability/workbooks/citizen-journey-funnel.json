@@ -46,7 +46,7 @@
       "name": "chart-funnel",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let win = {TimeRange};\nlet ev = customEvents | where timestamp > ago(win) | project name;\nunion\n  (ev | where name startswith 'page.'           | summarize n=count() | extend Step='1. Page view'),\n  (ev | where name startswith 'apply.start'     | summarize n=count() | extend Step='2. Apply start'),\n  (ev | where name startswith 'eligibility.'    | summarize n=count() | extend Step='3. Eligibility check'),\n  (ev | where name startswith 'apply.submit'    | summarize n=count() | extend Step='4. Submit'),\n  (ev | where name startswith 'my-cases.'       | summarize n=count() | extend Step='5. My cases'),\n  (ev | where name startswith 'voice.'          | summarize n=count() | extend Step='6. Voice turn')\n| project Step, Count=n\n| order by Step asc",
+        "query": "customEvents\n| extend Step = case(\n    name startswith 'page.',         '1. Page view',\n    name startswith 'apply.start',   '2. Apply start',\n    name startswith 'eligibility.',  '3. Eligibility check',\n    name startswith 'apply.submit',  '4. Submit',\n    name startswith 'my-cases.',     '5. My cases',\n    name startswith 'voice.',        '6. Voice turn',\n    'other')\n| where Step != 'other'\n| summarize Count=count() by Step\n| order by Step asc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
@@ -64,7 +64,7 @@
       "name": "chart-locale",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| extend locale=tostring(customDimensions['locale'])\n| where isnotempty(locale)\n| summarize Events=count() by bin(timestamp, 15m), locale\n| order by timestamp asc",
+        "query": "customEvents\n| extend locale = tostring(customDimensions['locale'])\n| where isnotempty(locale)\n| summarize Events=count() by bin(timestamp, 15m), locale\n| order by timestamp asc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
@@ -82,7 +82,7 @@
       "name": "chart-channel",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| extend channel=tostring(customDimensions['x-channel-actor'])\n| where isnotempty(channel)\n| summarize Events=count() by channel\n| order by Events desc",
+        "query": "customEvents\n| extend channel = tostring(customDimensions['x-channel-actor'])\n| where isnotempty(channel)\n| summarize Events=count() by channel\n| order by Events desc",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
@@ -100,7 +100,7 @@
       "name": "table-requests",
       "content": {
         "version": "KqlItem/1.0",
-        "query": "requests\n| where timestamp > ago({TimeRange})\n| summarize Hits=count(), p95Ms=percentile(duration,95) by name, cloud_RoleName=coalesce(cloud_RoleName,'unknown')\n| order by Hits desc\n| take 40",
+        "query": "requests\n| summarize Hits=count(), p95Ms=percentile(duration,95) by name, cloud_RoleName=coalesce(cloud_RoleName,'unknown')\n| order by Hits desc\n| take 40",
         "size": 0,
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
