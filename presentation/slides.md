@@ -84,6 +84,31 @@ UDCSP unifies the front door. It bridges to the existing national authorities �
 
 ---
 
+# The platform you actually see.
+
+<div class="split right-wide">
+<div>
+
+One SPA · 12 languages · 3 channels · always accessible.
+
+The same React + TypeScript bundle runs on desktop, tablet and phone. Twenty-one media queries reflow the breakpoints from 375 px to 1100 px.
+
+The chat widget pins bottom-right; the accessibility menu offers slow speech, high contrast and reduce-motion.
+
+Every *Apply* page shows the AI eligibility verdict — confidence, rule-by-rule evidence, missing-evidence list — **before** the citizen consents.
+
+</div>
+<div>
+
+![w:520](images/screen1.png)
+
+![w:340](images/mobile-patchwork.png)
+
+</div>
+</div>
+
+---
+
 <!-- _class: chapter -->
 <div class="num">01</div>
 
@@ -236,7 +261,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 1 — Anna moves DK → SE.
 
-![bg right:38% w:380](images/Demo1.png)
+![bg right:32% w:280](images/Demo1.png)
 
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Anna signs in to the SE portal with her Danish eID</strong><span>External ID federation · Verified ID attribute disclosure</span></div></div>
@@ -251,7 +276,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 2 — Lars asks the voice assistant. ⭐ hero
 
-![bg right:38% w:380](images/Demo2.png)
+![bg right:32% w:280](images/Demo2.png)
 
 - Lars (blind, NO) dials **`+33 801 150 799`**
 - ACS Call Automation NO → Container App → gpt-realtime
@@ -266,7 +291,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 3 — Maria with Windows Narrator.
 
-![bg right:38% w:380](images/Demo3.png)
+![bg right:32% w:280](images/Demo3.png)
 
 - Polish caregiver, lives in Denmark, applies for child benefit
 - **SPA fully in Polish** end-to-end (12 languages shipped)
@@ -281,7 +306,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 4 — Erik snaps a payslip on iPhone.
 
-![bg right:38% w:380](images/Demo4.png)
+![bg right:32% w:280](images/Demo4.png)
 
 - Danish SMB owner, on mobile
 - Responsive PWA on `udcsp.fredgis.com` (21 media queries, breakpoints 375 → 430 px)
@@ -296,7 +321,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo — Security: prompt-injection contained.
 
-![bg right:38% w:380](images/Demo8.png)
+![bg right:32% w:280](images/Demo8.png)
 
 A malicious prompt attempting to extract the system prompt or pivot the eligibility verdict is caught at **three layers**:
 
@@ -312,7 +337,7 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — Compliance: Hans the DPO audits a 6-month-old decision.
 
-![bg right:38% w:380](images/Demo7.png)
+![bg right:32% w:280](images/Demo7.png)
 
 ![w:520](images/aiact-evidence.png)
 
@@ -322,7 +347,7 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — DevOps: one-shot installer.
 
-![bg right:38% w:380](images/Demo10.png)
+![bg right:32% w:280](images/Demo10.png)
 
 ```powershell
 git clone https://github.com/fredgis/UDCSP
