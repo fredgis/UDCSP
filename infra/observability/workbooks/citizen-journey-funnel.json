@@ -107,6 +107,52 @@
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
       }
+    },
+    {
+      "type": 1,
+      "name": "text-phase-a-divider",
+      "content": { "json": "---\n## 🔗 Cross-resource view (Phase A — Log Analytics)\n\nAPIM gateway logs from the platform-shared LAW (`udcsp-no-prod-law`) — the actual citizen-rail traffic on the NO gateway. DK/SE workbooks would query their own LAWs; this section is most informative on the NO instance." }
+    },
+    {
+      "type": 1,
+      "name": "text-apim-citizen",
+      "content": { "json": "### APIM citizen-rail hits — per API per status" }
+    },
+    {
+      "type": 3,
+      "name": "chart-apim-citizen",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").ApiManagementGatewayLogs\n| where ApiId in (\"agent-topic-router\", \"eligibility-checks\", \"case-management\", \"document-intake\", \"gdpr\")\n| extend StatusBucket = case(ResponseCode < 300, \"2xx\", ResponseCode < 400, \"3xx\", ResponseCode < 500, \"4xx\", \"5xx\")\n| summarize Hits=count() by bin(TimeGenerated, 5m), ApiId\n| order by TimeGenerated asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-la-funnel",
+      "content": { "json": "### Logic App `application-intake` runs (NO)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-la-funnel",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").AzureDiagnostics\n| where ResourceProvider == \"MICROSOFT.LOGIC\" and Category == \"WorkflowRuntime\"\n| where Resource contains \"application-intake\"\n| summarize Runs=count() by bin(TimeGenerated, 5m), status_s\n| order by TimeGenerated asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-foundry-link",
+      "content": { "json": "> 🤖 **Foundry observability portal** (per-agent native view): <https://ai.azure.com/explore/aiservices/udcspai/observability>" }
     }
   ]
 }

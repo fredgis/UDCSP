@@ -200,6 +200,70 @@
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
       }
+    },
+    {
+      "type": 1,
+      "name": "text-phase-a-divider",
+      "content": { "json": "---\n## 🔗 Cross-resource view (Phase A — Log Analytics)\n\nThe panels below pull from the per-country Log Analytics workspace populated by the Phase A diagnostic-settings (AOAI · APIM · ACS · Logic Apps). They're cross-resource queries against the platform-shared NO LAW (`udcsp-no-prod-law`) — AOAI is platform-shared by design, see `docs/biz/voice.md §11.2`. For country-segregated APIM views, use the per-country LAW directly in Azure Monitor → Logs." }
+    },
+    {
+      "type": 1,
+      "name": "text-aoai-tokens",
+      "content": { "json": "### AOAI — token consumption by model deployment" }
+    },
+    {
+      "type": 3,
+      "name": "chart-aoai-tokens",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").AzureDiagnostics\n| where ResourceProvider == \"MICROSOFT.COGNITIVESERVICES\"\n| where Category in (\"RequestResponse\", \"AzureOpenAIRequestUsage\")\n| where isnotempty(ModelDeploymentName_s)\n| summarize Calls=count(), TotalTokens=sum(toint(coalesce(properties_s.totalTokens, properties_s.prompt_tokens))) by bin(TimeGenerated, 5m), ModelDeploymentName_s\n| order by TimeGenerated asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-apim-hits",
+      "content": { "json": "### APIM gateway — hits per API operation (last hour by default — driven by the TimeRange picker)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-apim-hits",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").ApiManagementGatewayLogs\n| where IsRequestSuccess == true or ResponseCode >= 400\n| extend StatusBucket = case(ResponseCode < 300, \"2xx\", ResponseCode < 400, \"3xx\", ResponseCode < 500, \"4xx\", \"5xx\")\n| summarize Hits=count() by ApiId, StatusBucket\n| order by Hits desc\n| take 50",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-la-runs",
+      "content": { "json": "### Logic Apps — workflow runs (NO)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-la-runs",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").AzureDiagnostics\n| where ResourceProvider == \"MICROSOFT.LOGIC\" and Category == \"WorkflowRuntime\"\n| where OperationName has \"workflowRunCompleted\"\n| extend workflow = tostring(split(Resource, \"/\")[2])\n| summarize Runs=count() by workflow, status_s\n| order by Runs desc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-foundry-link",
+      "content": { "json": "> 🤖 **Agent-level telemetry (free, native, refresh in seconds):** open the [Foundry observability portal](https://ai.azure.com/explore/aiservices/udcspai/observability) for per-agent runs, tokens, latency p50/p95, errors and cost." }
     }
   ]
 }

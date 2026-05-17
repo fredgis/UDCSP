@@ -111,6 +111,53 @@
         "resourceType": "microsoft.insights/components",
         "visualization": "table"
       }
+    },
+    {
+      "type": 1,
+      "name": "text-phase-a-divider",
+      "content": { "json": "---\n## 🔗 Cross-resource view (Phase A — AOAI Request/Response logs)\n\nThe table below is the EU AI Act art. 12 evidence: every model call recorded by Azure Monitor on the AOAI account `udcspai`, with model deployment, latency and token consumption. Joinable to the workbook rows above via `operation_Id` (App Insights) ↔ `properties_s.requestId` (LAW) on the same W3C `traceparent`." }
+    },
+    {
+      "type": 1,
+      "name": "text-aoai-calls",
+      "content": { "json": "### AOAI calls — every model invocation (last hour or as chosen in the picker)" }
+    },
+    {
+      "type": 3,
+      "name": "table-aoai-calls",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").AzureDiagnostics\n| where ResourceProvider == \"MICROSOFT.COGNITIVESERVICES\"\n| where Category == \"RequestResponse\"\n| project TimeGenerated, OperationName, ModelDeploymentName_s, DurationMs, ResultSignature, requestId=tostring(properties_s.requestId), CorrelationId=tostring(properties_s.['ms-azureml-modelname'])\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": { "rowLimit": 100, "filter": true }
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-tokens-by-model",
+      "content": { "json": "### Tokens consumed per model deployment" }
+    },
+    {
+      "type": 3,
+      "name": "chart-tokens-by-model",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "workspace(\"/subscriptions/00b9d21c-db88-4467-9cb8-8e80c7f84190/resourceGroups/udcsp-no-observability-rg/providers/Microsoft.OperationalInsights/workspaces/udcsp-no-prod-law\").AzureDiagnostics\n| where ResourceProvider == \"MICROSOFT.COGNITIVESERVICES\"\n| where isnotempty(ModelDeploymentName_s)\n| summarize PromptTokens=sum(toint(coalesce(properties_s.prompt_tokens, 0))), CompletionTokens=sum(toint(coalesce(properties_s.completion_tokens, 0))) by ModelDeploymentName_s\n| order by PromptTokens desc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-foundry-link",
+      "content": { "json": "> 🤖 **Native Foundry agent trace** (per-agent runs with cost, errors, tokens): <https://ai.azure.com/explore/aiservices/udcspai/observability>\n>\n> **AI Act art. 12 evidence trail**: this workbook → `operation_Id` drill → App Insights Transaction search → full W3C `traceparent` from ACS / web edge to model call. Retention configurable to 730 days in LAW (2× the art. 12.3 minimum)." }
     }
   ]
 }
