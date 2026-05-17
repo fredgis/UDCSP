@@ -11,23 +11,152 @@
 
 ## Table of contents
 
-1. [State of play — what produces telemetry today](#state-of-play)
-2. [Plan — what to add and why](#plan)
-3. [Implementation — phased recipe](#implementation)
-4. [Compliance — AI Act, GDPR, ePrivacy traceability story](#compliance)
+1. [Telemetry architecture diagram](#diagram)
+2. [State of play — what produces telemetry today](#state-of-play)
+3. [Plan — what to add and why](#plan)
+4. [Implementation — phased recipe](#implementation)
+5. [Compliance — AI Act, GDPR, ePrivacy traceability story](#compliance)
+
+---
+
+<a id="diagram"></a>
+
+## 1. Telemetry architecture diagram
+
+Color legend (matches each phase status):
+
+- 🟢 **Phase A — done (2026-05-17)** — diagnostic-settings on AOAI / APIM × 3 / ACS NO / 3 Logic Apps NO → Log Analytics
+- 🟢 **Phase C — done (2026-05-17)** — cross-resource KQL panels in the 3 workbooks, Foundry portal link in every footer
+- 🔵 **Phase B — deferred** — Web SPA instrumentation with `@microsoft/applicationinsights-web`
+- ⚖️ **AI Act anchors** — Art. 12 record-keeping, Art. 14 human oversight, Annex III §5(b) high-risk eligibility
+
+```mermaid
+flowchart TB
+  %% ─── Sources ───────────────────────────────────────────
+  subgraph S["🌐 Citizen-facing surfaces"]
+    direction LR
+    SPA["🖥️ Web SPA<br/><i>udcsp.fredgis.com</i><br/>SWA"]:::deferred
+    VOICE["📞 Voice ACA<br/><i>udcsp-no-dev-voice-orch</i><br/>norwayeast"]:::ready
+    MOB["📱 Mobile<br/>Expo PWA"]:::deferred
+  end
+
+  subgraph G["🛡️ Gateway & orchestration"]
+    direction LR
+    APIM_DK["APIM DK<br/>udcsp-dk-prod-apim"]:::phaseA
+    APIM_SE["APIM SE<br/>udcsp-se-prod-apim"]:::phaseA
+    APIM_NO["APIM NO<br/>udcsp-no-prod-apim"]:::phaseA
+    LA["⚙️ Logic Apps NO<br/>application-intake<br/>cross-border-residency<br/>escalation-to-human"]:::phaseA
+    ACS["☎️ ACS NO<br/>udcsp-no-acs<br/>+33 801 150 799"]:::phaseA
+  end
+
+  subgraph AI["🧠 AI Foundry & models"]
+    direction LR
+    AGENTS["🤖 7 Foundry agents<br/>classifier · eligibility ⚖️<br/>doc-extractor · citizen-assistant<br/>topic-router · caseworker-helper<br/>translator"]:::ready
+    AOAI["🪄 AOAI account<br/><b>udcspai</b> · swedencentral<br/>gpt-5.4 · gpt-5.4-mini · gpt-realtime"]:::phaseA
+  end
+
+  %% ─── Telemetry plane ───────────────────────────────────
+  subgraph T["📡 Telemetry plane"]
+    direction TB
+    AI_DK["📊 App Insights DK<br/>udcsp-dk-prod-shared-appi"]:::ready
+    AI_SE["📊 App Insights SE<br/>udcsp-se-prod-shared-appi"]:::ready
+    AI_NO["📊 App Insights NO<br/>udcsp-no-prod-shared-appi<br/>🟢 voice live"]:::ready
+    LAW_DK["🗄️ LAW DK<br/>udcsp-dk-prod-law"]:::phaseA
+    LAW_SE["🗄️ LAW SE<br/>udcsp-se-prod-law"]:::phaseA
+    LAW_NO["🗄️ LAW NO<br/>udcsp-no-prod-law<br/><i>platform-shared (see voice.md §11.2)</i>"]:::phaseA
+  end
+
+  %% ─── Surfaces ──────────────────────────────────────────
+  subgraph V["👁️ Operator & auditor surfaces"]
+    direction LR
+    WB["📈 3 × 3 Workbooks<br/>platform-health<br/>citizen-journey-funnel<br/>ai-decision-traces ⚖️"]:::phaseC
+    FP["🤖 Foundry observability portal<br/><i>ai.azure.com/.../udcspai</i><br/>native — zero setup"]:::ready
+    TX["🔎 Transaction search<br/>W3C traceparent E2E ⚖️"]:::ready
+    PBI["💎 Power BI exec view<br/>cio-dashboard.pbix<br/>on Fabric F64"]:::deferred
+  end
+
+  %% ─── Citizen-rail flows (current) ──────────────────────
+  SPA -. "Phase B<br/>not wired" .-> AI_DK
+  SPA -. "Phase B<br/>not wired" .-> AI_SE
+  SPA -. "Phase B<br/>not wired" .-> AI_NO
+  SPA -- "HTTPS" --> APIM_DK
+  SPA -- "HTTPS" --> APIM_SE
+  SPA -- "HTTPS" --> APIM_NO
+  MOB -. "Phase B" .-> AI_DK
+
+  %% ─── Voice flow (live) ─────────────────────────────────
+  ACS -- "Event Grid" --> VOICE
+  VOICE -- "trackEvent<br/>traceparent" --> AI_NO
+  VOICE -- "/agent-topic-router" --> APIM_NO
+
+  %% ─── APIM → Foundry ────────────────────────────────────
+  APIM_DK -- "agent-topic-router<br/>+ 4 LA-callbacks" --> AGENTS
+  APIM_SE -- "agent-topic-router" --> AGENTS
+  APIM_NO -- "agent-topic-router<br/>+ realtime tool" --> AGENTS
+  AGENTS == "model invocations" ==> AOAI
+  APIM_NO --> LA
+  LA -- "Foundry calls" --> AGENTS
+
+  %% ─── Diag-settings (Phase A) ───────────────────────────
+  APIM_DK == "GatewayLogs<br/>+ AllMetrics" ==> LAW_DK
+  APIM_SE == "GatewayLogs<br/>+ AllMetrics" ==> LAW_SE
+  APIM_NO == "GatewayLogs<br/>+ AllMetrics" ==> LAW_NO
+  ACS  == "CallSummary<br/>CallDiagnostics" ==> LAW_NO
+  LA   == "WorkflowRuntime" ==> LAW_NO
+  AOAI == "RequestResponse ⚖️<br/>Audit · Trace<br/>+ token usage" ==> LAW_NO
+
+  %% ─── Workbook reads (Phase C cross-resource) ───────────
+  AI_NO --> WB
+  AI_DK --> WB
+  AI_SE --> WB
+  LAW_NO -. "Phase C<br/>cross-resource KQL" .-> WB
+  AI_NO --> TX
+  AGENTS -. "native" .-> FP
+
+  %% ─── Executive surface (deferred) ──────────────────────
+  LAW_NO -. "Phase B/D<br/>Direct Query" .-> PBI
+  AI_DK -. "Phase B/D<br/>Direct Query" .-> PBI
+  AI_SE -. "Phase B/D<br/>Direct Query" .-> PBI
+  AI_NO -. "Phase B/D<br/>Direct Query" .-> PBI
+
+  %% ─── AI Act anchor callouts ────────────────────────────
+  AIACT12["⚖️ <b>AI Act art. 12</b><br/>Record-keeping<br/>730-day LAW retention<br/>= 2× the 6-month min"]:::aiact
+  AIACT14["⚖️ <b>AI Act art. 14</b><br/>Human oversight<br/>W3C traceparent E2E<br/>drillable from workbook"]:::aiact
+  AIACT5B["⚖️ <b>Annex III §5(b)</b><br/>High-risk eligibility agent<br/>governance/ai-act/registry/<br/>eligibility-model.yaml"]:::aiact
+  LAW_NO -.-> AIACT12
+  TX -.-> AIACT14
+  AGENTS -.-> AIACT5B
+
+  %% ─── Styles ─────────────────────────────────────────────
+  classDef phaseA   fill:#1b5e20,stroke:#0d3311,color:#ffffff,stroke-width:2px
+  classDef phaseC   fill:#0277bd,stroke:#013c5e,color:#ffffff,stroke-width:2px
+  classDef ready    fill:#2e7d32,stroke:#1b4d1d,color:#ffffff,stroke-width:1px
+  classDef deferred fill:#616161,stroke:#212121,color:#eeeeee,stroke-width:1px,stroke-dasharray:5 4
+  classDef aiact    fill:#fff8e1,stroke:#bf6f00,color:#3e2700,stroke-width:2px
+
+  class S,G,AI,T,V cluster
+```
+
+### How to read the diagram
+
+- **Solid bold arrows (`==>`)** = Phase A telemetry pushes that we wired today. Six edges in dark green target the LAW boxes.
+- **Solid thin arrows (`-->`)** = pre-existing runtime traffic (HTTPS calls, model invocations) and the voice → App Insights NO path that was already live.
+- **Dotted arrows (`-. .-->`)** = either deferred work (Phase B SPA → App Insights, Phase B/D Power BI Direct Query) or **cross-resource reads** from the workbooks back into LAW NO (Phase C).
+- **⚖️ tags** anchor the three AI Act references on the three surfaces that carry the evidence (AOAI RequestResponse log, ai-decision-traces workbook, Transaction search trace).
+- **Grey dashed boxes** (SPA, Mobile, PBI exec) = surfaces that exist but are not yet wired for monitoring.
 
 ---
 
 <a id="state-of-play"></a>
 
-## 1. State of play
+## 2. State of play
 
 Audit run on the live tenant on 2026-05-17 (MCAPS sandbox `MngEnvMCAP123456`).
 
 | Source | Emits telemetry to App Insights? | Emits telemetry to LAW (Azure Monitor diag)? | Surfaced in workbooks? | Notes |
 |---|:-:|:-:|:-:|---|
 | **Voice orchestrator** `udcsp-no-dev-voice-orch` (Container App, `norwayeast`) | 🟢 `applicationinsights` Node SDK + `trackEvent` + `trackException` + W3C `traceparent` + cloudRole | n/a — ACA stdout already auto-collected | 🟢 NO workbooks alive | Wired via KV secret `app-insights-connection`. Lights up on every `+33 801 150 799` dial. |
-| **Web SPA** `udcsp-web-dev` (Static Web App, custom domain `udcsp.fredgis.com`) | 🔴 no JS SDK in `apps/web/`, no `VITE_APPLICATIONINSIGHTS_*` in SWA app settings | n/a | 🔴 | Every Demo 1 / 3 / 4 flow leaves no trace today. Closing this gap is the Phase B item (deferred — see § 2.2). |
+| **Web SPA** `udcsp-web-dev` (Static Web App, custom domain `udcsp.fredgis.com`) | 🔴 no JS SDK in `apps/web/`, no `VITE_APPLICATIONINSIGHTS_*` in SWA app settings | n/a | 🔴 | Every Demo 1 / 3 / 4 flow leaves no trace today. Closing this gap is the Phase B item (deferred — see § 3.2). |
 | **APIM × 3** (`udcsp-{dk,se,no}-prod-apim`) | 🔴 0 loggers configured | 🟢 **Phase A done** — diag-settings on all 3, each pointing at its country LAW (`GatewayLogs` + `WebSocketConnectionLogs` + `AllMetrics`) | 🟢 **Phase C done** — `platform-health` and `citizen-journey-funnel` workbooks include cross-resource KQL panels that read `ApiManagementGatewayLogs` from NO LAW | Sovereign-clean — each country's APIM traffic stays in its country LAW. The NO panel is shown on all 3 workbook deployments because that's where the demo traffic lands; DK/SE panels are queryable from Azure Monitor → Logs against their own LAW. |
 | **AOAI account** `udcspai` (hosts the 7 Foundry agents + the 3 model deployments) | n/a | 🟢 **Phase A done** — diag-settings `to-law-no` (`Audit` + `RequestResponse` + `Trace` + `AllMetrics`) targeting `udcsp-no-prod-law`. A pre-existing MCAPS-governance diag-setting (`SetByMCAPSGovPolicy_AzTB_Wave_17`) coexists. | 🟢 **Phase C done** — `platform-health` and `ai-decision-traces` workbooks include cross-resource KQL panels that read AOAI `RequestResponse` + token usage from NO LAW · 🟢 **Foundry observability portal** linked from every workbook footer | AOAI is platform-shared by design (one account serves all 3 countries — see `voice.md §11.2` sovereignty trade-off). Logs land in NO LAW; per-country segregation done at query time via the `operation_Id` correlation to the country's APIM `GatewayLogs`. |
 | **Foundry agents** (`udcsp-{classifier,eligibility,doc-extractor,citizen-assistant,topic-router,caseworker-helper,translator}`) | n/a | n/a directly; every call appears in AOAI `RequestResponse` log (Phase A) | 🟢 same as AOAI above · 🟢 **Foundry observability portal** linked from every workbook footer | `https://ai.azure.com/explore/aiservices/udcspai/observability` already renders runs, latency, tokens, errors per agent — **zero setup required**. |
@@ -51,9 +180,9 @@ Audit run on the live tenant on 2026-05-17 (MCAPS sandbox `MngEnvMCAP123456`).
 
 <a id="plan"></a>
 
-## 2. Plan
+## 3. Plan
 
-### 2.1 — Three calibrated effort tiers
+### 3.1 — Three calibrated effort tiers
 
 | Tier | Effort | What it adds | Risk | Rubric impact | Status |
 |---|---|---|---|:-:|:-:|
@@ -62,17 +191,17 @@ Audit run on the live tenant on 2026-05-17 (MCAPS sandbox `MngEnvMCAP123456`).
 | 🌿 **Sage (Phase A + B + C)** | Light + C + ~3 h | + SPA instrumented with `@microsoft/applicationinsights-web` + 6 `trackEvent` at journey milestones + W3C `traceparent` propagation in `apiFetch` | low (1 isolated wrapper file, 1 line touched in `apiFetch.ts`, bundle size +70 KB gz; staggered rollout DK first, then SE/NO) | Demo Completeness 4/5 → 5/5 (workbooks light up for Demos 1/3/4) | 🔵 **Phase B still deferred** — keeps the AI Act pitch defensible without code changes |
 | 💎 **Luxury** | ~2 days | Sage + OneLake medallion ingestion of AOAI logs + Power BI semantic model + cost-attribution dashboard per agent per locale + W3C distributed tracing collector with explicit propagator | medium (multiple moving parts, requires Fabric pipeline auth + Dataverse connector setup) | minimal extra rubric impact above Sage | ⚪ out of scope |
 
-### 2.2 — Why Phase A is enough for the AI Act pitch (Sage deferred)
+### 3.2 — Why Phase A is enough for the AI Act pitch (Sage deferred)
 
 The decision on 2026-05-17 was to ship **Phase A only** and defer Phase B. Three reasons:
 
-1. **The AI Act story is fully carried by Phase A.** EU AI Act art. 12 (record-keeping) + art. 14 (human oversight) + Annex III §5(b) (high-risk eligibility) are all satisfied by the LAW-side evidence trail that Phase A produces — the AOAI `RequestResponse` log gives every model call, the APIM `GatewayLogs` give every citizen request, and the App Insights NO transaction search already gives the full W3C `traceparent` E2E chain. The 4-minute AI Act pitch script is in § 4.6 below.
+1. **The AI Act story is fully carried by Phase A.** EU AI Act art. 12 (record-keeping) + art. 14 (human oversight) + Annex III §5(b) (high-risk eligibility) are all satisfied by the LAW-side evidence trail that Phase A produces — the AOAI `RequestResponse` log gives every model call, the APIM `GatewayLogs` give every citizen request, and the App Insights NO transaction search already gives the full W3C `traceparent` E2E chain. The 4-minute AI Act pitch script is in § 5.6 below.
 2. **The Foundry observability portal already gives you agent-level telemetry for free.** `https://ai.azure.com/explore/aiservices/udcspai/observability` lists every run of the 7 agents with tokens, latency, errors — no setup required. Phase A complements this by routing the underlying AOAI logs to LAW so they survive the portal's retention window.
 3. **Phase A is non-invasive and reversible.** It touches no application code, no APIM policy XML, no Logic App definition, no SPA bundle. It adds child `diagnostic-settings` resources only. Rollback is one `az` command per resource.
 
 Phase B (SPA instrumentation) remains in the backlog — it would lift Monitoring 4 → 5/5 and turn the workbooks tri-pays alive for Demos 1/3/4, but it is **not required for the AI Act narrative**.
 
-### 2.3 — Free wins available **before** any code change
+### 3.3 — Free wins available **before** any code change
 
 Three items take 0 minutes to integrate and should always be in the demo:
 
@@ -82,7 +211,7 @@ Three items take 0 minutes to integrate and should always be in the demo:
 | **AOAI Metrics blade** | Azure portal → `udcspai` → Metrics → `TokensUsage` / `Requests` / `GeneratedTokens` / `TimeBetweenTokens`, split by `ModelDeploymentName` | *"Tokens consumed today by gpt-realtime, gpt-5.4, gpt-5.4-mini — straight from the platform metrics, no semantic model needed."* |
 | **App Insights NO Transaction search** | App Insights NO → Transaction search → filter by `traceparent` | *"Every voice call is a single W3C trace from ACS through Container Apps through APIM through Foundry. EU AI Act art. 14 evidence."* |
 
-### 2.4 — Out of scope (deliberately not addressed)
+### 3.4 — Out of scope (deliberately not addressed)
 
 - D365 / Dataverse activity stream into App Insights (separate effort — Dataverse audit log → Synapse Link → LAW is its own pipeline).
 - Sentinel hunting queries (Sentinel is wired but the hunting catalogue is not part of this work).
@@ -93,7 +222,7 @@ Three items take 0 minutes to integrate and should always be in the demo:
 
 <a id="implementation"></a>
 
-## 3. Implementation
+## 4. Implementation
 
 > Phase A is **done** on the live tenant as of 2026-05-17 (see verification table at the end of this section). Phases B-E remain in the backlog and will only be triggered on explicit go.
 
@@ -215,9 +344,9 @@ All cross-resource queries use `workspace("...udcsp-no-prod-law")` directives �
 
 <a id="compliance"></a>
 
-## 4. Compliance — AI Act, GDPR, ePrivacy story
+## 5. Compliance — AI Act, GDPR, ePrivacy story
 
-### 4.1 — EU AI Act (Regulation 2024/1689)
+### 5.1 — EU AI Act (Regulation 2024/1689)
 
 Two relevant articles drive the observability requirements.
 
@@ -227,7 +356,7 @@ Two relevant articles drive the observability requirements.
 | **Art. 14 — Human oversight** | The operator must be able to interpret the output, decide to disregard or reverse it, and intervene. | The `ai-decision-traces` workbook lists every verdict with confidence, decision, locale, channel, agent, `operation_Id`. The caseworker model-driven Power App writes the human override to Dataverse `udcsp_caseworker_decision` (scaffolded) and emits a `caseworker.override` `customEvent`. Both surfaces are joinable. Confidential Ledger (`infra/security/confidential-ledger/`) provides the immutable record of overrides for evidentiary purposes. |
 | **Annex III §5(b)** — *Access to essential public services* | The eligibility-pre-assessor falls inside this scope. | The agent is registered with `risk: high` in `governance/ai-act/registry/eligibility-model.yaml`. Its decisions are logged with both the model verdict **and** the caseworker disposition, so a 6-month-old decision can be reconstructed end-to-end (cf. Demo 7 — Hans the DPO). |
 
-### 4.2 — GDPR (Regulation 2016/679)
+### 5.2 — GDPR (Regulation 2016/679)
 
 | Article | Requirement | How UDCSP monitoring satisfies it |
 |---|---|---|
@@ -237,13 +366,13 @@ Two relevant articles drive the observability requirements.
 | **Art. 30 — Records of processing** | The controller must maintain a register. | The SPA telemetry processing is declared in `governance/gdpr/ropa.md` annex with: purpose (operational observability, demo storytelling, AI Act art. 12 record-keeping), lawful basis (Art. 6.1.e public interest + 6.1.f legitimate interest), data categories (technical identifiers only, no Art. 9 special categories), recipients (App Insights / LAW, no third party), retention (90 d / 13 months tiered), transfers (none). |
 | **Art. 32 — Security of processing** | Pseudonymisation, encryption, integrity, confidentiality. | App Insights connection-strings stored as SWA app settings (write-only credential, key not usable to read back data — confirmed by Microsoft docs). LAW data is encrypted at rest with platform-managed keys; customer-managed keys are available via Key Vault if required. |
 
-### 4.3 — ePrivacy Directive (2002/58/EC, transposed nationally — DK § 10 LBK 805, SE LEK 6:18, NO ekomloven § 2-7b)
+### 5.3 — ePrivacy Directive (2002/58/EC, transposed nationally — DK § 10 LBK 805, SE LEK 6:18, NO ekomloven § 2-7b)
 
 | Provision | Requirement | How UDCSP monitoring satisfies it |
 |---|---|---|
 | **Cookies and identifiers** | Consent required for any non-essential storage on the user's terminal. | The Application Insights JS SDK uses `localStorage` for session tracking. The SPA's existing cookie consent banner is extended to gate telemetry initialisation: SDK is loaded only after `consent.given` has been emitted (the same event used to feed the funnel). Until consent, the only telemetry that flows is server-side `dependency` tracking from APIM/Logic Apps — which is non-personal traffic metadata. |
 
-### 4.4 — Sovereignty assertions
+### 5.4 — Sovereignty assertions
 
 The architecture preserves national data sovereignty even for telemetry:
 
@@ -252,7 +381,7 @@ The architecture preserves national data sovereignty even for telemetry:
 3. **AOAI logs → country LAW of the calling tenant.** The diagnostic-settings created in Phase A target the LAW of the country whose APIM proxied the request — there is no central AOAI log sink.
 4. **Cross-country queries are by design read-only and PBI-mediated.** The executive Power BI report (next sprint) reads the 3 App Insights via Direct Query and aggregates server-side at Fabric. No raw telemetry is moved between countries.
 
-### 4.5 — Auditor reading list
+### 5.5 — Auditor reading list
 
 When the DPO / AI Act auditor opens this section, send them to these 4 files in order:
 
@@ -261,7 +390,7 @@ When the DPO / AI Act auditor opens this section, send them to these 4 files in 
 3. `governance/gdpr/ropa.md` § telemetry annex — the SPA telemetry record
 4. `infra/observability/workbooks/ai-decision-traces.json` — the workbook every verdict is drilled from
 
-### 4.6 — Demo pitch: "EU AI Act evidence trail in 4 minutes"
+### 5.6 — Demo pitch: "EU AI Act evidence trail in 4 minutes"
 
 > **When to use it.** Inside the 45-min presentation, after Demo 2 (voice) and before Demo 9 (sovereignty workbooks). Or as a stand-alone answer to a juror who asks *"how do you prove AI Act compliance?"*
 
