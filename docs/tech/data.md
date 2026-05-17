@@ -335,7 +335,7 @@ The matrix below is the **definitive lookup table**: for each category of data t
 | **High-risk AI decision proof (Confidential Ledger)** ★ *(post-audit)* | Append-only, immutable | Indefinite (immutable by design) | Never (only the citizen mapping in Postgres can be erased — the hash remains) | EU AI Act Art. 26(6) — cryptographic proof of integrity |
 | **SMS message** ★ | 6 months hot in Dataverse | 6 years OneLake | Per case retention | EU AI Act Art. 26(6) + ePrivacy |
 | **Email body + attachments** ★ | 6 months hot in Dataverse | 6 years OneLake | Per case retention OR erasure | EU AI Act Art. 26(6) + GDPR Art. 17 |
-| **Foundry AI trace** | 180 days App Insights | OneLake Bronze indefinite (anonymised) | Anonymisation at 6 months, per-trace deletion on erasure | **EU AI Act Art. 26(6) (≥ 6 months — this is the binding minimum)** |
+| **Foundry AI trace** | 180 days App Insights · LAW configurable up to 730 days | OneLake Bronze indefinite (anonymised) | Anonymisation at 6 months, per-trace deletion on erasure | **EU AI Act Art. 12.3 (≥ 6 months — this is the binding minimum); LAW ceiling 730 days gives 2× headroom for high-risk audit replay** |
 | Caseworker action / override | 10 years (Dataverse + audit) | OneLake immutable | Per national admin law | National admin law |
 | **Per-citizen AI memory (AI Search)** ★ | TTL 12 months rolling | None | TTL auto-purge OR erasure on demand | GDPR Art. 17 + Art. 5(1)(e) |
 | KPI live (KQL) | 90 days raw | Aggregated to Gold (no raw beyond 90 d.) | Auto-purge | Operational |

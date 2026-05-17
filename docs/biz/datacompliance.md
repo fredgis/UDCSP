@@ -71,7 +71,7 @@ Three audiences read this document:
 | **Citizen advocate / journalist / NGO** | "What does this platform do with my data, what rights do I have, and what does the platform actually deliver on those rights?" |
 | **Evaluator of the case-study response** | "Does the proposed UDCSP platform really cover the regulatory context the case study mandates?" |
 
-This document answers all three. The technical implementation lives in [`../tech/data.md`](../tech/data.md) (storage architecture + retention matrix + right-to-erasure playbook) and [`../tech/architecture.md`](../tech/architecture.md) (security + governance sections); this file is the **business-language executive layer** above them.
+This document answers all three. The technical implementation lives in [`../tech/data.md`](../tech/data.md) (storage architecture + retention matrix + right-to-erasure playbook), [`../tech/architecture.md`](../tech/architecture.md) (security + governance sections), [`../tech/monitoring.md`](../tech/monitoring.md) (telemetry + AI Act art. 12 evidence trail) and the citizen-facing companion [`./traceability.md`](./traceability.md); this file is the **business-language executive layer** above them.
 
 ---
 
