@@ -4,6 +4,7 @@ Live state of every end-to-end demo against the deployed sandbox. Update one row
 
 - **Web SWA** — https://udcsp.fredgis.com
 - **Current SPA bundle** — `nordic-map-+-tax-administration-+-case-detail-3-tier-parser` (recent commits: `45b6393` case-detail parser + redesign, `42612e9` /tax-administration page, `bb69d11` real Natural Earth Nordic map). Earlier bundles `D3-pl-locale-translator-axe` (Polish locale, Translator in LA, axe-core CI) + `signout-home-+-authgate-redesign-+-required-asterisks-+-eid-preview` still active for D3 + auth flow.
+- **Current observability bundle** — Demo 9 workbooks (3 × DK/SE/NO, 9 total) deployed live on the per-country App Insights via direct ARM PUT (the `application-insights` az extension 1.2.3 silently drops `--kind shared`). Voice orchestrator telemetry already flowing into NO; DK/SE remain empty until a country-specific orchestrator or instrumented surface is deployed. Recent commits: `ed7a6af` (timechart → barchart histograms), `30c2537` (patterns aligned with real voice events `call.*` / `realtime.*` / `topic_router.*`), `fec8845` (timeContextFromParameter fix), `6737f3e` (functional KQL replacing scaffolds), `25a7f08` (Platform Monitoring install section + dual-surface plan).
 - **Deploy** — SWA `udcsp-web-dev` has no GitHub Action: every change is pushed live with `npm run build && npx --yes @azure/static-web-apps-cli@latest deploy ./dist --deployment-token <key> --env production --no-use-keychain` (token from `az staticwebapp secrets list -n udcsp-web-dev`).
 
 > ⚠️ **Caseworker surface — temporary stance.** Until per-country D365 Customer Service envs are provisioned, the caseworker workspace runs as a **model-driven Power App on the shared Dataverse env `org939d8f07`** (DK system tenant). The `udcsp_application` schema + Power Fx form + column logical names match the future D365 CS deployment for drop-in replacement. Today the LA `application-intake` writes to the standard `tasks` table; the LA repoint to `udcsp_applications` happens once D365 CS is installed. See **📂 Reference → 🧑‍💼 Caseworker UI strategy (D7)** below.
@@ -24,7 +25,7 @@ The 10 rows below mirror the 10 demos defined in [`docs/biz/uses.md`](../biz/use
 | 6  | Eligibility model proposes, caseworker disposes           | 🟡    | Eligibility Pre-Assessor `udcsp-eligibility` invoked synchronously from the citizen portal at step 4 (residency) and from the *AI eligibility pre-assessment* panel (child-benefit) via APIM `POST /eligibility-checks/assessments` — citizen sees the recommendation badge, confidence %, rule-by-rule evidence, missing-evidence list, citizen notice, caseworker summary BEFORE consenting. The verdict travels in the submit payload (`payload.eligibilityPreflight`). LA re-calls the agent for the AI Act art. 14 audit registry (dual-call by design). Caseworker disposes via the model-driven Power App. | LA writes to `tasks` activity entity today (canonical `udcsp_application` table provisioned but LA not yet repointed). No Confidential Ledger entry written for caseworker overrides yet; `udcsp_caseworker_decision` Dataverse table scaffolded but not yet persisted via a LA callback. |
 | 7  | Hans the DPO audits a 6-month-old AI decision             | 🟡    | GDPR Art. 17 erasure stub `POST /gdpr/erasure-request` returns Priva certificate; SPA wipes local cache.  | Real Priva DSR connector pending E5 licence; Purview lineage endpoint still `placeholder.local`; no DPO console.              |
 | 8  | Prompt-injection attempt is contained & investigated      | 🟡    | Foundry Content Safety filters enabled by default; APIM rate-limits per channel actor; Sentinel deployed. | No red-team scenario rehearsed; no Sentinel hunting query published; no incident-response runbook proven.                     |
-| 9  | CIO per-country, per-language outcomes & 47-portal sunset | 🟡    | **Two surfaces side-by-side**: (a) **operator view** — 9 App Insights workbooks (3 per country × DK/SE/NO) ready to import via single CLI block; (b) **executive view** — `apps/reporting/cio-dashboard.pbix` on Fabric workspace `UDCSP-Platform-Reporting` bound to `fgisweden` F64 sovereign EU capacity, 4 pages (Platform health · Citizen outcomes · AI Act audit · 47→1 consolidation), 5 DAX measures over App Insights + Dataverse + sunset CSV. | Fabric workspace not yet created; `.pbix` not yet authored/published; workbooks not yet imported into live App Insights; sunset CSV not authored; CSAT capture (voice IVR + web NPS) still in backlog (proxy KPIs used instead). |
+| 9  | CIO per-country, per-language outcomes & 47-portal sunset | 🟡    | **Operator view live**: 9 App Insights workbooks deployed across DK/SE/NO (`platform-health`, `citizen-journey-funnel`, `ai-decision-traces` per country), KQL aligned with the real voice telemetry the NO orchestrator emits (`call.*`, `realtime.*`, `topic_router.*`, `escalation.*`). Histograms (volume + p50/p95/p99) + funnel + decision pie + recent-verdicts table with operation_Id drill. **NO instance receives live data from every dial test** (voice ACA wired via KV-bound `APPLICATIONINSIGHTS_CONNECTION_STRING`). **Sovereignty proof in the workbooks themselves**: switching from NO → DK → SE during the demo shows NO populated and DK/SE empty (no cross-region telemetry flow). | Executive surface (`apps/reporting/cio-dashboard.pbix` on Fabric workspace `UDCSP-Platform-Reporting`) not yet built; sunset CSV not authored; CSAT capture (voice IVR + web NPS) still in backlog; DK/SE workbooks empty by design until country-specific orchestrators or SPA instrumentation are added (M3 diag-settings → LAW available as a separate path, not yet executed). |
 | 10 | DevOps stands up the platform from a clean tenant         | 🟡    | 25 install phases scripted in `scripts/install/Install-UDCSP.ps1`; B4-B7 Voice phase playbook expanded to 14 executable steps. | Not re-run on a clean tenant since the recent installer changes; needs a one-shot validation. |
 
 **Live tonight**: Demo 1 + Demo 2 + Demo 3 + Demo 4 are playable end-to-end on `udcsp.fredgis.com` and `+33 801 150 799`. Demo 2 runs in no-handoff mode (D365 voice workstream not provisioned). Demo 4 reframed as responsive-PWA on iPhone — no native binary required for the demo path.
@@ -241,30 +242,51 @@ The same flow works with NVDA, JAWS or VoiceOver — only the modifier key diffe
 
 | Asset | Status | Where |
 |---|:-:|---|
-| Application Insights (per country) | 🟢 | `udcsp-{dk,se,no}-prod-shared-appi` — already ingesting all the events the demo needs (citizen apply, eligibility verdict, MyCases GET, voice tool_call, transcript, topic_router request/response, traceparent E2E) |
+| Application Insights (per country) | 🟢 | `udcsp-{dk,se,no}-prod-shared-appi` — receiving voice orchestrator telemetry today (`requests`, `dependencies`, `customEvents` for `call.*` / `realtime.*` / `topic_router.*`, `traces`, `exceptions`) on **NO only**. DK/SE remain empty until country-specific surfaces are instrumented. |
 | Log Analytics workspaces (obs + sentinel × 3 countries) | 🟢 | `udcsp-{dk,se,no}-prod-{law,sentinel-law}` provisioned |
-| Workbook JSON templates | 🟡 | `infra/observability/workbooks/{ai-decision-traces,citizen-journey-funnel,platform-health}.json` — **authored but not imported** into the live App Insights instances |
+| Workbook JSON templates | 🟢 | `infra/observability/workbooks/{ai-decision-traces,citizen-journey-funnel,platform-health}.json` — production-shape: TimeRange parameter, side-by-side KPI tiles, histograms for volume + p50/p95/p99 latency, funnel by event prefix, locale split, channel pie, decision pie, recent-verdicts table with `operation_Id` drill. **Deployed live as 9 shared workbooks** (3 × DK/SE/NO) via direct ARM PUT (the `application-insights` az extension 1.2.3 silently drops `--kind shared`, see `installation.md` § Platform monitoring). |
 | Alert rule templates | 🟡 | 6 alerts under `infra/observability/alerts/` (`apim-5xx-spike`, `d365-sla-breach-risk`, `external-id-error-rate`, `fabric-pipeline-failure`, `foundry-eval-degradation`, `logicapp-run-failure`) — **JSON ready, not deployed** |
 | Data Collection Rules | 🟡 | DCRs for AKS / Functions / VM in `infra/observability/dcr/` — not yet bound to live resources |
-| Correlation ID strategy | 🟢 | W3C `traceparent` propagated end-to-end (proven by voice dial test) |
+| Correlation ID strategy | 🟢 | W3C `traceparent` propagated end-to-end (proven by voice dial test); surfaced as `operation_Id` in the `ai-decision-traces` workbook → click row → Transaction search |
+| Telemetry wiring per producer | 🟡 | Voice orchestrator 🟢 (`APPLICATIONINSIGHTS_CONNECTION_STRING` via KV secret `app-insights-connection` on `udcsp-no-dev-voice-orch`). SPA 🔴 (no SDK in `apps/web/`). APIM × 3 🔴 (0 loggers, 0 diag-settings — M3 in `installation.md` provides the non-invasive recipe). ACS NO 🔴 (no diag-settings). Logic Apps 🔴 (no diag-settings). |
 | Fabric capacity | 🟡 | 12 capacities exist on the tenant (`fgisweden F64` is sovereign EU); **no UDCSP workspace bound yet** |
 | Power BI Premium / Fabric workspace for UDCSP | 🔴 | Not provisioned. Need a workspace, a semantic model, and a report file |
 | Dataverse `udcsp_application` table | 🟡 | LA currently writes to the system `task` entity; canonical table designed but not authored in maker UI |
 | CSAT capture | 🔴 | No post-interaction survey yet — neither in SPA nor in voice flow |
 | Sunset roadmap data | 🔴 | No data source for "47 portals decommissioned over time"; would need a static lookup + manual checkpoint table |
 
-### Tonight's plan — both surfaces side-by-side (target: 🟡 → 🟢)
+### Where we are now (2026-05-17 — operator surface 🟢, executive surface 🔴)
 
-**Decision (2026-05-17):** the demo ships **two complementary observability surfaces**, both wired against the same live telemetry:
+The **operator view is live and demoable**. After a dial test on `+33 801 150 799`, the 🇳🇴 NO App Insights workbooks light up:
 
-| Surface | Audience | Tool | Refresh | Sovereign anchor |
-|---|---|---|---|---|
-| **Operator / SRE view** | Programme team, ministry IT, auditors who want to drill into raw events | 3× App Insights Workbooks per country (9 total) | live (App Insights ingestion latency, ~1 min) | per-country App Insights in `udcsp-{c}-prod-shared-appi` |
-| **Executive / CIO view** | Henrik Lund persona, sponsors, oversight board, evaluator scoring "implementation completeness" | Power BI report `apps/reporting/cio-dashboard.pbix` on Fabric workspace `UDCSP-Platform-Reporting` | Direct Query (live) or daily Import refresh | `fgisweden` F64 EU-sovereign capacity |
+- **`platform-health`** — KPI tiles (Requests, Exceptions, Dependencies, Custom events) + request volume histogram by `cloud_RoleName` + p50/p95/p99 latency histogram + dependency success/failure barchart + exceptions table.
+- **`citizen-journey-funnel`** — funnel step "Voice / assistant turn" populated by `call.*` + `realtime.*` + `topic_router.*` events; activity-per-language histogram driven by `customDimensions['locale']`; endpoint-hits fallback table over `requests`.
+- **`ai-decision-traces`** — decision-mix pie + verdicts-over-time-by-agent histogram + recent-verdicts table (clickable `operation_Id` → Transaction search) + Content-Safety-blocks table.
 
-Both surfaces consume the **same KQL/DAX measures over the same App Insights + Dataverse + sunset CSV inputs** — so numbers agree by construction. The demo flow opens the operator view first to prove "real data, end-to-end traceparent", then switches to the executive view to land the CIO narrative.
+🇩🇰 DK and 🇸🇪 SE workbooks **stay empty during a dial test, by design** — the toll-free number is bound to `udcsp-no-acs`, the orchestrator runs in `norwayeast`, its AI cnx points only at `udcsp-no-prod-shared-appi`. That emptiness is the **sovereignty proof tile** the storyboard expects (cf. `uses.md §Demo 9 watch-for: per-country data residency`): swipe NO → DK → SE during the demo and the visual silence is the talking point.
 
-The build has 7 phases, executed in order. Phases 1-2 are CLI; phase 3 is Power BI Desktop (Windows); phases 4-7 are CLI + portal. **Phase 7 is the workbook import, which can run in parallel with phase 3** while the `.pbix` is being authored.
+### Demo flow — 7 min, operator surface only (current state)
+
+1. **(1 min)** Workbook `platform-health` on 🇳🇴 NO → Time range **Last hour** → show real KPI tiles populated by the dial test you just ran; talking point *"SRE view, no synthetic traffic, real call from `+33 801 150 799`"*.
+2. **(1 min)** Switch to `citizen-journey-funnel` → show step 6 (Voice / assistant turn) lit up; locale histogram colour-coded.
+3. **(1 min)** Switch to `ai-decision-traces` → click an `operation_Id` row → Transaction search opens, full W3C `traceparent` chain ACS → ACA → APIM → Foundry visible; talking point *"audit row #15, every AI verdict is drillable for EU AI Act art. 14 evidence"*.
+4. **(2 min)** Switch App Insights instance from NO → DK → SE in the URL bar, same workbooks → DK and SE empty; talking point *"3 instances, 3 regions, no cross-border telemetry. Sovereignty isn't a checkbox, it's visible silence in the dashboards"*.
+5. **(2 min)** Reframe to the executive surface: *"the workbooks are the operator view. The CIO view — `apps/reporting/cio-dashboard.pbix` on a Fabric F64 capacity — packages the same KQL underneath into 4 executive pages (Platform health · Citizen outcomes · AI Act audit · 47→1 consolidation). That's the next sprint."*
+
+### What's left before the row goes 🟡 → 🟢
+
+1. **Author the `.pbix` + bind a Fabric workspace** (`UDCSP-Platform-Reporting` on `fgisweden` F64). 60-90 min of Power BI Desktop work. Phases 1-5 of the previous plan stand.
+2. **Author the sunset CSV** (`governance/portal-sunset/decommissioned-portals.csv`, ~47 rows) for the consolidation page.
+3. (Optional but recommended) **Run M3** from `installation.md` § Platform monitoring → APIM / ACS / LA diag-settings → LAW → enables an APIM-specific workbook on DK/SE that lights up when the SPA hits the gateways. Pure Azure plane config, no app code touched.
+4. (Stretch) **CSAT capture** for the Per-language CSAT proxy measure on PBI Page 2 (currently uses event counts as the proxy).
+
+### Plan B (kept as safety net)
+
+If the Fabric/PBI build hits a blocker (capacity quota, Direct Query auth, Power BI Desktop unavailable), the operator surface alone is now defensible. Talking point: *"workbooks = operator view, real-time, raw signals. Executive packaging is the next sprint — same KQL underneath, F64 capacity already on the tenant."*
+
+### Executive surface roadmap — Power BI on Fabric (~75-95 min when ready)
+
+The 6 phases below build the **executive view** (`apps/reporting/cio-dashboard.pbix`). The operator view is already shipped; these phases are what flips row #9 to 🟢. Phases 1-2 are CLI; phase 3 is Power BI Desktop (Windows); phases 4-6 are CLI + portal.
 
 #### Phase 1 — Bind a Fabric workspace (~5 min, CLI)
 
@@ -351,45 +373,6 @@ Get-ChildItem infra/observability/alerts/*.json | ForEach-Object {
 }
 ```
 
-#### Phase 7 — Deploy the 9 App Insights workbooks (operator view, ~3 min CLI)
-
-Runs **in parallel with Phase 3** (PBI authoring). This is the operator/SRE surface — live telemetry, no semantic-model layer. Same data the `.pbix` will reach via Direct Query, but exposed raw to people who want to drill.
-
-```powershell
-$apps = @(
-  @{rg='udcsp-dk-observability-rg'; name='udcsp-dk-prod-shared-appi'},
-  @{rg='udcsp-se-observability-rg'; name='udcsp-se-prod-shared-appi'},
-  @{rg='udcsp-no-observability-rg'; name='udcsp-no-prod-shared-appi'}
-)
-foreach ($a in $apps) {
-  $aiId = az monitor app-insights component show -g $a.rg -a $a.name --query id -o tsv
-  foreach ($wb in 'ai-decision-traces','citizen-journey-funnel','platform-health') {
-    $json = Get-Content "infra/observability/workbooks/$wb.json" -Raw
-    az monitor app-insights workbook create `
-      --resource-group $a.rg --name "$wb-$($a.name)" --display-name $wb `
-      --serialized-data $json --source-id $aiId --category workbook | Out-Null
-    Write-Host "✅ $($a.name) ← $wb"
-  }
-}
-
-# Verify
-foreach ($a in $apps) {
-  az monitor app-insights workbook list -g $a.rg --query "[].displayName" -o tsv
-}
-```
-
-### Demo flow — both surfaces in 7 minutes
-
-1. **(1 min) Operator view, NO** — Azure Portal → `udcsp-no-prod-shared-appi` → Workbooks → `platform-health`. Show live 5xx rate + voice p95 latency. Talking point: *"this is the SRE view, refreshing as we speak; the dial test you saw in Demo 2 is in this funnel."*
-2. **(1 min) Operator view, language drill** — switch to `citizen-journey-funnel`, split by `customDimensions["locale"]`. Show the Polish-CSAT-proxy gap. Talking point: *"inequity is visible in raw telemetry — we don't need a quarterly report to find it."*
-3. **(1 min) Operator view, sovereignty** — switch App Insights instance from `udcsp-no-…` to `udcsp-dk-…` to `udcsp-se-…`. Talking point: *"3 instances, 3 regions, no cross-border data flow — sovereignty is enforced at the telemetry layer."*
-4. **(3 min) Executive view** — open `app.powerbi.com` → `UDCSP-Platform-Reporting` workspace → `cio-dashboard`. Walk Page 2 (Citizen outcomes: 28d→4d, AI-decided %, channel mix), then Page 4 (47→1 burndown), then Page 3 (AI Act audit). Talking point: *"same KQL underneath the workbooks you just saw, packaged for the minister — published on a Fabric F64 in `fgisweden`, EU-sovereign capacity, refreshed daily."*
-5. **(1 min) Drill-down proof** — click a tile on Page 3 → "View underlying data" → back to App Insights with the `traceparent`. Talking point: *"every executive KPI drills to the lineage. Audit row #15."*
-
-### Plan B — workbooks-only fallback (only if Phase 1-3 are blocked)
-
-If the Fabric workspace cannot be provisioned (F64 quota, tenant access, Power BI Desktop unavailable on the demo machine), drop the executive view entirely and demo with Phase 7 only. Talking point becomes: *"the executive packaging is the v2 — same KQL, staged for publication. Tonight we walk the operator surface, which is the audit-grade source of truth."*
-
 ### Future v2 (post-demo)
 
 - **OneLake medallion ingestion** — Fabric pipeline that reads App Insights + Dataverse into Bronze → Silver → Gold; Power BI switches from Direct Query to Import on Gold. Survives App Insights' 30-day retention cap.
@@ -453,8 +436,14 @@ Today the demo writes cases to the generic `task` activity entity (no `incident`
 
 ### 🕰️ Recent commits relevant to this tracker
 
+- **Today (Demo 9 operator surface, 2026-05-17)** — 9 App Insights workbooks deployed live (3 × DK/SE/NO) via direct ARM PUT, after the `az monitor app-insights workbook create --kind shared` bug in extension 1.2.3 was hit. Workbook JSONs rewritten from minimal scaffolds to production-shape definitions (TimeRange parameter, KPI tiles, histograms, funnel, decision pie, recent-verdicts table with `operation_Id` drill); patterns aligned with the real voice telemetry events (`call.*`, `realtime.*`, `topic_router.*`, `escalation.*`). New `📊 Platform monitoring` section in `installation.md` (M1 audit · M2 deploy · M3 optional diag-settings · M4 test · M5 demo notes · M6 rollback) — referenced from the top-of-file section table. Demo 9 row #9 now 🟡 (operator surface live, executive PBI surface still on roadmap).
 - **Today (Foundry v1 migration)** — Deleted 7 classic assistants. Rewrote `Import-FoundryAgent.ps1` to call new Agents v1 API (`/agents` with `kind: prompt`, no API key, Entra-only auth). Recreated all 7 agents via the new API; eligibility & caseworker-helper bumped to v2 after switching from `gpt-5.5` (no quota) to `gpt-5.4`. Deployed model `gpt-5.4` on `udcspai`. Updated `architecture.md` Foundry section to reflect the new identity model.
 - **Today (Option B wiring, see commit log)** — Foundry: gpt-5.4-mini deployed + 7 assistants created on `udcspai/udcsp` project. APIM DK named-values filled (logicapp callback, foundry endpoints, d365 url, OIDC config, audience, portal-origin). Global CORS policy on `udcsp-dk-prod-apim`. Subscription-key disabled on all 11 APIs. Web `apiFetch` acquires bearer for `api://<dk-clientId>/access_as_user` per current country. Apply Child Benefit page now POSTs and shows correlationId.
+- `ed7a6af` — Demo 9: timechart → barchart histograms on volume / latency / locale / verdicts charts.
+- `30c2537` — Demo 9: workbook patterns aligned with real voice events (`call.*` / `realtime.*` / `topic_router.*`).
+- `fec8845` — Demo 9: switch from `{TimeRange}` substitution (buggy) to `timeContextFromParameter` injection.
+- `6737f3e` — Demo 9: replace minimal workbook scaffolds with functional KQL (TimeRange parameter, KPI tiles, drills).
+- `25a7f08` — Demo 9: `installation.md` § Platform monitoring section + dual-surface plan in `inprogress.md`.
 - `2dfa7e5` — CIAM authority fix (drop `/SignUpSignIn` from path).
 - `c59fb25` — Per-country `VITE_EXTERNAL_ID_CLIENT_ID_{DK,SE,NO}` + correct PCA per redirect.
 - `bbe61d7` — POST CONFIGURATION section in `installation.md` + UserBadge "Sign in" without flag.

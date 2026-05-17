@@ -15,6 +15,8 @@ This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 | **🟩 B — Mandatory install** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
 | **🟨 C — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
 | **🟪 D — Post-install checklist** | What the installer covers vs. what stays manual on a real MCAPS sandbox tenant — gaps, licences to obtain, follow-up actions. | After a green install run. |
+| **📊 Platform monitoring** | Deploy the 9 App Insights workbooks (3 × DK/SE/NO) used by Demo 9, audit telemetry wiring, optional `diagnostic-settings` for APIM / ACS / Logic Apps. | After install, before demo prep — and any time a new component needs to be added to the operator view. |
+| **🪪 Post configuration** | External ID app registrations (3 CIAM tenants — DK / SE / NO) that the installer cannot create programmatically. | After install, before first sign-in to the SPA. |
 
 ---
 
