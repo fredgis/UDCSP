@@ -61,15 +61,21 @@
   \end{figure}%
 }
 
-% Persona avatar — small image floated left with paragraph text wrapping
-\usepackage{wrapfig}
-\newcommand{\persona}[2]{%
-  \begin{wrapfigure}{l}{0.26\textwidth}%
-    \vspace{-0.4\baselineskip}%
-    \centering%
-    \includegraphics[width=0.24\textwidth]{#1}%
-    \vspace{-1.0\baselineskip}%
-  \end{wrapfigure}%
+% Persona avatar — small image on the left with paragraph text on the right
+% Non-floating side-by-side minipages (more reliable than wrapfig near page
+% breaks). Use \personabegin{path} ... markdown paragraphs ... \personaend.
+\newcommand{\personabegin}[1]{%
+  \par\noindent\begin{minipage}[t]{0.22\textwidth}%
+    \vspace{0pt}%
+    \includegraphics[width=\linewidth]{#1}%
+  \end{minipage}%
+  \hfill%
+  \begin{minipage}[t]{0.74\textwidth}%
+  \vspace{0pt}%
+  \setlength{\parskip}{6pt}%
+}
+\newcommand{\personaend}{%
+  \end{minipage}\par\medskip\par%
 }
 
 % Page header/footer (dynamic title in footer)
