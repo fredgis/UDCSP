@@ -51,7 +51,11 @@
 
 ### 2.1 High-level view (whole-platform)
 
-This is the same diagram surfaced in [`README.md`](../../README.md), kept here as the canonical entry point for architects who want to drill down into the layered view below.
+The simplified executive view below shows the multi-country dispatch — citizens routed by country to their sovereign spoke, federation hub on top, national authorities below. Sovereignty is the absence of cross-country lines.
+
+![UDCSP — multi-country dispatch architecture](../../images/architecture-multicountry.png)
+
+The full mermaid below is the same picture surfaced in [`README.md`](../../README.md), kept here as the canonical entry point for architects who want to drill down into the layered view in § 2.2.
 
 ```mermaid
 graph TB
@@ -588,6 +592,8 @@ When Anna initiates a residency transfer DK → SE, the SPA does **not** ask her
 > 📘 **For the dedicated AI deep-dive** (single brain — Foundry only — `topic-router` agent, decision tree, agent catalogue, safety, evals, EU AI Act registry, end-to-end conversation flow), see [`ai.md`](../biz/ai.md). This section is the architecture-level summary.
 
 Azure OpenAI is **never accessed directly**. Every model call is mediated by **Microsoft Foundry**, which provides agent orchestration, evaluation, tracing, content safety, and the EU AI Act registry.
+
+![UDCSP — The AI Brain: Topic Router as the only orchestrator, six specialised downstream agents, Eligibility as the single high-risk component with TEE + Confidential Ledger, two function tools for the voice channel, Content Safety + Evaluations + AI Act registry as transverse layers.](../../images/ai-brain.png)
 
 > ℹ️ **Agent runtime — Foundry Agents v1 API.** All seven UDCSP agents are registered through the **new Foundry Agents API (v1)** (not the legacy Assistants/Classic API). Consequences for the rest of the architecture:
 >
