@@ -122,8 +122,8 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 ### Per-hub model deployments
 
 - **gpt-realtime** — voice channel
-- **gpt-4o** — high-stakes (Eligibility, Assistant, Caseworker Helper)
-- **gpt-4o-mini** — low-stakes (Classifier, Doc Extractor, Topic Router)
+- **gpt-5.4** — high-stakes (Eligibility, Assistant, Caseworker Helper)
+- **gpt-5.4-mini** — low-stakes (Classifier, Doc Extractor, Topic Router)
 
 </div>
 </div>
@@ -184,13 +184,13 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 | Agent | Purpose | Model | AI Act class |
 |---|---|---|:-:|
-| **Topic Router** | Multi-turn orchestration · 12 langs · slot-filling in Redis | gpt-4o-mini | Limited |
-| **Request Classifier** | Intent · agency · language · urgency | gpt-4o-mini | Limited |
-| **Translator** | 12-language admin terminology preservation | gpt-4o + AI Translator | Limited |
-| **Eligibility Pre-Assessor** ⚖️ | Verdict + lineage · runs in TEE · Confidential Ledger anchor | gpt-4o + det. rules | **High (Annex III §5b)** |
-| **Citizen Assistant** | RAG over public KB · multi-lingual | gpt-4o grounded | Limited |
-| **Document Extractor** | Passport / payslip / lease structured extraction | gpt-4o-mini + Doc Intel | Limited |
-| **Caseworker Copilot Helper** | Summarise · draft replies · NBA | gpt-4o grounded | Limited |
+| **Topic Router** | Multi-turn orchestration · 12 langs · slot-filling in Redis | gpt-5.4-mini | Limited |
+| **Request Classifier** | Intent · agency · language · urgency | gpt-5.4-mini | Limited |
+| **Translator** | 12-language admin terminology preservation | gpt-5.4 + AI Translator | Limited |
+| **Eligibility Pre-Assessor** ⚖️ | Verdict + lineage · runs in TEE · Confidential Ledger anchor | gpt-5.4 + det. rules | **High (Annex III §5b)** |
+| **Citizen Assistant** | RAG over public KB · multi-lingual | gpt-5.4 grounded | Limited |
+| **Document Extractor** | Passport / payslip / lease structured extraction | gpt-5.4-mini + Doc Intel | Limited |
+| **Caseworker Copilot Helper** | Summarise · draft replies · NBA | gpt-5.4 grounded | Limited |
 
 > **No agent makes a final decision.** Every Eligibility verdict is a *proposal* to a human caseworker who confirms, adjusts or rejects. Citizen sees the rule-by-rule explanation **before** consenting.
 
@@ -236,7 +236,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 1 — Anna moves DK → SE.
 
-![bg right:45% w:540](images/Demo1.png)
+![bg right:38% w:380](images/Demo1.png)
 
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Anna signs in to the SE portal with her Danish eID</strong><span>External ID federation · Verified ID attribute disclosure</span></div></div>
@@ -251,7 +251,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 2 — Lars asks the voice assistant. ⭐ hero
 
-![bg right:45% w:540](images/Demo2.png)
+![bg right:38% w:380](images/Demo2.png)
 
 - Lars (blind, NO) dials **`+33 801 150 799`**
 - ACS Call Automation NO → Container App → gpt-realtime
@@ -266,7 +266,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 3 — Maria with Windows Narrator.
 
-![bg right:45% w:540](images/Demo3.png)
+![bg right:38% w:380](images/Demo3.png)
 
 - Polish caregiver, lives in Denmark, applies for child benefit
 - **SPA fully in Polish** end-to-end (12 languages shipped)
@@ -281,7 +281,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo 4 — Erik snaps a payslip on iPhone.
 
-![bg right:45% w:540](images/Demo4.png)
+![bg right:38% w:380](images/Demo4.png)
 
 - Danish SMB owner, on mobile
 - Responsive PWA on `udcsp.fredgis.com` (21 media queries, breakpoints 375 → 430 px)
@@ -296,7 +296,7 @@ No agent call ever crosses a national border. APIM `udcsp-{c}-prod-apim` only ta
 
 # Demo — Security: prompt-injection contained.
 
-![bg right:45% w:540](images/Demo8.png)
+![bg right:38% w:380](images/Demo8.png)
 
 A malicious prompt attempting to extract the system prompt or pivot the eligibility verdict is caught at **three layers**:
 
@@ -312,9 +312,9 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — Compliance: Hans the DPO audits a 6-month-old decision.
 
-![bg right:45% w:540](images/Demo7.png)
+![bg right:38% w:380](images/Demo7.png)
 
-![w:580](images/aiact-evidence.png)
+![w:520](images/aiact-evidence.png)
 
 > AI Act art. 12.3 minimum = 6 months. LAW retention configured to **730 days** = 2× minimum. From DSAR to full audit pack: **< 10 minutes**.
 
@@ -322,7 +322,7 @@ A malicious prompt attempting to extract the system prompt or pivot the eligibil
 
 # Demo — DevOps: one-shot installer.
 
-![bg right:45% w:540](images/Demo10.png)
+![bg right:38% w:380](images/Demo10.png)
 
 ```powershell
 git clone https://github.com/fredgis/UDCSP
@@ -492,8 +492,8 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 
 ### Reserved + spot
 
-- Reserved AOAI PTU for gpt-4o + gpt-realtime baseline
-- Pay-as-you-go for elastic peaks (gpt-4o-mini)
+- Reserved AOAI PTU for gpt-5.4 + gpt-realtime baseline
+- Pay-as-you-go for elastic peaks (gpt-5.4-mini)
 
 ### Anomaly detection
 
@@ -540,31 +540,9 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 <!-- _class: chapter -->
 <div class="num">07</div>
 
-# Self-score.
+# Closing.
 
-## Against the 12-criterion rubric.
-
----
-
-# Self-score against the rubric — 60 / 60.
-
-| Bucket | Criterion | Score |
-|---|---|:-:|
-| Design | Architecture / modularity / scalability | **5/5** |
-| Design | Use of design patterns | **5/5** |
-| Design | Security | **5/5** |
-| Development | Application demo | **5/5** |
-| Development | Implementation completeness | **5/5** |
-| Monitoring | Logging and metrics | **5/5** |
-| AI Integration | Use of AI technologies | **5/5** |
-| AI Integration | Model selection and deployment | **5/5** |
-| Agentic | Autonomy and orchestration | **5/5** |
-| Agentic | Multi-agent coordination | **5/5** |
-| Additional | Performance and reliability | **5/5** |
-| Presentation | Clarity and target audience | **5/5** |
-| **TOTAL** | | **60/60 — A** |
-
-> Justification per criterion in `presentation/project.md` § 12.
+## A production-grade unified citizen platform — not a demo.
 
 ---
 
