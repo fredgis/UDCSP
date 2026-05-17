@@ -61,6 +61,17 @@
   \end{figure}%
 }
 
+% Persona avatar — small image floated left with paragraph text wrapping
+\usepackage{wrapfig}
+\newcommand{\persona}[2]{%
+  \begin{wrapfigure}{l}{0.26\textwidth}%
+    \vspace{-0.4\baselineskip}%
+    \centering%
+    \includegraphics[width=0.24\textwidth]{#1}%
+    \vspace{-1.0\baselineskip}%
+  \end{wrapfigure}%
+}
+
 % Page header/footer (dynamic title in footer)
 \usepackage{fancyhdr}
 \pagestyle{fancy}
