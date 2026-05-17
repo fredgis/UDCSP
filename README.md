@@ -205,7 +205,7 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 
 | Layer | How the 12 languages are handled |
 |---|---|
-| 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice channel uses **GPT-4o Realtime** for native STT + reasoning + TTS in one stream (Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics, not the live audio path). |
+| 🌐 **Channels (web · mobile · voice)** | Locale-aware UI built on a shared design system using **ICU MessageFormat**; per-country branded portals; voice channel uses **`gpt-realtime`** for native STT + reasoning + TTS in one stream (Azure AI Speech reserved for D365 pre-orchestrator IVR menus + post-call analytics, not the live audio path). |
 | 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). |
 | 🧠 **AI Brain (Foundry)** | The **Translator agent** chains Azure OpenAI with **Azure AI Translator** to preserve administrative terminology; the **Classifier** and **Citizen Assistant** are evaluated per language with golden datasets. |
 | 📄 **Documents** | **Azure AI Document Intelligence** + LLM verification handle multilingual passports, payslips, leases, and forms. |
