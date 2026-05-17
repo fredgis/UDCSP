@@ -1,22 +1,112 @@
 {
   "version": "Notebook/1.0",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
   "items": [
     {
       "type": 1,
+      "name": "text-header",
       "content": {
-        "json": "# citizen-journey-funnel\nUDCSP workbook scaffold with country/env parameters."
+        "json": "## 👥 UDCSP — Citizen journey funnel\n\nFunnel from page view to case open across all channels in this country. Events are read from `customEvents` (UDCSP convention: `name` starts with `apply.`, `eligibility.`, `my-cases.`, `voice.`) with a fallback on `requests` for endpoints that have not been instrumented as custom events yet. Per-language split uses `customDimensions['locale']`; channel split uses `customDimensions['x-channel-actor']`."
       }
     },
     {
-      "type": 3,
+      "type": 9,
+      "name": "params-time",
       "content": {
-        "query": "requests | summarize count() by bin(timestamp, 5m), cloud_RoleName",
-        "size": 0
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "p-time",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": { "durationMs": 86400000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000 },
+                { "durationMs": 14400000 },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 2592000000 }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-funnel",
+      "content": { "json": "### Funnel (event counts in window)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-funnel",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let win = {TimeRange};\nlet ev = customEvents | where timestamp > ago(win) | project name;\nunion\n  (ev | where name startswith 'page.'           | summarize n=count() | extend Step='1. Page view'),\n  (ev | where name startswith 'apply.start'     | summarize n=count() | extend Step='2. Apply start'),\n  (ev | where name startswith 'eligibility.'    | summarize n=count() | extend Step='3. Eligibility check'),\n  (ev | where name startswith 'apply.submit'    | summarize n=count() | extend Step='4. Submit'),\n  (ev | where name startswith 'my-cases.'       | summarize n=count() | extend Step='5. My cases'),\n  (ev | where name startswith 'voice.'          | summarize n=count() | extend Step='6. Voice turn')\n| project Step, Count=n\n| order by Step asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-locale",
+      "content": { "json": "### Activity per language (`customDimensions['locale']`)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-locale",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| extend locale=tostring(customDimensions['locale'])\n| where isnotempty(locale)\n| summarize Events=count() by bin(timestamp, 15m), locale\n| order by timestamp asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-channel",
+      "content": { "json": "### Channel mix (`customDimensions['x-channel-actor']`)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-channel",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| extend channel=tostring(customDimensions['x-channel-actor'])\n| where isnotempty(channel)\n| summarize Events=count() by channel\n| order by Events desc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-fallback",
+      "content": { "json": "### Endpoint hits — `requests` fallback (in case custom events are sparse)" }
+    },
+    {
+      "type": 3,
+      "name": "table-requests",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp > ago({TimeRange})\n| summarize Hits=count(), p95Ms=percentile(duration,95) by name, cloud_RoleName=coalesce(cloud_RoleName,'unknown')\n| order by Hits desc\n| take 40",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
       }
     }
-  ],
-  "parameters": {
-    "country": "DK|SE|NO",
-    "env": "prod"
-  }
+  ]
 }

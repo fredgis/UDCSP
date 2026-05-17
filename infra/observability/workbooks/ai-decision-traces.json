@@ -1,22 +1,116 @@
 {
   "version": "Notebook/1.0",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
   "items": [
     {
       "type": 1,
+      "name": "text-header",
       "content": {
-        "json": "# ai-decision-traces\nUDCSP workbook scaffold with country/env parameters."
+        "json": "## 🤖 UDCSP — AI decision traces\n\nEvery AI verdict emitted by the platform agents (eligibility, classifier, topic-router, citizen-assistant, voice-realtime) lands in `customEvents` with a `traceparent` and an `operation_Id`. This workbook shows the verdicts in the selected window, the decision mix, and lets you drill into the underlying transaction via the `operation_Id` link in App Insights → Transaction search. Auditors rely on this view for EU AI Act art. 14 evidence."
       }
     },
     {
-      "type": 3,
+      "type": 9,
+      "name": "params-time",
       "content": {
-        "query": "requests | summarize count() by bin(timestamp, 5m), cloud_RoleName",
-        "size": 0
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "p-time",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": { "durationMs": 86400000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000 },
+                { "durationMs": 14400000 },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 2592000000 }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-mix",
+      "content": { "json": "### Decision mix" }
+    },
+    {
+      "type": 3,
+      "name": "chart-mix",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend decision=tostring(coalesce(\n    customDimensions['decision'],\n    customDimensions['verdict'],\n    customDimensions['intent']))\n| where isnotempty(decision)\n| summarize Count=count() by decision\n| order by Count desc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "piechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-timeline",
+      "content": { "json": "### Verdicts over time (by agent)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-timeline",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend agent=tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName, 'unknown'))\n| summarize Verdicts=count() by bin(timestamp, 5m), agent\n| order by timestamp asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-list",
+      "content": { "json": "### Recent verdicts (click `operation_Id` → Transaction search for full trace)" }
+    },
+    {
+      "type": 3,
+      "name": "table-verdicts",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| where name has_any ('eligibility', 'decision', 'classifier', 'verdict', 'topic.router')\n| extend\n    decision=tostring(coalesce(customDimensions['decision'], customDimensions['verdict'], customDimensions['intent'])),\n    confidence=tostring(coalesce(customDimensions['confidence'], customDimensions['score'])),\n    locale=tostring(customDimensions['locale']),\n    channel=tostring(customDimensions['x-channel-actor']),\n    agent=tostring(coalesce(customDimensions['agent'], customDimensions['agentName'], cloud_RoleName))\n| project timestamp, agent, decision, confidence, locale, channel, name, operation_Id\n| order by timestamp desc\n| take 100",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table",
+        "gridSettings": {
+          "rowLimit": 100,
+          "filter": true
+        }
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-content-safety",
+      "content": { "json": "### Content Safety blocks (if any)" }
+    },
+    {
+      "type": 3,
+      "name": "table-cs",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "customEvents\n| where timestamp > ago({TimeRange})\n| where name has_any ('content-safety', 'safety.block', 'jailbreak', 'prompt.injection')\n| project timestamp, name, customDimensions, operation_Id\n| order by timestamp desc\n| take 50",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
       }
     }
-  ],
-  "parameters": {
-    "country": "DK|SE|NO",
-    "env": "prod"
-  }
+  ]
 }

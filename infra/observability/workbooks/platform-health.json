@@ -1,22 +1,136 @@
 {
   "version": "Notebook/1.0",
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
   "items": [
     {
       "type": 1,
+      "name": "text-header",
       "content": {
-        "json": "# platform-health\nUDCSP workbook scaffold with country/env parameters."
+        "json": "## 🛡️ UDCSP — Platform health\n\nLive operator view of request volume, latency, exceptions and dependency health across the in-region App Insights for this country. Telemetry comes from the voice orchestrator (Container App) and any other component wired with `APPLICATIONINSIGHTS_CONNECTION_STRING` pointing at this resource. Switch the time range below; empty charts mean no traffic in the selected window — play a flow on the live SPA or dial the toll-free voice number, then refresh."
       }
     },
     {
-      "type": 3,
+      "type": 9,
+      "name": "params-time",
       "content": {
-        "query": "requests | summarize count() by bin(timestamp, 5m), cloud_RoleName",
-        "size": 0
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "p-time",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Time range",
+            "type": 4,
+            "isRequired": true,
+            "value": { "durationMs": 3600000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 900000 },
+                { "durationMs": 3600000 },
+                { "durationMs": 14400000 },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-kpis",
+      "content": { "json": "### KPIs" }
+    },
+    {
+      "type": 3,
+      "name": "kpi-tiles",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let win = {TimeRange};\nlet reqs = requests | where timestamp > ago(win) | summarize n=count(), p95=percentile(duration,95);\nlet exns = exceptions | where timestamp > ago(win) | summarize n=count();\nlet deps = dependencies | where timestamp > ago(win) | summarize n=count(), fails=countif(success==false);\nlet ces  = customEvents | where timestamp > ago(win) | summarize n=count();\nunion withsource=Metric\n (reqs | extend Metric='Requests',         Value=tostring(n), Sub=strcat('p95 ', tostring(round(p95,0)), ' ms')),\n (exns | extend Metric='Exceptions',       Value=tostring(n), Sub=''),\n (deps | extend Metric='Dependencies',     Value=tostring(n), Sub=strcat(tostring(fails), ' failed')),\n (ces  | extend Metric='Custom events',    Value=tostring(n), Sub='')\n| project Metric, Value, Sub",
+        "size": 4,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": { "columnMatch": "Metric", "formatter": 1 },
+          "leftContent":  { "columnMatch": "Value", "formatter": 12, "formatOptions": { "palette": "auto" } },
+          "secondaryContent": { "columnMatch": "Sub", "formatter": 1 },
+          "showBorder": true
+        }
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-traffic",
+      "content": { "json": "### Request volume by role" }
+    },
+    {
+      "type": 3,
+      "name": "chart-requests",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp > ago({TimeRange})\n| summarize Requests=count() by bin(timestamp, 1m), cloud_RoleName=coalesce(cloud_RoleName, 'unknown')\n| order by timestamp asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-latency",
+      "content": { "json": "### Latency p50 / p95 / p99 (ms)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-latency",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "requests\n| where timestamp > ago({TimeRange})\n| summarize p50=percentile(duration,50), p95=percentile(duration,95), p99=percentile(duration,99) by bin(timestamp, 1m)\n| order by timestamp asc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "timechart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-deps",
+      "content": { "json": "### Dependency health (success vs. failure)" }
+    },
+    {
+      "type": 3,
+      "name": "chart-deps",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "dependencies\n| where timestamp > ago({TimeRange})\n| summarize n=count() by type, success\n| order by n desc",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "barchart"
+      }
+    },
+    {
+      "type": 1,
+      "name": "text-exns",
+      "content": { "json": "### Recent exceptions" }
+    },
+    {
+      "type": 3,
+      "name": "table-exceptions",
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "exceptions\n| where timestamp > ago({TimeRange})\n| project timestamp, type, outerMessage, cloud_RoleName, operation_Id\n| order by timestamp desc\n| take 50",
+        "size": 0,
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.insights/components",
+        "visualization": "table"
       }
     }
-  ],
-  "parameters": {
-    "country": "DK|SE|NO",
-    "env": "prod"
-  }
+  ]
 }
