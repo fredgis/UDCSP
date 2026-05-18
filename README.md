@@ -25,9 +25,7 @@
 
 This repository is also the submission package for the Azure Master Architect Program — Use Case 11.
 
-The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)** (Markdown source: [`presentation/AMA_Use_Case_11_Project_Executive_Overall.md`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.md)). It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
-
-The slide deck for the 45-minute walkthrough lives at [`presentation/dist/index.html`](./presentation/dist/index.html) (built with Marp).
+The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)**. It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
 
 UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
 
@@ -191,11 +189,9 @@ graph TB
     class RAG,Trace,Ledger gov
 ```
 
-> 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) and every workforce action (caseworker via D365 Copilot for Service) hits the **same APIM endpoint** `/agents/topic-router`. Notification channels (SMS, email) bypass conversational routing — they only need the **Translator** agent for outbound 12-language localisation. Inside Foundry, the `topic-router` is the only orchestrator: it owns slots, escalation rules, and dispatches to the six worker agents. **Content Safety runs on every input and every output**, no exceptions. The **Eligibility** agent is the platform's only EU AI Act high-risk component — it runs inside a **Trusted Execution Environment** (Confidential Compute, SEV-SNP) and every decision is appended to **Azure Confidential Ledger** for cryptographic, tamper-evident proof (AI Act Art. 26(6)). RAG-grounded agents cite their sources back to SharePoint, public agency sites and Fabric. The whole conversation is traced through App Insights and indexed in Purview.
+> 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) hits the same APIM endpoint `/agents/topic-router`. The topic-router is the only orchestrator and dispatches to six worker agents; Content Safety runs on every input and every output. The Eligibility agent is the only EU AI Act high-risk component — it runs in a Confidential Compute SEV-SNP TEE and every decision is anchored to Azure Confidential Ledger. RAG agents cite their sources, and the full conversation is traced in App Insights and indexed in Purview.
 >
-> 🔗 **Concrete wiring.** The Eligibility agent's three tools (`deterministic-rules-engine`, `case-history-lookup`, `lineage-writer`) and the topic-router's six connections / knowledge sources are declared as real OpenAPI contracts under [`foundry/agents/`](./foundry/agents/) — APIM endpoints, managed-identity auth, per-tool rate limits, AI-Act compliance refs. The installer substitutes the per-tenant `${VAR}` placeholders at deploy time.
->
-> 👉 *Want the full picture?* See [`docs/biz/ai.md`](./docs/biz/ai.md) — mental model, agent catalogue, per-channel AI footprint, RAG strategy, safety + eval pipelines, EU AI Act registry, end-to-end conversation flow, anti-patterns.
+> 👉 Full agent catalogue, RAG strategy, safety and eval pipelines, AI Act registry and end-to-end flow: [`docs/biz/ai.md`](./docs/biz/ai.md).
 
 ---
 
