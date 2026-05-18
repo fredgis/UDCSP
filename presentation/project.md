@@ -6,15 +6,15 @@ date: "May 2026"
 
 # Executive summary
 
-**Problem.** Across Denmark, Sweden and Norway, 2.1 million Nordic citizens deal with 47 disconnected public-sector portals. The journey of a single citizen — Anna, moving from Copenhagen to Stockholm — takes 28 days, two national portals, two languages, three authorities and several physical document uploads. Some portals do not speak the citizen's language. Some are not accessible to screen readers.
+Problem. Across Denmark, Sweden and Norway, 2.1 million Nordic citizens deal with 47 disconnected public-sector portals. The journey of a single citizen — Anna, moving from Copenhagen to Stockholm — takes 28 days, two national portals, two languages, three authorities and several physical document uploads. Some portals do not speak the citizen's language. Some are not accessible to screen readers.
 
-**Response.** UDCSP — the Unified Digital Citizen Services Platform — is a federated citizen front door across the three Nordic countries, available on web, mobile and telephone, in 12 languages, with WCAG 2.1 AA accessibility, GDPR-by-design data flows, and an EU AI Act high-risk dossier for its eligibility pre-assessor. A multi-agent AI brain on Azure AI Foundry pre-classifies, translates, extracts and pre-assesses — always under a human caseworker's supervision.
+Response. UDCSP — the Unified Digital Citizen Services Platform — is a federated citizen front door across the three Nordic countries, available on web, mobile and telephone, in 12 languages, with WCAG 2.1 AA accessibility, GDPR-by-design data flows, and an EU AI Act high-risk dossier for its eligibility pre-assessor. A multi-agent AI brain on Azure AI Foundry pre-classifies, translates, extracts and pre-assesses — always under a human caseworker's supervision.
 
-**Business value.** Processing time targets 28 → 4 days. Citizen satisfaction targets +38 %. Forty-seven legacy portals consolidate into one. Twelve languages become first-class. Three sovereign data zones never share a citizen's data without an explicit, signed, audit-trailed cross-border envelope. The high-risk Eligibility model runs inside a SEV-SNP attested Trusted Execution Environment and is hashed into Azure Confidential Ledger for tamper-evident audit.
+Business value. Processing time targets 28 → 4 days. Citizen satisfaction targets +38 %. Forty-seven legacy portals consolidate into one. Twelve languages become first-class. Three sovereign data zones never share a citizen's data without an explicit, signed, audit-trailed cross-border envelope. The high-risk Eligibility model runs inside a SEV-SNP attested Trusted Execution Environment and is hashed into Azure Confidential Ledger for tamper-evident audit.
 
-**Evidence available today.** Demos 1 to 4 (Anna, Lars, Maria, Erik) and Demo 10 (DevOps install from a clean tenant) are **live demos** on a working tenant. Demo 9 (CIO outcomes dashboard) ships as **nine deployed Azure Workbooks**, three per country, queryable today. Demos 5 to 8 are **blueprints** with implementation hooks, scripts and YAML registries in the repo — the model gates, the AI Act dossier, the Sentinel playbook, the Confidential Ledger pipeline. Every demo has a fallback path documented in `docs/biz/uses.md`.
+Evidence available today. Demos 1 to 4 (Anna, Lars, Maria, Erik) and Demo 10 (DevOps install from a clean tenant) are live demos on a working tenant. Demo 9 (CIO outcomes dashboard) ships as nine deployed Azure Workbooks, three per country, queryable today. Demos 5 to 8 are blueprints with implementation hooks, scripts and YAML registries in the repo — the model gates, the AI Act dossier, the Sentinel playbook, the Confidential Ledger pipeline. Every demo has a fallback path documented in `docs/biz/uses.md`.
 
-**Status — demonstrator vs. production target.** UDCSP is a **production-oriented demonstrator**: a tenant-deployable platform that exercises the full citizen journey end-to-end, anchored to a documented **production-target architecture** for general availability. The target architecture (three sovereign Azure AI Foundry hubs, federation hub with Azure Firewall Premium, Confidential Containers, Microsoft Priva, Microsoft Defender for APIs, Confidential Ledger) is described in this submission and traced to its evidence artefacts. Items requiring tenant-side validation (notably specific Azure OpenAI model deployments and regional availability) are flagged inline.
+Status — demonstrator vs. production target. UDCSP is a production-oriented demonstrator: a tenant-deployable platform that exercises the full citizen journey end-to-end, anchored to a documented production-target architecture for general availability. The target architecture (three sovereign Azure AI Foundry hubs, federation hub with Azure Firewall Premium, Confidential Containers, Microsoft Priva, Microsoft Defender for APIs, Confidential Ledger) is described in this submission and traced to its evidence artefacts. Items requiring tenant-side validation (notably specific Azure OpenAI model deployments and regional availability) are flagged inline.
 
 # The story
 
@@ -36,7 +36,7 @@ This document is the architect's submission for the Azure Master Architect Progr
 
 # Use case alignment matrix
 
-The matrix maps every explicit requirement of the AMA use case brief to the UDCSP response, the evidence artefact, and the implementation status. **Status legend:** *Live* — runs on the tenant today · *Implemented* — code merged and exercised by smoke tests · *Scripted* — installer phase + idempotent script present · *Blueprint* — registered design with YAML/spec but not yet live · *Roadmap* — planned, dependency outside this submission.
+The matrix maps every explicit requirement of the AMA use case brief to the UDCSP response, the evidence artefact, and the implementation status. Status legend: *Live* — runs on the tenant today · *Implemented* — code merged and exercised by smoke tests · *Scripted* — installer phase + idempotent script present · *Blueprint* — registered design with YAML/spec but not yet live · *Roadmap* — planned, dependency outside this submission.
 
 | Requirement (use case) | UDCSP response | Evidence / Demo / Artefact | Status |
 |---|---|---|---|
@@ -105,15 +105,15 @@ UDCSP runs seven Azure AI Foundry agents in the target production architecture, 
 
 Each agent has a stable name with auto-incrementing versions, an Entra-only authentication contract (no API keys), a managed identity per agent version, a registered EU AI Act risk class, and an evaluation suite that gates every promotion through CI.
 
-The Topic Router owns the conversational shell. It detects the citizen's intent across 12 languages, manages slot-filling state in Azure Cache for Redis, and dispatches to the right downstream agent. Its target deployment is a **low-latency routing model** (Azure OpenAI deployment alias, target: `gpt-5.4-mini`, regional availability requires tenant validation) because the work is latency-critical, low-token and high-volume.
+The Topic Router owns the conversational shell. It detects the citizen's intent across 12 languages, manages slot-filling state in Azure Cache for Redis, and dispatches to the right downstream agent. Its target deployment is a low-latency routing model (Azure OpenAI deployment alias, target: `gpt-5.4-mini`, regional availability requires tenant validation) because the work is latency-critical, low-token and high-volume.
 
 It is invoked from two paths: by the SPA, mobile and chat widget through APIM `/agent-topic-router/messages`, and by the voice orchestrator through the `lookup_topic_router` function tool exposed to the real-time speech model. Either way, the Topic Router never holds long-term state — its memory is the Redis slot-filling cache, scoped per session, expired in 24 hours.
 
 The Request Classifier (low-latency routing model) classifies every inbound request by intent, target agency, language and urgency. The Translator orchestrator (frontier reasoning model + Azure AI Translator service) bridges across the 12 languages, preserving the administrative terminology that civil servants insist on. The Document Extractor (low-latency routing model + Azure AI Document Intelligence) reads citizen-uploaded passports, payslips and leases and returns structured fields, redacted of any PII never required by the downstream agent. The Citizen Assistant (frontier reasoning model, grounded) answers questions in natural language with mandatory citation enforcement — every reply has to cite a knowledge-base document by `docId`, or APIM blocks the response. The Caseworker Copilot Helper (frontier reasoning model, grounded on the case record) drafts replies, summarises the case history and suggests the next-best action — purely advisory, never operative.
 
-> **Model alias note.** "Frontier reasoning model" refers to the Azure OpenAI deployment alias whose target is `gpt-5.4`; "low-latency routing model" targets `gpt-5.4-mini`; "real-time speech model" targets `gpt-realtime`. Target deployments require validation of region and quota in the destination tenant. The platform reads the deployment name from `infra/foundry/deployments.bicep` so a tenant-specific override is a single parameter change.
+> Model alias note. "Frontier reasoning model" refers to the Azure OpenAI deployment alias whose target is `gpt-5.4`; "low-latency routing model" targets `gpt-5.4-mini`; "real-time speech model" targets `gpt-realtime`. Target deployments require validation of region and quota in the destination tenant. The platform reads the deployment name from `infra/foundry/deployments.bicep` so a tenant-specific override is a single parameter change.
 
-The **Eligibility Pre-Assessor** (frontier reasoning model + deterministic rule plug-ins) is the only high-risk agent and is treated accordingly.
+The Eligibility Pre-Assessor (frontier reasoning model + deterministic rule plug-ins) is the only high-risk agent and is treated accordingly.
 
 It runs inside an Azure Confidential Container App with SEV-SNP attestation. Every prompt and every fragment of partner-agency data fetched for the verdict are encrypted in memory during inference, even from a privileged Azure operator. Every verdict is hashed and appended to Azure Confidential Ledger, a CCF-backed tamper-evident log that gives cryptographic proof of integrity beyond what Application Insights or Microsoft Fabric can offer.
 
@@ -127,21 +127,21 @@ UDCSP is built on a deliberate stack of well-named design patterns, each chosen 
 
 The voice channel is the most agentic. When a citizen dials the toll-free number, the call lands on Azure Communication Services, a Container App orchestrator picks it up, and a bidirectional WebSocket opens to the real-time speech model — a single stream that combines speech-to-text, reasoning, and text-to-speech. Inside that stream, the LLM autonomously decides whether to answer directly, to route the request to a specialist agent, or to warm-transfer the call to a human caseworker. This is the Microsoft Agent Framework Agents-as-Tools pattern, applied to a real phone call.
 
-The application-intake path uses **saga orchestration**. A Logic App walks the case through six named states with explicit compensating actions when any step fails. The partner-agency call is wrapped in a **circuit breaker** — a sustained failure rate opens the breaker, the upstream falls fast to a manual caseworker queue, and citizens never see a thirty-second timeout. Every cross-border message carries an **idempotency key** and a **replay-protected signed envelope**.
+The application-intake path uses saga orchestration. A Logic App walks the case through six named states with explicit compensating actions when any step fails. The partner-agency call is wrapped in a circuit breaker — a sustained failure rate opens the breaker, the upstream falls fast to a manual caseworker queue, and citizens never see a thirty-second timeout. Every cross-border message carries an idempotency key and a replay-protected signed envelope.
 
-The data path uses a **read-write split**. Writes go through Logic Apps and end up in Dataverse; reads go through the API gateway directly to Dataverse with response caching. The caseworker workspace is built as a **strangler fig** — today it writes to a generic activity table, tomorrow to the canonical case entity when D365 Customer Service licences land in the tenant. Same schema, single repointing, no UI change.
+The data path uses a read-write split. Writes go through Logic Apps and end up in Dataverse; reads go through the API gateway directly to Dataverse with response caching. The caseworker workspace is built as a strangler fig — today it writes to a generic activity table, tomorrow to the canonical case entity when D365 Customer Service licences land in the tenant. Same schema, single repointing, no UI change.
 
-The most visible pattern is **defence in depth**. Six independent layers each address a different class of threat — Front Door with WAF at L7, DDoS Protection Standard at L3/L4, Azure Firewall Premium at egress, the API gateway rate-limiting and runtime API protection, Private Endpoints with per-country Private DNS at the data plane, and Content Safety with a jailbreak detector and deterministic rule plug-ins at the AI surface. A malicious prompt attempting to pivot the eligibility verdict has to defeat every layer; this risk is mitigated by layered controls, each independently auditable.
+The most visible pattern is defence in depth. Six independent layers each address a different class of threat — Front Door with WAF at L7, DDoS Protection Standard at L3/L4, Azure Firewall Premium at egress, the API gateway rate-limiting and runtime API protection, Private Endpoints with per-country Private DNS at the data plane, and Content Safety with a jailbreak detector and deterministic rule plug-ins at the AI surface. A malicious prompt attempting to pivot the eligibility verdict has to defeat every layer; this risk is mitigated by layered controls, each independently auditable.
 
 # Security
 
 Security is principle P3 of the architecture — a platform-level invariant, not a project-level afterthought. The implementation spans nine security subdomains and eight identity subdomains, but the story rests on three pillars.
 
-**Confidential compute for the high-risk AI agent.** The Eligibility Pre-Assessor runs inside a SEV-SNP attested Trusted Execution Environment. Every prompt and every fragment of partner-agency data is encrypted in memory during inference, even from a privileged operator. Every verdict is hashed and appended to Azure Confidential Ledger, a tamper-evident log that gives cryptographic proof of integrity. The caseworker disposition that follows is anchored to the same ledger entry. Six months later, a regulator can reconstruct the decision end-to-end.
+Confidential compute for the high-risk AI agent. The Eligibility Pre-Assessor runs inside a SEV-SNP attested Trusted Execution Environment. Every prompt and every fragment of partner-agency data is encrypted in memory during inference, even from a privileged operator. Every verdict is hashed and appended to Azure Confidential Ledger, a tamper-evident log that gives cryptographic proof of integrity. The caseworker disposition that follows is anchored to the same ledger entry. Six months later, a regulator can reconstruct the decision end-to-end.
 
-**Sovereign identity.** Three CIAM tenants federate citizens through their national eIDs — MitID for Denmark, BankID and Freja+ for Sweden, ID-porten and MinID for Norway. Microsoft Entra Verified ID handles the EUDI Wallet bridge with selective disclosure, so a cross-border case only crosses with the minimum attributes required — no national ID number, no document copy. CIEM continuously inventories entitlements across the three tenants. Azure Bastion is the only path for caseworker and SRE shell access; the only public IP per country is the Bastion endpoint.
+Sovereign identity. Three CIAM tenants federate citizens through their national eIDs — MitID for Denmark, BankID and Freja+ for Sweden, ID-porten and MinID for Norway. Microsoft Entra Verified ID handles the EUDI Wallet bridge with selective disclosure, so a cross-border case only crosses with the minimum attributes required — no national ID number, no document copy. CIEM continuously inventories entitlements across the three tenants. Azure Bastion is the only path for caseworker and SRE shell access; the only public IP per country is the Bastion endpoint.
 
-**Locked-down egress.** Azure Firewall Premium is the single egress for every spoke workload, with FQDN allow-lists per workload type. The Foundry agents reach only the Cognitive Services endpoints. The Logic Apps reach only the published partner-agency endpoints. TLS inspection is on for any non-Microsoft destination. Citizen documents cannot leak through an unintended path.
+Locked-down egress. Azure Firewall Premium is the single egress for every spoke workload, with FQDN allow-lists per workload type. The Foundry agents reach only the Cognitive Services endpoints. The Logic Apps reach only the published partner-agency endpoints. TLS inspection is on for any non-Microsoft destination. Citizen documents cannot leak through an unintended path.
 
 # Compliance
 
@@ -179,15 +179,15 @@ A W3C `traceparent` is propagated end-to-end through every channel — from Azur
 
 Every event the platform emits — a citizen page view, a consent acceptance, a document upload, a model invocation, a caseworker disposition, a Sentinel incident, a Confidential Ledger anchor — carries the same `traceparent`. A DPO or a regulator can pick any `operation_Id` in the operator workbook, drill into Application Insights Transaction Search, and replay the full causal chain from the citizen's browser to the model's response in seconds.
 
-The operator-facing surface is **nine Azure Workbooks** — three per country, deployed live as shared workbooks. `platform-health` shows request volume, p50/p95/p99 latency, dependency success and failure, exceptions and Azure OpenAI tokens by model deployment. `citizen-journey-funnel` shows the funnel from page view to case open, activity per language so a per-locale gap surfaces in raw telemetry before it appears in case data, channel mix. `ai-decision-traces` shows every verdict with confidence, decision, locale, channel, agent and an `operation_Id` that drills to Transaction Search.
+The operator-facing surface is nine Azure Workbooks — three per country, deployed live as shared workbooks. `platform-health` shows request volume, p50/p95/p99 latency, dependency success and failure, exceptions and Azure OpenAI tokens by model deployment. `citizen-journey-funnel` shows the funnel from page view to case open, activity per language so a per-locale gap surfaces in raw telemetry before it appears in case data, channel mix. `ai-decision-traces` shows every verdict with confidence, decision, locale, channel, agent and an `operation_Id` that drills to Transaction Search.
 
 The executive surface is on Microsoft Fabric F64 in the sovereign EU capacity, with a Power BI Premium semantic model that uses Direct Query against the three App Insights and the three LAWs and Dataverse. The aggregation happens server-side at Fabric. Raw rows never leave their country.
 
-**SLOs** are explicit and budgeted. The citizen web portal is 99.9 % over 28 days per country, an error budget of 40 minutes per month. The voice channel is 99.5 % answer rate with a p95 turn latency of 2 seconds. The Topic Router is 99.5 % at p95 ≤ 1 second. The Eligibility verdict is 99.9 % at p95 ≤ 3 seconds. Case creation in D365 is 99.5 % at p95 ≤ 5 seconds.
+SLOs are explicit and budgeted. The citizen web portal is 99.9 % over 28 days per country, an error budget of 40 minutes per month. The voice channel is 99.5 % answer rate with a p95 turn latency of 2 seconds. The Topic Router is 99.5 % at p95 ≤ 1 second. The Eligibility verdict is 99.9 % at p95 ≤ 3 seconds. Case creation in D365 is 99.5 % at p95 ≤ 5 seconds.
 
 Burn-rate alerts page the on-call when 2 % of the monthly budget burns in 1 hour and escalate to a manager at 5 % in 6 hours. Synthetic monitoring runs from five external regions every minute against each citizen URL and the IVR test number. Real-User Monitoring on the SPA captures TTFB, LCP, INP and CLS per page per locale per country.
 
-**FinOps** is a first-class observability concern. Every resource is tagged with `country`, `workload` and `cost-center`. The Management Group hierarchy mirrors the sovereign zones. The per-agent monthly token budget lives in `foundry/projects/*/agent.yaml` and CI fails when the total declared budget exceeds the Azure OpenAI pool capacity. Reserved PTU baseline covers the steady-state of the frontier and real-time models; pay-as-you-go covers elastic peaks on the low-latency routing model.
+FinOps is a first-class observability concern. Every resource is tagged with `country`, `workload` and `cost-center`. The Management Group hierarchy mirrors the sovereign zones. The per-agent monthly token budget lives in `foundry/projects/*/agent.yaml` and CI fails when the total declared budget exceeds the Azure OpenAI pool capacity. Reserved PTU baseline covers the steady-state of the frontier and real-time models; pay-as-you-go covers elastic peaks on the low-latency routing model.
 
 # Agentic behaviour
 
@@ -195,13 +195,13 @@ UDCSP is multi-agent by construction, not by veneer.
 
 The most visible agentic moment is the voice channel. When the citizen asks for help, the LLM receives the audio, reasons over the request, and decides on its own whether to answer directly, to route the question to a specialist agent, or to escalate to a human. The model is treated as a tool-using agent — the canonical Microsoft Agent Framework pattern.
 
-Beyond voice, UDCSP demonstrates four further coordination patterns. **Handoff** is the bread and butter — the Topic Router passes the conversation to one of six specialised downstream agents depending on intent. **State-graph orchestration** is what Logic Apps deliver — the cross-border case is a six-step graph with named states and compensating actions. **Reflection** is how the eligibility verdict is consumed — the Caseworker Helper surfaces the confidence and missing evidence in natural language, and the caseworker's disposition feeds the next training iteration as ground truth. **Shadow and canary** is how new models reach production — a challenger gets 5 % of production traffic, an automated job replays anonymised prompts through it, and the alias is autonomously flipped only if every guarded metric passes.
+Beyond voice, UDCSP demonstrates four further coordination patterns. Handoff is the bread and butter — the Topic Router passes the conversation to one of six specialised downstream agents depending on intent. State-graph orchestration is what Logic Apps deliver — the cross-border case is a six-step graph with named states and compensating actions. Reflection is how the eligibility verdict is consumed — the Caseworker Helper surfaces the confidence and missing evidence in natural language, and the caseworker's disposition feeds the next training iteration as ground truth. Shadow and canary is how new models reach production — a challenger gets 5 % of production traffic, an automated job replays anonymised prompts through it, and the alias is autonomously flipped only if every guarded metric passes.
 
 The agentic story is not a chatbot. It is a system of seven specialised experts, two function tools, one orchestrator, five coordination patterns — all under the supervision of one human caseworker.
 
 # Demo plan and evidence
 
-UDCSP ships **ten demos** that together cover every dimension of the AMA rubric. Each demo names its primary AMA criterion, the artefact in the repo that proves it, what is shown live during the walkthrough, and a deterministic fallback if a live element fails.
+UDCSP ships ten demos that together cover every dimension of the AMA rubric. Each demo names its primary AMA criterion, the artefact in the repo that proves it, what is shown live during the walkthrough, and a deterministic fallback if a live element fails.
 
 | # | Demo (persona / scenario) | Primary AMA criterion | Shown live | Repo evidence | Fallback | Status |
 |---|---|---|---|---|---|---|
@@ -220,11 +220,11 @@ Demos 1 to 4 are exercised live during the AMA walkthrough. Demo 10 is exercised
 
 # Personas — who actually uses the platform
 
-The platform is not built for an abstract "user". It is built for **named people on real journeys** — six citizens and operators with concrete demands, plus one threat scenario that shows what the defences do when the platform is attacked. They are the seven vignettes that follow.
+The platform is not built for an abstract "user". It is built for named people on real journeys — six citizens and operators with concrete demands, plus one threat scenario that shows what the defences do when the platform is attacked. They are the seven vignettes that follow.
 
 \personabegin{images/Demo1.png}
 
-**Anna** is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
+Anna is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
 
 In under four seconds, the AI extracts the structured fields, translates the lease into Swedish, and proposes an eligibility verdict with the rule-by-rule evidence. Anna consents on the explanation, not on the verdict.
 
@@ -236,7 +236,7 @@ What used to take 28 days now takes 4.
 
 \personabegin{images/Demo2.png}
 
-**Lars** is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
+Lars is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
 
 The AI brain answers him in Norwegian without a single button to press. When his question hits a tax-refund topic, the model autonomously routes to the right Foundry agent under the hood — the citizen never knows the architecture, only the conversation.
 
@@ -248,7 +248,7 @@ Voice latency p95 ≤ 2 seconds. Lars is treated as a first-class citizen on the
 
 \personabegin{images/Demo3.png}
 
-**Maria** is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
+Maria is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
 
 The portal loads in Polish, end-to-end — labels, error messages, AI summary, consent text. The accessibility CI gate has been green for months. The Translator agent localises the citizen-facing summary.
 
@@ -258,7 +258,7 @@ If a model promotion ever regresses Polish more than 0.4 below the Swedish basel
 
 \personabegin{images/Demo4.png}
 
-**Erik** runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
+Erik runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
 
 The portal is the same SPA Anna used on her laptop — there is no separate native binary, no separate mobile codebase. Twenty-one media queries reflow the layout from a 375 px iPhone SE to a 430 px Pro Max. The native iOS document picker captures his payslip; the AI returns the structured fields and an eligibility verdict inline.
 
@@ -268,7 +268,7 @@ Mobile parity is built in, not bolted on.
 
 \personabegin{images/Demo8.png}
 
-**A hostile prompt** arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
+A hostile prompt arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
 
 The security playbook isolates the session, recovers the citizen flow, and exports the audit pack. The containment takes 38 seconds. No citizen data is exposed.
 
@@ -276,7 +276,7 @@ The security playbook isolates the session, recovers the citizen flow, and expor
 
 \personabegin{images/Demo7.png}
 
-**Hans** is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
+Hans is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
 
 Hans opens the per-country Log Analytics workspace, filters by the citizen's correlation ID, and reconstructs the full decision — the model deployment, the tokens consumed, the verdict, the human disposition, the cryptographic ledger anchor.
 
@@ -286,7 +286,7 @@ The decision happened six months ago. It is still queryable two years out, confi
 
 \personabegin{images/Demo10.png}
 
-**Ole** is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
+Ole is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
 
 Twenty-five phases execute in dependency order. The synthetic-data agent seeds tens of thousands of personas and conversations into Fabric and Foundry in parallel with the frontend deployment. The smoke suite runs at the end and the HTML report is green across the board.
 
@@ -332,26 +332,26 @@ The submission is mapped explicitly to the AMA grading rubric. For each criterio
 
 | AMA criterion | Strongest evidence in UDCSP | Where to find it |
 |---|---|---|
-| **Solution Design** — modularity, scalability, design patterns | Hub-and-spoke + 25-phase installer + 47 Bicep modules + named patterns (saga, strangler fig, circuit breaker, agents-as-tools, defence in depth) | §Architecture · §Design patterns · `docs/tech/architecture.md` |
-| **Azure Architecture** — services chosen, sovereignty, networking | 3 sovereign Foundry hubs · Front Door + WAF · APIM Premium · Azure Firewall Premium egress · Private DNS · Private Endpoints | §Architecture (figure: architecture-multicountry.png, network.png) · `docs/tech/network.md` |
-| **Security & Compliance** — controls, defence-in-depth, regulations | Confidential Container TEE · Confidential Ledger anchor · 6-layer defence in depth · AI Act registry · Priva DSAR · Sentinel + Defender for APIs | §Security · §Compliance · `governance/ai-act/registry/` · `docs/biz/datacompliance.md` |
-| **AI Integration** — models, sovereignty, deployment | 7 Foundry agents · Entra-only · per-version managed identity · model alias mapping (`infra/foundry/deployments.bicep`) · gold-set gate · AI Act registry per agent | §The AI Brain (figure: ai-brain.png) · `foundry/projects/*/agent.yaml` · `docs/biz/ai.md` |
-| **Agentic Behaviour** — autonomy, orchestration, multi-agent | Topic Router orchestrator · agents-as-tools on voice · handoff · state-graph · reflection · shadow-canary | §The AI Brain · §Agentic behaviour · `apps/voice/call-automation/` |
-| **Monitoring & Operations** — logging, SLOs, observability | 9 Azure Workbooks live · per-country LAW retention 730 days · W3C `traceparent` end-to-end · explicit SLOs and burn-rate alerts · Chaos Studio drills | §Monitoring · `infra/monitoring/workbooks/` · `docs/tech/monitoring.md` |
-| **Development / DevOps** — IaC, repeatability, CI/CD | 25-phase idempotent PowerShell installer · 47 Bicep modules · smoke suite · build by 3 multi-agent campaigns documented end-to-end | §How we built it · `scripts/install/` · `docs/tech/install.md` |
-| **Presentation & Documentation** — clarity, audience-fit | This dossier · companion `docs/biz/uses.md` (10-demo script) · `docs/biz/traceability.md` (citizen-rights story) · 45-minute slide deck (`presentation/dist/index.html`) | `presentation/` · `docs/biz/` · `docs/tech/` |
+| Solution Design — modularity, scalability, design patterns | Hub-and-spoke + 25-phase installer + 47 Bicep modules + named patterns (saga, strangler fig, circuit breaker, agents-as-tools, defence in depth) | §Architecture · §Design patterns · `docs/tech/architecture.md` |
+| Azure Architecture — services chosen, sovereignty, networking | 3 sovereign Foundry hubs · Front Door + WAF · APIM Premium · Azure Firewall Premium egress · Private DNS · Private Endpoints | §Architecture (figure: architecture-multicountry.png, network.png) · `docs/tech/network.md` |
+| Security & Compliance — controls, defence-in-depth, regulations | Confidential Container TEE · Confidential Ledger anchor · 6-layer defence in depth · AI Act registry · Priva DSAR · Sentinel + Defender for APIs | §Security · §Compliance · `governance/ai-act/registry/` · `docs/biz/datacompliance.md` |
+| AI Integration — models, sovereignty, deployment | 7 Foundry agents · Entra-only · per-version managed identity · model alias mapping (`infra/foundry/deployments.bicep`) · gold-set gate · AI Act registry per agent | §The AI Brain (figure: ai-brain.png) · `foundry/projects/*/agent.yaml` · `docs/biz/ai.md` |
+| Agentic Behaviour — autonomy, orchestration, multi-agent | Topic Router orchestrator · agents-as-tools on voice · handoff · state-graph · reflection · shadow-canary | §The AI Brain · §Agentic behaviour · `apps/voice/call-automation/` |
+| Monitoring & Operations — logging, SLOs, observability | 9 Azure Workbooks live · per-country LAW retention 730 days · W3C `traceparent` end-to-end · explicit SLOs and burn-rate alerts · Chaos Studio drills | §Monitoring · `infra/monitoring/workbooks/` · `docs/tech/monitoring.md` |
+| Development / DevOps — IaC, repeatability, CI/CD | 25-phase idempotent PowerShell installer · 47 Bicep modules · smoke suite · build by 3 multi-agent campaigns documented end-to-end | §How we built it · `scripts/install/` · `docs/tech/install.md` |
+| Presentation & Documentation — clarity, audience-fit | This dossier · companion `docs/biz/uses.md` (10-demo script) · `docs/biz/traceability.md` (citizen-rights story) · 45-minute slide deck (`presentation/dist/index.html`) | `presentation/` · `docs/biz/` · `docs/tech/` |
 
 # Roadmap — from demonstrator to production target
 
 UDCSP is delivered today as a production-oriented demonstrator. The roadmap to general availability has four explicit gates.
 
-**Gate 1 — Tenant validation (week 1 to 2).** Confirm Azure OpenAI model deployments in target regions (`gpt-5.4`, `gpt-5.4-mini`, `gpt-realtime`), confirm Fabric F64 sovereign capacity, confirm DDoS Protection Standard plan attached, confirm AI Foundry hub capacity in the three target regions. Each item flagged in this document is closed in the tenant-readiness checklist `docs/tech/tenant-readiness.md`.
+Gate 1 — Tenant validation (week 1 to 2). Confirm Azure OpenAI model deployments in target regions (`gpt-5.4`, `gpt-5.4-mini`, `gpt-realtime`), confirm Fabric F64 sovereign capacity, confirm DDoS Protection Standard plan attached, confirm AI Foundry hub capacity in the three target regions. Each item flagged in this document is closed in the tenant-readiness checklist `docs/tech/tenant-readiness.md`.
 
-**Gate 2 — Live confidential compute (week 3 to 6).** Bring the Eligibility Pre-Assessor onto an SEV-SNP attested Confidential Container App, wire it to Confidential Ledger, run the first end-to-end attested verdict in CI. Demo 6 transitions from *Blueprint* to *Live*.
+Gate 2 — Live confidential compute (week 3 to 6). Bring the Eligibility Pre-Assessor onto an SEV-SNP attested Confidential Container App, wire it to Confidential Ledger, run the first end-to-end attested verdict in CI. Demo 6 transitions from *Blueprint* to *Live*.
 
-**Gate 3 — Partner-agency integration (week 6 to 14).** Sign mTLS partner agreements, deploy the federation hub gateway in production, exercise the full cross-border envelope on a non-production partner sandbox first, then production. Demo 1 transitions from *Live demonstrator* to *Live with real authority back-end*.
+Gate 3 — Partner-agency integration (week 6 to 14). Sign mTLS partner agreements, deploy the federation hub gateway in production, exercise the full cross-border envelope on a non-production partner sandbox first, then production. Demo 1 transitions from *Live demonstrator* to *Live with real authority back-end*.
 
-**Gate 4 — D365 Customer Service + Copilot for Service activation (week 14 to 20).** When licences land, repoint the strangler-fig writes to the canonical case entity. Demo 5 transitions from *Blueprint* to *Live*.
+Gate 4 — D365 Customer Service + Copilot for Service activation (week 14 to 20). When licences land, repoint the strangler-fig writes to the canonical case entity. Demo 5 transitions from *Blueprint* to *Live*.
 
 Every gate ships an updated evidence index (see Annex) and a refreshed AMA rubric self-score. The platform is designed so each gate is independently shippable.
 
@@ -365,17 +365,17 @@ Every architectural decision is anchored to a regulation — GDPR, the EU AI Act
 
 The five proofs the jury can pick up and verify today:
 
-1. **One front door** — `udcsp.fredgis.com` serves DK, SE and NO behind a single SPA, with WAF, APIM Premium and per-country Foundry hubs.
-2. **Identity federation** — Microsoft Entra External ID per country, MitID · BankID+Freja+ · ID-porten+MinID; Entra Verified ID is the blueprint bridge to the EUDI Wallet.
-3. **AI-assisted processing** — Topic Router · Translator · Document Extractor · Citizen Assistant · Caseworker Helper · Eligibility Pre-Assessor, all on Azure AI Foundry, all in the seven-agent registry.
-4. **Compliance by design** — LAW 730 days · Confidential Ledger anchor · Priva DSAR · AI Act dossier · Article 50 disclosure on every channel.
-5. **Repeatable deployment** — `git clone` plus a single `Install-UDCSP.ps1` invocation produces the whole platform with realistic synthetic data on a clean tenant.
+1. One front door — `udcsp.fredgis.com` serves DK, SE and NO behind a single SPA, with WAF, APIM Premium and per-country Foundry hubs.
+2. Identity federation — Microsoft Entra External ID per country, MitID · BankID+Freja+ · ID-porten+MinID; Entra Verified ID is the blueprint bridge to the EUDI Wallet.
+3. AI-assisted processing — Topic Router · Translator · Document Extractor · Citizen Assistant · Caseworker Helper · Eligibility Pre-Assessor, all on Azure AI Foundry, all in the seven-agent registry.
+4. Compliance by design — LAW 730 days · Confidential Ledger anchor · Priva DSAR · AI Act dossier · Article 50 disclosure on every channel.
+5. Repeatable deployment — `git clone` plus a single `Install-UDCSP.ps1` invocation produces the whole platform with realistic synthetic data on a clean tenant.
 
 The citizen who started this story — Anna in Copenhagen — does not need to know any of this. She signs in once, fills in one form, gets her residency decision in four days instead of twenty-eight.
 
 The platform is invisible to her. That is exactly the point.
 
-**UDCSP answers the use case as a transparent demonstrator and a production-oriented blueprint.**
+UDCSP answers the use case as a transparent demonstrator and a production-oriented blueprint.
 
 ---
 
