@@ -38,20 +38,30 @@ This document is the architect's submission for the Azure Master Architect Progr
 
 The matrix maps every explicit requirement of the AMA use case brief to the UDCSP response, the evidence artefact, and the implementation status. Status legend: *Live* — runs on the tenant today · *Implemented* — code merged and exercised by smoke tests · *Scripted* — installer phase + idempotent script present · *Blueprint* — registered design with YAML/spec but not yet live · *Roadmap* — planned, dependency outside this submission.
 
-| Requirement (use case) | UDCSP response | Evidence / Demo / Artefact | Status |
-|---|---|---|---|
-| Unify 47 portals across DK/SE/NO into one front door | Single SPA `udcsp.fredgis.com` with per-country federation and shared chrome | Demo 1 to 4 · `apps/web/` · `docs/tech/architecture.md` §3 | Live |
-| Serve 2.1 M citizens in 12 languages | ICU catalogue + Translator agent + per-locale gold-set gate | Demo 3 · `apps/web/src/i18n/` · `docs/tech/i18n.md` | Implemented |
-| Federated cross-border identity | Microsoft Entra External ID per country + Entra Verified ID for EUDI bridge | Demo 1 screen 11 · `infra/identity/` · `docs/tech/identity.md` | Live (External ID) · Blueprint (Verified ID bridge) |
-| Reduce decision latency 28 days → 4 days | AI pre-fill + AI eligibility + caseworker disposition + saga to national authority | Demo 1, Demo 6 · `services/logic-apps/` · `foundry/projects/eligibility-pre-assessor/` | Live (pre-fill) · Blueprint (full saga) |
-| WCAG 2.1 AA accessibility | axe-core CI gate · audited components · per-portal a11y statement | Demo 3 · `apps/web/.axe-ci/` · `docs/biz/accessibility.md` | Implemented |
-| GDPR — RoPA, DSAR, erasure, portability | Microsoft Priva + Logic Apps `gdpr-data-erase`/`gdpr-data-export` + per-country Purview | `governance/gdpr/ropa.md` · `services/logic-apps/gdpr/` | Scripted |
-| EU AI Act compliance — Article 12, 14, 50, Annex III | LAW retention 730 days · human-in-the-loop disposition · TEE + Confidential Ledger anchor · model registry | Demo 6, Demo 7 · `governance/ai-act/registry/` · `docs/biz/datacompliance.md` | Implemented (registry, retention) · Blueprint (live TEE) |
-| Automate back-office processing | Saga orchestration on Logic Apps Standard + Caseworker Helper agent | Demo 5, Demo 6 · `services/logic-apps/` · `foundry/projects/caseworker-helper/` | Scripted (Logic Apps) · Blueprint (D365 + Copilot for Service) |
-| AI assistant on web, mobile, voice | Citizen Assistant agent on three channels, voice via Azure Communication Services + real-time speech model | Demo 1, Demo 2, Demo 4 · `apps/web/src/components/ChatWidget.tsx` · `apps/voice/call-automation/` | Live (web, mobile) · Live (voice — requires tenant model validation) |
-| Eligibility pre-assessment with human-in-the-loop | High-risk agent · Confidential Container · ledger anchor · caseworker disposition | Demo 6 · `foundry/projects/eligibility-pre-assessor/` · `governance/ai-act/registry/eligibility-model.yaml` | Implemented (agent flow, registry) · Blueprint (live SEV-SNP TEE) |
-| Operational transparency for the operator | 9 Azure Workbooks (3 per country) + W3C `traceparent` propagation | Demo 9 · `infra/monitoring/workbooks/` · `docs/tech/monitoring.md` | Live |
-| Repeatable deployment from a clean tenant | 25-phase idempotent PowerShell installer + smoke suite | Demo 10 · `scripts/install/` · `scripts/smoke/` | Live |
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{0.21\linewidth}
+  >{\raggedright\arraybackslash}p{0.25\linewidth}
+  >{\raggedright\arraybackslash}p{0.32\linewidth}
+  >{\raggedright\arraybackslash}p{0.16\linewidth}
+@{}}
+\toprule
+\small Requirement (use case) & \small UDCSP response & \small Evidence / Demo / Artefact & \small Status \\
+\midrule
+\endhead
+\small Unify 47 portals across DK/SE/NO into one front door & \small Single SPA `udcsp.fredgis.com` with per-country federation and shared chrome & \small Demo 1–4 · `apps/web/` & \small Live \\
+\small Serve 2.1 M citizens in 12 languages & \small ICU catalogue + Translator agent + per-locale gold-set gate & \small Demo 3 · `apps/web/src/i18n/` & \small Implemented \\
+\small Federated cross-border identity & \small Entra External ID per country + Entra Verified ID for EUDI bridge & \small Demo 1 (screen 11) · `infra/identity/` & \small Live (External ID) · Blueprint (Verified ID) \\
+\small Reduce decision latency 28 → 4 days & \small AI pre-fill + AI eligibility + caseworker disposition + saga to authority & \small Demo 1 + Demo 6 · `services/logic-apps/` & \small Live (pre-fill) · Blueprint (full saga) \\
+\small WCAG 2.1 AA accessibility & \small axe-core CI gate · audited components · per-portal a11y statement & \small Demo 3 · `apps/web/.axe-ci/` & \small Implemented \\
+\small GDPR — RoPA, DSAR, erasure, portability & \small Microsoft Priva + Logic Apps `gdpr-data-*` + per-country Purview & \small `governance/gdpr/` · `services/logic-apps/gdpr/` & \small Scripted \\
+\small EU AI Act art. 12, 14, 50, Annex III & \small LAW 730 d · HITL disposition · TEE + Ledger anchor · model registry & \small Demo 6 + Demo 7 · `governance/ai-act/registry/` & \small Implemented (registry) · Blueprint (live TEE) \\
+\small Automate back-office processing & \small Saga on Logic Apps Standard + Caseworker Helper agent & \small Demo 5 + Demo 6 · `foundry/projects/caseworker-helper/` & \small Scripted · Blueprint (D365) \\
+\small AI assistant on web, mobile, voice & \small Citizen Assistant on 3 channels, voice via ACS + real-time speech model & \small Demo 1, 2, 4 · `apps/voice/call-automation/` & \small Live (web, mobile) · Live with tenant model validation (voice) \\
+\small Eligibility pre-assessment with HITL & \small High-risk agent · Confidential Container · ledger anchor · caseworker disposition & \small Demo 6 · `foundry/projects/eligibility-pre-assessor/` & \small Implemented · Blueprint (live SEV-SNP) \\
+\small Operational transparency for the operator & \small 9 Azure Workbooks (3 per country) + W3C `traceparent` propagation & \small Demo 9 · `infra/monitoring/workbooks/` & \small Live \\
+\small Repeatable deployment from a clean tenant & \small 25-phase idempotent PowerShell installer + smoke suite & \small Demo 10 · `scripts/install/` · `scripts/smoke/` & \small Live \\
+\bottomrule
+\end{longtable}
 
 The matrix is also the basis of the demo plan (§"Demo plan and evidence" below).
 
@@ -109,7 +119,15 @@ The Topic Router owns the conversational shell. It detects the citizen's intent 
 
 It is invoked from two paths: by the SPA, mobile and chat widget through APIM `/agent-topic-router/messages`, and by the voice orchestrator through the `lookup_topic_router` function tool exposed to the real-time speech model. Either way, the Topic Router never holds long-term state — its memory is the Redis slot-filling cache, scoped per session, expired in 24 hours.
 
-The Request Classifier (low-latency routing model) classifies every inbound request by intent, target agency, language and urgency. The Translator orchestrator (frontier reasoning model + Azure AI Translator service) bridges across the 12 languages, preserving the administrative terminology that civil servants insist on. The Document Extractor (low-latency routing model + Azure AI Document Intelligence) reads citizen-uploaded passports, payslips and leases and returns structured fields, redacted of any PII never required by the downstream agent. The Citizen Assistant (frontier reasoning model, grounded) answers questions in natural language with mandatory citation enforcement — every reply has to cite a knowledge-base document by `docId`, or APIM blocks the response. The Caseworker Copilot Helper (frontier reasoning model, grounded on the case record) drafts replies, summarises the case history and suggests the next-best action — purely advisory, never operative.
+The Request Classifier (low-latency routing model) classifies every inbound request by intent, target agency, language and urgency.
+
+The Translator orchestrator (frontier reasoning model + Azure AI Translator service) bridges across the 12 languages, preserving the administrative terminology that civil servants insist on.
+
+The Document Extractor (low-latency routing model + Azure AI Document Intelligence) reads citizen-uploaded passports, payslips and leases and returns structured fields, redacted of any PII never required by the downstream agent.
+
+The Citizen Assistant (frontier reasoning model, grounded) answers questions in natural language with mandatory citation enforcement — every reply has to cite a knowledge-base document by `docId`, or APIM blocks the response.
+
+The Caseworker Copilot Helper (frontier reasoning model, grounded on the case record) drafts replies, summarises the case history and suggests the next-best action — purely advisory, never operative.
 
 > Model alias note. "Frontier reasoning model" refers to the Azure OpenAI deployment alias whose target is `gpt-5.4`; "low-latency routing model" targets `gpt-5.4-mini`; "real-time speech model" targets `gpt-realtime`. Target deployments require validation of region and quota in the destination tenant. The platform reads the deployment name from `infra/foundry/deployments.bicep` so a tenant-specific override is a single parameter change.
 
@@ -201,20 +219,32 @@ The agentic story is not a chatbot. It is a system of seven specialised experts,
 
 # Demo plan and evidence
 
-UDCSP ships ten demos that together cover every dimension of the AMA rubric. Each demo names its primary AMA criterion, the artefact in the repo that proves it, what is shown live during the walkthrough, and a deterministic fallback if a live element fails.
+UDCSP ships ten demos that together cover every dimension of the AMA rubric. Each demo names its primary AMA criterion, what is shown live during the walkthrough, the deterministic fallback if a live element fails, and the current status. Repo evidence for every demo is consolidated in the Annex *Evidence index* at the end of this document.
 
-| # | Demo (persona / scenario) | Primary AMA criterion | Shown live | Repo evidence | Fallback | Status |
-|---|---|---|---|---|---|---|
-| 1 | Anna — DK to SE cross-border residency (flagship) | Architecture · AI · Agentic | SPA on the tenant, eligibility verdict + reasons inline | `apps/web/` · `services/logic-apps/cross-border/` · `foundry/projects/eligibility-pre-assessor/` | Recorded screen capture + verdict JSON sample | Live |
-| 2 | Lars — voice channel in Norwegian | AI · Agentic · Accessibility | ACS toll-free dial · real-time speech turn · warm-transfer offer | `apps/voice/call-automation/` · `services/apim/apis/voice-orchestrator/` | Recorded call audio · transcript JSON | Live (requires real-time speech model in target region) |
-| 3 | Maria — Polish citizen using NVDA | Accessibility · UX · AI translation | NVDA on Windows 11 reading every label and the AI summary | `apps/web/src/i18n/` · `apps/web/.axe-ci/` · `foundry/projects/translator/` | Axe-core CI report + pre-recorded NVDA capture | Live |
-| 4 | Erik — Danish SMB owner on iPhone | UX · Mobile · Document Intelligence | iPhone responsive layout · iOS document picker · payslip → fields | `apps/web/` (responsive) · `foundry/projects/document-extractor/` | Recorded mobile capture + extracted-fields JSON | Live |
-| 5 | Astrid — caseworker triage with Copilot for Service | DevOps · Operations · D365 | Caseworker copilot drafting reply, surfacing case context | `services/d365/` · `foundry/projects/caseworker-helper/` | Static prompt-and-response artefact · Logic Apps strangler-fig writes today | Blueprint (D365 Customer Service licence required) |
-| 6 | Eligibility model proposes, caseworker disposes (HITL) | AI · Compliance · Agentic | Verdict + reasons + caseworker disposition cycle | `foundry/projects/eligibility-pre-assessor/` · `governance/ai-act/registry/eligibility-model.yaml` | Gold-set evaluation JSON · registered dossier YAML | Blueprint (live SEV-SNP TEE) · Implemented (agent + registry) |
-| 7 | Hans — DPO replays a six-month-old AI decision | Compliance · Monitoring | LAW query by correlation ID · ledger anchor display · evidence pack export | `infra/monitoring/workbooks/ai-decision-traces.json` · `docs/biz/traceability.md` | KQL queries + sample Confidential Ledger receipt | Blueprint (live ledger walk-through) · Live (workbook query) |
-| 8 | Prompt-injection containment | Security · AI safety | Hostile prompt rejected at gateway, Content Safety, rule plug-in | `governance/security/prompt-injection-playbook.md` · `services/apim/policies/` | Static request/response showing 3-layer rejection | Blueprint (full live Sentinel incident) · Scripted (policies in repo) |
-| 9 | CIO outcomes dashboard & 47-portal sunset | Monitoring · Business value | 9 Workbooks · per-country, per-language outcomes | `infra/monitoring/workbooks/` · `docs/tech/monitoring.md` §5.6 | Workbook query screenshots + LAW retention proof | Live (Workbooks) · Blueprint (Fabric F64 capacity) |
-| 10 | Ole — DevOps stands up the entire platform from a clean tenant | DevOps · IaC · Operations | 25-phase installer running on a fresh tenant · smoke suite | `scripts/install/` · `scripts/smoke/` · `docs/tech/install.md` | Recorded install log · smoke HTML report | Live |
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{0.03\linewidth}
+  >{\raggedright\arraybackslash}p{0.26\linewidth}
+  >{\raggedright\arraybackslash}p{0.18\linewidth}
+  >{\raggedright\arraybackslash}p{0.22\linewidth}
+  >{\raggedright\arraybackslash}p{0.13\linewidth}
+  >{\raggedright\arraybackslash}p{0.13\linewidth}
+@{}}
+\toprule
+\small \# & \small Demo (persona / scenario) & \small Primary AMA criterion & \small Shown live & \small Fallback & \small Status \\
+\midrule
+\endhead
+\small 1 & \small Anna — DK to SE cross-border residency (flagship) & \small Architecture · AI · Agentic & \small SPA on the tenant; eligibility verdict and reasons inline & \small Recorded screen capture + verdict JSON & \small Live \\
+\small 2 & \small Lars — voice channel in Norwegian & \small AI · Agentic · Accessibility & \small ACS toll-free dial · real-time speech turn · warm-transfer offer & \small Recorded call audio + transcript JSON & \small Live (model region) \\
+\small 3 & \small Maria — Polish citizen using NVDA & \small Accessibility · UX · AI translation & \small NVDA on Windows 11 reading every label and the AI summary & \small Axe-core CI report + pre-recorded NVDA capture & \small Live \\
+\small 4 & \small Erik — Danish SMB owner on iPhone & \small UX · Mobile · Doc Intelligence & \small iPhone responsive layout · iOS picker · payslip → fields & \small Recorded mobile capture + extracted-fields JSON & \small Live \\
+\small 5 & \small Astrid — caseworker triage with Copilot for Service & \small DevOps · Operations · D365 & \small Caseworker copilot drafting reply, surfacing case context & \small Static prompt-and-response artefact & \small Blueprint (D365 licence) \\
+\small 6 & \small Eligibility model proposes, caseworker disposes (HITL) & \small AI · Compliance · Agentic & \small Verdict + reasons + caseworker disposition cycle & \small Gold-set evaluation JSON · dossier YAML & \small Implemented · Blueprint (live TEE) \\
+\small 7 & \small Hans — DPO replays a six-month-old AI decision & \small Compliance · Monitoring & \small LAW query by correlation ID · ledger anchor · evidence pack export & \small KQL queries + sample ledger receipt & \small Live (workbook) · Blueprint (live ledger) \\
+\small 8 & \small Prompt-injection containment & \small Security · AI safety & \small Hostile prompt rejected at gateway, Content Safety, rule plug-in & \small Static request/response showing 3-layer rejection & \small Scripted · Blueprint (live Sentinel) \\
+\small 9 & \small CIO outcomes dashboard \& 47-portal sunset & \small Monitoring · Business value & \small 9 Workbooks · per-country, per-language outcomes & \small Workbook query screenshots + LAW retention proof & \small Live · Blueprint (Fabric F64) \\
+\small 10 & \small Ole — DevOps stands up the platform from a clean tenant & \small DevOps · IaC · Operations & \small 25-phase installer on a fresh tenant · smoke suite & \small Recorded install log · smoke HTML report & \small Live \\
+\bottomrule
+\end{longtable}
 
 Demos 1 to 4 are exercised live during the AMA walkthrough. Demo 10 is exercised live or replayed from a captured install log. Demo 9 is queryable on the operator workbench. Demos 5 to 8 follow the blueprint with their fallback artefacts opened side-by-side.
 
@@ -224,7 +254,7 @@ The platform is not built for an abstract "user". It is built for named people o
 
 \personabegin{images/Demo1.png}
 
-Anna is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
+**Anna** is moving from Copenhagen to Stockholm. She lands on the Swedish portal in Danish, signs in with her Danish eID, uploads her passport and her Stockholm lease.
 
 In under four seconds, the AI extracts the structured fields, translates the lease into Swedish, and proposes an eligibility verdict with the rule-by-rule evidence. Anna consents on the explanation, not on the verdict.
 
@@ -236,7 +266,7 @@ What used to take 28 days now takes 4.
 
 \personabegin{images/Demo2.png}
 
-Lars is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
+**Lars** is blind. He dials the Norwegian toll-free number and starts speaking in Norwegian.
 
 The AI brain answers him in Norwegian without a single button to press. When his question hits a tax-refund topic, the model autonomously routes to the right Foundry agent under the hood — the citizen never knows the architecture, only the conversation.
 
@@ -248,7 +278,7 @@ Voice latency p95 ≤ 2 seconds. Lars is treated as a first-class citizen on the
 
 \personabegin{images/Demo3.png}
 
-Maria is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
+**Maria** is a Polish caregiver who lives in Denmark. She uses NVDA on Windows 11 and keyboard navigation.
 
 The portal loads in Polish, end-to-end — labels, error messages, AI summary, consent text. The accessibility CI gate has been green for months. The Translator agent localises the citizen-facing summary.
 
@@ -258,7 +288,7 @@ If a model promotion ever regresses Polish more than 0.4 below the Swedish basel
 
 \personabegin{images/Demo4.png}
 
-Erik runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
+**Erik** runs a small construction business in Aarhus and applies for an income-based benefit on his iPhone.
 
 The portal is the same SPA Anna used on her laptop — there is no separate native binary, no separate mobile codebase. Twenty-one media queries reflow the layout from a 375 px iPhone SE to a 430 px Pro Max. The native iOS document picker captures his payslip; the AI returns the structured fields and an eligibility verdict inline.
 
@@ -268,7 +298,7 @@ Mobile parity is built in, not bolted on.
 
 \personabegin{images/Demo8.png}
 
-A hostile prompt arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
+**A hostile prompt** arrives on the chat widget, trying to pivot the eligibility verdict. Three independent layers stop it — the API gateway flags the anomaly, the Content Safety jailbreak detector emits a security event, and the eligibility deterministic rule plug-in rejects the request before the model fires.
 
 The security playbook isolates the session, recovers the citizen flow, and exports the audit pack. The containment takes 38 seconds. No citizen data is exposed.
 
@@ -276,7 +306,7 @@ The security playbook isolates the session, recovers the citizen flow, and expor
 
 \personabegin{images/Demo7.png}
 
-Hans is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
+**Hans** is the Danish DPO. A citizen has filed an Article 15 subject access request asking for every AI decision made about her over the past six months.
 
 Hans opens the per-country Log Analytics workspace, filters by the citizen's correlation ID, and reconstructs the full decision — the model deployment, the tokens consumed, the verdict, the human disposition, the cryptographic ledger anchor.
 
@@ -286,7 +316,7 @@ The decision happened six months ago. It is still queryable two years out, confi
 
 \personabegin{images/Demo10.png}
 
-Ole is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
+**Ole** is the DevOps engineer evaluating the platform for adoption. He clones the repository on a clean tenant and runs the master installer.
 
 Twenty-five phases execute in dependency order. The synthetic-data agent seeds tens of thousands of personas and conversations into Fabric and Foundry in parallel with the frontend deployment. The smoke suite runs at the end and the HTML report is green across the board.
 
@@ -325,21 +355,6 @@ The 99.9 % SLO is the target-state operational claim. It is empirically validate
 The Eligibility verdict path is the latency-sensitive one. Citizens consent on the explanation, and the explanation has to arrive in under three seconds at p95. The voice channel is the most latency-sensitive of all — real-time speech turn latency has to stay under two seconds at p95, or the conversation becomes unnatural.
 
 The Container App voice orchestrator runs with a minimum of one replica per country to avoid cold-start penalties, scales horizontally to six replicas on a `concurrentRequests=20` threshold, and is pre-warmed before every demo by a dial-test from the operator's terminal.
-
-# AMA rubric coverage
-
-The submission is mapped explicitly to the AMA grading rubric. For each criterion, the table names the strongest evidence in this dossier.
-
-| AMA criterion | Strongest evidence in UDCSP | Where to find it |
-|---|---|---|
-| Solution Design — modularity, scalability, design patterns | Hub-and-spoke + 25-phase installer + 47 Bicep modules + named patterns (saga, strangler fig, circuit breaker, agents-as-tools, defence in depth) | §Architecture · §Design patterns · `docs/tech/architecture.md` |
-| Azure Architecture — services chosen, sovereignty, networking | 3 sovereign Foundry hubs · Front Door + WAF · APIM Premium · Azure Firewall Premium egress · Private DNS · Private Endpoints | §Architecture (figure: architecture-multicountry.png, network.png) · `docs/tech/network.md` |
-| Security & Compliance — controls, defence-in-depth, regulations | Confidential Container TEE · Confidential Ledger anchor · 6-layer defence in depth · AI Act registry · Priva DSAR · Sentinel + Defender for APIs | §Security · §Compliance · `governance/ai-act/registry/` · `docs/biz/datacompliance.md` |
-| AI Integration — models, sovereignty, deployment | 7 Foundry agents · Entra-only · per-version managed identity · model alias mapping (`infra/foundry/deployments.bicep`) · gold-set gate · AI Act registry per agent | §The AI Brain (figure: ai-brain.png) · `foundry/projects/*/agent.yaml` · `docs/biz/ai.md` |
-| Agentic Behaviour — autonomy, orchestration, multi-agent | Topic Router orchestrator · agents-as-tools on voice · handoff · state-graph · reflection · shadow-canary | §The AI Brain · §Agentic behaviour · `apps/voice/call-automation/` |
-| Monitoring & Operations — logging, SLOs, observability | 9 Azure Workbooks live · per-country LAW retention 730 days · W3C `traceparent` end-to-end · explicit SLOs and burn-rate alerts · Chaos Studio drills | §Monitoring · `infra/monitoring/workbooks/` · `docs/tech/monitoring.md` |
-| Development / DevOps — IaC, repeatability, CI/CD | 25-phase idempotent PowerShell installer · 47 Bicep modules · smoke suite · build by 3 multi-agent campaigns documented end-to-end | §How we built it · `scripts/install/` · `docs/tech/install.md` |
-| Presentation & Documentation — clarity, audience-fit | This dossier · companion `docs/biz/uses.md` (10-demo script) · `docs/biz/traceability.md` (citizen-rights story) · 45-minute slide deck (`presentation/dist/index.html`) | `presentation/` · `docs/biz/` · `docs/tech/` |
 
 # Roadmap — from demonstrator to production target
 
@@ -402,4 +417,4 @@ The artefacts below are the canonical proof points referenced throughout this do
 
 ---
 
-*Document built by the `md2pdf` Copilot CLI skill (pandoc + xelatex + Mermaid pre-rendering) from `github.com/fredgis/UDCSP/presentation/project.md`. Cover image is the ten-demo overview; technical companion docs live under `docs/biz/` and `docs/tech/` in the same repository.*
+*Document built by the `md2pdf` Copilot CLI skill (pandoc + xelatex + Mermaid pre-rendering) from `github.com/fredgis/UDCSP/presentation/AMA_Use_Case_11_Project_Executive_Overall.md`. Cover image is the ten-demo overview; technical companion docs live under `docs/biz/` and `docs/tech/` in the same repository.*
