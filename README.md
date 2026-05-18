@@ -21,6 +21,18 @@
 
 ---
 
+## 📑 Project submission
+
+This repository is also the submission package for the Azure Master Architect Program — Use Case 11.
+
+The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)** (Markdown source: [`presentation/AMA_Use_Case_11_Project_Executive_Overall.md`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.md)). It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
+
+The slide deck for the 45-minute walkthrough lives at [`presentation/dist/index.html`](./presentation/dist/index.html) (built with Marp).
+
+UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
+
+---
+
 ## ✨ The Story in One Page
 
 Three Nordic governments collectively serve **2.1 million citizens** through **47 disconnected legacy portals**. A citizen who moves from Copenhagen to Stockholm has to re-submit identity documents, wait **28 days** for a residency decision, navigate a portal that may not speak their language, and which may not be accessible to them at all.
