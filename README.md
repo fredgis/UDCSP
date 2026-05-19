@@ -29,6 +29,14 @@ The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_
 
 UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
 
+### 🎬 Walkthrough video
+
+<div align="center">
+
+https://github.com/user-attachments/assets/26302a28-e2c2-4689-b5d5-f8a89f5d1143
+
+</div>
+
 ---
 
 ## ✨ The Story in One Page
