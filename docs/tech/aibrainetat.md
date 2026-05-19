@@ -29,6 +29,44 @@ The repo backs this up under `foundry/agents/topic-router/`: `agent.yaml`, `syst
 
 So `gpt-5.4` is the inference engine underneath; the Topic Router is the Foundry agent on top — replaceable model alias, but unchanged agent definition.
 
+### Side note — Is the Topic Router actually wired at runtime in the demo?
+
+Honest answer: in the demo today, the call transits through APIM to Foundry, but in stateless Responses API mode — not via the Foundry Agents API that would execute the 12 topics + slot-filling + tool calls.
+
+The runtime path:
+
+```
+ChatWidget (web)  ──┐
+                    ├──► APIM /agent-topic-router/messages ──► Foundry /openai/v1/responses
+Voice orchestrator ─┘                                          (Azure OpenAI Responses API,
+                                                                stateless, system prompt + user text)
+```
+
+Evidence in the code:
+
+- `apps/web/src/components/ChatWidget.tsx` does `fetch(${apimBase}/agent-topic-router/messages)` — real call with an MSAL bearer token.
+- `apps/voice/call-automation/src/foundry-tool.ts` says *"forwards the request to APIM /agents/topic-router/messages — the SAME endpoint the chat widget uses"* — voice and chat hit the same APIM endpoint.
+- `services/apim/apis/agent-topic-router/policy.xml` `<send-request>` targets `{{foundry-project-base}}/openai/v1/responses` — the Azure OpenAI Responses API exposed by the Foundry project, not the Foundry Agents endpoint `/agents/{agent-id}/runs`.
+
+What is exercised vs not exercised at demo runtime:
+
+| Element | Exercised in the demo? |
+|:---|:---|
+| APIM endpoint `/agent-topic-router/messages` | Live — actually called by the widget and the voice orchestrator |
+| Managed-identity authentication to Foundry | Live — `<authentication-managed-identity>` in the policy |
+| The LLM responds to the citizen with their context (name, cases) | Live — APIM injects the citizen context into the system prompt |
+| `agent.yaml` deployed as a Foundry Agent | Deployable (`Install-Foundry.psm1` + `Import-TopicRouter.ps1`), but not invoked at runtime in the demo |
+| Multi-turn slot-filling in Redis | Not wired — the Responses API is stateless here |
+| The 12 topics (residency, child-benefit, complaint, …) | Not driven as a state machine in the demo |
+| Declared tools (`invoke_classifier`, `escalate_to_d365`, …) | Not called by this policy |
+| Escalation rules (`escalation-rules.json`) | Not evaluated by this policy |
+
+Why this divergence: it is a simplicity choice for the demonstrator. The APIM policy builds a large system prompt that contains the Topic Router role + the citizen context, then calls the Responses API. The citizen sees a "Topic Router" behaviour, but in reality it is `gpt-5.4` system-prompted, without the Foundry Agents orchestration engine behind it.
+
+How to explain it to the jury:
+
+> *The contract is real — APIM is wired, the managed-identity auth to Foundry is real, and both the chat widget and the voice channel go through the same endpoint. Today in the demonstrator, the APIM policy hits the Responses API and reconstructs the Topic Router role in a system prompt. Deploying the Foundry agent itself (with its 12 topics and Redis slot-filling) is in the installer `Install-Foundry.psm1` and is part of Gate 1 — flipping the policy from `/openai/v1/responses` to `/agents/{topic-router-id}/runs` is an isolated change in `policy.xml`, nothing else changes.*
+
 The section describes the AI brain as a system with one orchestrator + six specialised agents + a safety guard, all on Azure AI Foundry.
 
 | Role | What it does | Why it is built this way |
@@ -107,6 +145,44 @@ Une question qui revient : est-ce que le Topic Router est "juste un appel à `gp
 Le repo le prouve sous `foundry/agents/topic-router/` : `agent.yaml`, `system-prompt.md`, `tools.json`, `escalation-rules.json`, quatre connexions backend (`connections/apim-facade.json`, `d365-escalation.json`, `foundry-skills.json`, `redis-session.json`), deux sources RAG (`knowledge-sources/citizens-faq.json`, `sharepoint-policies.json`), et douze flows multi-turn avec slot-filling (`topics/accessibility-help.yaml`, `child-benefit.yaml`, `complaint.yaml`, `escalate-to-human.yaml`, `greeting.yaml`, `language-switch.yaml`, `multilingual-routing.yaml`, `residency-application.yaml`, `slot-definitions.yaml`, `status-of-application.yaml`, `tax-certificate-request.yaml`, `voice-fallback.yaml`). Le script de déploiement `scripts/Import-TopicRouter.ps1` appelle la CLI Foundry `foundry agents create --workspace ... --file agent.yaml`, et le module orchestrateur `scripts/install/modules/Install-Foundry.psm1` boucle sur chaque dossier `foundry/agents/*` et les pousse vers le workspace Foundry cible.
 
 Donc `gpt-5.4` est le moteur d'inférence dessous ; le Topic Router est l'agent Foundry au-dessus — alias de modèle remplaçable, mais définition de l'agent inchangée.
+
+### Encart — Le Topic Router est-il vraiment câblé en runtime dans la démo ?
+
+Réponse honnête : dans la démo aujourd'hui, l'appel transite par APIM vers Foundry — mais en mode "Responses API" stateless, pas via l'API Foundry Agents qui exécuterait les 12 topics + slot-filling + tool calls.
+
+Le chemin runtime :
+
+```
+ChatWidget (web)  ──┐
+                    ├──► APIM /agent-topic-router/messages ──► Foundry /openai/v1/responses
+Voice orchestrator ─┘                                          (Azure OpenAI Responses API,
+                                                                stateless, system prompt + user text)
+```
+
+Évidence dans le code :
+
+- `apps/web/src/components/ChatWidget.tsx` fait `fetch(${apimBase}/agent-topic-router/messages)` — appel réel avec un token MSAL.
+- `apps/voice/call-automation/src/foundry-tool.ts` dit *"forwards the request to APIM /agents/topic-router/messages — the SAME endpoint the chat widget uses"* — voix et chat tapent sur le même endpoint APIM.
+- `services/apim/apis/agent-topic-router/policy.xml` `<send-request>` cible `{{foundry-project-base}}/openai/v1/responses` — l'Azure OpenAI Responses API exposée par le projet Foundry, pas l'endpoint Foundry Agents `/agents/{agent-id}/runs`.
+
+Ce qui est exercé vs pas exercé dans la démo :
+
+| Élément | Exercé dans la démo ? |
+|:---|:---|
+| Endpoint APIM `/agent-topic-router/messages` | Live — vraiment appelé par le widget et la voix |
+| Authentification managed identity vers Foundry | Live — `<authentication-managed-identity>` dans la policy |
+| Le LLM répond au citoyen avec son contexte (nom, cases) | Live — APIM injecte le contexte citoyen dans le system prompt |
+| `agent.yaml` déployé comme Foundry Agent | Déployable (`Install-Foundry.psm1` + `Import-TopicRouter.ps1`), mais pas appelé à runtime dans la démo |
+| Slot-filling multi-turn dans Redis | Pas câblé — la Responses API est stateless ici |
+| Les 12 topics (residency, child-benefit, complaint, …) | Pas exécutés en machine-d'état dans la démo |
+| Outils déclarés (`invoke_classifier`, `escalate_to_d365`, …) | Pas appelés par cette policy |
+| Escalation rules (`escalation-rules.json`) | Pas évaluées par cette policy |
+
+Pourquoi cette divergence : c'est un choix de simplicité pour le démonstrateur. La policy APIM construit un gros system prompt qui contient le rôle du Topic Router + le contexte citoyen, puis appelle la Responses API. Le citoyen voit un comportement "Topic Router", mais en réalité c'est `gpt-5.4` system-prompted, sans le moteur d'orchestration Foundry Agents derrière.
+
+Phrase pour le jury :
+
+> *Le contrat est réel — APIM est branché, l'auth managed identity vers Foundry est réelle, et le chat widget comme la voix passent par le même endpoint. Aujourd'hui dans le démonstrateur, la policy APIM tape sur la Responses API et reconstruit le rôle du Topic Router dans un system prompt. Le déploiement de l'agent Foundry lui-même (avec ses 12 topics et son slot-filling Redis) est dans l'installer `Install-Foundry.psm1` et représente une étape de Gate 1 — flipper la policy de `/openai/v1/responses` vers `/agents/{topic-router-id}/runs` est un changement isolé dans `policy.xml`, le reste du système ne change pas.*
 
 La section décrit le cerveau IA comme un système à un orchestrateur + six agents spécialisés + une garde sécurité, le tout posé sur Azure AI Foundry.
 
