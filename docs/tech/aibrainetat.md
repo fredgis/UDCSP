@@ -7,6 +7,18 @@ date: "May 2026"
 
 Here is a clear decoder of the AI Brain section, followed by a file-by-file gap analysis you can defend in front of the jury.
 
+## 0 — How the AI Brain actually works (two concrete walkthroughs)
+
+The AI Brain is a small team of specialised models that pass work to each other under the supervision of one orchestrator. No model takes a final decision; the human caseworker always closes the loop.
+
+Walkthrough 1 — Anna on the web. Anna lands on `udcsp.fredgis.com`, signs in with MitID, and opens the cross-border residency form. Her browser sends her message to APIM `/agent-topic-router/messages`. APIM validates her token, attaches a W3C `traceparent`, and forwards to Foundry. The Topic Router reads the utterance, detects it is in Danish, looks up the session state in Redis, decides the intent is "apply for residency in Sweden", and calls three sub-agents in sequence. The Translator turns Anna's Danish text into Swedish for the Stockholm caseworker. The Document Extractor reads her passport and lease and returns structured fields plus a redacted JSON. The Eligibility Pre-Assessor evaluates the request and returns a verdict-proposal with confidence, rule-by-rule evidence and a list of missing documents. Anna sees the verdict-proposal on screen, consents, the case is opened and a human caseworker is now in the loop.
+
+Walkthrough 2 — Lars on the phone. Lars dials the Norwegian toll-free number. Azure Communication Services picks up the call and Event Grid posts the IncomingCall event to the voice orchestrator Container App. The orchestrator opens a bidirectional WebSocket to the real-time speech model — one stream that does speech-to-text + reasoning + text-to-speech without pause. The model receives Lars' audio in Norwegian and decides on its own whether to answer directly from its knowledge or to ask the Topic Router via the function tool `lookup_topic_router`. When Lars asks to speak to a human, the model calls the warm-transfer tool, which posts a case-context payload to D365 and rings the caseworker queue. Latency target: 2 seconds per turn at p95.
+
+Three layers run on every interaction. Content Safety scans every input and every output for hate, sexual, violence, self-harm, jailbreak and PII-exfiltration. Application Insights writes one trace per turn under the same `traceparent`. The AI Act registry holds the model card, the risk class and the evaluation suite reference for every agent. A regulator can replay any decision six months later.
+
+The Eligibility Pre-Assessor is treated as a special case. In the target architecture it runs inside an Azure Confidential Container App with SEV-SNP attestation, and every verdict-proposal is hashed and appended to Azure Confidential Ledger. That is the cryptographic, tamper-evident proof — beyond what Application Insights or Microsoft Fabric can offer — that meets EU AI Act Article 12 record-keeping for high-risk AI systems.
+
 ## 1 — What the document says, in clear words
 
 The section describes the AI brain as a system with one orchestrator + six specialised agents + a safety guard, all on Azure AI Foundry.
@@ -65,6 +77,18 @@ This gap is exactly what the *production-oriented demonstrator* status authorise
 # Français
 
 Voilà un décodeur clair de la section AI Brain, suivi d'un gap analysis fichier-par-fichier que tu pourras défendre devant le jury.
+
+## 0 — Comment fonctionne vraiment l'AI Brain (deux walkthroughs concrets)
+
+L'AI Brain est une petite équipe de modèles spécialisés qui se passent le travail sous la supervision d'un orchestrateur unique. Aucun modèle ne prend de décision finale ; le caseworker humain ferme toujours la boucle.
+
+Walkthrough 1 — Anna sur le web. Anna arrive sur `udcsp.fredgis.com`, s'authentifie avec MitID, ouvre le formulaire de résidence transfrontalière. Son navigateur envoie le message à APIM `/agent-topic-router/messages`. APIM valide son token, attache un `traceparent` W3C, et le transmet à Foundry. Le Topic Router lit l'utterance, détecte qu'elle est en danois, charge l'état de session depuis Redis, comprend que l'intention est "demande de résidence en Suède", et appelle trois sous-agents en séquence. Le Translator passe le texte danois d'Anna en suédois pour le caseworker de Stockholm. Le Document Extractor lit son passeport et son bail et renvoie des champs structurés plus un JSON anonymisé. L'Eligibility Pre-Assessor évalue la demande et renvoie un verdict-proposition avec confidence, évidence règle par règle et liste des documents manquants. Anna voit le verdict-proposition à l'écran, consent, le dossier est ouvert et un caseworker humain est désormais dans la boucle.
+
+Walkthrough 2 — Lars au téléphone. Lars compose le numéro vert norvégien. Azure Communication Services prend l'appel et Event Grid poste l'IncomingCall vers le voice orchestrator Container App. L'orchestrateur ouvre un WebSocket bidirectionnel vers le real-time speech model — un seul flux qui combine speech-to-text + reasoning + text-to-speech sans pause. Le modèle reçoit l'audio de Lars en norvégien et décide tout seul s'il répond directement depuis sa connaissance ou s'il consulte le Topic Router via le function tool `lookup_topic_router`. Quand Lars demande à parler à un humain, le modèle appelle le warm-transfer tool, qui poste un payload de contexte vers D365 et fait sonner la queue caseworker. Cible de latence : 2 secondes par tour au p95.
+
+Trois couches tournent à chaque interaction. Content Safety scanne chaque entrée et chaque sortie pour hate, sexual, violence, self-harm, jailbreak et exfiltration de PII. Application Insights écrit une trace par tour sous le même `traceparent`. Le registre AI Act contient la model card, la risk class et la référence vers la suite d'évaluation pour chaque agent. Un régulateur peut rejouer n'importe quelle décision six mois plus tard.
+
+L'Eligibility Pre-Assessor est un cas à part. Dans l'architecture cible il tourne dans un Azure Confidential Container App avec attestation SEV-SNP, et chaque verdict-proposition est hashé et ajouté à Azure Confidential Ledger. C'est la preuve cryptographique, tamper-evident — au-delà de ce qu'Application Insights ou Microsoft Fabric peuvent offrir — qui répond à l'Article 12 de l'AI Act pour les systèmes high-risk.
 
 ## 1 — Ce que dit le document, en clair
 
