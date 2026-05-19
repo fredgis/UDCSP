@@ -33,7 +33,7 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 <div align="center">
 
-https://github.com/user-attachments/assets/26302a28-e2c2-4689-b5d5-f8a89f5d1143
+<video src="https://github.com/user-attachments/assets/26302a28-e2c2-4689-b5d5-f8a89f5d1143#t=2" controls preload="metadata"></video>
 
 </div>
 
