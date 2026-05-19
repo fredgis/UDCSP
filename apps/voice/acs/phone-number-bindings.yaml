@@ -37,7 +37,7 @@ bindings:
     placeholder: true
   - country: no
     env: dev
-    phoneNumber: +33801150799
+    phoneNumber: +4620000000
     numberType: tollFree
     acsResource: udcsp-no-acs
     inboundWebhook: https://udcsp-no-dev-voice-orch.happysand-65f2a633.norwayeast.azurecontainerapps.io/api/acs/eventgrid
