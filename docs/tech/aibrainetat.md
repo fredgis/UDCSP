@@ -27,27 +27,18 @@ The three "models" mentioned (frontier reasoning, low-latency routing, real-time
 
 ## 2 — The implementation vs theory gap, file by file
 
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{0.27\linewidth}
-  >{\raggedright\arraybackslash}p{0.42\linewidth}
-  >{\raggedright\arraybackslash}p{0.25\linewidth}
-@{}}
-\toprule
-\small Claim of the document & \small What actually exists in the repo & \small Honest status \\
-\midrule
-\endhead
-\small 7 Foundry agents with managed identity, Entra-only, risk class & \small `foundry/agents/{topic-router,classifier,translator,doc-extractor,citizen-assistant,caseworker-helper,eligibility}/agent.yaml` — all present with model, tools, content-safety, risk level & \small Contracts implemented. Foundry runtime deployment depends on the tenant. \\
-\small AI Act registry per agent & \small 7 files in `governance/ai-act/registry/*.yaml` + a script `Validate-AIRegistry.ps1` & \small Implemented. \\
-\small Topic Router → Redis for slot-filling & \small `infra/data/redis/redis-enterprise.bicep` provisions Redis. The tools `read_session_redis`/`write_session_redis` are declared in agent.yaml but their Foundry runtime implementation is opaque (Foundry calls them for us) & \small Infra present, contract declared, runtime opaque. For the demo: Redis exists, slot-filling works as long as the tenant has a valid gpt-5.4 deployment. \\
-\small APIM `/agent-topic-router/messages` & \small `services/apim/apis/agent-topic-router/openapi.yaml` + `policy.xml` & \small Live demonstrator. \\
-\small Voice → `lookup_topic_router` function tool & \small `apps/voice/call-automation/src/foundry-tool.ts` + Bicep `voice-orchestrator.bicep` + `gpt-realtime-deployment.bicep` & \small Live demonstrator (subject to gpt-realtime in the region). \\
-\small Eligibility in Confidential Container SEV-SNP & \small `infra/security/confidential-compute/eligibility-confidential-app.bicep` exists but the default image is `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` and the workload profile is `Consumption` (not a confidential SKU `D4adsv5`/`D8adsv5`) & \small Bicep skeleton in place. Image and confidential compute profile not yet wired. Today, Eligibility inference runs in the standard Foundry hub. Blueprint. \\
-\small Verdict hashed into Azure Confidential Ledger & \small `infra/security/confidential-ledger/confidential-ledger.bicep` provisions the resource. The `lineage-writer` tool is declared on the agent side but the code that computes the hash and POSTs to the ledger is not in the repo & \small Resource provisionable. Anchoring pipeline = blueprint. \\
-\small Champion-challenger: 5 \% shadow, gold eval, KS test, bias 30 d, alias flip & \small No CI script, no GitHub Action, no job implementing these gates. Mentions only in `docs/biz/ai.md`, `docs/tech/architecture.md`, and the presentation & \small Design pattern documented, not implemented in CI. Blueprint. \\
-\small Norway → Sweden for gpt-realtime (sovereignty exception) & \small `voice-orchestrator.bicep` accepts `country` and `location`. `gpt-realtime-deployment.bicep` can target another region. The "single Bicep flip" bypass is technically possible but the runtime wiring (NO orchestrator calling SE endpoint) remains to be validated end-to-end & \small Infra ready, end-to-end not yet exercised on the tenant. \\
-\small `infra/foundry/deployments.bicep` (model deployments) & \small The folder `infra/foundry/` does not exist in the repo. The two Foundry-runtime Bicep files exist under `apps/voice/call-automation/infra/gpt-realtime-deployment.bicep` & \small Imprecise reference in the PDF — the mentioned file does not exist under that path. \\
-\bottomrule
-\end{longtable}
+| Claim of the document | What actually exists in the repo | Honest status |
+|:---------|:---------------------------------------|:----------|
+| 7 Foundry agents with managed identity, Entra-only, risk class | `foundry/agents/{topic-router,classifier,translator,doc-extractor,citizen-assistant,caseworker-helper,eligibility}/agent.yaml` — all present with model, tools, content-safety, risk level | Contracts implemented. Foundry runtime deployment depends on the tenant. |
+| AI Act registry per agent | 7 files in `governance/ai-act/registry/*.yaml` + a script `Validate-AIRegistry.ps1` | Implemented. |
+| Topic Router → Redis for slot-filling | `infra/data/redis/redis-enterprise.bicep` provisions Redis. The tools `read_session_redis`/`write_session_redis` are declared in agent.yaml but their Foundry runtime implementation is opaque (Foundry calls them for us) | Infra present, contract declared, runtime opaque. For the demo: Redis exists, slot-filling works as long as the tenant has a valid gpt-5.4 deployment. |
+| APIM `/agent-topic-router/messages` | `services/apim/apis/agent-topic-router/openapi.yaml` + `policy.xml` | Live demonstrator. |
+| Voice → `lookup_topic_router` function tool | `apps/voice/call-automation/src/foundry-tool.ts` + Bicep `voice-orchestrator.bicep` + `gpt-realtime-deployment.bicep` | Live demonstrator (subject to gpt-realtime in the region). |
+| Eligibility in Confidential Container SEV-SNP | `infra/security/confidential-compute/eligibility-confidential-app.bicep` exists but the default image is `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` and the workload profile is `Consumption` (not a confidential SKU `D4adsv5`/`D8adsv5`) | Bicep skeleton in place. Image and confidential compute profile not yet wired. Today, Eligibility inference runs in the standard Foundry hub. Blueprint. |
+| Verdict hashed into Azure Confidential Ledger | `infra/security/confidential-ledger/confidential-ledger.bicep` provisions the resource. The `lineage-writer` tool is declared on the agent side but the code that computes the hash and POSTs to the ledger is not in the repo | Resource provisionable. Anchoring pipeline = blueprint. |
+| Champion-challenger: 5 % shadow, gold eval, KS test, bias 30 d, alias flip | No CI script, no GitHub Action, no job implementing these gates. Mentions only in `docs/biz/ai.md`, `docs/tech/architecture.md`, and the presentation | Design pattern documented, not implemented in CI. Blueprint. |
+| Norway → Sweden for gpt-realtime (sovereignty exception) | `voice-orchestrator.bicep` accepts `country` and `location`. `gpt-realtime-deployment.bicep` can target another region. The "single Bicep flip" bypass is technically possible but the runtime wiring (NO orchestrator calling SE endpoint) remains to be validated end-to-end | Infra ready, end-to-end not yet exercised on the tenant. |
+| `infra/foundry/deployments.bicep` (model deployments) | The folder `infra/foundry/` does not exist in the repo. The two Foundry-runtime Bicep files exist under `apps/voice/call-automation/infra/gpt-realtime-deployment.bicep` | Imprecise reference in the PDF — the mentioned file does not exist under that path. |
 
 ## 3 — How to explain it to the jury
 
@@ -95,27 +86,18 @@ Les trois "modèles" mentionnés (frontier reasoning, low-latency routing, real-
 
 ## 2 — Le gap implémentation / théorie, fichier par fichier
 
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{0.27\linewidth}
-  >{\raggedright\arraybackslash}p{0.42\linewidth}
-  >{\raggedright\arraybackslash}p{0.25\linewidth}
-@{}}
-\toprule
-\small Claim du document & \small Ce qui existe vraiment dans le repo & \small Statut honnête \\
-\midrule
-\endhead
-\small 7 agents Foundry avec managed identity, Entra-only, risk class & \small `foundry/agents/{topic-router,classifier,translator,doc-extractor,citizen-assistant,caseworker-helper,eligibility}/agent.yaml` — tous présents avec model, tools, content-safety, risk level & \small Contracts implémentés. Le déploiement Foundry runtime dépend du tenant. \\
-\small Registre AI Act par agent & \small 7 fichiers dans `governance/ai-act/registry/*.yaml` + un script `Validate-AIRegistry.ps1` & \small Implémenté. \\
-\small Topic Router → Redis pour slot-filling & \small `infra/data/redis/redis-enterprise.bicep` provisionne Redis. Les outils `read_session_redis`/`write_session_redis` sont déclarés dans l'agent.yaml mais leur implémentation Foundry runtime est opaque (Foundry l'appelle pour nous) & \small Infra présente, contrat déclaré, runtime opaque. Pour la démo : Redis existe, slot-filling marche tant que le tenant a un déploiement gpt-5.4 valide. \\
-\small APIM `/agent-topic-router/messages` & \small `services/apim/apis/agent-topic-router/openapi.yaml` + `policy.xml` & \small Live demonstrator. \\
-\small Voice → `lookup_topic_router` function tool & \small `apps/voice/call-automation/src/foundry-tool.ts` + Bicep `voice-orchestrator.bicep` + `gpt-realtime-deployment.bicep` & \small Live demonstrator (sous réserve de gpt-realtime dans la région). \\
-\small Eligibility dans Confidential Container SEV-SNP & \small `infra/security/confidential-compute/eligibility-confidential-app.bicep` existe mais l'image par défaut est `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` et le workload profile est `Consumption` (pas un SKU confidential `D4adsv5`/`D8adsv5`) & \small Squelette Bicep en place. Image et profil de calcul confidentiel pas encore branchés. Aujourd'hui, l'inference Eligibility tourne dans le hub Foundry standard. Blueprint. \\
-\small Verdict hashé dans Azure Confidential Ledger & \small `infra/security/confidential-ledger/confidential-ledger.bicep` provisionne la ressource. L'outil `lineage-writer` est déclaré côté agent mais le code qui calcule le hash et POST sur le ledger n'est pas dans le repo & \small Ressource provisionable. Pipeline d'ancrage = blueprint. \\
-\small Champion-challenger : 5 \% shadow, gold eval, KS test, bias 30 j, alias flip & \small Aucun script CI, aucune GitHub Action, aucun job qui exécute ces gates. Mentions uniquement dans `docs/biz/ai.md`, `docs/tech/architecture.md`, et la présentation & \small Design pattern documenté, non implémenté en CI. Blueprint. \\
-\small Norvège → Suède pour gpt-realtime (sovereignty exception) & \small `voice-orchestrator.bicep` accepte `country` et `location`. `gpt-realtime-deployment.bicep` peut viser une autre région. La bascule "un seul flip Bicep" est techniquement possible mais le câblage runtime (orchestrateur NO qui appelle endpoint SE) reste à valider en bout-en-bout & \small Infra prête, end-to-end pas encore exercé sur le tenant. \\
-\small `infra/foundry/deployments.bicep` (déploiements modèles) & \small Le dossier `infra/foundry/` n'existe pas dans le repo. Les deux Bicep liés à Foundry runtime existent dans `apps/voice/call-automation/infra/gpt-realtime-deployment.bicep` & \small Référence imprécise dans le PDF — le fichier mentionné n'existe pas sous ce chemin. \\
-\bottomrule
-\end{longtable}
+| Claim du document | Ce qui existe vraiment dans le repo | Statut honnête |
+|:---------|:---------------------------------------|:----------|
+| 7 agents Foundry avec managed identity, Entra-only, risk class | `foundry/agents/{topic-router,classifier,translator,doc-extractor,citizen-assistant,caseworker-helper,eligibility}/agent.yaml` — tous présents avec model, tools, content-safety, risk level | Contracts implémentés. Le déploiement Foundry runtime dépend du tenant. |
+| Registre AI Act par agent | 7 fichiers dans `governance/ai-act/registry/*.yaml` + un script `Validate-AIRegistry.ps1` | Implémenté. |
+| Topic Router → Redis pour slot-filling | `infra/data/redis/redis-enterprise.bicep` provisionne Redis. Les outils `read_session_redis`/`write_session_redis` sont déclarés dans l'agent.yaml mais leur implémentation Foundry runtime est opaque (Foundry l'appelle pour nous) | Infra présente, contrat déclaré, runtime opaque. Pour la démo : Redis existe, slot-filling marche tant que le tenant a un déploiement gpt-5.4 valide. |
+| APIM `/agent-topic-router/messages` | `services/apim/apis/agent-topic-router/openapi.yaml` + `policy.xml` | Live demonstrator. |
+| Voice → `lookup_topic_router` function tool | `apps/voice/call-automation/src/foundry-tool.ts` + Bicep `voice-orchestrator.bicep` + `gpt-realtime-deployment.bicep` | Live demonstrator (sous réserve de gpt-realtime dans la région). |
+| Eligibility dans Confidential Container SEV-SNP | `infra/security/confidential-compute/eligibility-confidential-app.bicep` existe mais l'image par défaut est `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest` et le workload profile est `Consumption` (pas un SKU confidential `D4adsv5`/`D8adsv5`) | Squelette Bicep en place. Image et profil de calcul confidentiel pas encore branchés. Aujourd'hui, l'inference Eligibility tourne dans le hub Foundry standard. Blueprint. |
+| Verdict hashé dans Azure Confidential Ledger | `infra/security/confidential-ledger/confidential-ledger.bicep` provisionne la ressource. L'outil `lineage-writer` est déclaré côté agent mais le code qui calcule le hash et POST sur le ledger n'est pas dans le repo | Ressource provisionable. Pipeline d'ancrage = blueprint. |
+| Champion-challenger : 5 % shadow, gold eval, KS test, bias 30 j, alias flip | Aucun script CI, aucune GitHub Action, aucun job qui exécute ces gates. Mentions uniquement dans `docs/biz/ai.md`, `docs/tech/architecture.md`, et la présentation | Design pattern documenté, non implémenté en CI. Blueprint. |
+| Norvège → Suède pour gpt-realtime (sovereignty exception) | `voice-orchestrator.bicep` accepte `country` et `location`. `gpt-realtime-deployment.bicep` peut viser une autre région. La bascule "un seul flip Bicep" est techniquement possible mais le câblage runtime (orchestrateur NO qui appelle endpoint SE) reste à valider en bout-en-bout | Infra prête, end-to-end pas encore exercé sur le tenant. |
+| `infra/foundry/deployments.bicep` (déploiements modèles) | Le dossier `infra/foundry/` n'existe pas dans le repo. Les deux Bicep liés à Foundry runtime existent dans `apps/voice/call-automation/infra/gpt-realtime-deployment.bicep` | Référence imprécise dans le PDF — le fichier mentionné n'existe pas sous ce chemin. |
 
 ## 3 — Comment l'expliquer au jury
 
