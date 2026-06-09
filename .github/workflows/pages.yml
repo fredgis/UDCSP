@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'presentation/**'
-      - '.github/workflows/pages.yml'
+      - 'presentation/slides.md'
+      - 'presentation/theme.css'
+      - 'presentation/images/**'
   workflow_dispatch:
 
 permissions:
@@ -44,8 +45,6 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
