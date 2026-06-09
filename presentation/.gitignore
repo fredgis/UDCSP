@@ -1,2 +1,4 @@
 node_modules/
 *.mmd
+_site/
+slides.pages.md

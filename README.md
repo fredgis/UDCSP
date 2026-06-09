@@ -31,6 +31,8 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 ### 🖼️ Presentation deck
 
+> **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
+
 The full 57-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
