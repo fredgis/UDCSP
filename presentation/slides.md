@@ -1216,7 +1216,9 @@ Nothing here is hand-waved; every label is backed by code or a script in the rep
 <div class="card"><h3>One-command deploy</h3><p>25 phases, idempotent</p><span class="pill green">🟢 Live</span></div>
 </div>
 
-> **Legend** — Live = runs today · Implemented = merged & smoke-tested · Scripted = idempotent installer · Blueprint = designed & gated. **The working core carries the demo; each blueprint brick has a named gate.**
+<span class="pill green">🟢 Live — today</span> <span class="pill">🔵 Implemented — merged & tested</span> <span class="pill purple">🟣 Scripted — idempotent installer</span> <span class="pill orange">🟠 Blueprint — designed & gated</span>
+
+> **The working core carries the demo; each blueprint brick has a named gate.**
 
 ---
 
