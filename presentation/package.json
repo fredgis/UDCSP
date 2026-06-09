@@ -4,9 +4,14 @@
   "scripts": {
     "dev": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files -s .",
     "build": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files slides.md -o dist/index.html",
-    "pdf": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files --pdf slides.md -o dist/slides.pdf"
+    "pdf": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files --pdf slides.md -o dist/slides.pdf",
+    "pdf-notes": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files --pdf --pdf-notes slides.md -o dist/slides-notes.pdf",
+    "pptx": "npx @marp-team/marp-cli --theme theme.css --html --allow-local-files --pptx slides.md -o dist/slides.pptx && node scripts/format-pptx-notes.mjs dist/slides.pptx"
   },
   "dependencies": {
     "@marp-team/marp-cli": "^4.0.0"
+  },
+  "devDependencies": {
+    "adm-zip": "^0.5.17"
   }
 }

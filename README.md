@@ -29,6 +29,80 @@ The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_
 
 UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
 
+### 🖼️ Presentation deck
+
+The full 53-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+
+<div align="center">
+
+<a href="./presentation/dist/slides.pdf"><img src="./presentation/deck/slide.001.png" width="70%" alt="UDCSP presentation — open the full PDF deck" /></a>
+
+</div>
+
+<details>
+<summary><b>🎞️ Browse all 53 slides (carousel)</b></summary>
+
+<div align="center">
+
+<img src="./presentation/deck/slide.001.png" width="32%" />
+<img src="./presentation/deck/slide.002.png" width="32%" />
+<img src="./presentation/deck/slide.003.png" width="32%" />
+<img src="./presentation/deck/slide.004.png" width="32%" />
+<img src="./presentation/deck/slide.005.png" width="32%" />
+<img src="./presentation/deck/slide.006.png" width="32%" />
+<img src="./presentation/deck/slide.007.png" width="32%" />
+<img src="./presentation/deck/slide.008.png" width="32%" />
+<img src="./presentation/deck/slide.009.png" width="32%" />
+<img src="./presentation/deck/slide.010.png" width="32%" />
+<img src="./presentation/deck/slide.011.png" width="32%" />
+<img src="./presentation/deck/slide.012.png" width="32%" />
+<img src="./presentation/deck/slide.013.png" width="32%" />
+<img src="./presentation/deck/slide.014.png" width="32%" />
+<img src="./presentation/deck/slide.015.png" width="32%" />
+<img src="./presentation/deck/slide.016.png" width="32%" />
+<img src="./presentation/deck/slide.017.png" width="32%" />
+<img src="./presentation/deck/slide.018.png" width="32%" />
+<img src="./presentation/deck/slide.019.png" width="32%" />
+<img src="./presentation/deck/slide.020.png" width="32%" />
+<img src="./presentation/deck/slide.021.png" width="32%" />
+<img src="./presentation/deck/slide.022.png" width="32%" />
+<img src="./presentation/deck/slide.023.png" width="32%" />
+<img src="./presentation/deck/slide.024.png" width="32%" />
+<img src="./presentation/deck/slide.025.png" width="32%" />
+<img src="./presentation/deck/slide.026.png" width="32%" />
+<img src="./presentation/deck/slide.027.png" width="32%" />
+<img src="./presentation/deck/slide.028.png" width="32%" />
+<img src="./presentation/deck/slide.029.png" width="32%" />
+<img src="./presentation/deck/slide.030.png" width="32%" />
+<img src="./presentation/deck/slide.031.png" width="32%" />
+<img src="./presentation/deck/slide.032.png" width="32%" />
+<img src="./presentation/deck/slide.033.png" width="32%" />
+<img src="./presentation/deck/slide.034.png" width="32%" />
+<img src="./presentation/deck/slide.035.png" width="32%" />
+<img src="./presentation/deck/slide.036.png" width="32%" />
+<img src="./presentation/deck/slide.037.png" width="32%" />
+<img src="./presentation/deck/slide.038.png" width="32%" />
+<img src="./presentation/deck/slide.039.png" width="32%" />
+<img src="./presentation/deck/slide.040.png" width="32%" />
+<img src="./presentation/deck/slide.041.png" width="32%" />
+<img src="./presentation/deck/slide.042.png" width="32%" />
+<img src="./presentation/deck/slide.043.png" width="32%" />
+<img src="./presentation/deck/slide.044.png" width="32%" />
+<img src="./presentation/deck/slide.045.png" width="32%" />
+<img src="./presentation/deck/slide.046.png" width="32%" />
+<img src="./presentation/deck/slide.047.png" width="32%" />
+<img src="./presentation/deck/slide.048.png" width="32%" />
+<img src="./presentation/deck/slide.049.png" width="32%" />
+<img src="./presentation/deck/slide.050.png" width="32%" />
+<img src="./presentation/deck/slide.051.png" width="32%" />
+<img src="./presentation/deck/slide.052.png" width="32%" />
+<img src="./presentation/deck/slide.053.png" width="32%" />
+
+
+</div>
+
+</details>
+
 ### 🎬 Walkthrough video
 
 <div align="center">
