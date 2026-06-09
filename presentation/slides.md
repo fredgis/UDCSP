@@ -1273,7 +1273,7 @@ Let me switch to the live system. -->
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Anna moves DK → SE <span class="pill green">🟢 Live</span></strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
 <div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
-<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill">🔵 Implemented</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean — accessibility as a citizen right.</span></div></div>
+<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill green">🟢 Live</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean — accessibility as a citizen right.</span></div></div>
 <div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone <span class="pill green">🟢 Live</span></strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
 <div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
 </div>
