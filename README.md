@@ -31,7 +31,7 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 ### 🖼️ Presentation deck
 
-The full 53-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+The full 57-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
 
@@ -40,7 +40,7 @@ The full 53-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 </div>
 
 <details>
-<summary><b>🎞️ Browse all 53 slides (carousel)</b></summary>
+<summary><b>🎞️ Browse all 57 slides (carousel)</b></summary>
 
 <div align="center">
 
@@ -97,6 +97,10 @@ The full 53-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <img src="./presentation/deck/slide.051.png" width="32%" />
 <img src="./presentation/deck/slide.052.png" width="32%" />
 <img src="./presentation/deck/slide.053.png" width="32%" />
+<img src="./presentation/deck/slide.054.png" width="32%" />
+<img src="./presentation/deck/slide.055.png" width="32%" />
+<img src="./presentation/deck/slide.056.png" width="32%" />
+<img src="./presentation/deck/slide.057.png" width="32%" />
 
 
 </div>
