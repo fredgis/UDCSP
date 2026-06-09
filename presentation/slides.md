@@ -29,6 +29,30 @@ In the next thirty-five minutes I'll cover the problem, the architecture, the AI
 
 ---
 
+<!-- _class: tight -->
+
+# What this is — and what it isn't.
+
+<!-- ⏱ 0:35 — Before we dive in, one honest framing.
+UDCSP is a production accelerator, not an exhaustive demo.
+What you'll see is a target vision, with a working core you can run on a real Azure tenant today, and a partial live demonstration of it.
+A few bricks are still at blueprint stage — designed and registered, but not yet switched on — and each one has a named gate on the roadmap.
+So every claim in this deck carries one of five honesty labels, and I'll show the full coverage and the roadmap near the end. -->
+
+<div class="cards">
+<div class="card"><h3>🎯 A target vision</h3><p>The production-target architecture for a federated Nordic platform — end to end.</p></div>
+<div class="card teal"><h3>⚙️ A working core</h3><p>Deployed on a real Azure tenant with one command — the live demo runs on it.</p></div>
+<div class="card orange"><h3>📐 Some blueprint</h3><p>A few bricks are designed and registered, not yet switched on — each with a roadmap gate.</p></div>
+</div>
+
+**Every claim in this deck carries one honesty label:**
+
+<span class="pill green">🟢 Live — on the tenant today</span> <span class="pill">🔵 Implemented — merged & smoke-tested</span> <span class="pill purple">🟣 Scripted — installer phase, idempotent</span> <span class="pill orange">🟠 Blueprint — designed, not yet live</span> <span class="pill gray">⚪ Roadmap — external dependency</span>
+
+> UDCSP is a **production accelerator**: a target vision, a working core you can run today, and a named path for the rest.
+
+---
+
 # The problem.
 
 <!-- ⏱ 1:00 — Nordic public services are good, but they live in forty-seven separate portals that don't talk to each other.
@@ -408,7 +432,8 @@ There is one shared front door and one user interface, so the citizen always see
 But for sovereignty, each country has its own private front-end origin: a Static Web App whose public access is off, reached only through a private endpoint that lives in the country's web subnet.
 So the web subnet you'll see in each spoke is just that private door to the front-end, not a second copy of the whole application.
 Everything else — app, data, AI and the Logic Apps — is private and in-country too.
-A shared hub handles the firewall, the private DNS, cross-border routing and monitoring. -->
+A shared hub handles the firewall, the private DNS, cross-border routing and monitoring.
+To get this right, we leaned on patterns the industry already trusts — the full network map is in the annex. -->
 
 <div class="split" style="grid-template-columns:1.25fr 0.85fr;align-items:center">
 <div>
@@ -427,19 +452,6 @@ A shared hub handles the firewall, the private DNS, cross-border routing and mon
 
 </div>
 </div>
-
----
-
-# Network topology.
-
-<!-- ⏱ 0:30 — Here is the full picture.
-Each country is its own private network, all joined to that one shared hub.
-The only public point per country is a small, locked admin door, and no country talks directly to another, so a problem in one can't spread.
-To get this right, we leaned on patterns the industry already trusts. -->
-
-![w:980](images/network.png)
-
-> A private network per country, joined to one shared hub. The hub holds the firewall, the DNS zones, the partner gateway and a security workspace. The only public address per country is the admin host. No country talks directly to another.
 
 ---
 
@@ -856,54 +868,11 @@ The AI Act minimum is six months. We keep **two years**. From the request to a f
 
 # Monitoring &<br>FinOps.
 
-## Structured logging · end-to-end tracing · one anonymized central view · cost per token
+## One anonymized central view · end-to-end tracing · cost per token
 
-<!-- ⏱ 0:12 — So a quick word on operations, which means how we keep an eye on the platform, and on its cost, without ever breaking the walls between countries. -->
-
----
-
-# Telemetry pillars.
-
-<!-- ⏱ 0:50 — Monitoring rests on a few pillars.
-Every country keeps its own logs, and we never merge them.
-A single trace number follows each request across every step — the door, the gateway, the case system, the agent and the model.
-So when something breaks, we see the whole journey, not just where it ended.
-We measure the AI's quality continuously, we keep the AI Act evidence sealed, and we paint it all onto dashboards for platform health and for the citizen journey.
-Nothing important happens in the dark.
-But there's one view that needs special care, because it has to span all three countries at once. -->
-
-<div class="cards">
-<div class="card">
-<div class="card-num">METRICS / LOGS</div>
-<h3>Azure Monitor</h3>
-<p>3 workspaces, one per country · 180 days hot · 7 years cold · never joined</p>
-</div>
-<div class="card teal">
-<div class="card-num">DISTRIBUTED TRACE</div>
-<h3>Application Insights</h3>
-<p>One trace number end-to-end · front door → gateway → workflow → Dynamics → agent → model</p>
-</div>
-<div class="card purple">
-<div class="card-num">AI QUALITY</div>
-<h3>Foundry Evaluations</h3>
-<p>Continuous · drift monitors · language parity · bias monitoring</p>
-</div>
-<div class="card red">
-<div class="card-num">AI ACT EVIDENCE</div>
-<h3>Confidential Ledger</h3>
-<p>Records that cannot be changed · joins logs, AI and Dynamics in one query</p>
-</div>
-<div class="card orange">
-<div class="card-num">ACTIVE</div>
-<h3>Synthetic + real-user</h3>
-<p>5 external regions · 60-second probes · load times per language</p>
-</div>
-<div class="card green">
-<div class="card-num">DASHBOARDS</div>
-<h3>9 workbooks</h3>
-<p>platform health · citizen-journey funnel · AI-decision traces · per country</p>
-</div>
-</div>
+<!-- ⏱ 0:18 — A quick word on operations — how we watch the platform and its cost without breaking the walls between countries.
+Monitoring rests on per-country pillars: separate logs that are never merged, one trace number that follows a request end-to-end, continuous AI-quality checks and sealed AI Act evidence — the full pillar map is in the annex.
+The one view that needs real care is the cross-country picture, because it has to span all three countries at once. -->
 
 ---
 
@@ -1217,6 +1186,65 @@ We designed it months before I ever saw the French version — and that is genui
 <!-- _class: chapter -->
 <div class="num">08</div>
 
+# Status &<br>roadmap.
+
+## What runs today · what's blueprint · how it reaches production
+
+<!-- ⏱ 0:15 — Before the demo, the honest scorecard.
+Here is every headline capability with its label, and then the four gates that take the blueprint bricks to production. -->
+
+---
+
+<!-- _class: tight -->
+
+# Requirement coverage — the honest scorecard.
+
+<!-- ⏱ 0:55 — This is the whole submission on one slide.
+The green and blue rows run today or are merged and tested: unified identity, twelve-language accessibility, the assistant across web, mobile and voice, the cross-border pre-fill, the eligibility decision with a human in the loop, and the one-command deploy.
+The orange parts are blueprint: the full cross-border saga, live confidential compute, the immutable ledger and the Fabric capacity — designed and registered, waiting on a tenant capacity or a licence.
+Nothing here is hand-waved; every label is backed by code or a script in the repository. -->
+
+<div class="cards">
+<div class="card"><h3>Unified identity</h3><p>Entra External ID · eIDAS-ready</p><span class="pill green">🟢 Live</span> <span class="pill orange">🟠 Verified ID</span></div>
+<div class="card"><h3>12-language portal</h3><p>WCAG 2.1 AA accessibility</p><span class="pill">🔵 Implemented</span></div>
+<div class="card"><h3>AI assistant</h3><p>web · mobile · voice</p><span class="pill green">🟢 Live</span></div>
+<div class="card"><h3>Cross-border case</h3><p>DK → SE pre-fill + saga</p><span class="pill green">🟢 Live</span> <span class="pill orange">🟠 saga</span></div>
+<div class="card"><h3>Eligibility + human-in-loop</h3><p>verdict, then a person decides</p><span class="pill">🔵 Implemented</span> <span class="pill orange">🟠 live TEE</span></div>
+<div class="card"><h3>EU AI Act evidence</h3><p>article-by-article trail</p><span class="pill">🔵 Implemented</span> <span class="pill orange">🟠 live ledger</span></div>
+<div class="card"><h3>GDPR rights</h3><p>records · access · erasure</p><span class="pill purple">🟣 Scripted</span></div>
+<div class="card"><h3>Sovereign monitoring</h3><p>9 workbooks, per country</p><span class="pill green">🟢 Live</span> <span class="pill orange">🟠 Fabric F64</span></div>
+<div class="card"><h3>One-command deploy</h3><p>25 phases, idempotent</p><span class="pill green">🟢 Live</span></div>
+</div>
+
+> **Legend** — Live = runs today · Implemented = merged & smoke-tested · Scripted = idempotent installer · Blueprint = designed & gated. **The working core carries the demo; each blueprint brick has a named gate.**
+
+---
+
+<!-- _class: tight -->
+
+# Four gates from accelerator to production.
+
+<!-- ⏱ 0:50 — Here is how the blueprint becomes live, in four gates over about twenty weeks.
+Gate one, weeks one to two: validate the tenant — the model deployments, the Fabric capacity and the DDoS plan.
+Gate two, weeks three to six: switch eligibility onto live confidential compute, which flips demo six to live.
+Gate three, weeks six to fourteen: sign the partner-agency agreements and stand up the production hub, so demo one talks to a real authority.
+Gate four, weeks fourteen to twenty: bring in Dynamics 365 with Copilot for Service and repoint the writes, flipping demo five.
+Each gate ships on its own — the platform is useful after every one. -->
+
+<div class="cards four">
+<div class="card"><div class="card-num">GATE 1 · WK 1–2</div><h3>Tenant validation</h3><p>Confirm model deployments, Fabric F64 capacity, DDoS plan & Foundry hub.</p></div>
+<div class="card teal"><div class="card-num">GATE 2 · WK 3–6</div><h3>Live confidential compute</h3><p>Eligibility on a SEV-SNP enclave + Confidential Ledger. <strong>Demo 6 → Live.</strong></p></div>
+<div class="card purple"><div class="card-num">GATE 3 · WK 6–14</div><h3>Partner-agency integration</h3><p>Mutual-TLS agreements + production federation hub. <strong>Demo 1 → real authority.</strong></p></div>
+<div class="card orange"><div class="card-num">GATE 4 · WK 14–20</div><h3>D365 + Copilot for Service</h3><p>Strangler-fig repoint of case writes. <strong>Demo 5 → Live.</strong></p></div>
+</div>
+
+> Today → Gate 1 → Gate 2 → Gate 3 → Gate 4 → production. **Each gate is independently shippable** — every blueprint brick has an owner, a window, and a demo it flips to live.
+
+---
+
+<!-- _class: chapter -->
+<div class="num">09</div>
+
 # Demo.
 
 ## 10 minutes, live on a real tenant
@@ -1241,11 +1269,11 @@ Let me switch to the live system. -->
 ![bg right:30% w:260](images/Demo2.png)
 
 <div class="steps">
-<div class="step"><div class="step-content"><strong>Anna moves DK → SE</strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
-<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐</strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
-<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish</strong><span>The whole portal in Polish, keyboard only, screen-reader clean — accessibility as a citizen right.</span></div></div>
-<div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone</strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
-<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant</strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
+<div class="step"><div class="step-content"><strong>Anna moves DK → SE <span class="pill green">🟢 Live</span></strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
+<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
+<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill">🔵 Implemented</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean — accessibility as a citizen right.</span></div></div>
+<div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone <span class="pill green">🟢 Live</span></strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
+<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
 </div>
 
 > Hero moment — **a real phone call**: dial **`+33 801 150 799`**, hear the model answer, and watch the live dashboard update within two minutes.
@@ -1280,9 +1308,9 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 <!-- _class: closing -->
 <!-- _paginate: false -->
 
-<!-- ⏱ 0:45 — That's UDCSP: a real, production-grade platform, not a slideshow.
+<!-- ⏱ 0:45 — That's UDCSP: a production accelerator — a working core you can run today, with a named path to production.
 Three sovereign countries, seven AI agents, and one private path from the first click to the caseworker.
-Every decision tied to a law, and every claim provable on a real Azure tenant.
+Every decision tied to a law, and every claim labelled and provable on a real Azure tenant.
 It was built by a swarm of AI agents in under an hour, and quietly confirmed by a real government portal we stumbled into by accident.
 And the headline is the number that matters most: a cross-border case went from twenty-eight days to four.
 Thank you.
@@ -1290,10 +1318,10 @@ I'm happy to take your questions, and then run the demo. -->
 
 ## Closing
 
-# UDCSP is a production-grade platform, not a demo.
+# UDCSP — a production accelerator with a named path to production.
 
 <p>
-3 sovereign zones · 7 AI agents · one private path from the portal to the case · every decision anchored to a regulation · every claim provable on a real Azure tenant. And a real French government portal, seen by accident, proved the architecture was right. One command from <code>git clone</code> to a running platform.
+3 sovereign zones · 7 AI agents · one private path from the portal to the case · every decision anchored to a regulation · every claim labelled and provable on a real Azure tenant. A working core you deploy with one command today — and a four-gate roadmap that takes the blueprint bricks to production. A real French government portal, seen by accident, proved the architecture was right.
 </p>
 
 <p style="margin-top: 32px; opacity: 0.6; font-size: 0.85em">
@@ -1338,3 +1366,57 @@ I'm happy to open any of them while we talk. -->
 </div>
 
 > **1** Home · **2** Contact / voice · **3** My cases · **4** Assistant · **5** Residency intake · **6–7** Document reading · **8** Cross-border result · **9** Compliance · **10** Consent · **11** Sign-in. One web app, twelve languages, three channels — the same React and TypeScript code on desktop, tablet and phone.
+
+---
+
+<!-- _header: 'UDCSP — Annex' -->
+
+# Annex — network topology in full.
+
+<!-- ⏱ 0:10 — Reference: the full private network behind the simplified slide. -->
+
+![w:980](images/network.png)
+
+> A private network per country, joined to one shared hub. The hub holds the firewall, the DNS zones, the partner gateway and a security workspace. The only public address per country is the admin host. No country talks directly to another.
+
+---
+
+<!-- _header: 'UDCSP — Annex' -->
+<!-- _class: tight -->
+
+# Annex — telemetry pillars in full.
+
+<!-- ⏱ 0:10 — Reference: the six monitoring pillars behind the central view. -->
+
+<div class="cards">
+<div class="card">
+<div class="card-num">METRICS / LOGS</div>
+<h3>Azure Monitor</h3>
+<p>3 workspaces, one per country · 180 days hot · 7 years cold · never joined</p>
+</div>
+<div class="card teal">
+<div class="card-num">DISTRIBUTED TRACE</div>
+<h3>Application Insights</h3>
+<p>One trace number end-to-end · front door → gateway → workflow → Dynamics → agent → model</p>
+</div>
+<div class="card purple">
+<div class="card-num">AI QUALITY</div>
+<h3>Foundry Evaluations</h3>
+<p>Continuous · drift monitors · language parity · bias monitoring</p>
+</div>
+<div class="card red">
+<div class="card-num">AI ACT EVIDENCE</div>
+<h3>Confidential Ledger</h3>
+<p>Records that cannot be changed · joins logs, AI and Dynamics in one query</p>
+</div>
+<div class="card orange">
+<div class="card-num">ACTIVE</div>
+<h3>Synthetic + real-user</h3>
+<p>5 external regions · 60-second probes · load times per language</p>
+</div>
+<div class="card green">
+<div class="card-num">DASHBOARDS</div>
+<h3>9 workbooks</h3>
+<p>platform health · citizen-journey funnel · AI-decision traces · per country</p>
+</div>
+</div>
