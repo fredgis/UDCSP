@@ -165,7 +165,7 @@ graph TB
     Channels["🌐 Web · 📱 Mobile · ☎️ Voice"]
     Edge["🔐 Identity Federation + 🚪 API Gateway<br/>Entra ID · External ID · eIDAS · APIM"]
     Foundry["🧠 Microsoft AI Foundry — single AI brain<br/>topic-router · classifier · translator · eligibility ·<br/>citizen assistant · doc extractor · caseworker helper · Azure OpenAI"]
-    Process["⚙️ Logic Apps  ➜  📋 Dynamics 365"]
+    Process["⚙️ Logic Apps  ➜  📋 Dataverse"]
     Data["📊 Microsoft Fabric  ➜  📈 Power BI"]
     Governance["🛡️ Trust &amp; Governance<br/>Purview · GDPR · EU AI Act · WCAG 2.1 AA"]
 

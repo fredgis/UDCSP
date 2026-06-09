@@ -319,7 +319,7 @@ Let me zoom into one of those countries. -->
 
 ![w:980](images/arch-readme.png)
 
-> One citizen experience on top, three sovereign back-offices below, one AI brain copied per country. **Logic Apps bridges to Dynamics 365 and onward to each national authority** — pre-fill, submit, status — never replacing them. Trust and governance wrap every layer.
+> One citizen experience on top, three sovereign back-offices below, one AI brain copied per country. **Logic Apps bridge to Dataverse and onward to each national authority** — pre-fill, submit, status — never replacing them. Trust and governance wrap every layer.
 
 ---
 
@@ -382,8 +382,8 @@ And the one piece that actually reaches the outside world deserves its own slide
 <div class="step"><div class="step-content"><strong>One public front door</strong><span>Azure Front Door and a web firewall. Nothing else is public.</span></div></div>
 <div class="step"><div class="step-content"><strong>A private API gateway</strong><span>Azure API Management checks the token — the only way in.</span></div></div>
 <div class="step"><div class="step-content"><strong>Backends on private endpoints</strong><span>Workflows, agents, storage, database, vault: off the internet. Private DNS per country.</span></div></div>
-<div class="step"><div class="step-content"><strong>The case lands in Dynamics 365</strong><span>One environment per country, in-region. Writes go through workflows, reads through the gateway.</span></div></div>
-<div class="step"><div class="step-content"><strong>Analytics copies only numbers</strong><span>Dynamics sends metrics to Microsoft Fabric. The raw rows stay in the country.</span></div></div>
+<div class="step"><div class="step-content"><strong>The case lands in Dataverse</strong><span>One case environment per country, in-region — Power Apps over Dataverse today, D365 Customer Service when licences land. Writes go through workflows, reads through the gateway.</span></div></div>
+<div class="step"><div class="step-content"><strong>Analytics copies only numbers</strong><span>Dataverse sends metrics to Microsoft Fabric. The raw rows stay in the country.</span></div></div>
 </div>
 
 </div>
@@ -410,7 +410,8 @@ Azure Bastion — the single admin door per country. All outbound traffic goes t
 
 <!-- ⏱ 0:50 — That piece is the integration plane, and it runs on Azure Logic Apps.
 A Logic App is simply a workflow — a sequence of steps the platform runs for the citizen — and here each one pre-fills the right national form, submits it to the competent authority, and reads the decision back.
-The portal never calls a ministry directly; the Logic App does, and it writes every case into Dynamics 365, our case system of record.
+The portal never calls a ministry directly; the Logic App does, and it writes every case into Dataverse, our case data platform.
+In the live demo that case store runs in degraded mode — Dataverse surfaced through a Power App — and it becomes full D365 Customer Service when the licences land in the tenant.
 It's private by design: in production the workflows are VNet-integrated, so they live on the country's own private network, and they reach each authority over mutual TLS, where both sides show a certificate before any data moves.
 And it's event-driven: a message on Service Bus or Event Grid triggers the right workflow, while the private API gateway stays the only token-checked way in.
 There is one plane like this per country — and that whole private network looks like this. -->
@@ -419,7 +420,7 @@ There is one plane like this per country — and that whole private network look
 
 ![w:760](images/logicapps-bridge.png)
 
-> Logic Apps are the **bridge** — stateful workflows that pre-fill the national form, submit it, and read the status back, writing each case into **Dynamics 365** and reaching authorities over **mutual TLS**. In production they're **VNet-integrated**.
+> Logic Apps are the **bridge** — stateful workflows that pre-fill the national form, submit it, and read the status back, writing each case into **Dataverse** and reaching authorities over **mutual TLS**. In production they're **VNet-integrated**.
 
 ---
 
@@ -460,7 +461,7 @@ To get this right, we leaned on patterns the industry already trusts — the ful
 <!-- ⏱ 1:00 — Six patterns shaped the platform.
 On the phone, the AI decides for itself when to look something up or hand the call to a human.
 A cross-border case runs as a series of steps that can undo themselves if one fails, so a request never gets stuck half-done.
-Dynamics 365 stays the single source of truth for every case, and we can swap pieces of it later without breaking anything.
+Dataverse stays the single source of truth for every case — surfaced as a Power App today, as D365 Customer Service when the licences land — and we can swap pieces later without breaking anything.
 And if a national service goes down, a safety switch sends the citizen to a human queue instead of an error.
 None of this is exotic; it's proven patterns, applied with care.
 With the body of the platform covered, let's look at its mind. -->
@@ -475,12 +476,12 @@ With the body of the platform covered, let's look at its mind. -->
 <p>One API gateway per country. The cross-border case is a 6-step workflow that rolls back if a step fails.</p>
 </div>
 <div class="card green">
-<h3>System of record — Dynamics 365</h3>
-<p>Dynamics 365 holds each case. The app writes through workflows and reads through the gateway with a cache.</p>
+<h3>System of record — Dataverse</h3>
+<p>Dataverse holds each case — surfaced via Power Apps today, D365 Customer Service tomorrow. Writes through workflows, reads through the gateway with a cache.</p>
 </div>
 <div class="card orange">
 <h3>Strangler fig</h3>
-<p>The caseworker app writes to a simple Dynamics 365 table today, the final case entity tomorrow — one switch.</p>
+<p>The caseworker app writes to a generic Dataverse table today, the canonical D365 Customer Service case entity tomorrow — one switch.</p>
 </div>
 <div class="card purple">
 <h3>Sidecar</h3>
@@ -508,36 +509,21 @@ This is where the AI lives, and it's built as one governed system, not a pile of
 
 <!-- _class: tight -->
 
-# The AI Brain.
-
-<!-- ⏱ 0:50 — At the centre of everything is one governed brain.
-Every AI request passes through a single place: Azure AI Foundry, Microsoft's platform for building and running AI agents.
-So the safety checks, the quality checks, the tracing and the AI Act records all happen in one spot, instead of being scattered around.
-Inside, a coordinator we call the Topic Router reads each request and hands the work to the right specialist.
-And because the whole brain is copied into each country, the conversation stays home, just like the data.
-Let me show you how the pieces actually fit together. -->
-
-![w:800](images/ai-brain.png)
-
-> **One brain, not seven chatbots.** Every model call goes through Azure AI Foundry — so orchestration, safety, evaluation, tracing and the EU AI Act register live in one place. The **Topic Router** gives each task to the right specialist, and the whole brain is copied per country.
-
----
-
-<!-- _class: tight -->
-
 # The AI Brain — every channel, one gateway.
 
-<!-- ⏱ 1:00 — Here is the same brain, end to end.
-Every channel comes in on the left — the website, the phone, the mobile app, the chat, even the caseworker's own screen.
-They all enter through one door: the API Management gateway.
-It handles sign-in, rate limits and the audit log, so no channel ever calls a model on its own.
+<!-- ⏱ 1:05 — At the centre of everything is one governed brain, shown here end to end.
+Every AI request passes through a single place — Azure AI Foundry, Microsoft's platform for building and running AI agents — so safety, quality, tracing and the AI Act records all live in one spot.
+Every channel comes in on the left: the website, the phone, the mobile app, the chat, even the caseworker's own screen.
+They all enter through one door, the API Management gateway, which handles sign-in, rate limits and the audit log — so no channel ever calls a model on its own.
 From there, every message is scanned by Content Safety, on the way in and on the way out.
 Then the Topic Router picks the right specialist for the job.
-One of them, the eligibility agent, is the only high-risk part under the EU AI Act, so it runs in a sealed enclave with a tamper-proof record — I'll come back to exactly why.
-The agents that answer questions only quote official sources, and the whole conversation is traced for later.
+One of them, the eligibility agent, is the only high-risk part under the EU AI Act, so it runs in a sealed enclave with a tamper-proof record — I'll come back to why.
+The whole brain is copied into each country, so the conversation stays home, just like the data.
 Now let me trace one real request through it. -->
 
-![w:720](images/aibrain-readme.png)
+![w:680](images/aibrain-readme.png)
+
+> **One brain, not seven chatbots** — every model call goes through Azure AI Foundry, routed by the **Topic Router**.
 
 ---
 
@@ -1230,7 +1216,7 @@ Nothing here is hand-waved; every label is backed by code or a script in the rep
 Gate one, weeks one to two: validate the tenant — the model deployments, the Fabric capacity and the DDoS plan.
 Gate two, weeks three to six: switch eligibility onto live confidential compute, which flips demo six to live.
 Gate three, weeks six to fourteen: sign the partner-agency agreements and stand up the production hub, so demo one talks to a real authority.
-Gate four, weeks fourteen to twenty: bring in Dynamics 365 with Copilot for Service and repoint the writes, flipping demo five.
+Gate four, weeks fourteen to twenty: bring in D365 Customer Service with Copilot for Service and repoint the writes off Power Apps, flipping demo five.
 Each gate ships on its own — the platform is useful after every one. -->
 
 <div class="cards four">
@@ -1298,7 +1284,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
      -SeedSyntheticData -Verbose
 ```
 
-- 25 phases in order: landing zone → identity → security → data → monitoring → gateway → Foundry → Dynamics → frontend → voice → governance → quality
+- 25 phases in order: landing zone → identity → security → data → monitoring → gateway → Foundry → Dataverse → frontend → voice → governance → quality
 - Sample data is seeded in parallel with the frontend
 - A smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
 - An HTML report is saved in `scripts/install/reports/<timestamp>/`
@@ -1386,6 +1372,19 @@ I'm happy to open any of them while we talk. -->
 <!-- _header: 'UDCSP — Annex' -->
 <!-- _class: tight -->
 
+# Annex — the AI Brain blueprint in full.
+
+<!-- ⏱ 0:10 — Reference: the full Foundry brain behind the gateway slide — every agent, slot and governance hook, copied per country. -->
+
+![w:800](images/ai-brain.png)
+
+> One orchestrator and six specialists on Azure AI Foundry, the high-risk eligibility agent in a sealed enclave, and the EU AI Act register wired into every model call — the dense source map behind the simplified gateway slide.
+
+---
+
+<!-- _header: 'UDCSP — Annex' -->
+<!-- _class: tight -->
+
 # Annex — telemetry pillars in full.
 
 <!-- ⏱ 0:10 — Reference: the six monitoring pillars behind the central view. -->
@@ -1399,7 +1398,7 @@ I'm happy to open any of them while we talk. -->
 <div class="card teal">
 <div class="card-num">DISTRIBUTED TRACE</div>
 <h3>Application Insights</h3>
-<p>One trace number end-to-end · front door → gateway → workflow → Dynamics → agent → model</p>
+<p>One trace number end-to-end · front door → gateway → workflow → Dataverse → agent → model</p>
 </div>
 <div class="card purple">
 <div class="card-num">AI QUALITY</div>
@@ -1409,7 +1408,7 @@ I'm happy to open any of them while we talk. -->
 <div class="card red">
 <div class="card-num">AI ACT EVIDENCE</div>
 <h3>Confidential Ledger</h3>
-<p>Records that cannot be changed · joins logs, AI and Dynamics in one query</p>
+<p>Records that cannot be changed · joins logs, AI and Dataverse in one query</p>
 </div>
 <div class="card orange">
 <div class="card-num">ACTIVE</div>
