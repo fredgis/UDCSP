@@ -143,9 +143,7 @@ borger.dk, Skatteverket and NAV still hold the records and still decide. We own 
 
 We did **not** rebuild the national portals. We unified the one thing that was missing — a single **identity** and a single **experience** — and connected it to the systems that already hold the records.
 
-The citizen signs in once with their national **eID**. From there the platform **shares and checks** information with each authority: it pre-fills the right national form, submits it, and follows the status live.
-
-borger.dk, Skatteverket, NAV, Altinn and UDI stay the system of record and the decision-maker. We **connect** to them — we never replace them.
+The citizen signs in once with their national **eID**. From there the platform **shares and checks** information with each authority — pre-filling the form, submitting it, following the status live. borger.dk, Skatteverket, NAV, Altinn and UDI stay the system of record and the decision-maker; we **connect**, we never replace.
 
 </div>
 <div>
@@ -535,6 +533,68 @@ None of this is exotic. Proven patterns, applied with care. With the body of the
 <p>A failing national endpoint switches to a human queue — citizens never see a timeout.</p>
 </div>
 </div>
+
+---
+
+# Scaling to thousands of services.
+
+<!-- ⏱ 0:55 — A fair question: real government has thousands of services, not five. And one request can start many at once. A visa case needs identity, housing, income, tax, health and vehicle records — from six agencies.
+
+So where does the orchestration happen? In one place per country: the integration plane, behind the single gateway. Nothing orchestrates from the browser.
+
+A journey runs as a saga. It fans out to each service in parallel, waits for all, and rolls back cleanly if one step fails.
+
+Adding the next service is small. A new declarative workflow, one gateway operation, one catalog entry — no new servers. The event bus wires it in.
+
+And the citizen still finds it. One front door, one search: they type what they need, and the router sends them to the right service — on web, phone or voice, in 12 languages. -->
+
+<div class="split right-wide">
+<div>
+
+<div class="steps">
+<div class="step"><div class="step-content"><strong>Orchestration lives in one place</strong><span>Per country, the Logic Apps integration plane behind the single gateway — never from the browser.</span></div></div>
+<div class="step"><div class="step-content"><strong>A journey is a saga</strong><span>It fans out to each service in parallel, waits for all, and rolls back cleanly if one step fails.</span></div></div>
+<div class="step"><div class="step-content"><strong>A new service is declarative</strong><span>A workflow + one gateway operation + one catalog entry — no new infrastructure.</span></div></div>
+<div class="step"><div class="step-content"><strong>Still findable</strong><span>One front door, one search → the Topic Router routes to the right service, on web · mobile · voice, 12 languages.</span></div></div>
+</div>
+
+</div>
+<div>
+
+### One visa request → many services
+
+- 🪪 **Identity** — civil registry + national eID
+- 🏠 **Housing** — municipal address registry
+- 💶 **Income** — employer + benefits data
+- 🧾 **Tax** — national tax authority
+- 🚗 **Vehicle** — vehicle registration
+- 🏥 **Healthcare** — health enrolment
+
+</div>
+</div>
+
+> Add the 200th service the same way as the 2nd — one workflow, one gateway operation, one catalog entry. The platform grows by configuration, not rewrites.
+
+---
+
+# Meeting old systems where they are.
+
+<!-- ⏱ 0:55 — Now the harder half. These backends are old, and they do not match each other. One system knows you by your phone number, another by your national ID, a third by a case number.
+
+We do not ask them to change — we adapt to them. Each backend gets its own adapter: a thin layer that speaks its language, REST, SOAP or a flat file, over its own secure link.
+
+The adapter does two jobs. It maps each system's identifier to one shared citizen profile. And it transforms their format into our common shape, both ways.
+
+So the platform stays clean inside, while the mess stays at the edge. And by the once-only rule, data we already hold is never asked for twice — Purview catalogs every field and where it came from. -->
+
+<div class="cards four">
+<div class="card"><h3>Anti-corruption layer</h3><p>One thin adapter per backend. The mess of each old system stays at the edge — the core model stays clean.</p></div>
+<div class="card teal"><h3>Identity resolution</h3><p>Phone number · national ID · case number — each mapped to one canonical citizen. The backend never adapts to us.</p></div>
+<div class="card orange"><h3>Two-way transformation</h3><p>REST, SOAP or flat file → our common shape and back. Request transform at the gateway, mapping in the workflow, mutual TLS to partners.</p></div>
+<div class="card green"><h3>Once-only + catalog</h3><p>EU Once-Only evidence exchange means we never ask twice. Purview catalogs every field and its lineage.</p></div>
+</div>
+
+> We adapt to the backend; the backend never adapts to us. A new connector is configuration and an adapter — not a platform change.
 
 ---
 
