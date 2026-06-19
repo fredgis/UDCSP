@@ -1063,7 +1063,7 @@ Cost is one promise; speed and uptime are the other. -->
 - A monthly token budget per agent, written in code
 - The build **fails** if the total is over the pool
 - Reserved capacity for steady models · pay-as-you-go for peaks
-- Alert on a +30% jump in one day
+- Alert on an unusual daily cost jump
 
 </div>
 </div>
@@ -1091,7 +1091,7 @@ Here is how we keep it. -->
 
 The website should be available almost all the time, and we aim for 99.9 percent in every country. A phone call should be answered within two seconds, and it is, for almost every call.
 
-If something serious ever fails, we should lose at most 15 minutes of data, and be back within four hours, in a backup European region.
+If something serious ever fails, we should lose at most one hour of case data — and only minutes of live form drafts — and be back within four hours, in a backup European region.
 
 And we don't just hope those numbers hold. Each country runs a hot standby that takes over in minutes. We back everything up, in every country.
 
@@ -1102,7 +1102,7 @@ There is one more thing worth showing, about how the platform was built. -->
 <div class="stats-row">
 <div class="stat"><div class="big">99.9%</div><div class="label">citizen web target, per country</div></div>
 <div class="stat"><div class="big">≤ 2 s</div><div class="label">voice answer, 95% of calls</div></div>
-<div class="stat"><div class="big">15 min</div><div class="label">recovery point — max data loss</div></div>
+<div class="stat"><div class="big">≤ 1 h</div><div class="label">recovery point — case data (15 min for drafts)</div></div>
 <div class="stat"><div class="big">4 h</div><div class="label">recovery time to the backup EU region</div></div>
 </div>
 
@@ -1136,7 +1136,7 @@ There were three campaigns: a build, a clean-up after review, then round after r
 
 Six specialist agents each took a separate part of the code, with no overlap, and worked at the same time — about five times faster than one could alone.
 
-After each audit they fixed what they found. It took 24 rounds before one came back completely clean. In the end they produced 868 files.
+After each audit they fixed what they found. It took 24 rounds before one came back completely clean. Today the repository holds around a thousand files.
 
 And the proof it holds together is simple: the whole platform installs with one command. -->
 
@@ -1146,7 +1146,7 @@ And the proof it holds together is simple: the whole platform installs with one 
 <div class="stat"><div class="big">3</div><div class="label">multi-agent campaigns</div></div>
 <div class="stat"><div class="big">~5×</div><div class="label">faster than sequential</div></div>
 <div class="stat"><div class="big">24</div><div class="label">audit rounds to first clean</div></div>
-<div class="stat"><div class="big">868</div><div class="label">tracked files produced</div></div>
+<div class="stat"><div class="big">~1,000</div><div class="label">files tracked in the repo today</div></div>
 </div>
 
 > Three campaigns — build, refactor, then repeated audits — produced the platform. Six sub-agents owned separate folders and ran in parallel. Each round produced fix commits until round 24 was the first fully **clean** one. The one-command installer is the executable summary of it all.
