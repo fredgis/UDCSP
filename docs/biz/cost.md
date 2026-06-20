@@ -43,7 +43,8 @@
 6. [Why unit cost falls — economies of scale](#6-why-unit-cost-falls--economies-of-scale)
 7. [The levers — how we keep the bill down](#7-the-levers--how-we-keep-the-bill-down)
 8. [What this estimate does NOT include](#8-what-this-estimate-does-not-include)
-9. [Assumptions register](#9-assumptions-register)
+9. [Worked calculations — how each number is built](#9-worked-calculations--how-each-number-is-built)
+10. [Assumptions register](#10-assumptions-register)
 
 ---
 
@@ -219,7 +220,118 @@ To stay honest, the run-rate **excludes** the following — they are real, but t
 
 ---
 
-## 9. Assumptions register
+## 9. Worked calculations — how each number is built
+
+Every figure in §4 is reproducible. This section shows the **arithmetic**, worked at **National** scale (the other two tiers use the same formulas with their own monthly-active count). Prices are the indicative list values in §10.
+
+### 9.1 From citizens to monthly load
+
+The whole estimate starts from one chain — registered citizens become activity:
+
+| Step | Formula | National |
+|---|---|--:|
+| Registered citizens | 1 000 000 × 3 countries | 3 000 000 |
+| Monthly active (MAU) | registered × 40 % | 1 200 000 |
+| Peak concurrent sessions | MAU × 2 % | 24 000 |
+| AI conversations / month | MAU × 0.8 | 960 000 |
+| AI **turns** / month | conversations × 6 | 5 760 000 |
+| Voice minutes / month | MAU × 0.06 call × 4 min | 288 000 |
+| SMS / month | MAU × 0.6 | 720 000 |
+| Email / month | MAU × 1.0 | 1 200 000 |
+| Eligibility assessments / month | MAU × 0.15 | 180 000 |
+| Documents extracted / month | MAU × 0.30 | 360 000 |
+| Caseworker escalations / month | conversations × 4 % | 38 400 |
+
+> For **Pilot** and **Regional**, swap the 1 200 000 MAU for **12 000** and **120 000** and every line scales linearly — only the fixed-floor centres (§9.6) stay flat.
+
+### 9.2 AI & Foundry — €363 k / month (the biggest line)
+
+Reserved **PTU** (Provisioned Throughput Units) are sized to sustain **peak** token throughput, not the average. The line is the sum of five priced parts plus the hub baseline:
+
+| Component | Basis | Monthly |
+|---|---|--:|
+| `gpt-5.4` PTU pool (assistant · eligibility · translator · caseworker-helper) | ≈ 900 PTU × €260 | €234 000 |
+| `gpt-realtime` PTU pool (voice) | ≈ 200 PTU × €260 | €52 000 |
+| `gpt-5.4-mini` pay-as-you-go (router · classifier · doc-extractor) | ≈ 5.8 M routed turns + 360 k extractions | €43 000 |
+| Document Intelligence | 360 000 docs × ≈ 3 pages × €0.01 | €10 800 |
+| Content Safety | 5.76 M turns checked in + out ÷ 1 000 × €0.70 | €8 100 |
+| Azure AI Foundry hubs & endpoints (3 hubs) | fixed baseline | €15 000 |
+| **Sub-total** | | **≈ €363 000** |
+
+> **Why reserved PTU and not pay-as-you-go for the strong model?** At peak concurrency a reserved pool is cheaper per token *and* gives a predictable latency promise. Pay-as-you-go is kept only for the cheap **mini** model and for short spikes — that is the *model-routing* lever in §7.
+
+### 9.3 Dynamics 365 — €110 k / month (driven by people, not tokens)
+
+Caseworker headcount ≈ active citizens ÷ 1 200 (after AI deflection), then add multilingual and 24/7 shift cover. Cost = licences + Dataverse capacity:
+
+| Tier | Caseworkers | × €95 licence | + Dataverse | = Line |
+|---|--:|--:|--:|--:|
+| 🟢 Pilot | 20 | €1 900 | €500 | **€2 400** |
+| 🟡 Regional | 150 | €14 250 | €2 000 | **€16 250** |
+| 🔵 National | 1 000 | €95 000 | €15 000 | **€110 000** |
+
+This is the second-largest national line **by design** — it is the human accountability layer behind every AI decision, not overhead.
+
+### 9.4 Communications — €36 k / month (the usage-sensitive line)
+
+| Channel | Volume / month | × Unit | Monthly |
+|---|--:|--:|--:|
+| SMS | 720 000 | €0.045 | €32 400 |
+| Voice (PSTN inbound) | 288 000 min | €0.0075 | €2 160 |
+| Email | 1 200 000 | ≈ €0.0003 | €360 |
+| Phone numbers & misc | — | — | ≈ €1 300 |
+| **Sub-total** | | | **≈ €36 200** |
+
+**SMS is ≈ 90 %** of this centre — exactly why the platform prefers in-app push and email and keeps SMS for one-time codes and critical alerts (lever §7).
+
+### 9.5 Identity — €20 k / month (mostly workforce, not citizens)
+
+| Component | Basis | Monthly |
+|---|---|--:|
+| Entra External ID (citizens) | (400 k MAU/country − 50 k free) × 3 × €0.003 | €3 150 |
+| Entra ID P2 (workforce) | ≈ 1 500 staff × €8.74 | €13 100 |
+| Verified ID issuance | per credential | ≈ €4 100 |
+| **Sub-total** | | **≈ €20 350** |
+
+Citizens are nearly free — the first **50 000 active per country cost nothing**. The spend is the workforce identities securing the caseworkers.
+
+### 9.6 The fixed-floor centres — basis at a glance
+
+The remaining centres are mostly **platform floor**: paid whether 30 000 or 3 000 000 citizens log in. Each line is the sum of the named services in §3:
+
+| Cost centre | National basis (summary) | Monthly |
+|---|---|--:|
+| 🛡️ Network & Security | Front Door + WAF · 3× Firewall Premium · DDoS · Bastion · Defender · Sentinel · CIEM | €66 000 |
+| ⚙️ Compute & Integration | APIM Premium (multi-region units) · Logic Apps Standard · Functions · Confidential Compute enclave | €38 800 |
+| 🗄️ Data & Caching | 3× PostgreSQL HA · 3× Redis Enterprise · ADLS/Blob · Confidential Ledger | €39 900 |
+| 🔭 Observability | Log Analytics + App Insights ingestion (3 zones, sampled) | €45 000 |
+| 📊 Analytics | Fabric F64 + Power BI semantic models | €16 600 |
+| 📒 Governance | Purview catalogue + Priva DSR / subjects | €13 000 |
+
+### 9.7 Roll-up check
+
+Add the ten centres (€ thousands / month):
+
+```text
+363  AI & Foundry
+110  Dynamics 365
+ 66  Network & Security
+ 45  Observability
+ 40  Data & Caching
+ 39  Compute & Integration
+ 36  Communications
+ 20  Identity
+ 17  Analytics
+ 13  Governance
+────
+749  €/month  →  ×12 = €9.0 M / year  →  ÷ 3 000 000 citizens = €3.0 / citizen / year
+```
+
+The same arithmetic at the Pilot's 12 000 MAU gives **≈ €60 k / month** and **≈ €24 / citizen / year** — the fixed floor (≈ €45 k) dominates when the citizen base is small, which is the entire economies-of-scale story in §6.
+
+---
+
+## 10. Assumptions register
 
 Every number above is reproducible from these inputs. Prices are **indicative list, EUR, North/West Europe, 2026**.
 
