@@ -113,6 +113,8 @@ section.tight blockquote { margin: 8px 0; }
 .dash .bars .b span { font-size: 0.66em; color: var(--muted); margin-top: 5px; }
 .dash .donut { width: 116px; height: 116px; border-radius: 50%; margin: 2px auto 0; background: conic-gradient(var(--brand) 0 46%, var(--accent) 46% 74%, #c7d2fe 74% 100%); position: relative; }
 .dash .donut::after { content: ''; position: absolute; inset: 26px; background: #fff; border-radius: 50%; }
+.dash .donut.lg { width: 300px; height: 300px; margin: 8px auto; }
+.dash .donut.lg::after { inset: 66px; }
 .dash .legend { font-size: 0.64em; color: var(--muted); margin-top: 8px; line-height: 1.6; }
 .dash .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 
