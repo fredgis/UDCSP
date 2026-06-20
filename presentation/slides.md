@@ -1044,7 +1044,7 @@ Every agent gets a monthly budget of tokens — the unit you pay for with AI —
 
 We reserve capacity for the steady work, pay only for the spikes, and get a warning the moment cost jumps. So there is no surprise invoice at the end of the month.
 
-Cost is one promise; speed and uptime are the other. -->
+That keeps cost under control day to day. Now let me show you the bigger picture — what the whole platform actually costs. -->
 
 <div class="split">
 <div>
@@ -1072,74 +1072,155 @@ Cost is one promise; speed and uptime are the other. -->
 
 ---
 
-# What does it cost to run?
+<!-- _class: chapter -->
+<div class="num">05</div>
 
-<!-- ⏱ 0:55 — A fair question for any government platform is simple: what does it cost to run?
+# Cost &<br>economics.
 
-We sized it for three steps. A small pilot, ten thousand people per country. A regional roll-out, a hundred thousand. And full national scale, one million per country — three million people in total.
+## What it runs · what it costs per citizen · and how we keep it low
 
-At the pilot, the bill is about sixty thousand euros a month. At national scale, about seven hundred and fifty thousand a month.
+<!-- ⏱ 0:12 — Now the question every government asks: what does this cost?
 
-But look at the cost per citizen. It starts near twenty-four euros a year, and it falls to about three. Eight times cheaper.
-
-The reason is simple: we build the platform once, and we scale it. We do not rebuild it for every service. -->
-
-<div class="stats-row">
-<div class="stat"><div class="big">€60k</div><div class="label">per month · 30k citizens (pilot)</div></div>
-<div class="stat"><div class="big">€144k</div><div class="label">per month · 300k citizens</div></div>
-<div class="stat"><div class="big">€749k</div><div class="label">per month · 3M citizens (national)</div></div>
-<div class="stat"><div class="big">€24 → €3</div><div class="label">per citizen / year — falls 8×</div></div>
-</div>
-
-| Scale | Citizens | Run-rate / month | Per citizen / year |
-|---|--:|--:|--:|
-| Pilot · 10k per country | 30 000 | ≈ €60 k | ≈ €24 |
-| Regional · 100k per country | 300 000 | ≈ €144 k | ≈ €5.8 |
-| National · 1M per country | 3 000 000 | ≈ €749 k | ≈ €3.0 |
-
-> Build once, scale it — don't rebuild per service. 100× more citizens, only ~12× the bill. Full model in `docs/biz/cost.md`.
+Let me show you the numbers, the cost per citizen, and the levers we use to keep it low. -->
 
 ---
 
-# Where the money goes — and how we control it.
+# What does it cost to run?
 
-<!-- ⏱ 0:50 — So where does the money go, and how do we keep it under control?
+<!-- ⏱ 0:55 — We sized the platform for three steps.
 
-At full scale, two lines lead. The reserved AI capacity — that is the citizen assistant and the eligibility brain. And the caseworker licences — the people who stay accountable for every AI decision. Both are value, not waste. Everything else is a small, well-controlled tail.
+A small pilot — ten thousand people per country. A regional roll-out — a hundred thousand. And full national scale — one million per country, so three million people in total.
 
-And we have levers, already built into the platform. We reserve capacity ahead of time, which cuts thirty to forty percent. We send the cheap work to a small model. We prefer push and email over SMS. And every resource is tagged, so the build fails if an agent goes over its budget.
+The bill grows from about sixty thousand euros a month to about seven hundred and fifty thousand.
 
-With those levers, the national bill drops from about nine million a year to under seven — with the same experience for the citizen. -->
+But look at the cost per citizen. It starts near twenty-four euros a year and falls to about three. Eight times cheaper.
+
+The reason is simple. We build the platform once and we scale it. We do not rebuild it for every service. One hundred times more citizens, but only twelve times the bill. -->
+
+<div class="stats-row">
+<div class="stat"><div class="big">€60k</div><div class="label">/ month · 30k citizens (pilot)</div></div>
+<div class="stat"><div class="big">€144k</div><div class="label">/ month · 300k citizens</div></div>
+<div class="stat"><div class="big">€749k</div><div class="label">/ month · 3M citizens (national)</div></div>
+<div class="stat"><div class="big">€24 → €3</div><div class="label">per citizen / year — falls 8×</div></div>
+</div>
+
+| Scale | Citizens | Active / mo | Run-rate / mo | Per citizen / yr | Per active / mo |
+|---|--:|--:|--:|--:|--:|
+| **Pilot** · 10k/country | 30 000 | 12 000 | ≈ €60 k | ≈ €24 | ≈ €5.0 |
+| **Regional** · 100k/country | 300 000 | 120 000 | ≈ €144 k | ≈ €5.8 | ≈ €1.20 |
+| **National** · 1M/country | 3 000 000 | 1.2 M | ≈ €749 k | ≈ €3.0 | ≈ €0.62 |
+
+> Build once, scale it — not rebuilt per service. **100× more citizens → only ~12× the bill** → unit cost ÷8. Full model in `docs/biz/cost.md`.
+
+---
+
+# The big cost groups — where €749k/month goes
+
+<!-- ⏱ 0:50 — So where does the money go at national scale?
+
+Two lines lead. First, the reserved AI capacity — the citizen assistant and the eligibility brain. Second, the caseworker licences — the people who stay accountable for every AI decision.
+
+Together they are about two thirds of the bill. Both are value, not waste.
+
+Everything else — network, data, monitoring, communications — is a thin, well-controlled tail. -->
+
+<div class="split right-wide">
+<div>
+
+### Two lines lead
+- **AI capacity (reserved PTU)** — assistant + eligibility brain
+- **Caseworker licences** — humans accountable for AI
+- Together ≈ **63%** of the national bill — value, not waste
+- The other eight groups are a thin tail
+
+</div>
+<div>
+
+| Cost group | National / mo |
+|---|--:|
+| AI & Foundry | €363 k |
+| Dynamics 365 & Power Platform | €110 k |
+| Network & Security | €66 k |
+| Observability | €45 k |
+| Data & Caching | €40 k |
+| Compute & Integration | €39 k |
+| Communications | €36 k |
+| Identity | €20 k |
+| Analytics | €17 k |
+| Governance | €13 k |
+
+</div>
+</div>
+
+> Per-group arithmetic in `docs/biz/cost.md` §9 — every line traces to a deployed service.
+
+---
+
+# Cost vectors — what moves the bill
+
+<!-- ⏱ 0:50 — It also helps to see what actually moves the bill.
+
+Some cost is fixed. We pay it whether one citizen logs in or a million, because it is the price of running three private, sovereign zones.
+
+The rest is variable. It follows the active citizens — their conversations, their messages, their assessments.
+
+And we only reserve capacity for the real peak — about two percent of the monthly active users. So we never pay for capacity we do not use. -->
 
 <div class="split">
 <div>
 
-### At national scale, two lines lead
-
-- Reserved **AI capacity** — the citizen assistant & eligibility brain
-- **Caseworker licences** — the humans who keep AI accountable
-- Everything else is a thin, well-controlled tail
+### Fixed platform floor
+Paid whether 30k or 3M log in.
+- Gateway · firewalls · DDoS · Bastion
+- Base AI reservation · core data · governance
+- ≈ **€45 k/mo** pilot · ≈ **€120 k/mo** national
 
 </div>
 <div>
 
-### The levers, already built in
-
-- Reservations & savings plans — **−30% to −40%**
-- Small model first · strong model only when needed
-- Push & email before SMS (the most usage-sensitive line)
-- Telemetry sampling · Fabric capacity right-sized per tier
-- Tagged showback · the build **fails** if an agent goes over budget
+### Variable with usage
+Tracks monthly-active citizens (MAU).
+- AI tokens & extra PTU
+- Caseworker licences
+- SMS, voice, email · telemetry · External-ID MAU
 
 </div>
 </div>
 
-> List price ≈ €9.0M / year at national scale → ≈ €5.5–6.5M committed — same citizen experience.
+| Driver · per active citizen / month | Value | Hits |
+|---|--:|---|
+| AI conversations (≈ 6 turns) | 0.8 | AI capacity |
+| SMS | 0.6 | Communications |
+| Eligibility assessments | 0.15 | Strong model + enclave |
+| Escalation to a caseworker | ≈ 4% | D365 licences |
+
+> MAU ≈ **40%** of registered · peak concurrency ≈ **2%** of MAU — that is what we reserve.
+
+---
+
+# Keeping it low — levers already built in
+
+<!-- ⏱ 0:50 — And we have levers, already built into the platform.
+
+We reserve capacity ahead of time — that alone cuts thirty to forty percent. We send the cheap work to a small model. We prefer push and email over SMS, the most expensive channel. And every resource is tagged, so the build fails if an agent goes over its budget.
+
+With these levers, the national bill drops from about nine million a year to under seven — with the same experience for the citizen. -->
+
+| 🎚️ Lever | What it does | Saving |
+|---|---|--:|
+| 🏷️ **Reservations & Savings Plans** | 1–3 yr commit on PTU, App Service, PostgreSQL, Fabric | **−30 to −40%** |
+| 🧠 **Model routing (mini-first)** | Cheap `gpt-5.4-mini` routes; strong model only to reason | ≈ 10× / routed token |
+| 📐 **PTU right-sized to peak** | Reserve to peak concurrency · pay-as-you-go for spikes | no off-peak waste |
+| 📲 **Push & email before SMS** | SMS is the most usage-sensitive line | can halve comms |
+| 🔭 **Telemetry sampling** | Adaptive sampling · basic logs · cheap archive | −40 to −60% obs |
+| 🏷️ **Tagged showback** | Build **fails** if an agent goes over budget | stops drift early |
+
+> List ≈ **€9.0 M/yr** national → **≈ €5.5–6.5 M committed** — same citizen experience.
 
 ---
 
 <!-- _class: chapter -->
-<div class="num">05</div>
+<div class="num">06</div>
 
 # Performance &<br>reliability.
 
@@ -1182,7 +1263,7 @@ There is one more thing worth showing, about how the platform was built. -->
 ---
 
 <!-- _class: chapter -->
-<div class="num">06</div>
+<div class="num">07</div>
 
 # How we built it.
 
@@ -1309,7 +1390,7 @@ And the very same script runs in our pipeline on every change, so a deploy is al
 ---
 
 <!-- _class: chapter -->
-<div class="num">07</div>
+<div class="num">08</div>
 
 # Real scenario.
 
@@ -1378,7 +1459,7 @@ We designed it months before I ever saw the French version. And that is genuinel
 ---
 
 <!-- _class: chapter -->
-<div class="num">08</div>
+<div class="num">09</div>
 
 # Status &<br>roadmap.
 
@@ -1448,7 +1529,7 @@ Each gate ships on its own. The platform is useful after every one. -->
 ---
 
 <!-- _class: chapter -->
-<div class="num">09</div>
+<div class="num">10</div>
 
 # Demo.
 
