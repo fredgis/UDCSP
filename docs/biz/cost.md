@@ -135,12 +135,12 @@ Indicative **monthly** run-rate by cost centre (EUR, list price, rounded). The a
 | **Per citizen / year** | **≈ €24** | **≈ €5.8** | **≈ €3.0** |
 | **Per active citizen / month** | **≈ €5.0** | **≈ €1.20** | **≈ €0.62** |
 
-```mermaid
-xychart-beta
-    title "Cost per citizen per year (EUR) — falls as the platform scales"
-    x-axis ["Pilot 30k", "Regional 300k", "National 3M"]
-    y-axis "EUR / citizen / year" 0 --> 26
-    bar [24, 5.8, 3.0]
+```text
+Cost per citizen per year (EUR) — falls as the platform scales
+
+Pilot     30k   ████████████████████████  ≈ €24
+Regional 300k   ██████                     ≈ €5.8
+National   3M   ███                        ≈ €3.0
 ```
 
 ---
