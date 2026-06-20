@@ -33,7 +33,7 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 > **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
 
-The full 66-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+The full 67-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
 
@@ -42,7 +42,7 @@ The full 66-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 </div>
 
 <details>
-<summary><b>🎞️ Browse all 66 slides (carousel)</b></summary>
+<summary><b>🎞️ Browse all 67 slides (carousel)</b></summary>
 
 <div align="center">
 
@@ -112,6 +112,7 @@ The full 66-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <img src="./presentation/deck/slide.064.png" width="32%" />
 <img src="./presentation/deck/slide.065.png" width="32%" />
 <img src="./presentation/deck/slide.066.png" width="32%" />
+<img src="./presentation/deck/slide.067.png" width="32%" />
 
 
 </div>

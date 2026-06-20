@@ -1199,6 +1199,55 @@ So the cost per citizen falls all the way down — from over eight euros to abou
 
 ---
 
+# Not every service scales the same way
+
+<!-- ⏱ 0:45 — One more thing about scale.
+
+People ask: if you get almost seven times more users, does the bill grow seven times too?
+
+No — and the reason is that the services do not all grow the same way.
+
+Some are metered, like every SMS and every email, so they follow the users almost one to one.
+
+Some are reserved in blocks, like the AI capacity — we size it to the peak, and the small model handles most of the traffic, so it grows much slower.
+
+And some are just a fixed floor — the firewalls, the gateway, the API gateway, the network — we build them once for the whole country.
+
+So when the active users grow almost seven times, the total bill grows only about two times. That is the shape that makes this affordable. -->
+
+<div class="split">
+<div>
+<div class="dash">
+<div class="bars" style="height:210px;">
+<div class="b"><i style="height:100%"></i><span>Comms ×5.9</span></div>
+<div class="b"><i style="height:93%"></i><span>D365 ×5.5</span></div>
+<div class="b"><i style="height:54%"></i><span>Obs ×3.2</span></div>
+<div class="b down"><i style="height:44%"></i><span>AI PTU ×2.6</span></div>
+<div class="b down"><i style="height:22%"></i><span>Cmp ×1.3</span></div>
+<div class="b down"><i style="height:19%"></i><span>Net ×1.1</span></div>
+</div>
+</div>
+<p style="text-align:center;font-size:0.74em;color:#64748b;margin:6px 0 0;">Cost growth Y1 → ceiling, while active users grow <b style="color:#0a1929;">×6.7</b></p>
+</div>
+<div>
+
+| Service | Shape | Y1→ceiling |
+|---|---|:-:|
+| ACS SMS · voice · email | 📈 metered | **×5.9** |
+| Dynamics 365 caseworkers | 👤 headcount | **×5.5** |
+| AI PTU pools | 🧱 block | **×2.6** |
+| APIM · Logic Apps · SKUs | 🪜 stepped | **×1.3** |
+| Firewalls · Front Door · net | ⬛ flat | **×1.1** |
+
+<p style="font-size:0.74em;line-height:1.55;margin:8px 0 0;"><b>APIM</b> & <b>Logic Apps</b> jump in SKU steps, not per user. <b>AI PTU</b> is reserved to peak — the mini-first router keeps it flat.</p>
+
+</div>
+</div>
+
+> Only ≈ **€3.4M** of the €5.28M ceiling scales with citizens; ≈ **€1.9M** is built once. **+1 active citizen = €0.38 / month, €0 floor.** Full breakdown in `docs/biz/cost.md` §7.
+
+---
+
 # Where the money goes — €5.28M / month at the ceiling
 
 <!-- ⏱ 0:50 — So where does the money actually go at full scale?
@@ -1238,7 +1287,7 @@ Everything else — network, monitoring, data, communications — is a thin, wel
 </div>
 </div>
 
-> Every slice traces to a deployed service — per-group arithmetic in `docs/biz/cost.md` §3–5 & §10.
+> Every slice traces to a deployed service — per-group arithmetic in `docs/biz/cost.md` §3–5 & §11.
 
 ---
 
@@ -1313,7 +1362,7 @@ Put together, the national bill drops from about sixty-three million a year to a
 </div>
 </div>
 
-> List ≈ **€63.4 M/yr** national → **≈ €40–46 M committed**. Full lever list in `docs/biz/cost.md` §8.
+> List ≈ **€63.4 M/yr** national → **≈ €40–46 M committed**. Full lever list in `docs/biz/cost.md` §9.
 
 ---
 

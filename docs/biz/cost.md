@@ -48,7 +48,7 @@
 > | 🇳🇴 **Norway** | 5.6 M | Norway East | **1.20** | ≈ €1.42 M | **≈ €3.04** |
 > | **Combined** | **22.3 M** | three regions | — | **≈ €5.28 M** | **≈ €2.84** |
 >
-> *All figures are **indicative list prices** (EUR, 2026), before Microsoft Customer Agreement discounts, Azure Reservations and Savings Plans — which typically remove a further **30–40 %** from the compute and AI lines. The **price index** is the indicative Azure-infrastructure premium of each region relative to North Europe. "Citizens" at national scale is the **addressable population (ceiling)**; the realistic steady state is ≈ 80 % adoption (≈ 17.8 M). This is a **run-rate** (steady-state operating cost); one-time build, migration and certification costs are out of scope (see §9).*
+> *All figures are **indicative list prices** (EUR, 2026), before Microsoft Customer Agreement discounts, Azure Reservations and Savings Plans — which typically remove a further **30–40 %** from the compute and AI lines. The **price index** is the indicative Azure-infrastructure premium of each region relative to North Europe. "Citizens" at national scale is the **addressable population (ceiling)**; the realistic steady state is ≈ 80 % adoption (≈ 17.8 M). This is a **run-rate** (steady-state operating cost); one-time build, migration and certification costs are out of scope (see §10).*
 
 ---
 
@@ -60,11 +60,12 @@
 4. [Per-country cost — why the Azure region matters](#4-per-country-cost--why-the-azure-region-matters)
 5. [Cost at three scales](#5-cost-at-three-scales) · [Cost over time — the adoption ramp](#cost-over-time--the-adoption-ramp)
 6. [Fixed floor vs variable layer](#6-fixed-floor-vs-variable-layer)
-7. [Why unit cost falls — economies of scale](#7-why-unit-cost-falls--economies-of-scale)
-8. [The levers — how we keep the bill down](#8-the-levers--how-we-keep-the-bill-down)
-9. [What this estimate does NOT include](#9-what-this-estimate-does-not-include)
-10. [Worked calculations — how each number is built](#10-worked-calculations--how-each-number-is-built)
-11. [Assumptions register](#11-assumptions-register)
+7. [How each service scales — the cost shape per service](#7-how-each-service-scales--the-cost-shape-per-service)
+8. [Why unit cost falls — economies of scale](#8-why-unit-cost-falls--economies-of-scale)
+9. [The levers — how we keep the bill down](#9-the-levers--how-we-keep-the-bill-down)
+10. [What this estimate does NOT include](#10-what-this-estimate-does-not-include)
+11. [Worked calculations — how each number is built](#11-worked-calculations--how-each-number-is-built)
+12. [Assumptions register](#12-assumptions-register)
 
 ---
 
@@ -74,7 +75,7 @@ This is a **business** estimate, not a billing quote. It answers three executive
 
 - **"What does it cost to keep the lights on?"** — the fixed platform floor (§6).
 - **"What happens to the bill when usage grows?"** — the scale table (§5) and the per-country table (§4).
-- **"Is it efficient?"** — the per-citizen unit cost and the levers that drive it down (§7, §8).
+- **"Is it efficient?"** — the per-citizen unit cost and the levers that drive it down (§8, §9).
 
 Three deployment tiers anchor the estimate. They are not three different products — they are **the same platform** sized for three population bands. At national scale the bands are the **real populations** of each country, in each country's own Azure region (§4):
 
@@ -176,13 +177,13 @@ Per citizen / year (EUR) — the Norway East premium is visible
 🇳🇴 Norway    Norway East     ██████████████████████████    ≈ €3.04
 ```
 
-**The story.** Norway is the **most expensive country per citizen** (≈ €3.04) for two compounding reasons: Norway East carries the highest regional price index (≈ +20 % on infrastructure), **and** Norway has the smallest population, so its fixed floor is spread over the fewest people. Denmark is the **cheapest** (≈ €2.69) — the lowest-priced region (North Europe) with a mid-sized population. Sweden sits between (≈ €2.83): the Sweden Central premium is offset by the best floor-amortisation of the three (10.7 M citizens). **You do not engineer this away — you plan for it**, and you keep cross-border egress near-zero so no country subsidises another (see §9).
+**The story.** Norway is the **most expensive country per citizen** (≈ €3.04) for two compounding reasons: Norway East carries the highest regional price index (≈ +20 % on infrastructure), **and** Norway has the smallest population, so its fixed floor is spread over the fewest people. Denmark is the **cheapest** (≈ €2.69) — the lowest-priced region (North Europe) with a mid-sized population. Sweden sits between (≈ €2.83): the Sweden Central premium is offset by the best floor-amortisation of the three (10.7 M citizens). **You do not engineer this away — you plan for it**, and you keep cross-border egress near-zero so no country subsidises another (see §10).
 
 ---
 
 ## 5. Cost at three scales
 
-Indicative **monthly** run-rate by cost centre (EUR, list price, rounded). The arithmetic behind each line is the activity model in §2 applied to the unit prices in §10. The **National** column is the combined three-country total at real populations (22.3 M citizens), region-adjusted per §4.
+Indicative **monthly** run-rate by cost centre (EUR, list price, rounded). The arithmetic behind each line is the activity model in §2 applied to the unit prices in §11. The **National** column is the combined three-country total at real populations (22.3 M citizens), region-adjusted per §4.
 
 | Cost centre | 🟢 Pilot | 🟡 Regional | 🔵 National |
 |---|--:|--:|--:|
@@ -266,7 +267,67 @@ The story the chart tells: at national scale the bill is dominated by **reserved
 
 ---
 
-## 7. Why unit cost falls — economies of scale
+## 7. How each service scales — the cost shape per service
+
+Two platforms can land on the **same** total at the ceiling yet cost very different amounts on the way there, because **services do not all scale the same way with users**. Some are billed per message or per token (they track active citizens almost exactly); some are reserved in blocks sized to peak; some are bought in discrete SKU steps; and some are a flat, national-grade floor you pay from day one. Knowing the **shape** of each line is what makes the year-by-year ramp (§5) predictable — and tells you where the levers (§9) actually bite.
+
+### 7.1 The five scaling shapes
+
+| Shape | Behaviour as MAU grows | Main services | Why it behaves this way |
+|---|---|---|---|
+| 📈 **Linear (metered)** | Cost ∝ MAU — a straight line through ≈ 0 | ACS **SMS / voice / email**, Content Safety, Document Intelligence, `gpt-5.4-mini` pay-as-you-go, External ID MAU | Billed per unit consumed — every extra active citizen adds a fixed marginal cost |
+| 🧱 **Block-reserved** | High fixed base, then steps up in chunks | AI **PTU pools** (`gpt-5.4`, `gpt-realtime`) | Provisioned Throughput is reserved to **peak concurrency** (≈ 2 % of MAU) for latency + price |
+| 🪜 **Stepped (SKU / scale-unit)** | Flat inside a tier, jumps at thresholds | **API Management** units, **Microsoft Fabric** F-SKU, PostgreSQL / Redis SKUs, Firewall instances | Capacity is bought in discrete units, not per request |
+| 👤 **Headcount-linear** | Tracks people; slightly sub-linear (AI deflection improves) | **Dynamics 365** caseworker licences | 1 caseworker ≈ 1 200 active citizens **after** AI deflection |
+| ⬛ **Flat floor** | Same bill at 1 M or 9 M MAU | Front Door, **Azure Firewall**, DDoS, Bastion, Foundry hubs, Purview | National-grade is provisioned once per sovereign zone |
+
+### 7.2 The main services, year by year
+
+Monthly run-rate by cost centre (€ thousands, **National**, list price) as adoption ramps from Year 1 to the ceiling. The monthly-active base (MAU) grows **×6.7** over the period — watch how differently each line responds:
+
+| Cost centre — main services | Shape | Y1 · 1.34 M | Y3 · 4.01 M | Y5 · 5.80 M | Y8 · 7.14 M | Ceiling · 8.92 M | Y1 → ceiling |
+|---|:-:|--:|--:|--:|--:|--:|:-:|
+| 🧠 **AI & Foundry** — PTU pools | 🧱 block | 979 | 1 536 | 1 909 | 2 189 | 2 560 | **×2.6** |
+| 🧑‍💼 **Dynamics 365** — caseworker licences | 👤 headcount | 143 | 367 | 518 | 630 | 780 | **×5.5** |
+| 📡 **Communications** — ACS SMS / voice / email | 📈 linear | 43 | 117 | 168 | 205 | 255 | **×5.9** |
+| 🔭 **Observability** — Log Analytics / App Insights | 📈 linear | 99 | 176 | 227 | 266 | 317 | **×3.2** |
+| 🛡️ **Network & Security** — FW · DDoS · Front Door | ⬛ flat | 427 | 440 | 449 | 456 | 465 | **×1.1** |
+| 🗄️ **Data & Caching** — PostgreSQL · Redis | 🪜 stepped | 221 | 242 | 256 | 267 | 281 | **×1.3** |
+| ⚙️ **Compute & Integration** — APIM · Logic Apps · Functions | 🪜 stepped | 211 | 233 | 248 | 258 | 273 | **×1.3** |
+| 📊 **Analytics** — Microsoft Fabric F-SKU | 🪜 stepped | 103 | 108 | 111 | 114 | 117 | **×1.1** |
+| 🪪 **Identity** — External ID · Entra P2 | 📈 / ⬛ mixed | 115 | 125 | 131 | 136 | 143 | **×1.2** |
+| 📒 **Governance** — Purview · Priva | ⬛ flat | 82 | 85 | 87 | 90 | 92 | **×1.1** |
+| **Total / month** | | **≈ 2 420** | **≈ 3 430** | **≈ 4 110** | **≈ 4 610** | **≈ 5 280** | **×2.2** |
+
+> Read it as **three families.** The **user-metered** lines (Communications, Dynamics 365, Observability) grow almost in step with citizens — **×3 to ×6**. The **AI PTU** line grows only **×2.6** despite ×6.7 more users, because the mini-first router keeps cheap turns on the small model and the reserved base is national-grade from day one. The **stepped and flat** infrastructure (Network, Data, Compute, Analytics, Governance) barely moves — **×1.1 to ×1.3** — it is provisioned for the ceiling up front and only nudges up in SKU steps. *(Per-year totals reconcile with the adoption ramp in §5; full unit prices in §11.)*
+
+### 7.3 The services you asked about — APIM, Logic Apps, and the reserved lines
+
+- **API Management (Premium)** — *stepped.* Capacity is bought in **scale units**; each unit adds a fixed throughput envelope and one more gateway instance (for VNet / multi-region). The bill is **flat between thresholds** and jumps only when sustained peak requests-per-second crosses a unit boundary. Regional → National adds **a handful of units across three regions**, not a MAU-proportional amount — so APIM grows ≈ ×1.3, not ×6.7.
+- **Logic Apps (Standard)** — *fixed floor + thin marginal.* Production runs on a reserved **Workflow Standard plan** (vCore + memory) that hosts the orchestration workflows; extra executions are near-free until the plan saturates, then you add another plan — a small step. Non-production uses **Consumption** (per-action, scales to zero). Net: Logic Apps is mostly **flat** with occasional steps.
+- **AI PTU pools** — *block-reserved.* Provisioned Throughput is reserved in **blocks sized to peak concurrency** (≈ 2 % of MAU), with a national-grade base kept always-on for a latency promise. It is cheaper per token than pay-as-you-go at scale, and the **mini-first router** means most added users hit the cheap model — which is why AI grows ×2.6, not ×6.7.
+- **Azure Communications Services** — *pure linear.* Every SMS, email and voice-minute is metered, so this line tracks MAU almost exactly (×5.9). The **push-before-SMS** lever (§9) is what bends its slope.
+- **Microsoft Fabric** — *stepped.* One reserved **F-SKU** per tier (F16 → F32 → F256), sized to refresh and query load, not to MAU — flat within a tier.
+- **Entra External ID** — *linear, but free at the start.* The first **50 000 active / tenant are free**, so at pilot the citizen-identity line is ≈ €0; at national it is a thin linear line. The larger, near-fixed part is the **workforce** Entra ID P2 licences securing caseworkers and staff.
+
+### 7.4 What this means for the budget
+
+```text
+Growth Y1 → ceiling as the active base (MAU) goes ×6.7
+
+  Communications   ▁▂▃▅▇   ×5.9   linear        — metered per message
+  Dynamics 365     ▁▂▃▅▇   ×5.5   headcount      — per caseworker
+  Observability    ▁▂▃▄▆   ×3.2   linear        — telemetry per MAU
+  AI & Foundry     ▄▅▅▆▇   ×2.6   block-reserved — PTU sized to peak
+  Compute & Data   ▆▆▆▇▇   ×1.3   stepped        — APIM · Logic Apps · SKUs
+  Network & Sec    ▇▇▇▇▇   ×1.1   flat           — firewalls · DDoS · Front Door
+```
+
+Only the **user-metered family** — AI-variable + Dynamics 365 + Communications + Observability + External ID — actually scales with citizens; together that is **≈ €3.4 M of the €5.28 M ceiling**. The other **≈ €1.9 M is the fixed / stepped floor**, provisioned once for national-grade (§6). That split is exactly why the ramp is gentle: **one extra active citizen adds ≈ €0.38 / month of metered cost and €0 of floor.** It also tells you where to aim the levers (§9): **reserve** the block lines (PTU, Fabric, PostgreSQL), **bend** the linear lines (push-before-SMS, mini-first routing), and **never over-build** the flat floor.
+
+---
+
+## 8. Why unit cost falls — economies of scale
 
 The headline is the slope, not the absolute number. From pilot to national the platform serves **≈ 740× more citizens** but the bill grows only **≈ 88×** — because the fixed floor is paid once and then amortised.
 
@@ -280,7 +341,7 @@ This is the answer to *"can a citizen platform be affordable?"* — **yes, if it
 
 ---
 
-## 8. The levers — how we keep the bill down
+## 9. The levers — how we keep the bill down
 
 The estimate above is **list price with no optimisation**. Each lever below is already designed into the platform (`architecture.md` §11.6 FinOps, `ai.md` §13):
 
@@ -299,7 +360,7 @@ The estimate above is **list price with no optimisation**. Each lever below is a
 
 ---
 
-## 9. What this estimate does NOT include
+## 10. What this estimate does NOT include
 
 To stay honest, the run-rate **excludes** the following — they are real, but they are not monthly platform-operation cost:
 
@@ -312,11 +373,11 @@ To stay honest, the run-rate **excludes** the following — they are real, but t
 
 ---
 
-## 10. Worked calculations — how each number is built
+## 11. Worked calculations — how each number is built
 
-Every figure in §5 is reproducible. This section shows the **arithmetic**, worked at **National** scale (the other two tiers use the same formulas with their own monthly-active count; the per-country split in §4 applies each region's price index to the Azure-infrastructure share). Prices are the indicative list values in §11.
+Every figure in §5 is reproducible. This section shows the **arithmetic**, worked at **National** scale (the other two tiers use the same formulas with their own monthly-active count; the per-country split in §4 applies each region's price index to the Azure-infrastructure share). Prices are the indicative list values in §12.
 
-### 10.1 From citizens to monthly load
+### 11.1 From citizens to monthly load
 
 The whole estimate starts from one chain — registered citizens become activity:
 
@@ -334,9 +395,9 @@ The whole estimate starts from one chain — registered citizens become activity
 | Documents extracted / month | MAU × 0.30 | 2 676 000 |
 | Caseworker escalations / month | conversations × 4 % | 285 440 |
 
-> For **Pilot** and **Regional**, swap the 8 920 000 MAU for **12 000** and **120 000** and every line scales linearly — only the fixed-floor centres (§10.6) stay flat.
+> For **Pilot** and **Regional**, swap the 8 920 000 MAU for **12 000** and **120 000** and every line scales linearly — only the fixed-floor centres (§11.6) stay flat.
 
-### 10.2 AI & Foundry — €2.56 M / month (the biggest line)
+### 11.2 AI & Foundry — €2.56 M / month (the biggest line)
 
 Reserved **PTU** (Provisioned Throughput Units) are sized to sustain **peak** token throughput, not the average. The line is the sum of five priced parts plus the hub baseline:
 
@@ -350,9 +411,9 @@ Reserved **PTU** (Provisioned Throughput Units) are sized to sustain **peak** to
 | Azure AI Foundry hubs & endpoints (3 hubs, national-grade) | fixed baseline | €37 000 |
 | **Sub-total** | | **≈ €2 560 000** |
 
-> **Why reserved PTU and not pay-as-you-go for the strong model?** At peak concurrency a reserved pool is cheaper per token *and* gives a predictable latency promise. Pay-as-you-go is kept only for the cheap **mini** model and for short spikes — that is the *model-routing* lever in §8.
+> **Why reserved PTU and not pay-as-you-go for the strong model?** At peak concurrency a reserved pool is cheaper per token *and* gives a predictable latency promise. Pay-as-you-go is kept only for the cheap **mini** model and for short spikes — that is the *model-routing* lever in §9.
 
-### 10.3 Dynamics 365 — €780 k / month (driven by people, not tokens)
+### 11.3 Dynamics 365 — €780 k / month (driven by people, not tokens)
 
 Caseworker headcount ≈ active citizens ÷ 1 200 (after AI deflection), then add multilingual and 24/7 shift cover. Cost = licences + Dataverse capacity:
 
@@ -364,7 +425,7 @@ Caseworker headcount ≈ active citizens ÷ 1 200 (after AI deflection), then ad
 
 This is the second-largest national line **by design** — it is the human accountability layer behind every AI decision, not overhead. It is also **region-neutral**: D365 licences are priced per-user across the EU, so this line is the same euro in Denmark, Sweden or Norway (§4).
 
-### 10.4 Communications — €255 k / month (the usage-sensitive line)
+### 11.4 Communications — €255 k / month (the usage-sensitive line)
 
 | Channel | Volume / month | × Unit | Monthly |
 |---|--:|--:|--:|
@@ -374,9 +435,9 @@ This is the second-largest national line **by design** — it is the human accou
 | Phone numbers & misc | — | — | ≈ €2 270 |
 | **Sub-total** | | | **≈ €255 000** |
 
-**SMS is ≈ 90 %** of this centre — exactly why the platform prefers in-app push and email and keeps SMS for one-time codes and critical alerts (lever §8). Telephony also follows each country's A2P rate, so it is one of the lines that varies slightly by country.
+**SMS is ≈ 90 %** of this centre — exactly why the platform prefers in-app push and email and keeps SMS for one-time codes and critical alerts (lever §9). Telephony also follows each country's A2P rate, so it is one of the lines that varies slightly by country.
 
-### 10.5 Identity — €143 k / month (mostly workforce, not citizens)
+### 11.5 Identity — €143 k / month (mostly workforce, not citizens)
 
 | Component | Basis | Monthly |
 |---|---|--:|
@@ -387,7 +448,7 @@ This is the second-largest national line **by design** — it is the human accou
 
 Citizens are nearly free — the first **50 000 active per country cost nothing**. The spend is the workforce identities securing the ≈ 7 400 caseworkers and supporting staff.
 
-### 10.6 The fixed-floor centres — basis at a glance
+### 11.6 The fixed-floor centres — basis at a glance
 
 The remaining centres are mostly **platform floor**: paid whether 30 000 or 22 300 000 citizens log in, scaled to national-grade SKUs across three regions. Each line is the sum of the named services in §3:
 
@@ -402,7 +463,7 @@ The remaining centres are mostly **platform floor**: paid whether 30 000 or 22 3
 
 These six are the lines the **regional price index** in §4 bites hardest on: they sit in each country's own region, so Norway East's ≈ +20 % premium lands here, not on the region-neutral licence lines.
 
-### 10.7 Roll-up check
+### 11.7 Roll-up check
 
 Add the ten centres (€ thousands / month):
 
@@ -421,11 +482,11 @@ Add the ten centres (€ thousands / month):
 5283  €/month  →  ×12 = €63.4 M / year  →  ÷ 22 300 000 citizens = €2.84 / citizen / year
 ```
 
-The same arithmetic at the Pilot's 12 000 MAU gives **≈ €60 k / month** and **≈ €24 / citizen / year** — the fixed floor (≈ €45 k) dominates when the citizen base is small, which is the entire economies-of-scale story in §7.
+The same arithmetic at the Pilot's 12 000 MAU gives **≈ €60 k / month** and **≈ €24 / citizen / year** — the fixed floor (≈ €45 k) dominates when the citizen base is small, which is the entire economies-of-scale story in §8.
 
 ---
 
-## 11. Assumptions register
+## 12. Assumptions register
 
 Every number above is reproducible from these inputs. Prices are **indicative list, EUR, 2026**, in each country's deployment region.
 
@@ -457,6 +518,6 @@ Every number above is reproducible from these inputs. Prices are **indicative li
 
 <div align="center">
 
-*Indicative figures for executive planning. For a binding estimate, model the target tenant in the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) with the assumptions in §10.*
+*Indicative figures for executive planning. For a binding estimate, model the target tenant in the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) with the assumptions in §11.*
 
 </div>
