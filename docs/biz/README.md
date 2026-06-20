@@ -4,7 +4,7 @@
 
 ### *Why* the platform exists · *Who* it serves · *How* every channel works
 
-[![Docs](https://img.shields.io/badge/📑_Docs-12-1565C0?style=for-the-badge)](#)
+[![Docs](https://img.shields.io/badge/📑_Docs-13-1565C0?style=for-the-badge)](#)
 [![Channels](https://img.shields.io/badge/📡_Channels-6-2E7D32?style=for-the-badge)](#)
 [![Personas](https://img.shields.io/badge/👥_Personas-15-AD1457?style=for-the-badge)](#)
 [![Scenarios](https://img.shields.io/badge/🎬_Scenarios-10-E65100?style=for-the-badge)](#)
@@ -48,6 +48,7 @@
 |---|---|
 | 🧠 [`ai.md`](./ai.md) | The AI architecture — Microsoft Foundry · topic-router · Azure OpenAI · 7 agents · 12 languages. |
 | 🛡️ [`datacompliance.md`](./datacompliance.md) | Every regulation we answer to · every control · every piece of evidence (GDPR, AI Act, eIDAS 2.0, NIS2, ePrivacy). |
+| 💶 [`cost.md`](./cost.md) | What the platform costs to run — fixed floor vs variable, scaled from 10k to 1M citizens per country, and the FinOps levers that drive ≈ €24 → €3 per citizen / year. |
 
 ---
 

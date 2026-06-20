@@ -418,6 +418,7 @@ flowchart LR
 | Audience | Start with |
 |---|---|
 | 📋 **The original case study** | [`docs/biz/case-study-11.md`](./docs/biz/case-study-11.md) — the immutable brief this repo answers. |
+| 💶 **What it costs to run** | [`docs/biz/cost.md`](./docs/biz/cost.md) — FinOps run-rate scaled from 10k to 1M citizens per country (≈ €24 → €3 / citizen / year). |
 | 📚 **Business documentation** | [`docs/biz/`](./docs/biz/) — channels, AI architecture, data-compliance, demo scenarios, acceptance recipe. |
 | ⚙️ **Technical documentation** | [`docs/tech/`](./docs/tech/) — deep-dive architecture, data model, install guide, build & refactor history, DR runbook. |
 | 🗂️ **Both at once** | [`docs/`](./docs/) — the documentation hub. |

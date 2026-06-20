@@ -1072,6 +1072,72 @@ Cost is one promise; speed and uptime are the other. -->
 
 ---
 
+# What does it cost to run?
+
+<!-- ⏱ 0:55 — A fair question for any government platform is simple: what does it cost to run?
+
+We sized it for three steps. A small pilot, ten thousand people per country. A regional roll-out, a hundred thousand. And full national scale, one million per country — three million people in total.
+
+At the pilot, the bill is about sixty thousand euros a month. At national scale, about seven hundred and fifty thousand a month.
+
+But look at the cost per citizen. It starts near twenty-four euros a year, and it falls to about three. Eight times cheaper.
+
+The reason is simple: we build the platform once, and we scale it. We do not rebuild it for every service. -->
+
+<div class="stats-row">
+<div class="stat"><div class="big">€60k</div><div class="label">per month · 30k citizens (pilot)</div></div>
+<div class="stat"><div class="big">€144k</div><div class="label">per month · 300k citizens</div></div>
+<div class="stat"><div class="big">€749k</div><div class="label">per month · 3M citizens (national)</div></div>
+<div class="stat"><div class="big">€24 → €3</div><div class="label">per citizen / year — falls 8×</div></div>
+</div>
+
+| Scale | Citizens | Run-rate / month | Per citizen / year |
+|---|--:|--:|--:|
+| Pilot · 10k per country | 30 000 | ≈ €60 k | ≈ €24 |
+| Regional · 100k per country | 300 000 | ≈ €144 k | ≈ €5.8 |
+| National · 1M per country | 3 000 000 | ≈ €749 k | ≈ €3.0 |
+
+> Build once, scale it — don't rebuild per service. 100× more citizens, only ~12× the bill. Full model in `docs/biz/cost.md`.
+
+---
+
+# Where the money goes — and how we control it.
+
+<!-- ⏱ 0:50 — So where does the money go, and how do we keep it under control?
+
+At full scale, two lines lead. The reserved AI capacity — that is the citizen assistant and the eligibility brain. And the caseworker licences — the people who stay accountable for every AI decision. Both are value, not waste. Everything else is a small, well-controlled tail.
+
+And we have levers, already built into the platform. We reserve capacity ahead of time, which cuts thirty to forty percent. We send the cheap work to a small model. We prefer push and email over SMS. And every resource is tagged, so the build fails if an agent goes over its budget.
+
+With those levers, the national bill drops from about nine million a year to under seven — with the same experience for the citizen. -->
+
+<div class="split">
+<div>
+
+### At national scale, two lines lead
+
+- Reserved **AI capacity** — the citizen assistant & eligibility brain
+- **Caseworker licences** — the humans who keep AI accountable
+- Everything else is a thin, well-controlled tail
+
+</div>
+<div>
+
+### The levers, already built in
+
+- Reservations & savings plans — **−30% to −40%**
+- Small model first · strong model only when needed
+- Push & email before SMS (the most usage-sensitive line)
+- Telemetry sampling · Fabric capacity right-sized per tier
+- Tagged showback · the build **fails** if an agent goes over budget
+
+</div>
+</div>
+
+> List price ≈ €9.0M / year at national scale → ≈ €5.5–6.5M committed — same citizen experience.
+
+---
+
 <!-- _class: chapter -->
 <div class="num">05</div>
 
