@@ -1091,76 +1091,115 @@ Let me show you the numbers, the cost per citizen, and the levers we use to keep
 
 We sized one platform for three steps.
 
-A small pilot — ten thousand people per country. A regional roll-out — a hundred thousand. And full national scale — one million per country, three million in total.
+A small pilot — thirty thousand people. A regional roll-out — three hundred thousand. And full national scale — the real Nordic populations, twenty-two million people across the three countries.
 
-Same code, same zones, same AI brain — only the capacity changes. -->
+But not everyone uses a government portal. We size for the whole population, and we pay for the active citizens. Same code, same zones, same AI brain — only the capacity changes. -->
 
 <div class="stats-row">
 <div class="stat"><div class="big">€60k</div><div class="label">/ month · pilot · 30k citizens</div></div>
 <div class="stat"><div class="big">€144k</div><div class="label">/ month · regional · 300k</div></div>
-<div class="stat"><div class="big">€749k</div><div class="label">/ month · national · 3M</div></div>
-<div class="stat"><div class="big">€3</div><div class="label">per citizen / year at scale</div></div>
+<div class="stat"><div class="big">€5.28M</div><div class="label">/ month · national · 22.3M ceiling</div></div>
+<div class="stat"><div class="big">€2.84</div><div class="label">per citizen / year at scale</div></div>
 </div>
 
 | Scale | Citizens | Active / mo | Peak sessions | Run-rate / mo | Per citizen / yr |
 |---|--:|--:|--:|--:|--:|
-| **Pilot** · 10k / country | 30 000 | 12 000 | ≈ 240 | ≈ €60 k | ≈ €24 |
-| **Regional** · 100k / country | 300 000 | 120 000 | ≈ 2 400 | ≈ €144 k | ≈ €5.8 |
-| **National** · 1M / country | 3 000 000 | 1.2 M | ≈ 24 000 | ≈ €749 k | ≈ €3.0 |
+| **Pilot** · early band | 30 000 | 12 000 | ≈ 240 | ≈ €60 k | ≈ €24 |
+| **Regional** · early band | 300 000 | 120 000 | ≈ 2 400 | ≈ €144 k | ≈ €5.8 |
+| **National** · DK + SE + NO | 22 300 000 | 8.92 M | ≈ 178 000 | ≈ €5.28 M | ≈ €2.84 |
 
-> Not three products — the **same platform** sized for three population bands. Full model in `docs/biz/cost.md`.
+> Not three products — the **same platform** sized for three population bands. National = real populations, full model in `docs/biz/cost.md`.
 
 ---
 
-# Why it gets cheaper as it grows
+# Same platform, three regions — and the region changes the price
 
-<!-- ⏱ 0:50 — Now look at the two charts.
+<!-- ⏱ 0:45 — Here is a subtle but important point. This is not one platform — it is three, one per country, each in its own Azure region.
 
-On the left, the monthly bill grows — from sixty thousand to seven hundred and fifty thousand euros.
+And Azure prices are not the same in every region. Denmark runs in North Europe — one of the cheapest regions in the EU — that is our baseline. Sweden runs in Sweden Central, a few percent more. Norway runs in Norway East, a premium region — about twenty percent more on infrastructure.
 
-On the right, the cost per citizen falls — from about twenty-four euros a year down to three. Eight times cheaper.
+So look at the cost per citizen. Norway is the most expensive — three euros and four cents — for two reasons stacked together: the premium region, and the smallest population, so the fixed floor is shared by the fewest people. Denmark is the cheapest. You do not engineer this away — you plan for it. -->
 
-The reason is simple. We build the platform once and scale it — we do not rebuild it for every service.
+<div class="split">
+<div>
 
-A hundred times more citizens, but only twelve times the bill. The fixed floor is paid once, then shared by everyone. -->
+| Country | Pop. | Azure region | Index | € / cit. / yr |
+|---|--:|---|:-:|--:|
+| 🇩🇰 Denmark | 6.0 M | North Europe | 1.00 | **€2.69** |
+| 🇸🇪 Sweden | 10.7 M | Sweden Central | 1.08 | **€2.83** |
+| 🇳🇴 Norway | 5.6 M | Norway East | 1.20 | **€3.04** |
+| **All** | **22.3 M** | three regions | — | **€2.84** |
+
+<p style="font-size:0.72em;color:#64748b;margin:8px 0 0;line-height:1.5;">Index = Azure-infrastructure price vs North Europe. Licences (D365, identity) are region-neutral.</p>
+
+</div>
+<div>
+<div class="dash">
+<div class="bars" style="height:200px;">
+<div class="b down"><i style="height:88%"></i><span>DK · 2.69</span></div>
+<div class="b down"><i style="height:93%"></i><span>SE · 2.83</span></div>
+<div class="b"><i style="height:100%"></i><span>NO · 3.04</span></div>
+</div>
+</div>
+<p style="font-size:0.78em;line-height:1.55;margin:10px 0 0;">Norway East premium <b>+ smallest population</b> → highest per-citizen cost. No country subsidises another.</p>
+</div>
+</div>
+
+> Per citizen / year: **DK €2.69 · SE €2.83 · NO €3.04**. The region, not the code, drives the gap.
+
+---
+
+# Cost over time — adoption ramps, so the bill ramps
+
+<!-- ⏱ 0:45 — And one more honest point. Not every inhabitant signs up on day one. Adoption ramps over years.
+
+We model it growing from fifteen percent in year one to eighty percent by year eight — realistic for the Nordics, which are high-trust and high-adoption.
+
+Watch the shape. Citizens grow five times — from three million to nearly eighteen. But the bill grows less than twice — from twenty-nine million to fifty-five. Because the fixed floor is built once, for national grade, then shared by an ever-larger crowd.
+
+So the cost per citizen falls all the way down — from over eight euros to about three. The more people adopt it, the cheaper it gets for everyone. -->
 
 <div class="dash">
 <div class="kpis">
-<div class="kpi"><b>×100</b><span>more citizens served</span></div>
-<div class="kpi"><b>×12.5</b><span>yearly bill grows</span></div>
-<div class="kpi"><b>÷8</b><span>cost per citizen falls</span></div>
-<div class="kpi"><b>€9.0M</b><span>/ year at national scale</span></div>
+<div class="kpi"><b>×5.3</b><span>citizens, Y1 → Y8</span></div>
+<div class="kpi"><b>×1.9</b><span>yearly bill grows</span></div>
+<div class="kpi"><b>€8.6 → €3.1</b><span>per citizen / year</span></div>
+<div class="kpi"><b>≈ €1.9M</b><span>fixed floor / month</span></div>
 </div>
 <div class="panels">
 <div class="panel">
-<h4>Run-rate / month (€k) — grows ~12×</h4>
+<h4>Run-rate / year (€M) — grows slowly</h4>
 <div class="bars">
-<div class="b"><i style="height:8%"></i><span>Pilot · 60</span></div>
-<div class="b"><i style="height:19%"></i><span>Regional · 144</span></div>
-<div class="b"><i style="height:100%"></i><span>National · 749</span></div>
+<div class="b"><i style="height:52%"></i><span>Y1 · 29</span></div>
+<div class="b"><i style="height:63%"></i><span>Y2 · 35</span></div>
+<div class="b"><i style="height:74%"></i><span>Y3 · 41</span></div>
+<div class="b"><i style="height:89%"></i><span>Y5 · 49</span></div>
+<div class="b"><i style="height:100%"></i><span>Y8 · 55</span></div>
 </div>
 </div>
 <div class="panel">
-<h4>Per citizen / year (€) — falls 8×</h4>
+<h4>Per citizen / year (€) — falls as it matures</h4>
 <div class="bars">
-<div class="b down"><i style="height:100%"></i><span>Pilot · 24</span></div>
-<div class="b down"><i style="height:24%"></i><span>Regional · 5.8</span></div>
-<div class="b down"><i style="height:13%"></i><span>National · 3</span></div>
+<div class="b down"><i style="height:100%"></i><span>Y1 · 8.6</span></div>
+<div class="b down"><i style="height:60%"></i><span>Y2 · 5.2</span></div>
+<div class="b down"><i style="height:48%"></i><span>Y3 · 4.1</span></div>
+<div class="b down"><i style="height:40%"></i><span>Y5 · 3.4</span></div>
+<div class="b down"><i style="height:36%"></i><span>Y8 · 3.1</span></div>
 </div>
 </div>
 <div class="panel">
-<h4>The scale story</h4>
-<p style="font-size:0.82em;line-height:1.7;margin:6px 0 0;">Citizens <b>×100</b><br>Yearly bill <b>×12.5</b><br>Per-citizen <b>÷8</b></p>
-<p style="font-size:0.68em;color:#64748b;margin:12px 0 0;line-height:1.5;">Build once, scale it — not rebuilt per service.</p>
+<h4>Adoption</h4>
+<p style="font-size:0.82em;line-height:1.8;margin:6px 0 0;">Y1 <b>15%</b> · 3.3M<br>Y3 <b>45%</b> · 10.0M<br>Y5 <b>65%</b> · 14.5M<br>Y8 <b>80%</b> · 17.8M</p>
+<p style="font-size:0.68em;color:#64748b;margin:10px 0 0;line-height:1.5;">Population fixed at 22.3M. More adoption = cheaper per head.</p>
 </div>
 </div>
 </div>
 
-> 100× more citizens → only ~12× the bill → unit cost ÷8. Economies of scale, by design.
+> Citizens **×5.3**, bill only **×1.9** — the fixed floor is paid once, then amortised. Per-citizen falls €8.6 → €3.1.
 
 ---
 
-# Where the money goes — €749k / month at scale
+# Where the money goes — €5.28M / month at the ceiling
 
 <!-- ⏱ 0:50 — So where does the money actually go at full scale?
 
@@ -1180,26 +1219,26 @@ Everything else — network, monitoring, data, communications — is a thin, wel
 <div class="donut lg" style="background: conic-gradient(#0078d4 0 48.5%, #00b4a6 48.5% 63.2%, #5b8def 63.2% 72%, #8b5cf6 72% 78%, #f59e0b 78% 83.3%, #ec4899 83.3% 88.5%, #2dd4bf 88.5% 93.3%, #64748b 93.3% 96%, #a3a3a3 96% 98.3%, #cbd5e1 98.3% 100%);"></div>
 </div>
 
-<p style="text-align:center;font-size:0.78em;color:#64748b;margin:6px 0 0;">Top two groups ≈ <b style="color:#0a1929;">63%</b> of €749k / month</p>
+<p style="text-align:center;font-size:0.78em;color:#64748b;margin:6px 0 0;">Top two groups ≈ <b style="color:#0a1929;">63%</b> of €5.28M / month</p>
 
 </div>
 <div>
 
 <ul style="list-style:none;padding:0;margin:4px 0 0;font-size:0.78em;line-height:1.95;">
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#0078d4;margin-right:8px;"></span><b>AI &amp; Foundry</b> — €363k · 48%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#00b4a6;margin-right:8px;"></span><b>Dynamics 365</b> (caseworkers) — €110k · 15%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#5b8def;margin-right:8px;"></span>Network &amp; Security — €66k · 9%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#8b5cf6;margin-right:8px;"></span>Observability — €45k · 6%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#f59e0b;margin-right:8px;"></span>Data &amp; Caching — €40k · 5%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#ec4899;margin-right:8px;"></span>Compute &amp; Integration — €39k · 5%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#2dd4bf;margin-right:8px;"></span>Communications — €36k · 5%</li>
-<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#94a3b8;margin-right:8px;"></span>Identity · Analytics · Governance — €50k · 7%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#0078d4;margin-right:8px;"></span><b>AI &amp; Foundry</b> — €2.56M · 48%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#00b4a6;margin-right:8px;"></span><b>Dynamics 365</b> (caseworkers) — €780k · 15%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#5b8def;margin-right:8px;"></span>Network &amp; Security — €465k · 9%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#8b5cf6;margin-right:8px;"></span>Observability — €317k · 6%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#f59e0b;margin-right:8px;"></span>Data &amp; Caching — €281k · 5%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#ec4899;margin-right:8px;"></span>Compute &amp; Integration — €273k · 5%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#2dd4bf;margin-right:8px;"></span>Communications — €255k · 5%</li>
+<li><span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:#94a3b8;margin-right:8px;"></span>Identity · Analytics · Governance — €352k · 7%</li>
 </ul>
 
 </div>
 </div>
 
-> Every slice traces to a deployed service — per-group arithmetic in `docs/biz/cost.md` §3–4 & §9.
+> Every slice traces to a deployed service — per-group arithmetic in `docs/biz/cost.md` §3–5 & §10.
 
 ---
 
@@ -1221,10 +1260,10 @@ That is exactly what you want — you pay for citizens, not for empty capacity. 
 <div style="width:25%;background:#00b4a6;display:flex;align-items:center;justify-content:center;">Variable · €15k</div>
 </div>
 
-**National · €749k / month** — mostly real usage
+**National · €5.28M / month** — mostly real usage
 <div style="display:flex;height:40px;border-radius:7px;overflow:hidden;font-size:0.74em;font-weight:600;color:#fff;margin:5px 0 16px;">
-<div style="width:16%;background:#0078d4;display:flex;align-items:center;justify-content:center;">€120k</div>
-<div style="width:84%;background:#00b4a6;display:flex;align-items:center;justify-content:center;">Variable · €629k · 84%</div>
+<div style="width:36%;background:#0078d4;display:flex;align-items:center;justify-content:center;">Fixed floor · €1.9M · 36%</div>
+<div style="width:64%;background:#00b4a6;display:flex;align-items:center;justify-content:center;">Variable · €3.4M · 64%</div>
 </div>
 
 | Driver · per active citizen / month | Value | What it hits |
@@ -1244,7 +1283,7 @@ That is exactly what you want — you pay for citizens, not for empty capacity. 
 
 We reserve capacity ahead of time — that alone removes thirty to forty percent. We send the cheap work to a small model. We prefer push and email over SMS, the most expensive channel. And every resource is tagged, so the build fails if an agent goes over its budget.
 
-Put together, the national bill drops from about nine million a year to under seven — with the exact same experience for the citizen. -->
+Put together, the national bill drops from about sixty-three million a year to about forty-three — with the exact same experience for the citizen. -->
 
 <div class="split right-wide">
 <div>
@@ -1252,8 +1291,8 @@ Put together, the national bill drops from about nine million a year to under se
 ### List → committed
 <div class="dash">
 <div class="bars" style="height:150px;">
-<div class="b"><i style="height:100%"></i><span>List · €9.0M</span></div>
-<div class="b down"><i style="height:67%"></i><span>Committed · €6.0M</span></div>
+<div class="b"><i style="height:100%"></i><span>List · €63.4M</span></div>
+<div class="b down"><i style="height:68%"></i><span>Committed · €43M</span></div>
 </div>
 </div>
 
@@ -1274,7 +1313,7 @@ Put together, the national bill drops from about nine million a year to under se
 </div>
 </div>
 
-> List ≈ **€9.0 M/yr** national → **≈ €5.5–6.5 M committed**. Full lever list in `docs/biz/cost.md` §7.
+> List ≈ **€63.4 M/yr** national → **≈ €40–46 M committed**. Full lever list in `docs/biz/cost.md` §8.
 
 ---
 
