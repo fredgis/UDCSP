@@ -53,7 +53,7 @@ Every claim carries one of five honesty labels. I show the full scorecard near t
 
 <span class="pill green">🟢 Live: on the tenant today</span> <span class="pill">🔵 Implemented: merged & smoke-tested</span> <span class="pill purple">🟣 Scripted: installer phase, idempotent</span> <span class="pill orange">🟠 Blueprint: designed, not yet live</span> <span class="pill gray">⚪ Roadmap: external dependency</span>
 
-> UDCSP is a **production accelerator**: a target vision, a working core you can run today, and a named path for the rest.
+> UDCSP is a production accelerator: a target vision, a working core you can run today, and a named path for the rest.
 
 ---
 
@@ -90,9 +90,9 @@ Our rule: we do not replace the national authorities. We connect to them. That m
 </div>
 <div>
 
-A citizen who moves from Copenhagen to Stockholm proves their identity again, re-sends the same papers, waits **28 days** for a decision, and uses a portal that may not speak their language, or may not be accessible at all.
+A citizen who moves from Copenhagen to Stockholm proves their identity again, re-sends the same papers, waits 28 days for a decision, and uses a portal that may not speak their language, or may not be accessible at all.
 
-UDCSP unifies the **identity** and the **experience**, then connects to the national systems to **share and check** information, never to replace them.
+UDCSP unifies the identity and the experience, then connects to the national systems to share and check information, never to replace them.
 
 <span class="pill">GDPR</span> <span class="pill">EU AI Act</span> <span class="pill">eIDAS 2.0</span> <span class="pill">NIS2</span> <span class="pill">WCAG 2.1 AA</span> <span class="pill">ePrivacy</span>
 
@@ -141,9 +141,9 @@ borger.dk, Skatteverket and NAV still hold the records and still decide. We own 
 <div class="split">
 <div>
 
-We did **not** rebuild the national portals. We unified the one thing that was missing: a single **identity** and a single **experience**, and connected it to the systems that already hold the records.
+We did not rebuild the national portals. We unified the one thing that was missing: a single identity and a single experience, and connected it to the systems that already hold the records.
 
-The citizen signs in once with their national **eID**. From there the platform **shares and checks** information with each authority, pre-filling the form, submitting it, following the status live. borger.dk, Skatteverket, NAV, Altinn and UDI stay the system of record and the decision-maker; we **connect**, we never replace.
+The citizen signs in once with their national eID. From there the platform shares and checks information with each authority, pre-filling the form, submitting it, following the status live. borger.dk, Skatteverket, NAV, Altinn and UDI stay the system of record and the decision-maker; we connect, we never replace.
 
 </div>
 <div>
@@ -151,8 +151,8 @@ The citizen signs in once with their national **eID**. From there the platform *
 ### Why identity-first, not another portal
 
 - One identity, one design, one accessibility standard
-- Information is **shared and verified**, not re-collected
-- The **same code** on web, mobile and phone
+- Information is shared and verified, not re-collected
+- The same code on web, mobile and phone
 - A new service is a new card on the same shelf, not a new website
 - The authorities keep their data; we keep the experience
 
@@ -210,7 +210,7 @@ The rules come from official sources, like Info Norden and the European Single D
 <div class="split right-wide">
 <div>
 
-One guided intake. The portal finds **which authority owns the request** and sends it there, using each citizen's national eID and the public cross-border rules.
+One guided intake. The portal finds which authority owns the request and sends it there, using each citizen's national eID and the public cross-border rules.
 
 - 🇩🇰 **Denmark**: borger.dk · MitID
 - 🇸🇪 **Sweden**: Skatteverket · BankID / Freja+
@@ -261,7 +261,7 @@ Third, a real change in outcome: a cross-border residency case now takes about f
 </div>
 </div>
 
-> UDCSP is a **unified citizen platform**, not a replacement. The national authorities still make the decision.
+> UDCSP is a unified citizen platform, not a replacement. The national authorities still make the decision.
 
 ---
 
@@ -302,7 +302,7 @@ The same React and TypeScript code runs on phone, tablet and laptop, and adapts 
 
 The chat assistant stays in the corner. The accessibility menu offers slow speech, high contrast and reduced motion.
 
-On every *Apply* page, the citizen sees the AI result (confidence, evidence, missing documents) **before** they consent.
+On every *Apply* page, the citizen sees the AI result (confidence, evidence, missing documents) before they consent.
 
 </div>
 <div>
@@ -341,7 +341,7 @@ So from outside it looks like one website. Inside, each country is a sealed worl
 
 ![w:980](images/arch-readme.png)
 
-> One citizen experience on top, three sovereign back-offices below, one AI brain copied per country. **Logic Apps bridge to Dataverse and onward to each national authority**, covering pre-fill, submit and status, never replacing them. Trust and governance wrap every layer.
+> One citizen experience on top, three sovereign back-offices below, one AI brain copied per country. Logic Apps bridge to Dataverse and onward to each national authority, covering pre-fill, submit and status, never replacing them. Trust and governance wrap every layer.
 
 ---
 
@@ -362,7 +362,7 @@ One honest exception: real-time speech is not in Norway yet. Norwegian calls use
 
 ### A hub per country
 
-Each country has its own Azure region, private network, identity system, and **AI hub** on Azure AI Foundry.
+Each country has its own Azure region, private network, identity system, and AI hub on Azure AI Foundry.
 
 - 🇩🇰 **Denmark**: North Europe region
 - 🇸🇪 **Sweden**: Sweden Central region
@@ -453,7 +453,7 @@ It is event-driven too: a message on the event bus triggers the right workflow, 
 
 ![w:760](images/logicapps-bridge.png)
 
-> Logic Apps are the **bridge**: stateful workflows that pre-fill the national form, submit it, and read the status back, writing each case into **Dataverse** and reaching authorities over **mutual TLS**. In production they're **VNet-integrated**.
+> Logic Apps are the bridge: stateful workflows that pre-fill the national form, submit it, and read the status back, writing each case into Dataverse and reaching authorities over mutual TLS. In production they're VNet-integrated.
 
 ---
 
@@ -478,10 +478,10 @@ To get this right we leaned on patterns the industry already trusts. The full ne
 
 **One entry, one experience: private and sovereign underneath.**
 
-- **One public entry**: a single **Azure Front Door** (web firewall) and one UI codebase; the citizen always sees the same portal.
-- **Sovereign by design**: each country has its *own* private front-end origin : a **Static Web App reached through a private endpoint** in that country's `web` subnet, with no public origin.
-- That `web` subnet in each spoke is the **private door** to the front-end, not a separate copy of the app.
-- App, data, AI, Logic Apps are private and in-country too; a **shared hub** handles firewall, DNS, cross-border and monitoring.
+- **One public entry**: a single Azure Front Door (web firewall) and one UI codebase; the citizen always sees the same portal.
+- **Sovereign by design**: each country has its *own* private front-end origin : a Static Web App reached through a private endpoint in that country's `web` subnet, with no public origin.
+- That `web` subnet in each spoke is the private door to the front-end, not a separate copy of the app.
+- App, data, AI, Logic Apps are private and in-country too; a shared hub handles firewall, DNS, cross-border and monitoring.
 
 </div>
 <div>
@@ -629,7 +629,7 @@ The whole brain is copied into each country, so the conversation stays home, jus
 
 ![w:680](images/aibrain-readme.png)
 
-> **One brain, not seven chatbots**: every model call goes through Azure AI Foundry, routed by the **Topic Router**.
+> One brain, not seven chatbots: every model call goes through Azure AI Foundry, routed by the Topic Router.
 
 ---
 
@@ -676,7 +676,7 @@ One agent deserves a closer look, because it shows the AI acting on its own. -->
 | **Topic Router** | Orchestration · 12 languages · slot-filling | Fast | Limited |
 | **Request Classifier** | Intent · agency · language · urgency | Fast | Limited |
 | **Translator** | 12 languages · keeps admin terms exact | Strong + Translator | Limited |
-| **Eligibility Pre-Assessor** ⚖️ | Result + evidence · runs in a protected enclave · ledger-logged | Strong + rules | **High (public service)** |
+| **Eligibility Pre-Assessor** ⚖️ | Result + evidence · runs in a protected enclave · ledger-logged | Strong + rules | High (public service) |
 | **Citizen Assistant** | Answers only from the cited public knowledge base | Strong, grounded | Limited |
 | **Document Reader** | Passport / payslip / lease extraction | Fast + Doc Intelligence | Limited |
 | **Caseworker Helper** | Summarise · draft replies · suggest next action | Strong, grounded | Limited |
@@ -699,7 +699,7 @@ It is the direction the whole industry is moving, and here it already works on a
 
 ![w:980](images/voice-flow.png)
 
-> Citizen dials → the call lands on Azure Communication Services → a small service opens a two-way audio stream to the speech model. **The model decides on its own** to call `lookup_topic_router` or `escalate_to_human` (a warm transfer). This is the Microsoft Agent Framework *Agents-as-Tools* pattern, on a real phone call.
+> Citizen dials → the call lands on Azure Communication Services → a small service opens a two-way audio stream to the speech model. The model decides on its own to call `lookup_topic_router` or `escalate_to_human` (a warm transfer). This is the Microsoft Agent Framework *Agents-as-Tools* pattern, on a real phone call.
 
 ---
 
@@ -739,7 +739,7 @@ Hand-off, review, stages and tools are the building blocks of real agent teamwor
 
 ![w:740](images/agentic.png)
 
-> **Handoff** (router → six experts) · **Reflection** (the helper reviews the eligibility result) · **State graph** (the case is a 6-state workflow that can undo a step) · **Function tool** and **warm transfer** on voice · **Shadow / canary** for every model change.
+> Handoff (router → six experts) · Reflection (the helper reviews the eligibility result) · State graph (the case is a 6-state workflow that can undo a step) · Function tool and warm transfer on voice · Shadow / canary for every model change.
 
 ---
 
@@ -766,7 +766,7 @@ That leads straight into security and compliance. -->
 <div class="card orange"><h3>Transparency</h3><p>The citizen is always told AI is used: a chat badge and a spoken message in 12 languages.</p></div>
 </div>
 
-> The Eligibility agent is the only high-risk part. It runs inside a **protected enclave** (its data is encrypted in memory, even from an administrator), and it never decides alone.
+> The Eligibility agent is the only high-risk part. It runs inside a protected enclave (its data is encrypted in memory, even from an administrator), and it never decides alone.
 
 ---
 
@@ -841,7 +841,7 @@ That is deliberate, not lucky. And it is only half the story; the other half is 
 </div>
 </div>
 
-> One encryption key set per country · modern TLS in transit · two-way TLS to partners · field-level encryption for national IDs · public network access **turned off** everywhere.
+> One encryption key set per country · modern TLS in transit · two-way TLS to partners · field-level encryption for national IDs · public network access turned off everywhere.
 
 ---
 
@@ -892,7 +892,7 @@ Every line of the law has a matching line in the system. Theory is one thing, so
 
 | Article | Requirement | UDCSP delivery |
 |---|---|---|
-| **Art. 12** | Automatic records ≥ 6 months for high-risk | Model logs kept **730 days** = 2× the minimum |
+| **Art. 12** | Automatic records ≥ 6 months for high-risk | Model logs kept 730 days = 2× the minimum |
 | **Art. 13** | Transparency for deployers | A register entry per agent · tests per language |
 | **Art. 14** | Human oversight | A caseworker confirms every result · ledger-logged |
 | **Annex III §5(b)** | High-risk = access to essential public services | The Eligibility agent is declared high-risk |
@@ -917,7 +917,7 @@ The second moment is the opposite: not an attack, but an audit. -->
 <div class="split">
 <div>
 
-A message that tries to leak the hidden instructions, or change a result, is caught at **three independent layers** (three different Azure tools):
+A message that tries to leak the hidden instructions, or change a result, is caught at three independent layers (three different Azure tools):
 
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Azure API Management</strong><span>The gateway sees the strange token rate and blocks the data leak.</span></div></div>
@@ -958,12 +958,12 @@ Once it is all running, of course, we still have to watch it and pay for it. -->
 <div class="split">
 <div>
 
-Hans, a data-protection officer, takes the citizen's **trace number** and rebuilds the whole decision: the model, the tokens, the result, the human choice, and the cryptographic ledger proof.
+Hans, a data-protection officer, takes the citizen's trace number and rebuilds the whole decision: the model, the tokens, the result, the human choice, and the cryptographic ledger proof.
 
 </div>
 <div>
 
-The AI Act minimum is six months. We keep **two years**. From the request to a full audit pack: **under 10 minutes**.
+The AI Act minimum is six months. We keep two years. From the request to a full audit pack: under 10 minutes.
 
 </div>
 </div>
@@ -995,7 +995,7 @@ The view shows roughly 12,000 cases this month, and the median time down to four
 
 So leadership gets the full picture, and privacy stays completely intact. The other operational concern is cost. -->
 
-Leadership needs the big picture. But raw citizen data never leaves its country. So only **anonymized, aggregated numbers** travel to a central view.
+Leadership needs the big picture. But raw citizen data never leaves its country. So only anonymized, aggregated numbers travel to a central view.
 
 <div class="dash">
 <div class="kpis">
@@ -1061,7 +1061,7 @@ That keeps cost under control day to day. Now let me show you the bigger picture
 ### Token budget & capacity
 
 - A monthly token budget per agent, written in code
-- The build **fails** if the total is over the pool
+- The build fails if the total is over the pool
 - Reserved capacity for steady models · pay-as-you-go for peaks
 - Alert on an unusual daily cost jump
 
@@ -1108,7 +1108,7 @@ But not everyone uses a government portal. We size for the whole population, and
 | **Regional** · early band | 300 000 | 120 000 | ≈ 2 400 | ≈ €144 k | ≈ €5.8 |
 | **National** · DK + SE + NO | 22 300 000 | 8.92 M | ≈ 178 000 | ≈ €5.28 M | ≈ €2.84 |
 
-> The **same platform** sized for three population bands. National = real populations, full model in `docs/biz/cost.md`.
+> The same platform sized for three population bands. National = real populations, full model in `docs/biz/cost.md`.
 
 ---
 
@@ -1125,10 +1125,10 @@ So look at the cost per citizen. Norway is the most expensive (three euros and f
 
 | Country | Pop. | Azure region | Index | € / cit. / yr |
 |---|--:|---|:-:|--:|
-| 🇩🇰 Denmark | 6.0 M | North Europe | 1.00 | **€2.69** |
-| 🇸🇪 Sweden | 10.7 M | Sweden Central | 1.08 | **€2.83** |
-| 🇳🇴 Norway | 5.6 M | Norway East | 1.20 | **€3.04** |
-| **All** | **22.3 M** | three regions | - | **€2.84** |
+| 🇩🇰 Denmark | 6.0 M | North Europe | 1.00 | €2.69 |
+| 🇸🇪 Sweden | 10.7 M | Sweden Central | 1.08 | €2.83 |
+| 🇳🇴 Norway | 5.6 M | Norway East | 1.20 | €3.04 |
+| **All** | 22.3 M | three regions | - | €2.84 |
 
 <p style="font-size:0.72em;color:#64748b;margin:8px 0 0;line-height:1.5;">Index = Azure-infrastructure price vs North Europe. Licences (D365, identity) are region-neutral.</p>
 
@@ -1145,7 +1145,7 @@ So look at the cost per citizen. Norway is the most expensive (three euros and f
 </div>
 </div>
 
-> Per citizen / year: **DK €2.69 · SE €2.83 · NO €3.04**. The region, not the code, drives the gap.
+> Per citizen / year: DK €2.69 · SE €2.83 · NO €3.04. The region, not the code, drives the gap.
 
 ---
 
@@ -1195,7 +1195,7 @@ So the cost per citizen falls all the way down, from over eight euros to about t
 </div>
 </div>
 
-> Citizens **×5.3**, bill only **×1.9**: the fixed floor is paid once, then amortised. Per-citizen falls €8.6 → €3.1.
+> Citizens ×5.3, bill only ×1.9: the fixed floor is paid once, then amortised. Per-citizen falls €8.6 → €3.1.
 
 ---
 
@@ -1233,18 +1233,18 @@ So when the active users grow almost seven times, the total bill grows only abou
 
 | Service | Shape | Y1→ceiling |
 |---|---|:-:|
-| ACS SMS · voice · email | 📈 metered | **×5.9** |
-| Dynamics 365 caseworkers | 👤 headcount | **×5.5** |
-| AI PTU pools | 🧱 block | **×2.6** |
-| APIM · Logic Apps · SKUs | 🪜 stepped | **×1.3** |
-| Firewalls · Front Door · net | ⬛ flat | **×1.1** |
+| ACS SMS · voice · email | 📈 metered | ×5.9 |
+| Dynamics 365 caseworkers | 👤 headcount | ×5.5 |
+| AI PTU pools | 🧱 block | ×2.6 |
+| APIM · Logic Apps · SKUs | 🪜 stepped | ×1.3 |
+| Firewalls · Front Door · net | ⬛ flat | ×1.1 |
 
 <p style="font-size:0.74em;line-height:1.55;margin:8px 0 0;"><b>APIM</b> & <b>Logic Apps</b> jump in SKU steps, not per user. <b>AI PTU</b> is reserved to peak; the mini-first router keeps it flat.</p>
 
 </div>
 </div>
 
-> Only ≈ **€3.4M** of the €5.28M ceiling scales with citizens; ≈ **€1.9M** is built once. **+1 active citizen = €0.38 / month, €0 floor.** Full breakdown in `docs/biz/cost.md` §7.
+> Only ≈ €3.4M of the €5.28M ceiling scales with citizens; ≈ €1.9M is built once. +1 active citizen = €0.38 / month, €0 floor. Full breakdown in `docs/biz/cost.md` §7.
 
 ---
 
@@ -1322,7 +1322,7 @@ That is exactly what you want: you pay for citizens, not for empty capacity. -->
 | Eligibility assessments | 0.15 | strong model + enclave |
 | Escalation to a caseworker | ≈ 4% | Dynamics 365 licences |
 
-> Fixed = three sovereign zones · Variable tracks active citizens. Peak concurrency ≈ **2%** of active users; that is all we reserve.
+> Fixed = three sovereign zones · Variable tracks active citizens. Peak concurrency ≈ 2% of active users; that is all we reserve.
 
 ---
 
@@ -1357,12 +1357,12 @@ Put together, the national bill drops from about sixty-three million a year to a
 | PTU right-sized to peak | reserve to peak concurrency · pay-as-you-go spikes | no off-peak waste |
 | Push & email before SMS | SMS is the most usage-sensitive line | can halve comms |
 | Telemetry sampling | adaptive sampling · basic logs · cheap archive | −40 to −60% obs |
-| Tagged showback | build **fails** if an agent goes over budget | stops drift early |
+| Tagged showback | build fails if an agent goes over budget | stops drift early |
 
 </div>
 </div>
 
-> List ≈ **€63.4 M/yr** national → **≈ €40-46 M committed**. Full lever list in `docs/biz/cost.md` §9.
+> List ≈ €63.4 M/yr national → ≈ €40-46 M committed. Full lever list in `docs/biz/cost.md` §9.
 
 ---
 
@@ -1443,7 +1443,7 @@ And the proof it holds together is simple: the whole platform installs with one 
 <div class="stat"><div class="big">~1,000</div><div class="label">files tracked in the repo today</div></div>
 </div>
 
-> Three campaigns (build, refactor, then repeated audits) produced the platform. Six sub-agents owned separate folders and ran in parallel. Each round produced fix commits until round 24 was the first fully **clean** one. The one-command installer is the executable summary of it all.
+> Three campaigns (build, refactor, then repeated audits) produced the platform. Six sub-agents owned separate folders and ran in parallel. Each round produced fix commits until round 24 was the first fully clean one. The one-command installer is the executable summary of it all.
 
 ---
 
@@ -1467,7 +1467,7 @@ The infra folder holds the Bicep, and the scripts folder holds the installer. It
 ### The story starts in the docs
 - **`/docs/biz`**: the business story: who we build for, every channel, data-and-compliance, demo scenarios, and an acceptance recipe for "done".
 - **`/docs/tech`**: the engineering: architecture deep-dive, data model, network design, one-command install guide, disaster-recovery runbook.
-- **`/infra`**: the Bicep that builds every zone · **`/scripts`**: the installer.
+- `/infra`: the Bicep that builds every zone · `/scripts`: the installer.
 
 <div class="parallel">
 <span class="lbl fr">short link</span>
@@ -1508,9 +1508,9 @@ Idempotent means you can run it again safely: it reuses what already exists, and
 
 **One script, one click, and you can run it again safely.**
 
-- Checks prerequisites, signs in to Azure, registers the **Entra ID** identity app.
-- Installs, **builds**, and runs the **tests** before anything is deployed.
-- Provisions all the infrastructure **as code** via Bicep, through `azd`.
+- Checks prerequisites, signs in to Azure, registers the Entra ID identity app.
+- Installs, builds, and runs the tests before anything is deployed.
+- Provisions all the infrastructure as code via Bicep, through `azd`.
 - **Idempotent**: a second run reuses what exists, never a duplicate.
 
 ---
@@ -1529,10 +1529,10 @@ And the very same script runs in our pipeline on every change, so a deploy is al
 
 **It deploys, verifies, and reports, every time the same way.**
 
-- Provisioned in **~2 minutes**, then the app is deployed to Azure.
-- Generates the **production manifest**, wires redirect URIs and **RBAC** (role-based access control).
-- Ends with **Deployment Complete** and a summary of every resource and URL.
-- The same script runs in the **pipeline on every change**, repeatable, not hand-made.
+- Provisioned in ~2 minutes, then the app is deployed to Azure.
+- Generates the production manifest, wires redirect URIs and RBAC (role-based access control).
+- Ends with Deployment Complete and a summary of every resource and URL.
+- The same script runs in the pipeline on every change, repeatable, not hand-made.
 
 ---
 
@@ -1560,9 +1560,9 @@ And there it was: the same single front door, the same service cards, even the s
 <div class="split right-wide">
 <div>
 
-To change my licence plate, I signed in to the **official French government portal**: France Titres.
+To change my licence plate, I signed in to the official French government portal: France Titres.
 
-I had **never seen it** while building UDCSP.
+I had never seen it while building UDCSP.
 
 And there it was: the same one-front-door layout, the same service cards (vehicle registration, driving licence, ID & passport), the same assistant in the corner. 😄
 
@@ -1601,7 +1601,7 @@ We designed it months before I ever saw the French version. And that is genuinel
 </div>
 </div>
 
-> Pick your country, sign in with a national eID, and (*"coming soon"*) an **EU cross-border identity**. That is our model, almost line for line. **We designed it before we ever saw it.** 🙂
+> Pick your country, sign in with a national eID, and (*"coming soon"*) an EU cross-border identity. That is our model, almost line for line. We designed it before we ever saw it. 🙂
 
 ---
 
@@ -1671,7 +1671,7 @@ Each gate ships on its own. The platform is useful after every one. -->
 <div class="card orange"><div class="card-num">GATE 4 · WK 14-20</div><h3>D365 + Copilot for Service</h3><p>Strangler-fig repoint of case writes. <strong>Demo 5 → Live.</strong></p></div>
 </div>
 
-> Today → Gate 1 → Gate 2 → Gate 3 → Gate 4 → production. **Each gate is independently shippable**: every blueprint brick has an owner, a window, and a demo it flips to live.
+> Today → Gate 1 → Gate 2 → Gate 3 → Gate 4 → production. Each gate is independently shippable: every blueprint brick has an owner, a window, and a demo it flips to live.
 
 ---
 
@@ -1712,7 +1712,7 @@ Let me switch to the live system. -->
 <div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
 </div>
 
-> Hero moment: **a real phone call**: dial **`+33 801 150 799`**, hear the model answer, and watch the live dashboard update within two minutes.
+> Hero moment: a real phone call: dial `+33 801 150 799`, hear the model answer, and watch the live dashboard update within two minutes.
 
 ---
 
@@ -1739,7 +1739,7 @@ pwsh ./scripts/install/Install-UDCSP.ps1 `
 - A smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
 - An HTML report is saved in `scripts/install/reports/<timestamp>/`
 
-> From `git clone` to a working federated platform with real sample data: **one command**. The same script runs in our pipeline on every pull request.
+> From `git clone` to a working federated platform with real sample data: one command. The same script runs in our pipeline on every pull request.
 
 ---
 
@@ -1806,7 +1806,7 @@ One app, 12 languages, three ways in. I'm happy to open any of them while we tal
 
 </div>
 
-> **1** Home · **2** Contact / voice · **3** My cases · **4** Assistant · **5** Residency intake · **6-7** Document reading · **8** Cross-border result · **9** Compliance · **10** Consent · **11** Sign-in. One web app, twelve languages, three channels, using the same React and TypeScript code on desktop, tablet and phone.
+> 1 Home · 2 Contact / voice · 3 My cases · 4 Assistant · 5 Residency intake · 6-7 Document reading · 8 Cross-border result · 9 Compliance · 10 Consent · 11 Sign-in. One web app, twelve languages, three channels, using the same React and TypeScript code on desktop, tablet and phone.
 
 ---
 
