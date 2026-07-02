@@ -25,7 +25,7 @@
 
 This repository is also the submission package for the Azure Master Architect Program — Use Case 11.
 
-The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)**. It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
+The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)**. It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the UDCSP Guardian proactive-autonomy vision, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
 
 UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
 

@@ -1,7 +1,7 @@
 ---
 title: "UDCSP: Unified Digital Citizen Services Platform"
 subtitle: "Architecture, AI and Agentic submission · Azure Master Architect Program"
-date: "May 2026"
+date: "August 2026"
 ---
 
 # Executive summary
@@ -15,6 +15,8 @@ Business value. Processing time targets a drop from 28 days to 4, and citizen sa
 Evidence available today. Demos 1 to 4 (Anna, Lars, Maria, Erik) and Demo 10 (DevOps install from a clean tenant) run live on a working tenant. Demo 9 (CIO outcomes dashboard) ships as nine deployed Azure Workbooks, three per country, queryable today. Demos 5 to 8 are blueprints, each with implementation hooks, scripts and YAML registries already in the repo: the model gates, the AI Act dossier, the Sentinel playbook and the Confidential Ledger pipeline. Every demo has a documented fallback path in `docs/biz/uses.md`.
 
 Status: demonstrator versus production target. UDCSP is a production-oriented demonstrator, a tenant-deployable platform that exercises the full citizen journey end to end, anchored to a documented production-target architecture for general availability. The target architecture (three sovereign Azure AI Foundry hubs, a federation hub with Azure Firewall Premium, Confidential Containers, Microsoft Priva, Microsoft Defender for APIs and Confidential Ledger) is described in this submission and traced to its evidence artefacts. Items that need tenant-side validation, notably specific Azure OpenAI model deployments and regional availability, are flagged inline.
+
+Vision. UDCSP Guardian is the platform's forward-looking layer: a proactive, autonomous, human-supervised agent that detects a citizen's life event, silently checks entitlement on the existing high-risk brain, and, once a caseworker approves, reaches out first. It is the answer to non-take-up, where 20 % to 60 % of eligible people never claim what they are owed, and it is built by re-wiring components that are already live. Guardian is presented as a vision, not yet code, and it is the section where the platform's autonomy and multi-agent coordination story becomes concrete.
 
 # The story
 
@@ -60,6 +62,7 @@ The matrix maps every explicit requirement of the AMA use case brief to the UDCS
 \small Eligibility pre-assessment with HITL & \small High-risk agent · Confidential Container · ledger anchor · caseworker disposition & \small Demo 6 · `foundry/projects/eligibility-pre-assessor/` & \small Implemented · Blueprint (live SEV-SNP) \\
 \small Operational transparency for the operator & \small 9 Azure Workbooks (3 per country) + W3C `traceparent` propagation & \small Demo 9 · `infra/monitoring/workbooks/` & \small Live \\
 \small Repeatable deployment from a clean tenant & \small 25-phase idempotent PowerShell installer + smoke suite & \small Demo 10 · `scripts/install/` · `scripts/smoke/` & \small Live \\
+\small Proactive, autonomous entitlement outreach (non-take-up) & \small UDCSP Guardian: Event Scanner + Critic over the existing high-risk brain, human-approved, ledger-anchored & \small `docs/biz/guardian.md` · Guardian chapter & \small Vision (reuses live components) \\
 \bottomrule
 \end{longtable}
 
@@ -139,6 +142,58 @@ It follows a champion-challenger lifecycle. Any new version receives 5 % of prod
 
 The sovereignty exception is honest and documented. The real-time speech model has rolled out to `swedencentral` and `northeurope` but not yet to `norwayeast`. The Norwegian voice orchestrator therefore opens its WebSocket to the Swedish hub's real-time speech deployment under Microsoft EU Data Boundary and the Nordic Data Protection Authorities cross-border cooperation framework. Citizen-side audio and STT transcripts persist only in Norway in the ADLS Gen2 `voice-recordings/` container with WORM 90 days. The day the real-time speech model lands in `norwayeast`, a single Bicep parameter flip moves the inference to the Norwegian hub, with no application change.
 
+# UDCSP Guardian: proactive, autonomous, human-supervised
+
+Everything described so far makes the platform faster when a citizen asks. UDCSP Guardian is about the citizens who never ask.
+
+Across the OECD, take-up of means-tested benefits sits between 40 % and 80 %, which means that 20 % to 60 % of eligible people never claim what they are entitled to. In Europe, non-take-up of minimum-income benefits is commonly above 30 % and reaches 50 % or more for some benefits. The cause is rarely fraud or choice. People simply do not know they qualify, or they find the process too complex.
+
+Every portal, UDCSP included, waits for the citizen to know, to find the right service, and to apply. The European Union has a direction of travel for this. The Single Digital Gateway gave us the once-only principle, where the state never asks a citizen for data it already holds. The next step, called proactive public services or no-stop-shop, is that the citizen should not even have to apply: the administration acts first. Guardian is UDCSP's answer. It turns a faster front door into a state that reaches out to the people it is meant to serve.
+
+This is also the platform's highest-value gap against the evaluation grid. The core platform shows tool-using agents, but limited true autonomy and limited multi-agent coordination. Guardian is precisely that missing behaviour, and it is built almost entirely by re-wiring components that are already live.
+
+Guardian is a thin autonomous layer on top of the AI brain. It is an autonomous orchestrator that starts work from a detected life event rather than a citizen prompt. It is a recommender to a human: it proposes an outreach, and a caseworker approves before anything is sent. It re-wires the Eligibility, Caseworker Helper, Translator and Classifier agents already in the brain, and it is consent-first and reversible, with a lawful basis and a one-click opt-out behind every message. It is not a decision-maker: it never grants or denies a benefit, and the national authority still decides. It is not a new data lake: it reads the same sovereign, in-country data the platform already governs. It is not a marketing engine: it only surfaces genuine entitlements, evidenced rule by rule. And it is not cross-border by default: a Danish signal stays in the Danish zone unless the citizen consents.
+
+## The autonomous loop
+
+Guardian runs as a scheduled and event-triggered loop. Each pass walks one detected citizen through a seven-stage state graph, with a mandatory human gate before anything leaves the platform.
+
+1. Event Scanner. A Guardian-native planner scans the in-country data the platform already holds, synthetic in the demonstrator, for a life event that maps to an entitlement: a birth to child benefit, a cross-border move to residency and tax, turning 67 to pension, an income drop to housing support.
+2. Eligibility in shadow mode. The existing high-risk Eligibility agent runs with no application attached, producing a rule-by-rule verdict and a confidence score. This is the same shadow path already used by the `ai-decision-shadow-mode` workflow.
+3. Draft the outreach. The Caseworker Helper, which already knows the next-best-action catalogue and how to write in the citizen's language, drafts a short, cited message: "our records suggest you may be entitled to X, and here is a pre-filled way to confirm".
+4. Critic and reflection. A new Critic agent reviews the draft against the legal basis, the tone and a false-positive guard, and can send it back for revision. This is the reflection pattern the platform describes but does not yet run.
+5. Human approval. A caseworker sees the signal, the evidence and the draft on one screen, and approves, adjusts or rejects. Nothing is autonomous past this gate, which is what satisfies EU AI Act Article 14 on human oversight.
+6. Outreach. On approval, the message goes out through channels that already exist: the Azure Communication Services short-message and email templates, the mobile push registration, or an outbound voice call.
+7. Anchor. Every autonomous step and the human disposition are hashed into Azure Confidential Ledger, written to the EU AI Act registry and Microsoft Purview lineage, and checked against the citizen's consent and opt-out.
+
+## The architecture: a new engine around a reused brain
+
+Guardian is a small set of new components wrapped around the agents, channels and governance that are already live. The design principle is deliberate: maximise reuse, minimise new surface, and keep every existing control in the path.
+
+![The Guardian architecture. Two new components, the Event Scanner and the Critic agent, drive the existing high-risk Eligibility agent, the Caseworker Helper, the Translator and the Classifier, through a human caseworker gate to the existing outreach channels, with consent, Confidential Ledger, the AI Act registry and Purview lineage in the path throughout.](images/guardian-arch-doc.png){width=70%}
+
+Two design choices carry the whole architecture. Sovereignty is preserved: the Event Scanner runs inside each country zone, so a Danish signal is assessed by the Danish brain and never crosses a border unless the citizen explicitly consents, exactly like the rest of the platform. And the high-risk lane is unchanged: the Eligibility agent still runs in its confidential-compute enclave, still writes to the ledger, and still never decides. Guardian only calls it earlier, before an application exists.
+
+The credibility of Guardian is that it is mostly assembly. It adds two new agents (the Event Scanner and the Critic), one new workflow (a `proactive-outreach` twin of the existing shadow-mode workflow), one dashboard tile and one approval screen. Everything else, the heavy and risky parts of personal-data handling, sovereignty, the high-risk lane, the channels and the ledger, is already built and governed.
+
+![How Guardian appears to the citizen. A proactive, caseworker-approved entitlement is surfaced directly in the portal Anna already uses, pre-checked and one click from confirmation.](images/guardian-portal.png){width=88%}
+
+## Multi-agent coordination
+
+Guardian is where the platform's agentic story becomes real rather than described. In one feature it exercises the coordination patterns the rubric rewards. Autonomy: the Event Scanner starts work from a signal, with no human or citizen prompt, the first non-reactive behaviour on the platform. Orchestration: a planner drives a multi-step pipeline across four existing agents and two new ones, in a fixed order with retries. Reflection: the Critic agent reviews the drafted outreach and can send it back before any human sees it. State graph: the loop is an explicit seven-state graph with a hard human gate, where rejected and approved paths both terminate in an audit anchor. Handoff: control passes from agent to agent, then hands off to a human caseworker, then to the outreach channel. Human-in-the-loop: the graph cannot advance past stage five without a caseworker decision, satisfying EU AI Act Article 14.
+
+## Trust, safety and compliance by design
+
+Reaching out to citizens about their entitlements is exactly the kind of processing regulators watch most closely, so Guardian treats it as a feature to demonstrate rather than a risk to hide. Every control the platform already has stays in the path, and a few are tightened.
+
+Under the General Data Protection Regulation Article 22, Guardian never makes an automated decision with legal effect. It produces a proposal that a human approves, and the citizen action stays voluntary, so the automated-decision prohibition does not bite. Under the EU AI Act, the Eligibility agent is already registered as high-risk, and Guardian keeps the mandatory human oversight of Article 14, the record-keeping of Article 12 and the transparency notice of Article 50: every outreach states that it was prepared with AI and reviewed by a human. Proactive outreach fires only where a lawful basis exists, and every citizen has a standing, one-click opt-out that is checked before a message is sent. The signal, the verdict, the draft, the critic's note and the human disposition are all hashed into Azure Confidential Ledger, so a regulator can reconstruct any outreach months later. The Critic agent exists partly to protect citizens from a wrong or distressing message: a low-confidence or ambiguous signal is dropped, not sent. Proactive profiling gets its own Data Protection Impact Assessment alongside the existing eligibility one. The lesson is simple: proactive government is safe when the autonomy stops at a human, the basis is lawful, the citizen can opt out, and every step is provable.
+
+## Executive impact and status
+
+Guardian changes the headline metric. The platform already tells a strong efficiency story, from 28 days to 4. Guardian adds an equity story that lands with a minister: money and rights delivered to people who would otherwise have been missed. It introduces a new executive indicator, unclaimed entitlements recovered, measured in euros of benefit proactively delivered, with take-up lift against a baseline, sliced per country and per language, under the same sovereign aggregation as every other measure on the operator dashboard.
+
+Guardian is presented here as a vision: the proactive model and this architecture are design and story, not yet code, in line with the honesty labels used across this submission. The reused components (eligibility, the helper, the channels, the ledger) are live or built today; the Event Scanner, the Critic agent and the outreach workflow are blueprints; consent and opt-out enforcement is partial today; and the take-up tile on the executive dashboard is on the roadmap. Because each step is an assembly of an existing component, Guardian can move from vision to a live, safe demonstration on synthetic personas without touching the sovereign, high-risk foundations. The full design lives in `docs/biz/guardian.md`.
+
 # Design patterns
 
 UDCSP is built on a deliberate stack of well-named design patterns, each chosen because it solves a concrete problem.
@@ -215,7 +270,7 @@ The most visible agentic moment is the voice channel. When the citizen asks for 
 
 Beyond voice, UDCSP demonstrates four further coordination patterns. Handoff is the bread and butter: the Topic Router passes the conversation to one of six specialised downstream agents depending on intent. State-graph orchestration is what Logic Apps deliver: the cross-border case is a six-step graph with named states and compensating actions. Reflection is how the eligibility verdict is consumed: the Caseworker Helper surfaces the confidence and missing evidence in natural language, and the caseworker's disposition feeds the next training iteration as ground truth. Shadow and canary is how new models reach production: a challenger gets 5 % of production traffic, an automated job replays anonymised prompts through it, and the alias is flipped only if every guarded metric passes.
 
-The agentic story goes well beyond a chatbot. It is a system of seven specialised experts, two function tools, one orchestrator and five coordination patterns, all under the supervision of one human caseworker.
+The agentic story goes well beyond a chatbot. It is a system of seven specialised experts, two function tools, one orchestrator and five coordination patterns, all under the supervision of one human caseworker. UDCSP Guardian, described earlier, turns that same machinery into genuine proactive autonomy: an Event Scanner and a Critic agent add the one behaviour the core platform still describes rather than runs.
 
 # Demo plan and evidence
 
@@ -405,6 +460,7 @@ The artefacts below are the canonical proof points referenced throughout this do
 | Network | `docs/tech/network.md` · `images/network.png` | Three spokes, federation hub, Private DNS topology |
 | AI | `docs/biz/ai.md` · `foundry/projects/*/agent.yaml` | Seven agents, roles, model aliases, evaluations |
 | AI Act | `governance/ai-act/registry/eligibility-model.yaml` | High-risk dossier per Annex III §5(b) |
+| Agentic vision | `docs/biz/guardian.md` | UDCSP Guardian: proactive autonomy, the seven-stage loop, the coordination patterns |
 | Security | `governance/security/` · `docs/biz/datacompliance.md` | Defence-in-depth controls, breach playbook |
 | GDPR | `governance/gdpr/ropa.md` · `services/logic-apps/gdpr/` | RoPA, DSAR, erasure, portability |
 | Monitoring | `docs/tech/monitoring.md` · `infra/monitoring/workbooks/` | KQL queries, retention, 9 Workbooks |

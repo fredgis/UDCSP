@@ -13,6 +13,20 @@
 % TikZ for title page decoration
 \usepackage{tikz}
 
+% ---------------------------------------------------------------------------
+% Azure Master Architect template palette (from the Prezo template theme)
+%   dk1 #091F2C · dk2 #2A446F · accent Azure #0078D4 · sky #8DC8E8
+%   magenta #C03BC4 · amber #FFB900 · cream #E8E6DF
+% ---------------------------------------------------------------------------
+\definecolor{amaNavy}{HTML}{091F2C}
+\definecolor{amaDeep}{HTML}{2A446F}
+\definecolor{amaAzure}{HTML}{0078D4}
+\definecolor{amaSky}{HTML}{8DC8E8}
+\definecolor{amaMagenta}{HTML}{C03BC4}
+\definecolor{amaAmber}{HTML}{FFB900}
+\definecolor{amaCream}{HTML}{E8E6DF}
+\definecolor{amaSlate}{HTML}{5B6B7B}
+
 % Force figures to stay where placed (no floating)
 \usepackage{float}
 \floatplacement{figure}{H}
@@ -27,19 +41,24 @@
   \begin{titlepage}
     \begin{tikzpicture}[remember picture, overlay]
       % Top colored band
-      \fill[blue!70!black] (current page.north west) rectangle ([yshift=-5cm]current page.north east);
-      % Accent line below top band
-      \fill[blue!40!white] ([yshift=-5cm]current page.north west) rectangle ([yshift=-5.15cm]current page.north east);
-      % Bottom colored band
-      \fill[blue!70!black] (current page.south west) rectangle ([yshift=1.5cm]current page.south east);
+      \fill[amaNavy] (current page.north west) rectangle ([yshift=-5cm]current page.north east);
+      % Accent lines below the top band (Azure + magenta spark)
+      \fill[amaAzure] ([yshift=-5cm]current page.north west) rectangle ([yshift=-5.12cm]current page.north east);
+      \fill[amaMagenta] ([yshift=-5.12cm]current page.north west) rectangle ([yshift=-5.18cm]current page.north east);
+      % Azure Master Architect badge, small, top-right inside the band
+      \node[anchor=north east] at ([xshift=-1.3cm,yshift=-1.15cm]current page.north east)
+        {\includegraphics[height=2.5cm]{images/amat-logo-sm.png}};
+      % Bottom colored band with a thin Azure accent above it
+      \fill[amaNavy] (current page.south west) rectangle ([yshift=1.5cm]current page.south east);
+      \fill[amaAzure] ([yshift=1.5cm]current page.south west) rectangle ([yshift=1.56cm]current page.south east);
     \end{tikzpicture}
     \vspace*{3cm}
     \begin{center}
-      {\fontsize{26}{32}\selectfont\bfseries\color{blue!70!black} \@title \par}
+      {\fontsize{26}{32}\selectfont\bfseries\color{amaDeep} \@title \par}
       \vspace{0.7cm}
-      {\Large\color{gray!60!black} \@docsubtitle \par}
+      {\Large\color{amaSlate} \@docsubtitle \par}
       \vspace{0.7cm}
-      {\large\color{gray!50!black} \@date \quad\textbar\quad \href{https://github.com/fredgis/UDCSP}{\color{blue!60!black}\nolinkurl{github.com/fredgis/UDCSP}} \par}
+      {\large\color{amaSlate} \@date \quad\textbar\quad \href{https://github.com/fredgis/UDCSP}{\color{amaAzure}\nolinkurl{github.com/fredgis/UDCSP}} \par}
       \vspace{0.8cm}
     \end{center}
     \noindent\makebox[\textwidth][c]{%
@@ -56,7 +75,7 @@
   \centering%
   \setlength{\fboxsep}{0pt}%
   \setlength{\fboxrule}{1.2pt}%
-  \fcolorbox{gray!50!black}{white}{\includegraphics[width=#1]{#2}}%
+  \fcolorbox{amaSlate}{white}{\includegraphics[width=#1]{#2}}%
   \caption{#3}%
   \end{figure}%
 }
@@ -85,12 +104,18 @@
 \fancyhead[L]{\small\leftmark}
 \fancyhead[R]{\small\thepage}
 \makeatletter
-\fancyfoot[C]{\small \@title}
+\fancyfoot[C]{\small\color{amaSlate} \@title}
 \makeatother
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.2pt}
+\renewcommand{\headrule}{{\color{amaSky}\hrule width\hsize height\headrulewidth}}
+\renewcommand{\footrule}{{\color{amaSky}\hrule width\hsize height\footrulewidth}}
 
 % Section styling
 \usepackage{titlesec}
-\titleformat{\section}{\Large\bfseries\color{blue!70!black}}{\thesection}{1em}{}
-\titleformat{\subsection}{\large\bfseries\color{blue!50!black}}{\thesubsection}{1em}{}
+\titleformat{\section}{\Large\bfseries\color{amaAzure}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\color{amaDeep}}{\thesubsection}{1em}{}
+
+% Match hyperlink colours to the template palette (overrides the pandoc default).
+% Deferred to \AtBeginDocument so hyperref is guaranteed to be loaded first.
+\AtBeginDocument{\hypersetup{linkcolor=amaAzure, urlcolor=amaAzure, citecolor=amaAzure}}
