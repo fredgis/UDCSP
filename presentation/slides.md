@@ -3,7 +3,7 @@ marp: true
 theme: fabric-editorial
 paginate: true
 header: 'UDCSP · Azure Master Architect Program'
-footer: 'June 2026'
+footer: 'August 2026'
 ---
 
 <!-- _class: lead -->
@@ -21,13 +21,22 @@ It serves 2.1 million citizens in Denmark, Sweden and Norway.
 
 In the next 35 minutes I show the problem, the architecture, the AI and the security. Then I run a live demo. -->
 
-<div class="tag">Azure Master Architect Program · June 2026</div>
+<div class="tag">Azure Master Architect Program · August 2026</div>
 
-# Unified Digital<br>Citizen Services Platform.
+# Unified Digital<br>Citizen Services <span class="grad">Platform.</span>
+
+<div class="hero-line"></div>
 
 ## One front door for 2.1 M Nordic citizens across DK · SE · NO
 
 ### Architecture, AI & Agentic submission
+
+<div class="herostats">
+<div class="s"><b>2.1 M</b><span>citizens · DK · SE · NO</span></div>
+<div class="s"><b>12</b><span>languages</span></div>
+<div class="s"><b>47 → 1</b><span>portals unified</span></div>
+<div class="s"><b>28 → 4 d</b><span>processing time</span></div>
+</div>
 
 ---
 
@@ -1943,7 +1952,7 @@ Thank you. I'm happy to take your questions, and then run the demo. -->
 </p>
 
 <p style="margin-top: 32px; opacity: 0.6; font-size: 0.85em">
-Frederic Gisbert · June 2026 · github.com/fredgis/UDCSP
+Frederic Gisbert · August 2026 · github.com/fredgis/UDCSP
 </p>
 
 ---

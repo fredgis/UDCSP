@@ -31,10 +31,23 @@ h1 { font-size: 2em; font-weight: 700; color: var(--ink); margin: 0 0 18px; }
 h2 { font-size: 1.1em; font-weight: 500; color: var(--muted); margin: 0 0 24px; }
 h3 { font-size: 0.95em; font-weight: 600; color: var(--brand); text-transform: uppercase; letter-spacing: 0.06em; margin: 18px 0 8px; }
 
-section.lead { background: radial-gradient(1200px 600px at 20% 10%, #dbeafe 0%, #fff 60%); padding: 80px 90px; }
+section.lead {
+  background:
+    radial-gradient(900px 650px at 12% -8%, rgba(0,120,212,0.30) 0%, rgba(0,120,212,0) 60%),
+    radial-gradient(720px 520px at 98% 112%, rgba(0,180,166,0.22) 0%, rgba(0,180,166,0) 60%),
+    linear-gradient(158deg, #0e2647 0%, #0a1929 62%);
+  color: #fff; padding: 82px 90px;
+}
 section.lead::before { display: none; }
-section.lead h1 { font-size: 3.2em; line-height: 1.05; letter-spacing: -0.02em; }
-section.lead .tag { display: inline-block; background: var(--ink); color: #fff; padding: 4px 12px; font-size: 0.7em; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 4px; margin-bottom: 18px; }
+section.lead h1 { font-size: 3.4em; line-height: 1.04; letter-spacing: -0.025em; color: #fff; margin: 0 0 6px; }
+section.lead h1 .grad { background: linear-gradient(90deg, #4aa3ff 0%, #00e0cf 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+section.lead h2 { color: rgba(255,255,255,0.74); font-weight: 400; font-size: 1.15em; margin: 0 0 8px; }
+section.lead h3 { color: #7fd8ff; font-weight: 600; font-size: 0.78em; letter-spacing: 0.09em; text-transform: uppercase; margin: 0; }
+section.lead .tag { display: inline-block; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.20); color: #cfe3ff; padding: 6px 15px; font-size: 0.62em; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; border-radius: 999px; margin-bottom: 22px; }
+section.lead .hero-line { height: 3px; width: 118px; border-radius: 3px; background: linear-gradient(90deg, #0078d4, #00b4a6); margin: 18px 0 22px; }
+section.lead .herostats { display: flex; gap: 40px; margin-top: 34px; }
+section.lead .herostats .s b { display: block; font-size: 1.95em; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -0.01em; }
+section.lead .herostats .s span { font-size: 0.7em; color: rgba(255,255,255,0.58); }
 
 section.chapter { background: var(--ink); color: #fff; padding: 80px 90px; }
 section.chapter::before { display: none; }
