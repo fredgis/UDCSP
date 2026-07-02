@@ -33,7 +33,7 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 > **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
 
-The full 72-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+The full 73-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
 
@@ -42,7 +42,7 @@ The full 72-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 </div>
 
 <details>
-<summary><b>🎞️ Browse all 72 slides (carousel)</b></summary>
+<summary><b>🎞️ Browse all 73 slides (carousel)</b></summary>
 
 <div align="center">
 
@@ -118,6 +118,7 @@ The full 72-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <img src="./presentation/deck/slide.070.png" width="32%" />
 <img src="./presentation/deck/slide.071.png" width="32%" />
 <img src="./presentation/deck/slide.072.png" width="32%" />
+<img src="./presentation/deck/slide.073.png" width="32%" />
 
 
 </div>
@@ -307,6 +308,14 @@ graph TB
 The next era of the platform, told in full in [`docs/biz/guardian.md`](./docs/biz/guardian.md). Today UDCSP is **reactive**: a citizen must know they qualify, find the portal, and apply. Yet studies show **20 % to 60 % of eligible people never claim** their social benefits, mostly because they do not know they are entitled.
 
 Guardian flips the relationship, from the EU *once-only* principle to *no-stop-shop*. An autonomous agent detects a life event, runs the existing Eligibility agent in shadow (no application), has the Caseworker Helper draft an outreach, a new Critic agent reviews it, a **human caseworker approves**, and only then does the state reach out through channels that already exist (SMS, email, push, voice), in the citizen's language, consent-gated and ledger-anchored. It is the first genuinely autonomous behaviour on the platform, built almost entirely by re-wiring bricks that are already live.
+
+<div align="center">
+
+<img src="./images/guardian-portal.png" width="88%" alt="Envision: UDCSP Guardian in the citizen portal" />
+
+<sub><em>Envision · Guardian surfaces a proactive, caseworker-approved entitlement to Anna, right in the portal she already uses.</em></sub>
+
+</div>
 
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 24, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%

@@ -1759,6 +1759,24 @@ Today UDCSP is reactive: the citizen must know they qualify, find the portal, an
 
 <!-- _class: tight -->
 
+# How Guardian appears to Anna.
+
+<!-- ⏱ 0:40 · And here is what that looks like for the citizen.
+
+This is Anna's portal, the one she already uses every day. Guardian surfaces a card: based on a recent change in her household, she may qualify for child and family benefit, about two thousand euros a year.
+
+It was pre-checked, and a caseworker approved it before she ever saw it. She just reviews and confirms. Nothing to search for, nothing to fill from scratch.
+
+That is the whole idea, made concrete: the state reaching out, in the place she already is. -->
+
+![w:940](images/guardian-portal.png)
+
+> A proactive, caseworker-approved entitlement, surfaced right in the portal Anna already uses.
+
+---
+
+<!-- _class: tight -->
+
 # How Guardian works: one autonomous loop.
 
 <!-- ⏱ 0:55 · It runs as a loop, on a schedule and on events, and it walks one citizen through seven stages.
