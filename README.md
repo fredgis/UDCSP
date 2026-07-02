@@ -223,6 +223,8 @@ Green = citizens / channels, purple = identity & AI, orange = backend & process,
 
 ## 🧠 AI Brain
 
+<img src="./images/aibrain-avatar.svg" align="right" width="118" alt="AI Brain" />
+
 A simplified view of the AI architecture detailed in [`docs/biz/ai.md`](./docs/biz/ai.md): **one** Foundry brain, **one** APIM gateway, **one** Content Safety pipeline, **seven** channels, **seven** agents — and an explicit high-risk lane (Eligibility) running in a Trusted Execution Environment with tamper-evident logging.
 
 ```mermaid

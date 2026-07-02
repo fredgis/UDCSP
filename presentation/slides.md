@@ -319,6 +319,8 @@ On every *Apply* page, the citizen sees the AI result (confidence, evidence, mis
 <!-- _class: chapter -->
 <div class="num">01</div>
 
+![bg right:32%](images/arch-avatar.png)
+
 # Architecture.
 
 ## How we built it: three sovereign zones, one private path from the portal to the case
@@ -601,6 +603,8 @@ So the platform stays clean inside, while the mess stays at the edge. And by the
 <!-- _class: chapter -->
 <div class="num">02</div>
 
+![bg right:32%](images/aibrain-avatar.png)
+
 # The AI Brain.
 
 ## One brain on Azure AI Foundry · one orchestrator · six specialists · safe by design
@@ -772,6 +776,8 @@ That leads straight into security and compliance. -->
 
 <!-- _class: chapter -->
 <div class="num">03</div>
+
+![bg right:32%](images/security-avatar.png)
 
 # Security &<br>compliance.
 
@@ -973,6 +979,8 @@ The AI Act minimum is six months. We keep two years. From the request to a full 
 <!-- _class: chapter -->
 <div class="num">04</div>
 
+![bg right:32%](images/monitoring-avatar.png)
+
 # Monitoring &<br>FinOps.
 
 ## One anonymized central view · end-to-end tracing · cost per token
@@ -1074,6 +1082,8 @@ That keeps cost under control day to day. Now let me show you the bigger picture
 
 <!-- _class: chapter -->
 <div class="num">05</div>
+
+![bg right:32%](images/cost-avatar.png)
 
 # Cost &<br>economics.
 
@@ -1369,6 +1379,8 @@ Put together, the national bill drops from about sixty-three million a year to a
 <!-- _class: chapter -->
 <div class="num">06</div>
 
+![bg right:32%](images/performance-avatar.png)
+
 # Performance &<br>reliability.
 
 ## Fast for the citizen, always available: measured targets, automatic failover, chaos drills
@@ -1411,6 +1423,8 @@ There is one more thing worth showing, about how the platform was built. -->
 
 <!-- _class: chapter -->
 <div class="num">07</div>
+
+![bg right:32%](images/build-avatar.png)
 
 # How we built it.
 
@@ -1539,6 +1553,8 @@ And the very same script runs in our pipeline on every change, so a deploy is al
 <!-- _class: chapter -->
 <div class="num">08</div>
 
+![bg right:32%](images/real-avatar.png)
+
 # Real scenario.
 
 ## Life imitates the demo: a story we did not plan
@@ -1607,6 +1623,8 @@ We designed it months before I ever saw the French version. And that is genuinel
 
 <!-- _class: chapter -->
 <div class="num">09</div>
+
+![bg right:32%](images/roadmap-avatar.png)
 
 # Status &<br>roadmap.
 
@@ -1835,6 +1853,8 @@ And it changes the headline. We already went from twenty-eight days to four. Gua
 
 <!-- _class: chapter -->
 <div class="num">11</div>
+
+![bg right:32%](images/demo-avatar.png)
 
 # Demo.
 

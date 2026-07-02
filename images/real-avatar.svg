@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d2136"/><stop offset="1" stop-color="#0a1929"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0078d4"/><stop offset="1" stop-color="#00b4a6"/></linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00b4a6" stop-opacity="0.30"/><stop offset="1" stop-color="#00b4a6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#00e0cf" stop-opacity="0.9"/><stop offset="1" stop-color="#00e0cf" stop-opacity="0"/></radialGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eaf2fb"/><stop offset="1" stop-color="#c3d3e6"/></linearGradient>
+  </defs>
+  <rect x="8" y="8" width="496" height="496" rx="104" fill="url(#tile)"/>
+  <rect x="8.5" y="8.5" width="495" height="495" rx="103.5" fill="none" stroke="#1e3a56" stroke-width="1"/>
+  <circle cx="256" cy="256" r="170" fill="url(#halo)"/>
+  <clipPath id="plateClip"><rect x="150" y="204" width="212" height="104" rx="16"/></clipPath><rect x="150" y="204" width="212" height="104" rx="16" fill="#eef3f9" stroke="#9db4cc" stroke-width="3"/><g clip-path="url(#plateClip)"><rect x="150" y="204" width="46" height="104" fill="#0078d4"/><circle cx="186.0" cy="238.0" r="1.8" fill="#ffd23f"/><circle cx="182.2" cy="247.2" r="1.8" fill="#ffd23f"/><circle cx="173.0" cy="251.0" r="1.8" fill="#ffd23f"/><circle cx="163.8" cy="247.2" r="1.8" fill="#ffd23f"/><circle cx="160.0" cy="238.0" r="1.8" fill="#ffd23f"/><circle cx="163.8" cy="228.8" r="1.8" fill="#ffd23f"/><circle cx="173.0" cy="225.0" r="1.8" fill="#ffd23f"/><circle cx="182.2" cy="228.8" r="1.8" fill="#ffd23f"/><text x="173" y="294" text-anchor="middle" font-family="Arial" font-weight="800" font-size="26" fill="#ffffff">F</text></g><text x="281" y="274" text-anchor="middle" font-family="Arial" font-weight="800" font-size="39" letter-spacing="2" fill="#0a1929">UDCSP</text>
+</svg>
