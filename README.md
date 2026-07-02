@@ -33,7 +33,7 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 > **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
 
-The full 67-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+The full 72-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
 
@@ -42,7 +42,7 @@ The full 67-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 </div>
 
 <details>
-<summary><b>🎞️ Browse all 67 slides (carousel)</b></summary>
+<summary><b>🎞️ Browse all 72 slides (carousel)</b></summary>
 
 <div align="center">
 
@@ -113,6 +113,11 @@ The full 67-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <img src="./presentation/deck/slide.065.png" width="32%" />
 <img src="./presentation/deck/slide.066.png" width="32%" />
 <img src="./presentation/deck/slide.067.png" width="32%" />
+<img src="./presentation/deck/slide.068.png" width="32%" />
+<img src="./presentation/deck/slide.069.png" width="32%" />
+<img src="./presentation/deck/slide.070.png" width="32%" />
+<img src="./presentation/deck/slide.071.png" width="32%" />
+<img src="./presentation/deck/slide.072.png" width="32%" />
 
 
 </div>
@@ -290,6 +295,75 @@ graph TB
 > 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) hits the same APIM endpoint `/agents/topic-router`. The topic-router is the only orchestrator and dispatches to six worker agents; Content Safety runs on every input and every output. The Eligibility agent is the only EU AI Act high-risk component — it runs in a Confidential Compute SEV-SNP TEE and every decision is anchored to Azure Confidential Ledger. RAG agents cite their sources, and the full conversation is traced in App Insights and indexed in Purview.
 >
 > 👉 Full agent catalogue, RAG strategy, safety and eval pipelines, AI Act registry and end-to-end flow: [`docs/biz/ai.md`](./docs/biz/ai.md).
+
+---
+
+## 🛡️ UDCSP Guardian — proactive, autonomous AI
+
+<img src="./images/guardian-avatar.svg" align="right" width="118" alt="UDCSP Guardian" />
+
+The next era of the platform, told in full in [`docs/biz/guardian.md`](./docs/biz/guardian.md). Today UDCSP is **reactive**: a citizen must know they qualify, find the portal, and apply. Yet studies show **20 % to 60 % of eligible people never claim** their social benefits, mostly because they do not know they are entitled.
+
+Guardian flips the relationship, from the EU *once-only* principle to *no-stop-shop*. An autonomous agent detects a life event, runs the existing Eligibility agent in shadow (no application), has the Caseworker Helper draft an outreach, a new Critic agent reviews it, a **human caseworker approves**, and only then does the state reach out through channels that already exist (SMS, email, push, voice), in the citizen's language, consent-gated and ledger-anchored. It is the first genuinely autonomous behaviour on the platform, built almost entirely by re-wiring bricks that are already live.
+
+```mermaid
+%%{ init: { 'flowchart': { 'nodeSpacing': 24, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
+graph LR
+    subgraph SIG["📡 Life-event signals · in-country"]
+        Birth["👶 Birth"]
+        Move["✈️ Move"]
+        Age["🎂 Turns 67"]
+        Job["📉 Income drop"]
+    end
+
+    subgraph ENG["🛡️ Guardian engine — NEW"]
+        Scan["📡 Event Scanner<br/>autonomous planner"]
+        Critic["🔎 Critic<br/>reflection · false-positive guard"]
+    end
+
+    subgraph REUSE["🧠 Existing brain — reused"]
+        Eli["⚠️ Eligibility · shadow<br/><b>HIGH-RISK · TEE</b>"]
+        Help["✍️ Caseworker Helper<br/>drafts outreach in locale"]
+    end
+
+    Human["🧑‍💼 Human approval<br/><b>approve · adjust · reject</b>"]
+
+    subgraph OUT["📨 Outreach — existing"]
+        SMS["📲 SMS"]
+        Email["📧 Email"]
+        Push["📱 Push"]
+        Voice["📞 Voice"]
+    end
+
+    Citizen["👤 'You may be<br/>entitled to X'"]
+    Gov["🔒 Consent · Confidential Ledger · AI Act registry"]
+
+    SIG --> Scan --> Eli --> Help --> Critic --> Human
+    Human -- approved --> OUT --> Citizen
+    Scan -. every step .-> Gov
+    Human -- rejected --> Gov
+
+    classDef sig fill:#1565c0,stroke:#0d47a1,color:#fff
+    classDef new fill:#00897b,stroke:#00695c,color:#fff
+    classDef hi fill:#d73a49,stroke:#b31d28,color:#fff
+    classDef agent fill:#e36209,stroke:#c24e00,color:#fff
+    classDef human fill:#8957e5,stroke:#6e40c9,color:#fff
+    classDef chan fill:#2ea44f,stroke:#238636,color:#fff
+    classDef gov fill:#6e40c9,stroke:#553098,color:#fff
+
+    class Birth,Move,Age,Job sig
+    class Scan,Critic new
+    class Eli hi
+    class Help agent
+    class Human human
+    class SMS,Email,Push,Voice chan
+    class Citizen sig
+    class Gov gov
+```
+
+> 📖 **Reading the diagram.** A life event in the sovereign zone triggers the autonomous Event Scanner. It calls the existing high-risk Eligibility agent in shadow, the Caseworker Helper drafts a cited outreach in the citizen's language, and a new Critic agent reviews it. Nothing advances past the human caseworker, who approves, adjusts or rejects (EU AI Act Art. 14). Approved outreach goes out on the channels that already exist; every autonomous step is consent-gated and anchored in Azure Confidential Ledger. Two new agents, one new workflow, one dashboard tile: everything else is a re-wire.
+>
+> 👉 The full story, architecture, multi-agent coordination patterns, governance and the executive KPI (*unclaimed entitlements recovered*): [`docs/biz/guardian.md`](./docs/biz/guardian.md).
 
 ---
 
