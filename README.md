@@ -144,6 +144,11 @@ Three Nordic governments collectively serve **2.1 million citizens** through **4
 </p>
 
 <p align="center">
+  <img src="./images/guardian-portal.png" alt="Envision — UDCSP Guardian proactively reaching a citizen in the portal" width="900" />
+  <br/><sub><em>Envision · how UDCSP Guardian would appear in the portal, proactive and caseworker-approved</em></sub>
+</p>
+
+<p align="center">
   <img src="./images/UDCSPv3.png" alt="UDCSP architecture overview — sovereign 3-zone topology, mandatory 9 Azure services + multi-agent Foundry layer" width="900" />
 </p>
 
@@ -308,14 +313,6 @@ graph TB
 The next era of the platform, told in full in [`docs/biz/guardian.md`](./docs/biz/guardian.md). Today UDCSP is **reactive**: a citizen must know they qualify, find the portal, and apply. Yet studies show **20 % to 60 % of eligible people never claim** their social benefits, mostly because they do not know they are entitled.
 
 Guardian flips the relationship, from the EU *once-only* principle to *no-stop-shop*. An autonomous agent detects a life event, runs the existing Eligibility agent in shadow (no application), has the Caseworker Helper draft an outreach, a new Critic agent reviews it, a **human caseworker approves**, and only then does the state reach out through channels that already exist (SMS, email, push, voice), in the citizen's language, consent-gated and ledger-anchored. It is the first genuinely autonomous behaviour on the platform, built almost entirely by re-wiring bricks that are already live.
-
-<div align="center">
-
-<img src="./images/guardian-portal.png" width="88%" alt="Envision: UDCSP Guardian in the citizen portal" />
-
-<sub><em>Envision · Guardian surfaces a proactive, caseworker-approved entitlement to Anna, right in the portal she already uses.</em></sub>
-
-</div>
 
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 24, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%

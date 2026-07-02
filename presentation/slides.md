@@ -786,6 +786,182 @@ That leads straight into security and compliance. -->
 <!-- _class: chapter -->
 <div class="num">03</div>
 
+![bg right:32%](images/guardian-avatar.png)
+
+# UDCSP Guardian.
+
+## The next era: proactive, autonomous, human-supervised AI
+
+<!-- ⏱ 0:18 · One last idea, and it is the one I am most excited about.
+
+Everything so far makes the platform faster when a citizen asks.
+
+Guardian is about the citizens who never ask. -->
+
+---
+
+<!-- _class: tight -->
+
+# From reactive to proactive.
+
+<!-- ⏱ 1:05 · Here is the uncomfortable truth behind every benefits system.
+
+Studies across the OECD show that between twenty and sixty percent of eligible people never claim what they are entitled to. It is not fraud, and it is not choice. They simply do not know they qualify, or the process is too hard.
+
+Today our platform, like every portal, waits for the citizen to know, to find us, and to apply.
+
+Guardian flips that. It is the step after the European once-only principle, the one people call no-stop-shop: the citizen should not even have to apply. The state notices, and reaches out first.
+
+Same data, same agents, same rules. The only thing that changes is who starts the conversation. -->
+
+<div class="split">
+<div>
+
+<div class="stat"><div class="big">20 to 60%</div><div class="label">of eligible citizens never claim the benefits they are entitled to (OECD). Not fraud, not choice: they do not know.</div></div>
+
+Today UDCSP is reactive: the citizen must know they qualify, find the portal, and apply. Guardian is the step after the EU once-only principle: no-stop-shop.
+
+</div>
+<div>
+
+### What changes
+
+- The state detects the life event, not the citizen
+- It reaches out first, in the citizen's language
+- A human caseworker approves every message before it is sent
+- Every step is consent-gated and ledger-anchored
+
+</div>
+</div>
+
+> Guardian turns a faster front door into a state that reaches out to the people it is meant to serve.
+
+---
+
+<!-- _class: tight -->
+
+# How Guardian appears to Anna.
+
+<!-- ⏱ 0:40 · And here is what that looks like for the citizen.
+
+This is Anna's portal, the one she already uses every day. Guardian surfaces a card: based on a recent change in her household, she may qualify for child and family benefit, about two thousand euros a year.
+
+It was pre-checked, and a caseworker approved it before she ever saw it. She just reviews and confirms. Nothing to search for, nothing to fill from scratch.
+
+That is the whole idea, made concrete: the state reaching out, in the place she already is. -->
+
+![w:940](images/guardian-portal.png)
+
+> A proactive, caseworker-approved entitlement, surfaced right in the portal Anna already uses.
+
+---
+
+<!-- _class: tight -->
+
+# How Guardian works: one autonomous loop.
+
+<!-- ⏱ 0:55 · It runs as a loop, on a schedule and on events, and it walks one citizen through seven stages.
+
+It scans the in-country data for a life event, a birth, a move, a job loss, someone turning sixty-seven.
+
+It runs the eligibility agent we already have, but in shadow, with no application attached.
+
+The caseworker helper drafts a short message in the citizen's language. A new critic agent checks the legal basis and the tone, and can send it back.
+
+Then the hard gate: a human caseworker approves, adjusts, or rejects. Nothing is autonomous past that point.
+
+Only then does the message go out, on the channels we already have, and every step is written to the ledger. -->
+
+<div class="steps">
+<div class="step"><div class="step-content"><strong>Event Scanner detects a life event</strong><span>An autonomous planner scans in-country data: a birth, a move, age 67, an income drop.</span></div></div>
+<div class="step"><div class="step-content"><strong>Eligibility runs in shadow</strong><span>The existing high-risk agent assesses silently, rule by rule, with no application attached.</span></div></div>
+<div class="step"><div class="step-content"><strong>Caseworker Helper drafts the outreach</strong><span>A short, cited message in the citizen's language, from the next-best-action catalogue.</span></div></div>
+<div class="step"><div class="step-content"><strong>Critic agent reviews it <span class="pill purple">reflection</span></strong><span>A new agent checks legal basis, tone and false positives, and can send it back.</span></div></div>
+<div class="step"><div class="step-content"><strong>A human approves, adjusts or rejects <span class="pill green">AI Act Art. 14</span></strong><span>The loop cannot advance without a caseworker. Nothing autonomous past this gate.</span></div></div>
+<div class="step"><div class="step-content"><strong>Outreach goes out, every step anchored</strong><span>SMS, email, push or voice, consent-gated, hashed into Confidential Ledger.</span></div></div>
+</div>
+
+---
+
+<!-- _class: tight -->
+
+# The architecture: new engine, reused brain.
+
+<!-- ⏱ 0:50 · Here is the whole thing on one picture, and the point is how little is new.
+
+In teal are the only two new pieces: the event scanner that starts the work on its own, and the critic that reviews the draft.
+
+Everything else is what you have already seen. The high-risk eligibility agent in its sealed enclave, the caseworker helper, the translator. The human gate in Dynamics. The outreach channels we already built for SMS, email, push and voice. And the same governance: consent, the tamper-proof ledger, the AI Act registry.
+
+Two new agents, one new workflow, one dashboard tile. Everything else is a re-wire. That is why this is credible, not science fiction. -->
+
+![w:1140](images/guardian-arch.png)
+
+<div class="split">
+<div>
+
+### Mostly assembly
+
+- <span class="pill green">🟢 reused</span> Eligibility (shadow), Caseworker Helper, Translator, the outreach channels, the ledger and registry
+- <span class="pill purple">🟣 new</span> Event Scanner, Critic agent, one outreach workflow, one KPI tile
+
+</div>
+<div>
+
+### Sovereign and safe
+
+- A Danish signal is assessed by the Danish brain, no border crossing without consent
+- The high-risk lane is unchanged: sealed enclave, ledger-anchored, never decides
+
+</div>
+</div>
+
+> Two new agents wrapped around a platform that is already live, private and governed.
+
+---
+
+<!-- _class: tight -->
+
+# Responsible autonomy, and the number that matters.
+
+<!-- ⏱ 0:50 · I want to be clear on the risk, because reaching out to citizens is exactly what regulators watch.
+
+Guardian never decides. It proposes, a human approves, and the citizen action stays voluntary, so the automated-decision rules are respected. There is a lawful basis, a one-click opt-out, and a full record in the ledger. The critic exists partly to protect citizens from a wrong or distressing message.
+
+Done this way, proactive government is not a risk to hide. It is a demonstration of responsible autonomy.
+
+And it changes the headline. We already went from twenty-eight days to four. Guardian adds a second number a minister cares about: the euros of entitlement we deliver to people who would have been missed. That is the new tile on the executive dashboard. -->
+
+<div class="split">
+<div>
+
+### Responsible by design
+
+- <strong>GDPR Art. 22</strong> · never an automated decision with legal effect; a human approves
+- <strong>EU AI Act Art. 14</strong> · mandatory human oversight kept in the loop
+- <strong>Consent</strong> · lawful basis required, one-click opt-out, checked before sending
+- <strong>Ledger</strong> · signal, verdict, draft and disposition all anchored
+
+</div>
+<div>
+
+<div class="stat"><div class="big">€ recovered</div><div class="label">the new executive KPI: unclaimed entitlements proactively delivered, by country and language</div></div>
+
+### From efficiency to equity
+
+- Reactive story: 28 days to 4
+- Guardian story: money and rights reaching people who never knew
+
+</div>
+</div>
+
+> Proactive government is safe when autonomy stops at a human, the basis is lawful, the citizen can opt out, and every step is provable.
+
+---
+
+<!-- _class: chapter -->
+<div class="num">04</div>
+
 ![bg right:32%](images/security-avatar.png)
 
 # Security &<br>compliance.
@@ -986,7 +1162,7 @@ The AI Act minimum is six months. We keep two years. From the request to a full 
 ---
 
 <!-- _class: chapter -->
-<div class="num">04</div>
+<div class="num">05</div>
 
 ![bg right:32%](images/monitoring-avatar.png)
 
@@ -1090,7 +1266,7 @@ That keeps cost under control day to day. Now let me show you the bigger picture
 ---
 
 <!-- _class: chapter -->
-<div class="num">05</div>
+<div class="num">06</div>
 
 ![bg right:32%](images/cost-avatar.png)
 
@@ -1386,7 +1562,7 @@ Put together, the national bill drops from about sixty-three million a year to a
 ---
 
 <!-- _class: chapter -->
-<div class="num">06</div>
+<div class="num">07</div>
 
 ![bg right:32%](images/performance-avatar.png)
 
@@ -1431,7 +1607,7 @@ There is one more thing worth showing, about how the platform was built. -->
 ---
 
 <!-- _class: chapter -->
-<div class="num">07</div>
+<div class="num">08</div>
 
 ![bg right:32%](images/build-avatar.png)
 
@@ -1560,7 +1736,7 @@ And the very same script runs in our pipeline on every change, so a deploy is al
 ---
 
 <!-- _class: chapter -->
-<div class="num">08</div>
+<div class="num">09</div>
 
 ![bg right:32%](images/real-avatar.png)
 
@@ -1631,7 +1807,7 @@ We designed it months before I ever saw the French version. And that is genuinel
 ---
 
 <!-- _class: chapter -->
-<div class="num">09</div>
+<div class="num">10</div>
 
 ![bg right:32%](images/roadmap-avatar.png)
 
@@ -1699,182 +1875,6 @@ Each gate ships on its own. The platform is useful after every one. -->
 </div>
 
 > Today → Gate 1 → Gate 2 → Gate 3 → Gate 4 → production. Each gate is independently shippable: every blueprint brick has an owner, a window, and a demo it flips to live.
-
----
-
-<!-- _class: chapter -->
-<div class="num">10</div>
-
-![bg right:32%](images/guardian-avatar.png)
-
-# UDCSP Guardian.
-
-## The next era: proactive, autonomous, human-supervised AI
-
-<!-- ⏱ 0:18 · One last idea, and it is the one I am most excited about.
-
-Everything so far makes the platform faster when a citizen asks.
-
-Guardian is about the citizens who never ask. -->
-
----
-
-<!-- _class: tight -->
-
-# From reactive to proactive.
-
-<!-- ⏱ 1:05 · Here is the uncomfortable truth behind every benefits system.
-
-Studies across the OECD show that between twenty and sixty percent of eligible people never claim what they are entitled to. It is not fraud, and it is not choice. They simply do not know they qualify, or the process is too hard.
-
-Today our platform, like every portal, waits for the citizen to know, to find us, and to apply.
-
-Guardian flips that. It is the step after the European once-only principle, the one people call no-stop-shop: the citizen should not even have to apply. The state notices, and reaches out first.
-
-Same data, same agents, same rules. The only thing that changes is who starts the conversation. -->
-
-<div class="split">
-<div>
-
-<div class="stat"><div class="big">20 to 60%</div><div class="label">of eligible citizens never claim the benefits they are entitled to (OECD). Not fraud, not choice: they do not know.</div></div>
-
-Today UDCSP is reactive: the citizen must know they qualify, find the portal, and apply. Guardian is the step after the EU once-only principle: no-stop-shop.
-
-</div>
-<div>
-
-### What changes
-
-- The state detects the life event, not the citizen
-- It reaches out first, in the citizen's language
-- A human caseworker approves every message before it is sent
-- Every step is consent-gated and ledger-anchored
-
-</div>
-</div>
-
-> Guardian turns a faster front door into a state that reaches out to the people it is meant to serve.
-
----
-
-<!-- _class: tight -->
-
-# How Guardian appears to Anna.
-
-<!-- ⏱ 0:40 · And here is what that looks like for the citizen.
-
-This is Anna's portal, the one she already uses every day. Guardian surfaces a card: based on a recent change in her household, she may qualify for child and family benefit, about two thousand euros a year.
-
-It was pre-checked, and a caseworker approved it before she ever saw it. She just reviews and confirms. Nothing to search for, nothing to fill from scratch.
-
-That is the whole idea, made concrete: the state reaching out, in the place she already is. -->
-
-![w:940](images/guardian-portal.png)
-
-> A proactive, caseworker-approved entitlement, surfaced right in the portal Anna already uses.
-
----
-
-<!-- _class: tight -->
-
-# How Guardian works: one autonomous loop.
-
-<!-- ⏱ 0:55 · It runs as a loop, on a schedule and on events, and it walks one citizen through seven stages.
-
-It scans the in-country data for a life event, a birth, a move, a job loss, someone turning sixty-seven.
-
-It runs the eligibility agent we already have, but in shadow, with no application attached.
-
-The caseworker helper drafts a short message in the citizen's language. A new critic agent checks the legal basis and the tone, and can send it back.
-
-Then the hard gate: a human caseworker approves, adjusts, or rejects. Nothing is autonomous past that point.
-
-Only then does the message go out, on the channels we already have, and every step is written to the ledger. -->
-
-<div class="steps">
-<div class="step"><div class="step-content"><strong>Event Scanner detects a life event</strong><span>An autonomous planner scans in-country data: a birth, a move, age 67, an income drop.</span></div></div>
-<div class="step"><div class="step-content"><strong>Eligibility runs in shadow</strong><span>The existing high-risk agent assesses silently, rule by rule, with no application attached.</span></div></div>
-<div class="step"><div class="step-content"><strong>Caseworker Helper drafts the outreach</strong><span>A short, cited message in the citizen's language, from the next-best-action catalogue.</span></div></div>
-<div class="step"><div class="step-content"><strong>Critic agent reviews it <span class="pill purple">reflection</span></strong><span>A new agent checks legal basis, tone and false positives, and can send it back.</span></div></div>
-<div class="step"><div class="step-content"><strong>A human approves, adjusts or rejects <span class="pill green">AI Act Art. 14</span></strong><span>The loop cannot advance without a caseworker. Nothing autonomous past this gate.</span></div></div>
-<div class="step"><div class="step-content"><strong>Outreach goes out, every step anchored</strong><span>SMS, email, push or voice, consent-gated, hashed into Confidential Ledger.</span></div></div>
-</div>
-
----
-
-<!-- _class: tight -->
-
-# The architecture: new engine, reused brain.
-
-<!-- ⏱ 0:50 · Here is the whole thing on one picture, and the point is how little is new.
-
-In teal are the only two new pieces: the event scanner that starts the work on its own, and the critic that reviews the draft.
-
-Everything else is what you have already seen. The high-risk eligibility agent in its sealed enclave, the caseworker helper, the translator. The human gate in Dynamics. The outreach channels we already built for SMS, email, push and voice. And the same governance: consent, the tamper-proof ledger, the AI Act registry.
-
-Two new agents, one new workflow, one dashboard tile. Everything else is a re-wire. That is why this is credible, not science fiction. -->
-
-![w:1140](images/guardian-arch.png)
-
-<div class="split">
-<div>
-
-### Mostly assembly
-
-- <span class="pill green">🟢 reused</span> Eligibility (shadow), Caseworker Helper, Translator, the outreach channels, the ledger and registry
-- <span class="pill purple">🟣 new</span> Event Scanner, Critic agent, one outreach workflow, one KPI tile
-
-</div>
-<div>
-
-### Sovereign and safe
-
-- A Danish signal is assessed by the Danish brain, no border crossing without consent
-- The high-risk lane is unchanged: sealed enclave, ledger-anchored, never decides
-
-</div>
-</div>
-
-> Two new agents wrapped around a platform that is already live, private and governed.
-
----
-
-<!-- _class: tight -->
-
-# Responsible autonomy, and the number that matters.
-
-<!-- ⏱ 0:50 · I want to be clear on the risk, because reaching out to citizens is exactly what regulators watch.
-
-Guardian never decides. It proposes, a human approves, and the citizen action stays voluntary, so the automated-decision rules are respected. There is a lawful basis, a one-click opt-out, and a full record in the ledger. The critic exists partly to protect citizens from a wrong or distressing message.
-
-Done this way, proactive government is not a risk to hide. It is a demonstration of responsible autonomy.
-
-And it changes the headline. We already went from twenty-eight days to four. Guardian adds a second number a minister cares about: the euros of entitlement we deliver to people who would have been missed. That is the new tile on the executive dashboard. -->
-
-<div class="split">
-<div>
-
-### Responsible by design
-
-- <strong>GDPR Art. 22</strong> · never an automated decision with legal effect; a human approves
-- <strong>EU AI Act Art. 14</strong> · mandatory human oversight kept in the loop
-- <strong>Consent</strong> · lawful basis required, one-click opt-out, checked before sending
-- <strong>Ledger</strong> · signal, verdict, draft and disposition all anchored
-
-</div>
-<div>
-
-<div class="stat"><div class="big">€ recovered</div><div class="label">the new executive KPI: unclaimed entitlements proactively delivered, by country and language</div></div>
-
-### From efficiency to equity
-
-- Reactive story: 28 days to 4
-- Guardian story: money and rights reaching people who never knew
-
-</div>
-</div>
-
-> Proactive government is safe when autonomy stops at a human, the basis is lawful, the citizen can opt out, and every step is provable.
 
 ---
 
