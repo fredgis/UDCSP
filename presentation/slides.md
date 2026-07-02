@@ -21,6 +21,9 @@ It serves 2.1 million citizens in Denmark, Sweden and Norway.
 
 In the next 35 minutes I show the problem, the architecture, the AI and the security. Then I run a live demo. -->
 
+<img class="mslogo" src="images/ms-logo.png" alt="Microsoft" />
+<img class="amalogo" src="images/amat-logo-sm.png" alt="Azure Master Architect Program" />
+
 <div class="tag">Azure Master Architect Program · August 2026</div>
 
 # Unified Digital<br>Citizen Services <span class="grad">Platform.</span>
@@ -1960,6 +1963,8 @@ It was built by a swarm of AI agents in under an hour, and quietly confirmed by 
 And the headline is the number that matters most: a cross-border case went from 28 days to four.
 
 Thank you. I'm happy to take your questions, and then run the demo. -->
+
+<img class="mslogo" src="images/ms-logo.png" alt="Microsoft" />
 
 ## Closing
 
