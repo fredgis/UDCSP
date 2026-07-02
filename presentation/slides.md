@@ -1678,74 +1678,6 @@ Each gate ships on its own. The platform is useful after every one. -->
 <!-- _class: chapter -->
 <div class="num">10</div>
 
-# Demo.
-
-## 10 minutes, live on a real tenant
-
-<!-- ⏱ 0:12 · So let's move to the demo, about ten minutes, live, on a real Azure tenant.
-
-First the plan, then the live system. -->
-
----
-
-<!-- _class: tight -->
-
-# The run of show.
-
-<!-- ⏱ 0:50 · The demo runs five short scenes.
-
-First, a cross-border move from Denmark to Sweden: sign in, upload a passport and a lease, watch the AI read and translate them and propose a result, consent, and the case crosses the border.
-
-Then the one I most want you to see: a blind citizen calls a real phone number, and the AI answers in Norwegian and runs the call itself.
-
-After that, the whole portal in Polish, with a screen reader. Then a payslip photographed on an iPhone. And finally, the entire platform stood up from nothing with a single command.
-
-Let me switch to the live system. -->
-
-![bg right:30% w:260](images/Demo2.png)
-
-<div class="steps">
-<div class="step"><div class="step-content"><strong>Anna moves DK → SE <span class="pill green">🟢 Live</span></strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
-<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
-<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill green">🟢 Live</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean: accessibility is a citizen right.</span></div></div>
-<div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone <span class="pill green">🟢 Live</span></strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
-<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
-</div>
-
-> Hero moment: a real phone call: dial `+33 801 150 799`, hear the model answer, and watch the live dashboard update within two minutes.
-
----
-
-# One command, from clean tenant to running platform.
-
-<!-- ⏱ 0:45 · That single command isn't a demo trick. It is how we really ship.
-
-You clone the repository, run one script, and it builds 25 stages in order: from network, identity, security, and data, through the gateway, the AI, the case system, the front end, and the voice line, all the way to governance.
-
-At the end it runs its own health checks, and the same script runs automatically on every code change.
-
-So this isn't a fragile demo machine. It is a platform we can rebuild from scratch, on demand. Let me bring it together. -->
-
-```powershell
-git clone https://github.com/fredgis/UDCSP
-cd UDCSP
-pwsh ./scripts/install/Install-UDCSP.ps1 `
-     -Environment dev -Zone all `
-     -SeedSyntheticData -Verbose
-```
-
-- 25 phases in order: landing zone → identity → security → data → monitoring → gateway → Foundry → Dataverse → frontend → voice → governance → quality
-- Sample data is seeded in parallel with the frontend
-- A smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
-- An HTML report is saved in `scripts/install/reports/<timestamp>/`
-
-> From `git clone` to a working federated platform with real sample data: one command. The same script runs in our pipeline on every pull request.
-
----
-
-<!-- _class: chapter -->
-<div class="num">11</div>
-
 ![bg right:32%](images/guardian-avatar.png)
 
 # UDCSP Guardian.
@@ -1898,6 +1830,74 @@ And it changes the headline. We already went from twenty-eight days to four. Gua
 </div>
 
 > Proactive government is safe when autonomy stops at a human, the basis is lawful, the citizen can opt out, and every step is provable.
+
+---
+
+<!-- _class: chapter -->
+<div class="num">11</div>
+
+# Demo.
+
+## 10 minutes, live on a real tenant
+
+<!-- ⏱ 0:12 · So let's move to the demo, about ten minutes, live, on a real Azure tenant.
+
+First the plan, then the live system. -->
+
+---
+
+<!-- _class: tight -->
+
+# The run of show.
+
+<!-- ⏱ 0:50 · The demo runs five short scenes.
+
+First, a cross-border move from Denmark to Sweden: sign in, upload a passport and a lease, watch the AI read and translate them and propose a result, consent, and the case crosses the border.
+
+Then the one I most want you to see: a blind citizen calls a real phone number, and the AI answers in Norwegian and runs the call itself.
+
+After that, the whole portal in Polish, with a screen reader. Then a payslip photographed on an iPhone. And finally, the entire platform stood up from nothing with a single command.
+
+Let me switch to the live system. -->
+
+![bg right:30% w:260](images/Demo2.png)
+
+<div class="steps">
+<div class="step"><div class="step-content"><strong>Anna moves DK → SE <span class="pill green">🟢 Live</span></strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
+<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
+<div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill green">🟢 Live</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean: accessibility is a citizen right.</span></div></div>
+<div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone <span class="pill green">🟢 Live</span></strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
+<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
+</div>
+
+> Hero moment: a real phone call: dial `+33 801 150 799`, hear the model answer, and watch the live dashboard update within two minutes.
+
+---
+
+# One command, from clean tenant to running platform.
+
+<!-- ⏱ 0:45 · That single command isn't a demo trick. It is how we really ship.
+
+You clone the repository, run one script, and it builds 25 stages in order: from network, identity, security, and data, through the gateway, the AI, the case system, the front end, and the voice line, all the way to governance.
+
+At the end it runs its own health checks, and the same script runs automatically on every code change.
+
+So this isn't a fragile demo machine. It is a platform we can rebuild from scratch, on demand. Let me bring it together. -->
+
+```powershell
+git clone https://github.com/fredgis/UDCSP
+cd UDCSP
+pwsh ./scripts/install/Install-UDCSP.ps1 `
+     -Environment dev -Zone all `
+     -SeedSyntheticData -Verbose
+```
+
+- 25 phases in order: landing zone → identity → security → data → monitoring → gateway → Foundry → Dataverse → frontend → voice → governance → quality
+- Sample data is seeded in parallel with the frontend
+- A smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
+- An HTML report is saved in `scripts/install/reports/<timestamp>/`
+
+> From `git clone` to a working federated platform with real sample data: one command. The same script runs in our pipeline on every pull request.
 
 ---
 
