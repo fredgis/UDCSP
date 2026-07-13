@@ -177,49 +177,18 @@ UDCSP is a **unified citizen platform** that:
 
 ## 🏛️ Simplified Architecture
 
-```mermaid
-%%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
-graph TB
-    Citizens["👥 Citizens — 🇩🇰 🇸🇪 🇳🇴<br/>2.1 M · 12 languages"]
-    Channels["🌐 Web · 📱 Mobile · ☎️ Voice"]
-    Edge["🔐 Identity Federation + 🚪 API Gateway<br/>Entra ID · External ID · eIDAS · APIM"]
-    Foundry["🧠 Microsoft AI Foundry — single AI brain<br/>topic-router · classifier · translator · eligibility ·<br/>citizen assistant · doc extractor · caseworker helper · Azure OpenAI"]
-    Process["⚙️ Logic Apps  ➜  📋 Dataverse"]
-    Data["📊 Microsoft Fabric  ➜  📈 Power BI"]
-    Governance["🛡️ Trust &amp; Governance<br/>Purview · GDPR · EU AI Act · WCAG 2.1 AA"]
+<div align="center">
 
-    subgraph National["🤝 National authorities — bridge, never replace"]
-        DKAuth["🇩🇰 borger.dk · CPR · MitID · SKAT · Udbetaling DK"]
-        SEAuth["🇸🇪 Skatteverket · Försäkringskassan · BankID · Freja+"]
-        NOAuth["🇳🇴 Skatteetaten · NAV · Altinn · UDI · ID-porten"]
-    end
+<img src="images/udcsp-diagram.png" alt="UDCSP simplified architecture: citizens on web, mobile and voice enter through federated identity and API Management, reach the Microsoft AI Foundry brain and Logic Apps to Dataverse, which bridges to the national authorities of Denmark, Sweden and Norway. Analytics flow to Fabric and Power BI, and Microsoft Purview governs every layer." width="100%" />
 
-    Citizens --> Channels --> Edge --> Foundry --> Process --> Data
-    Process -. pre-fill / submit / status .-> DKAuth
-    Process -. pre-fill / submit / status .-> SEAuth
-    Process -. pre-fill / submit / status .-> NOAuth
-    Governance -. governs every layer .-> Edge
-    Governance -.-> Foundry
-    Governance -.-> Data
+</div>
 
-    style Citizens fill:#2ea44f,stroke:#238636,color:#fff
-    style Channels fill:#2ea44f,stroke:#238636,color:#fff
-    style Edge fill:#8957e5,stroke:#6e40c9,color:#fff
-    style Foundry fill:#8957e5,stroke:#6e40c9,color:#fff
-    style Process fill:#e36209,stroke:#c24e00,color:#fff
-    style Data fill:#1565c0,stroke:#0d47a1,color:#fff
-    style Governance fill:#d73a49,stroke:#b31d28,color:#fff
-    style National fill:transparent,stroke:#0d47a1,stroke-width:2px,color:#0d47a1
-    style DKAuth fill:#1565c0,stroke:#0d47a1,color:#fff
-    style SEAuth fill:#1565c0,stroke:#0d47a1,color:#fff
-    style NOAuth fill:#1565c0,stroke:#0d47a1,color:#fff
-```
+- **Citizen entry:** 2.1 M citizens across 🇩🇰 🇸🇪 🇳🇴 reach one front door on web, mobile and voice, in 12 languages. Identity is federated through the national eIDs (MitID, BankID, ID-porten) behind Entra External ID and eIDAS, and every request is gated by Azure API Management.
+- **AI and process:** one Microsoft AI Foundry brain, a topic-router plus six worker agents on Azure OpenAI, classifies, translates, extracts documents and pre-assesses eligibility, with Content Safety on every call. Logic Apps then drives the case into Dynamics 365 and Dataverse.
+- **Bridge, never replace:** Logic Apps pre-fills, submits and polls the status against the competent national authority (borger.dk, CPR, SKAT and Udbetaling DK for 🇩🇰; Skatteverket and Försäkringskassan for 🇸🇪; Skatteetaten, NAV, Altinn and UDI for 🇳🇴), then mirrors the official decision back into the citizen's *My cases*.
+- **Data and governance:** analytics flow into Microsoft Fabric and Power BI, and Microsoft Purview governs every layer (GDPR, EU AI Act, WCAG 2.1 AA).
 
-Green = citizens / channels, purple = identity & AI, orange = backend & process, blue = data + national authorities, red = governance.
-
-> 📖 **Reading the diagram:** citizens enter through web, mobile or voice; identity is federated and gated by API Management; requests are routed to the **Microsoft AI Foundry brain** and to Logic Apps; cases land in Dynamics 365; **Logic Apps then bridges to the competent national authority** (CPR / borger.dk / SKAT / Udbetaling DK in 🇩🇰, Skatteverket / Försäkringskassan in 🇸🇪, Skatteetaten / NAV / Altinn / UDI in 🇳🇴) — UDCSP submits the application, polls the status and mirrors the official decision back into the citizen's *My cases*. Analytics flow into Fabric + Power BI. **Microsoft Purview wraps every layer.**
->
-> 👉 *Want the full topology?* See [`architecture.md` §2.1 — High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform), then **§2.3 — National-authority integration map** for the per-country bridge diagram + per-service routing matrix (residency / tax certificate / child benefit) and per-country constraints.
+Want the full topology? See [`architecture.md` §2.1 High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform), then §2.3 National-authority integration map for the per-country bridge diagram, the per-service routing matrix (residency / tax certificate / child benefit) and the per-country constraints.
 
 ---
 
