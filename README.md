@@ -265,9 +265,12 @@ graph TB
     class RAG,Trace,Ledger gov
 ```
 
-> 📖 **Reading the diagram.** Every conversational channel (voice, web, mobile, chat) hits the same APIM endpoint `/agents/topic-router`. The topic-router is the only orchestrator and dispatches to six worker agents; Content Safety runs on every input and every output. The Eligibility agent is the only EU AI Act high-risk component — it runs in a Confidential Compute SEV-SNP TEE and every decision is anchored to Azure Confidential Ledger. RAG agents cite their sources, and the full conversation is traced in App Insights and indexed in Purview.
->
-> 👉 Full agent catalogue, RAG strategy, safety and eval pipelines, AI Act registry and end-to-end flow: [`docs/biz/ai.md`](./docs/biz/ai.md).
+- **Single entry:** every conversational channel (voice, web, mobile, chat) hits the same APIM endpoint `/agents/topic-router`.
+- **One orchestrator:** the topic-router is the only orchestrator and dispatches to six worker agents, with Content Safety scanning every input and every output.
+- **One high-risk lane:** the Eligibility agent is the only EU AI Act high-risk component. It runs in a Confidential Compute SEV-SNP Trusted Execution Environment, and every decision is anchored to Azure Confidential Ledger.
+- **Grounded and traced:** the RAG agents cite their sources, and the full conversation is traced in App Insights and indexed in Purview.
+
+Full agent catalogue, RAG strategy, safety and evaluation pipelines, AI Act registry and end-to-end flow: [`docs/biz/ai.md`](./docs/biz/ai.md).
 
 ---
 
@@ -334,9 +337,13 @@ graph LR
     class Gov gov
 ```
 
-> 📖 **Reading the diagram.** A life event in the sovereign zone triggers the autonomous Event Scanner. It calls the existing high-risk Eligibility agent in shadow, the Caseworker Helper drafts a cited outreach in the citizen's language, and a new Critic agent reviews it. Nothing advances past the human caseworker, who approves, adjusts or rejects (EU AI Act Art. 14). Approved outreach goes out on the channels that already exist; every autonomous step is consent-gated and anchored in Azure Confidential Ledger. Two new agents, one new workflow, one dashboard tile: everything else is a re-wire.
->
-> 👉 The full story, architecture, multi-agent coordination patterns, governance and the executive KPI (*unclaimed entitlements recovered*): [`docs/biz/guardian.md`](./docs/biz/guardian.md).
+- **Autonomous trigger:** a life event in the sovereign zone triggers the autonomous Event Scanner, which calls the existing high-risk Eligibility agent in shadow, with no application attached.
+- **Draft and review:** the Caseworker Helper drafts a cited outreach in the citizen's language, and a new Critic agent reviews it for legal basis, tone and false positives.
+- **Human gate:** nothing advances past the human caseworker, who approves, adjusts or rejects (EU AI Act Article 14).
+- **Governed delivery:** approved outreach goes out on the channels that already exist, and every autonomous step is consent-gated and anchored in Azure Confidential Ledger.
+- **Mostly a re-wire:** two new agents, one new workflow and one dashboard tile. Everything else already exists.
+
+The full story, architecture, multi-agent coordination patterns, governance and the executive KPI (*unclaimed entitlements recovered*): [`docs/biz/guardian.md`](./docs/biz/guardian.md).
 
 ---
 
