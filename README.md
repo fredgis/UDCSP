@@ -198,6 +198,8 @@ Want the full topology? See [`architecture.md` §2.1 High-level view](./docs/tec
 
 A simplified view of the AI architecture detailed in [`docs/biz/ai.md`](./docs/biz/ai.md): **one** Foundry brain, **one** APIM gateway, **one** Content Safety pipeline, **seven** channels, **seven** agents — and an explicit high-risk lane (Eligibility) running in a Trusted Execution Environment with tamper-evident logging.
 
+<br clear="all"/>
+
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 22, 'rankSpacing': 28, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 graph TB
