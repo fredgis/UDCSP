@@ -2,16 +2,9 @@
 
 <img src="images/udcsp-hero.png" alt="UDCSP — Unified Digital Citizen Services Platform: one portal, one AI brain, the full stack. Web and mobile, the Guardian AI and the architecture that powers it, federated across Denmark, Sweden and Norway and bridging to the national authorities, never replacing them." width="100%" />
 
-[![Citizens](https://img.shields.io/badge/👥_Citizens-2.1M-1565C0?style=for-the-badge)](#)
-[![Countries](https://img.shields.io/badge/🌐_Countries-3-2E7D32?style=for-the-badge)](#)
-[![Languages](https://img.shields.io/badge/🗣️_Languages-12-AD1457?style=for-the-badge)](#)
 [![Processing](https://img.shields.io/badge/⚡_Processing-28d_→_4d-E65100?style=for-the-badge)](#)
 [![Portals](https://img.shields.io/badge/🏛️_Portals-47_→_1-5E35B1?style=for-the-badge)](#)
-[![Accessibility](https://img.shields.io/badge/♿_Accessibility-WCAG_2.1_AA-00796B?style=for-the-badge)](#)
-
-[![Compliance](https://img.shields.io/badge/🛡️_Compliance-GDPR_·_EU_AI_Act-C62828?style=flat-square)](#)
-[![AI Core](https://img.shields.io/badge/🧠_AI_Core-Microsoft_Foundry-FF6F00?style=flat-square)](#)
-[![Cloud](https://img.shields.io/badge/☁️_Cloud-Microsoft_Azure-0078D4?style=flat-square)](#)
+[![Compliance](https://img.shields.io/badge/🛡️_Compliance-GDPR_·_EU_AI_Act-C62828?style=for-the-badge)](#)
 
 </div>
 
