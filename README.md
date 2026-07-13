@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="images/udcsp-hero.png" alt="UDCSP — Unified Digital Citizen Services Platform: from a citizen request to a national decision, in one AI brain (Denmark · Sweden · Norway)" width="100%" />
+<img src="images/udcsp-hero.png" alt="UDCSP — Unified Digital Citizen Services Platform: one portal, one AI brain, the full stack. Web and mobile, the Guardian AI and the architecture that powers it, federated across Denmark, Sweden and Norway and bridging to the national authorities, never replacing them." width="100%" />
 
 [![Citizens](https://img.shields.io/badge/👥_Citizens-2.1M-1565C0?style=for-the-badge)](#)
 [![Countries](https://img.shields.io/badge/🌐_Countries-3-2E7D32?style=for-the-badge)](#)
