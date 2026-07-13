@@ -1,10 +1,6 @@
 <div align="center">
 
-# 🌍 UDCSP
-
-### Unified Digital Citizen Services Platform
-
-*A federated, AI-first citizen services platform for the Scandinavian public administrations of **Denmark · Sweden · Norway***
+<img src="images/udcsp-hero.png" alt="UDCSP — Unified Digital Citizen Services Platform: from a citizen request to a national decision, in one AI brain (Denmark · Sweden · Norway)" width="100%" />
 
 [![Citizens](https://img.shields.io/badge/👥_Citizens-2.1M-1565C0?style=for-the-badge)](#)
 [![Countries](https://img.shields.io/badge/🌐_Countries-3-2E7D32?style=for-the-badge)](#)
