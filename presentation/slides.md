@@ -1698,6 +1698,45 @@ The infra folder holds the Bicep, and the scripts folder holds the installer. It
 
 <!-- _class: tight -->
 
+# And you can read the whole dossier in your browser.
+
+<!-- ⏱ 0:35 · If you would rather read than watch, the entire dossier is a documentation site you can open in a browser.
+It is the exact same Markdown from the repository, under docs-biz and docs-tech, published with an open-source generator called Blume.
+You get full-text search, a sidebar, dark mode, and the diagrams rendered inline.
+A small script reads the repo at build time, so the site can never drift from the source.
+The site is at fredgis-dot-github-dot-io slash UDCSP, and this very slide deck lives right next to it, under slash deck. -->
+
+<div class="split right-wide">
+<div>
+
+### The same Markdown, now a docs site
+- Every page under `/docs/biz` and `/docs/tech`, published as a browsable site with **Blume**.
+- Full-text search, a categorised sidebar, light and dark themes, Mermaid diagrams rendered inline.
+- A small preprocessor reads the repo Markdown at build time, so the site never drifts from the source.
+
+<div class="parallel">
+<span class="lbl fr">docs site</span>
+<span class="lbl us">slide deck</span>
+<strong>fredgis.github.io/UDCSP</strong>
+<strong>…/UDCSP/deck</strong>
+</div>
+
+</div>
+<div>
+
+<div class="doc-shot">
+
+![](images/blume-docs.png)
+
+</div>
+
+</div>
+</div>
+
+---
+
+<!-- _class: tight -->
+
 # One idempotent deploy: provision.
 
 <!-- ⏱ 0:35 · So how do we actually ship all of this? With one idempotent command.

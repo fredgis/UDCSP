@@ -20,9 +20,9 @@ UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployabl
 
 ### 🖼️ Presentation deck
 
-> **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
+> **▶️ [View the live slides in your browser](https://fredgis.github.io/UDCSP/deck/)** — the deck published to GitHub Pages (HTML, no speaker notes). Use the arrow keys or swipe to navigate.
 
-The full 73-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
+The full 74-slide deck (35-minute narrative + 10-minute live demo) is in **[`presentation/dist/slides.pdf`](./presentation/dist/slides.pdf)** — speaker notes included in **[`slides-notes.pdf`](./presentation/dist/slides-notes.pdf)** and an editable **[`slides.pptx`](./presentation/dist/slides.pptx)**.
 
 <div align="center">
 
@@ -31,7 +31,7 @@ The full 73-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 </div>
 
 <details>
-<summary><b>🎞️ Browse all 73 slides (carousel)</b></summary>
+<summary><b>🎞️ Browse all 74 slides (carousel)</b></summary>
 
 <div align="center">
 
@@ -108,6 +108,7 @@ The full 73-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <img src="./presentation/deck/slide.071.png" width="32%" />
 <img src="./presentation/deck/slide.072.png" width="32%" />
 <img src="./presentation/deck/slide.073.png" width="32%" />
+<img src="./presentation/deck/slide.074.png" width="32%" />
 
 
 </div>
@@ -119,6 +120,22 @@ The full 73-slide deck (35-minute narrative + 10-minute live demo) is in **[`pre
 <div align="center">
 
 https://github.com/user-attachments/assets/3ce40e48-d465-445c-ab05-a87cabf5c867
+
+</div>
+
+### 📚 Documentation site
+
+> **📖 [Browse the documentation site](https://fredgis.github.io/UDCSP/)** — every `docs/biz` and `docs/tech` page with search, sidebar navigation and rendered diagrams.
+
+So the jury and future contributors can read the whole dossier without cloning the repo or scrolling raw Markdown, the same files under [`docs/biz`](./docs/biz) and [`docs/tech`](./docs/tech) are published as a static site with [Blume](https://useblume.dev).
+
+- No second copy of the docs: a small preprocessor ([`blume/build-content.mjs`](./blume/build-content.mjs)) reads the repo Markdown at build time, so the site never drifts from the source.
+- Full-text search, a categorised sidebar, light and dark themes, and Mermaid diagrams rendered inline.
+- Deployed to GitHub Pages at the site root; the slide deck now lives alongside it at [`/UDCSP/deck/`](https://fredgis.github.io/UDCSP/deck/). Build details are in [`blume/README.md`](./blume/README.md).
+
+<div align="center">
+
+<a href="https://fredgis.github.io/UDCSP/"><img src="./images/blume-docs.png" width="90%" alt="UDCSP documentation site rendered with Blume — sidebar navigation, search, the hero and the walkthrough video" /></a>
 
 </div>
 

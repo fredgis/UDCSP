@@ -1,12 +1,16 @@
-name: Deploy presentation to GitHub Pages
+name: Deploy docs site + presentation to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
+      - 'blume/**'
+      - 'docs/**'
+      - 'images/**'
       - 'presentation/slides.md'
       - 'presentation/theme.css'
       - 'presentation/images/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,20 +32,37 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
-          cache-dependency-path: presentation/package-lock.json
+          cache-dependency-path: |
+            blume/package-lock.json
+            presentation/package-lock.json
 
-      - name: Install dependencies
+      # --- Documentation site (Blume) -> served at /UDCSP/ ---
+      - name: Install Blume dependencies
+        working-directory: blume
+        run: npm ci
+
+      - name: Build Blume docs site
+        working-directory: blume
+        run: npm run build
+
+      - name: Assemble site root from Blume output
+        run: |
+          mkdir -p _site
+          cp -r blume/dist/. _site/
+
+      # --- Presentation (Marp) -> served at /UDCSP/deck/ ---
+      - name: Install presentation dependencies
         working-directory: presentation
         run: npm ci
 
-      - name: Build slides as HTML (without speaker notes)
+      - name: Build slides as HTML (without speaker notes) into /deck
         working-directory: presentation
         run: |
           node -e "const fs=require('fs');let s=fs.readFileSync('slides.md','utf8');s=s.replace(/<!--(?!\s*_)[\s\S]*?-->/g,'');fs.writeFileSync('slides.pages.md',s);"
-          npx @marp-team/marp-cli --theme theme.css --html --allow-local-files slides.pages.md -o _site/index.html
-          cp -r images _site/images
+          npx @marp-team/marp-cli --theme theme.css --html --allow-local-files slides.pages.md -o ../_site/deck/index.html
+          cp -r images ../_site/deck/images
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -49,7 +70,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: presentation/_site
+          path: _site
 
   deploy:
     needs: build

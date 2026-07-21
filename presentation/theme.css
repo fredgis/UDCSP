@@ -101,6 +101,8 @@ section.chapter h2 { color: rgba(255,255,255,0.6); font-size: 1em; font-weight: 
 .repo-shots p { margin: 0; }
 .repo-shots img { width: 100%; height: auto; border: 1px solid #cbd5e1; border-radius: 4px; box-shadow: 0 2px 8px rgba(10,25,41,0.12); }
 
+.doc-shot img { width: 100%; height: auto; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 3px 12px rgba(10,25,41,0.14); }
+
 .parallel { display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: center; }
 .parallel .lbl { font-size: 0.62em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; }
 .parallel .lbl.fr { color: var(--brand); }
