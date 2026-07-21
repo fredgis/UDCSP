@@ -125,17 +125,13 @@ https://github.com/user-attachments/assets/3ce40e48-d465-445c-ab05-a87cabf5c867
 
 ### 📚 Documentation site
 
-> **📖 [Browse the documentation site](https://fredgis.github.io/UDCSP/)** — every `docs/biz` and `docs/tech` page with search, sidebar navigation and rendered diagrams.
+> **📖 [Read the documentation site](https://fredgis.github.io/UDCSP/)** — the whole dossier, in your browser.
 
-So the jury and future contributors can read the whole dossier without cloning the repo or scrolling raw Markdown, the same files under [`docs/biz`](./docs/biz) and [`docs/tech`](./docs/tech) are published as a static site with [Blume](https://useblume.dev).
-
-- No second copy of the docs: a small preprocessor ([`blume/build-content.mjs`](./blume/build-content.mjs)) reads the repo Markdown at build time, so the site never drifts from the source.
-- Full-text search, a categorised sidebar, light and dark themes, and Mermaid diagrams rendered inline.
-- Deployed to GitHub Pages at the site root; the slide deck now lives alongside it at [`/UDCSP/deck/`](https://fredgis.github.io/UDCSP/deck/). Build details are in [`blume/README.md`](./blume/README.md).
+This project comes with a lot of writing: who we build for, every channel, the architecture, the data and compliance rules. Rather than ask anyone to clone the repo or scroll through raw Markdown, we turned all of it into a small website you can just read. Same words, easier to move around, with a search box, a sidebar and the diagrams drawn for you. The slide deck sits right next to it, at [`/UDCSP/deck/`](https://fredgis.github.io/UDCSP/deck/).
 
 <div align="center">
 
-<a href="https://fredgis.github.io/UDCSP/"><img src="./images/blume-docs.png" width="90%" alt="UDCSP documentation site rendered with Blume — sidebar navigation, search, the hero and the walkthrough video" /></a>
+<a href="https://fredgis.github.io/UDCSP/"><img src="./images/blume-docs.png" width="90%" alt="UDCSP documentation site — sidebar navigation, search, and the home page" /></a>
 
 </div>
 
