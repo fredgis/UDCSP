@@ -4,7 +4,9 @@
 
 </div>
 
-> ℹ️ **Live vs roadmap.** External ID per-country sign-in, the 12-language wizard, eligibility Foundry-driven and the My Cases re-hydration are live on `udcsp.fredgis.com`. **Verified ID cross-border credential issuance is roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md).
+_Last verified: 2026-07-26 · commit 5a8d591_
+
+> ℹ️ **Live vs roadmap.** 🟢 **Live** on `https://udcsp.fredgis.com`: Static Web App, per-country External ID sign-in, the 12-language wizard, Foundry-driven eligibility pre-submit, APIM document upload, Dataverse `tasks` write, My Cases re-hydration and case detail parsing. 🗺️ **Roadmap**: Front Door + WAF in front of the public site, Microsoft Entra Verified ID issuance, per-country D365 Customer Service, cross-border fan-out and Confidential Ledger anchoring. See [`../tech/inprogress.md`](../tech/inprogress.md).
 
 > [!NOTE]
 > **Channel surface only.** This document covers the React+Vite portal — pages, accessibility, routing, citizen-facing UX. The agent routing topology (which Foundry agent handles which intent, how the topic-router fans out, what happens when content safety blocks a turn) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how the citizen sees the platform on the web*; `ai.md` owns *how the platform thinks*.
@@ -30,11 +32,22 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen opens `udcsp.dk` (or `.se` / `.no`) → **Azure Front Door** routes the request to the nearest **Static Web App** → **MSAL.js** authenticates the citizen against the **per-country Microsoft Entra External ID tenant** → the React shell loads the ICU locale catalogue for their language → form data flows through **APIM** (JWT-validated) → **Microsoft Foundry agents** classify, extract, and pre-assess eligibility → a case lands in **Dynamics 365** → the page shows an optimistic confirmation. **One portal, three country brandings, twelve languages, zero code forks.**
+> **TL;DR.** A citizen opens `https://udcsp.fredgis.com` on the 🟢 **Live** Azure Static Web App. **MSAL.js** authenticates them against the per-country Microsoft Entra External ID tenant, the React shell loads the ICU locale catalogue for their language, and form data flows through **APIM** with JWT validation. **Microsoft Foundry agents** classify, extract and pre-assess eligibility. The `application-intake` Logic App writes the submission to the Dataverse `tasks` activity entity on the shared environment today. Per-country D365 Customer Service and Verified ID issuance are 🗺️ **Roadmap** target architecture.
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Chat transcript in Dataverse `bot_session`; form drafts in Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h); uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake. |
+> | 🗄️ **Where stored** | 🟢 **Live** submissions in Dataverse `tasks`; 🟢 **Live** uploads in `udcsp<c>prodlake` `citizen-uploads/` via APIM managed identity; 🟢 **Live** traces in App Insights for exercised paths. 🔵 **In repo** or 🗺️ **Roadmap** depending on path: `bot_session`, Redis drafts, PostgreSQL JSONB drafts, AI Search memory and OneLake trace retention. |
+
+| Capability | Status | Current fact |
+|---|---|---|
+| Public web channel | 🟢 **Live** | `https://udcsp.fredgis.com` is an Azure Static Web App, deployed directly with SWA CLI. |
+| Front Door + WAF | 🗺️ **Roadmap** | Service inventory marks it manual or not deployed. Do not describe it as the live entry point. |
+| External ID sign-in | 🟢 **Live** | DK, SE and NO CIAM tenants are exercised by the SPA. |
+| Verified ID issuance | 🗺️ **Roadmap** | Demo 1 blockers list Verified ID issuance and SE portal auto-onboarding as not built. |
+| Application intake | 🟡 **Partially deployed** | Logic App `application-intake` writes Dataverse `tasks` today. `udcsp_application` and D365 CS are the target landing shape. |
+| Document upload | 🟢 **Live** | SPA calls APIM `POST /documents/upload-url`; APIM PUTs the blob with managed identity into private storage. |
+| Redis / PostgreSQL conversational persistence | 🔵 **In repo** | Use as target architecture unless a live deployment record proves the path. |
+| Traceability | 🟡 **Partially deployed** | W3C `traceparent` and App Insights exist for exercised paths. Confidential Ledger anchoring is not active and the Purview lineage endpoint remains `placeholder.local`. |
 
 ---
 
@@ -89,12 +102,12 @@ flowchart TB
     end
 
     subgraph EDGE["🛡️ Edge — per country (DK · SE · NO)"]
-        AFD["Azure Front Door + WAF<br/><i>geo-routing · DDoS · CSP headers</i>"]
-        SWA["Azure Static Web App<br/><i>React 18 + TS + Vite bundle</i>"]
+        AFD["Azure Front Door + WAF<br/><i>🗺️ Roadmap · not live entry point</i>"]
+        SWA["Azure Static Web App<br/><i>🟢 Live · React 18 + TS + Vite bundle</i>"]
     end
 
     subgraph AUTH["🔑 Identity — per country"]
-        EXTID["Microsoft Entra External ID + Verified ID<br/><i>OIDC · national eID · VC issuance</i>"]
+        EXTID["Microsoft Entra External ID<br/><i>🟢 Live OIDC · Verified ID 🗺️ Roadmap</i>"]
     end
 
     subgraph GATEWAY["🚪 Integration layer"]
@@ -106,16 +119,16 @@ flowchart TB
     end
 
     subgraph BACKOFFICE["📋 Back-office"]
-        D365["Dynamics 365<br/><i>case spine · SLA 4d</i>"]
-        FABRIC["Microsoft Fabric<br/><i>traces · analytics · KPIs</i>"]
+        D365["Dataverse tasks today<br/><i>D365 CS 🗺️ Roadmap</i>"]
+        FABRIC["Microsoft Fabric<br/><i>analytics target · App Insights live traces</i>"]
     end
 
     subgraph CHAT["💬 Peer channel (cross-reference)"]
         CS["Foundry `topic-router`<br/>chat widget<br/><i>see § 9</i>"]
     end
 
-    BROWSER -->|HTTPS| AFD
-    AFD -->|route| SWA
+    BROWSER -->|HTTPS live| SWA
+    AFD -.->|target route| SWA
     SWA -->|OIDC redirect| EXTID
     EXTID -->|ID token + access token| SWA
     SWA -->|REST + JWT| APIM
@@ -142,7 +155,7 @@ flowchart TB
     class CS chat
 ```
 
-> 📖 **Reading the picture.** Green = citizen. Orange = edge (Static Web App + Front Door, per-country hosted). Purple = External ID auth. Blue = the APIM gateway (the only legal entry point to Foundry from any channel). Dark blue = back-office. Grey = the Foundry `topic-router` chat widget, which is a **peer** channel embedded in the web shell — it shares the same Foundry brain. The brain is shared; per-country data is not.
+> 📖 **Reading the picture.** Green = citizen. Orange = edge. The 🟢 **Live** entry point is Static Web App at `udcsp.fredgis.com`; Front Door + WAF is 🗺️ **Roadmap** for the target country hostnames. Purple = External ID auth, with Verified ID issuance still 🗺️ **Roadmap**. Blue = the APIM gateway. Dark blue = Dataverse `tasks` today, D365 Customer Service target. Grey = the Foundry `topic-router` chat widget, which is a peer channel embedded in the web shell.
 
 ---
 
@@ -153,7 +166,6 @@ flowchart TB
 sequenceDiagram
     autonumber
     actor A as 🧑 Anna (citizen)
-    participant FD as 🛡️ Front Door
     participant SWA as 🌐 Static Web App
     participant EID as 🔑 External ID (DK)
     participant APIM as 🚪 APIM
@@ -161,8 +173,7 @@ sequenceDiagram
     participant LA as ⚙️ Logic App<br/>application-intake
     participant D as 📋 Dataverse
 
-    A->>FD: GET https://dk.udcsp.gov/apply/residency
-    FD->>SWA: route to DK SWA origin (North Europe)
+    A->>SWA: GET https://udcsp.fredgis.com/apply/residency
     SWA-->>A: React shell + Vite bundle + i18n da.json
     A->>A: MSAL.js detects: not authenticated
     A->>EID: OIDC redirect to udcspdk.ciamlogin.com/SignUpSignIn
@@ -194,14 +205,14 @@ sequenceDiagram
 
 | Hop | Budget | How we hit it |
 |---|---|---|
-| Front Door routing | ~20 ms | Anycast edge, North Europe for DK |
+| Static Web App edge | ~80 ms | 🟢 **Live** SWA static assets on `udcsp.fredgis.com` |
 | SWA CDN static assets | ~80 ms | Vite bundle + i18n JSON, cache-control: immutable |
 | External ID OIDC round-trip | ~200 ms | Already warm from browser cookie |
 | MSAL.js token refresh (silent) | ~100 ms | sessionStorage cache; no round-trip when token fresh |
 | APIM JWT validation | ~30 ms | Cached JWKS, no cold start |
 | Foundry classifier (small) | ~120 ms | Small low-latency model before citizen-assistant |
 | Foundry doc-extractor | ~400 ms | Streaming; UI shows progress bar |
-| D365 case create | ~150 ms | Dataverse Web API, North Europe region |
+| Dataverse task create | ~150 ms | 🟢 **Live** Logic App writes `tasks`; D365 Customer Service case create is 🗺️ **Roadmap** |
 
 ---
 
@@ -211,7 +222,7 @@ sequenceDiagram
 |:-:|---|---|---|
 | **1** | **Azure Static Web App** | Hosts the pre-built Vite/React bundle at the edge; SPA fallback (`index.html` for all routes); `/api/*` routes require `authenticated` role; CSP headers enforced globally. | `apps/web/staticwebapp.config.json`, `infra/landing-zone/modules/networking.bicep` |
 | **2** | **Vite + React 18 + TypeScript** | Single-page application shell; React Router for client-side routing (10 pages: Home, Apply Residency, Apply Tax Cert, Apply Child Benefit, My Cases, Case Detail, Consent, Accessibility, Login, Logout Callback); Fluent UI v9 design system; hot module replacement in dev, optimised bundle in prod. | `apps/web/vite.config.ts`, `apps/web/src/App.tsx`, `apps/web/src/pages/` |
-| **3** | **MSAL.js + External ID + Verified ID per country** | `@azure/msal-browser` + `@azure/msal-react` pick the per-country OIDC authority (`udcspdk/se/no.ciamlogin.com`) from `localStorage` country preference; tokens cached in `sessionStorage` (never `localStorage`); `loginRequest` includes the APIM scope; post-logout redirect to `/logout-callback`; Verified ID issues cross-border residency and eligibility receipt credentials via `infra/identity/verified-id/`. | `apps/web/src/auth/msalConfig.ts` |
+| **3** | **MSAL.js + External ID per country** | 🟢 **Live** `@azure/msal-browser` + `@azure/msal-react` pick the per-country OIDC authority (`udcspdk/se/no.ciamlogin.com`) from `localStorage` country preference; tokens cached in `sessionStorage` (never `localStorage`); `loginRequest` includes the APIM scope; post-logout redirect to `/logout-callback`. Microsoft Entra Verified ID issuance via `infra/identity/verified-id/` is 🗺️ **Roadmap** and not exercised today. | `apps/web/src/auth/msalConfig.ts`, `infra/identity/verified-id/` |
 | **4** | **ICU MessageFormat i18n bundles** | `react-intl` (ICU MessageFormat) loads the locale catalogue from `/i18n/messages/{lang}.json` at runtime; 12 locale files produced by the A12 / agent-foundry translation pipeline; RTL direction toggled on `<html>` for `ar`; locale-aware date/number/currency formatting via `Intl` API. | `apps/web/i18n/messages/*.json`, `apps/web/src/utils/language.ts` |
 | **5** | **APIM contract clients** | Five typed fetch wrappers mirror the APIM OpenAPI contracts — `applications.ts`, `cases.ts`, `documents.ts`, `eligibility.ts`, `client.ts` (base, with exponential-backoff retry and W3C `traceparent` header on every request). | `apps/web/src/api/` |
 | **6** | **Foundry topic-router chat widget** | `ChatWidget.tsx` posts directly to APIM `/agents/topic-router`; passes `channel=web`, `locale`, and `traceparent`; lazy-loaded; backed by the same Foundry agents as voice/mobile. This replaces the previous iframe/channel-adapter approach. See **§ 9**. | `apps/web/src/components/ChatWidget.tsx` |
@@ -220,6 +231,14 @@ sequenceDiagram
 
 > [!NOTE]
 > **Playwright is also in `apps/web`** (`playwright.config.ts`) but the E2E suite itself lives in `tests/e2e/` — owned by A14. The `apps/web` config is the configuration; the specs are in `tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` et al.
+
+### 4.1 Document upload path, live mechanics
+
+🟢 **Live.** The browser does not receive a public blob upload link. `apps/web/src/utils/documentUpload.ts` reads the selected file as base64, enforces a 4 MB client cap, and calls APIM `POST /documents/upload-url` with `filename`, `contentType` and `contentBase64`. The APIM operation `services/apim/apis/documents/operations/post-documents-upload-url.xml` authenticates to Storage with its managed identity, decodes `contentBase64`, and performs the server-side `PUT` to `https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/<blobName>`.
+
+🟢 **Live network stance.** The storage accounts are private-only. `patch/README.md` documents the private upload path: `udcsp<c>prodlake` has public network access disabled and APIM egress reaches Blob through the blob private endpoint after VNet injection.
+
+🟡 **Partially deployed limitation.** The current path has a 4 MB upload size limit. Its immediate source is the SPA safety cap in `documentUpload.ts`, set because APIM receives the file inside a JSON request body as base64 and then proxies the bytes to Blob. If a citizen selects a larger file, the portal stops before the APIM call and shows: `File is too large for this demo (max 4 MB).`
 
 ---
 
@@ -318,21 +337,21 @@ flowchart LR
     subgraph DK["🇩🇰 Denmark — Azure North Europe"]
         SWA_DK["Static Web App DK<br/><i>dk.udcsp.gov</i>"]
         EID_DK["External ID DK<br/><i>udcspdk.ciamlogin.com</i><br/><i>infra/identity/external-id/dk-external-id.bicep</i>"]
-        AFD_DK["Front Door rule: DK<br/><i>host=*.dk.udcsp.gov</i>"]
+        AFD_DK["Front Door rule: DK<br/><i>🗺️ Roadmap host=*.dk.udcsp.gov</i>"]
         FAB_DK["Fabric workspace DK<br/><i>citizen data DK only</i>"]
     end
 
     subgraph SE["🇸🇪 Sweden — Azure Sweden Central"]
         SWA_SE["Static Web App SE<br/><i>se.udcsp.gov</i>"]
         EID_SE["External ID SE<br/><i>udcspse.ciamlogin.com</i><br/><i>infra/identity/external-id/se-external-id.bicep</i>"]
-        AFD_SE["Front Door rule: SE<br/><i>host=*.se.udcsp.gov</i>"]
+        AFD_SE["Front Door rule: SE<br/><i>🗺️ Roadmap host=*.se.udcsp.gov</i>"]
         FAB_SE["Fabric workspace SE<br/><i>citizen data SE only</i>"]
     end
 
     subgraph NO["🇳🇴 Norway — Azure Norway East"]
         SWA_NO["Static Web App NO<br/><i>no.udcsp.gov</i>"]
         EID_NO["External ID NO<br/><i>udcspno.ciamlogin.com</i><br/><i>infra/identity/external-id/no-external-id.bicep</i>"]
-        AFD_NO["Front Door rule: NO<br/><i>host=*.no.udcsp.gov</i>"]
+        AFD_NO["Front Door rule: NO<br/><i>🗺️ Roadmap host=*.no.udcsp.gov</i>"]
         FAB_NO["Fabric workspace NO<br/><i>citizen data NO only</i>"]
     end
 
@@ -394,11 +413,11 @@ What stays in-country: **citizen PII, session tokens, application data, uploaded
 
 | | SLO | Target | How we measure |
 |:-:|---|---|---|
-| ⚡ | **TTFB** (time to first byte) | p95 ≤ **200 ms** | Front Door diagnostics + App Insights custom metric `ttfb_p95` |
+| ⚡ | **TTFB** (time to first byte) | p95 ≤ **200 ms** | 🟢 **Live** SWA and App Insights where instrumented; Front Door diagnostics are 🗺️ **Roadmap** |
 | 📱 | **Lighthouse score — mobile** | ≥ **95** (Performance + Accessibility + Best Practices) | Lighthouse CI in every PR; budget enforced |
 | ♿ | **WCAG 2.1 AA conformance** | **100 %** automated + 0 critical manual findings | axe-core in CI; quarterly manual audit |
 | 🚀 | **Page load p95** (Largest Contentful Paint) | ≤ **1.5 s** on 4G mobile | Synthetic test from 3 countries via App Insights availability |
-| 🟢 | **Availability** | ≥ **99.9 %** monthly | Front Door health-probe + SWA status endpoint |
+| 🟢 | **Availability** | ≥ **99.9 %** monthly | 🟢 **Live** SWA status endpoint; Front Door health-probe is 🗺️ **Roadmap** |
 | 🔐 | **Auth success rate** (OIDC round-trip) | ≥ **99.5 %** | MSAL.js telemetry → App Insights |
 
 Risks tracked in `docs/tech/plan.md` § Risk Register that affect the web portal:
@@ -410,6 +429,8 @@ Risks tracked in `docs/tech/plan.md` § Risk Register that affect the web portal
 > **R5 — AI Act conformity for high-risk agent.** The residency-transfer eligibility pre-assessor is a high-risk EU AI Act system. Mitigation: documentation pipeline in Foundry; conformity assessment artefacts produced from evals + tracing; the web portal always shows the disclosure banner (`banner.aiDisclosure` key in i18n catalogues).
 
 **R12 — Multilingual quality drift.** With 12 languages, i18n key drift is a real risk: a new string key added in `en.json` but not propagated to all locales. Mitigation: `Validate-Translations.ps1` runs in CI and blocks the PR if any key is missing in any locale.
+
+**Traceability status.** 🟡 **Partially deployed** traceability means W3C `traceparent` and App Insights traces for exercised paths. Confidential Ledger anchoring is 🗺️ **Roadmap** and the Purview lineage endpoint remains `placeholder.local`, so this document should not claim immutable audit anchoring for the live web path.
 
 ---
 
@@ -477,8 +498,8 @@ The `Test-Apps` function in the same module validates that all 12 i18n catalogue
 | Level | Command | What it proves | Lead time |
 |---|---|---|---|
 | **🚦 Smoke (unit + a11y)** | `npm run test --prefix apps/web` | Vitest unit tests: API client retry logic, language detection, traceparent format. `npm run test:a11y` runs axe-core on the home page. **No real backend, no OIDC.** | < 30 s |
-| **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's cross-border residency transfer — full web journey: DK External ID login, wizard form fill, Foundry classifier response, D365 case creation, optimistic confirmation toast. Every layer real except PSTN. | ~ 3 min |
-| **🌐 Live (browser)** | Open `https://dk.udcsp.gov` in a browser | The full stack: Front Door routing, SWA CDN, External ID OIDC, APIM JWT validation, Foundry agents, D365 write. Validates network performance (TTFB, LCP) and real auth flows. | Manual |
+| **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's web journey: DK External ID login, wizard form fill, Foundry classifier response, Dataverse `tasks` write through `application-intake`, optimistic confirmation toast. Cross-border fan-out and D365 CS landing remain 🗺️ **Roadmap**. | ~ 3 min |
+| **🌐 Live (browser)** | Open `https://udcsp.fredgis.com` in a browser | 🟢 **Live** SWA, External ID OIDC, APIM JWT validation, Foundry agents, document upload and Dataverse `tasks` write. Front Door and D365 CS are not part of the live browser path today. | Manual |
 
 The E2E scenario spec `tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` maps to **Demo 1** in `uses.md` — Anna's flagship cross-border residency journey.
 
@@ -490,10 +511,10 @@ The E2E scenario spec `tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` maps t
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
-| 1 | Open `https://dk.udcsp.gov` in a browser. Click the language switcher and choose **Dansk**. | Portal loads in Danish. Front Door diagnostic panel (open in a second window) shows sub-200 ms TTFB from the North Europe edge. | #1 (47→1) · #13 (multilang) |
+| 1 | Open `https://udcsp.fredgis.com` in a browser. Click the language switcher and choose **Dansk**. | Portal loads in Danish from the live Static Web App. Front Door diagnostics are not part of the current demo. | #1 (47→1) · #13 (multilang) |
 | 2 | Click **"Move to another Nordic country"**. Authenticate as synthetic persona **Anna Jensen** (MitID mock). | OIDC redirect to `udcspdk.ciamlogin.com`; token returned; portal re-renders with Anna's pre-filled DK claims — no duplicate data entry. | #2 (ID federation) · #6 (AI assistant) |
 | 3 | Complete the 3-step residency wizard. Upload the synthetic employment contract PDF. | Vite progress bar while Foundry doc-extractor runs; employer and salary auto-filled. Eligibility pre-assessor returns provisional entitlement with HITL disclosure. | #3 (28d→4d) · #5 (AI 12 lang) · #7 (eligibility) · #9 (GDPR/AI Act) |
-| 4 | Submit the form. | Confirmation toast with case ID and 4-day SLA deadline. Open the Foundry trace panel — classifier + doc-extractor + eligibility traces are all correlated by the same `traceparent`. | #15 (audit) · #3 (4d SLA) · #14 (all 9 services) |
+| 4 | Submit the form. | Confirmation toast with case ID. The Logic App writes a Dataverse `tasks` row today; the `udcsp_application` case and 4-day D365 SLA are target architecture. | #15 (audit) · #3 (4d SLA) · #14 (all 9 services) |
 | 5 | Open the `AccessibilityMenu`. Enable **high-contrast** mode. Navigate the page keyboard-only. Open a screen reader and observe the ARIA live region announce the form status. | Portal is fully navigable keyboard-only; high-contrast CSS activates; screen reader announces progress without focus movement. | #8 (WCAG 2.1 AA) · #1 (47→1 single front door) |
 
 > [!TIP]
@@ -527,9 +548,9 @@ The web portal separates typed dialog from portal transactions: the embedded Fou
 | What | Where | Retention |
 |---|---|---|
 | Chat widget transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
-| Portal form drafts | Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) drafts → Dataverse case on submit | TTL 30 days before submit |
-| Uploaded documents | ADLS Gen2 `citizen-uploads/` (per country, CMK) | While case open + lifecycle tiers |
-| Memory + traces | Azure AI Search vector store; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |
+| Portal form drafts | 🔵 **In repo** Redis Enterprise and PostgreSQL JSONB target design; not proven as live persistence for the current SPA demo path | TTL 30 days before submit |
+| Uploaded documents | 🟢 **Live** ADLS Gen2 `citizen-uploads/` behind APIM managed identity and private Blob endpoint | While case open + lifecycle tiers |
+| Memory + traces | 🟡 **Partially deployed** App Insights traces for exercised paths; AI Search memory and OneLake retention are target architecture unless separately deployed | Memory TTL 12 months; traces 180 days hot |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 

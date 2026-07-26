@@ -4,10 +4,10 @@
 
 ### The back-office channel where every escalation lands and AI is supervised
 
-*How a government caseworker in DK, SE, or NO opens D365, reads the AI co-pilot's recommendation, makes the final call, and closes the human-in-the-loop principle — with a full EU AI Act audit trail.*
+*How a government caseworker opens the current model-driven Power App on shared Dataverse, reviews AI pre-assessment context, makes the final call, and prepares the future D365 Customer Service cutover.*
 
-[![Channel](https://img.shields.io/badge/🧑‍💼_Channel-Caseworker_·_D365_Customer_Service-1565C0?style=for-the-badge)](#)
-[![Stack](https://img.shields.io/badge/🛠️_Stack-D365_·_Copilot_for_Service_·_Power_Automate-FF6F00?style=for-the-badge)](#)
+[![Channel](https://img.shields.io/badge/🧑‍💼_Channel-Caseworker_·_Power_App_today-1565C0?style=for-the-badge)](#)
+[![Stack](https://img.shields.io/badge/🛠️_Stack-Dataverse_·_Foundry_·_D365_target-FF6F00?style=for-the-badge)](#)
 [![Co‑pilot](https://img.shields.io/badge/🤖_Co‑pilot-Foundry_agents_in‑context-8957E5?style=for-the-badge)](#)
 [![SLA](https://img.shields.io/badge/⏱️_SLA-28d_→_4d_·_EU_AI_Act_Art._14-2E7D32?style=for-the-badge)](#)
 
@@ -20,17 +20,28 @@
 
 ---
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 > [!IMPORTANT]
-> **TL;DR.** Every escalation from voice, web, mobile, chat, SMS, and email lands here. **Microsoft Dynamics 365 Customer Service** receives the case with full conversation context. **Power Automate** routes it to the right country/language queue. The **Foundry eligibility model** attaches a recommendation — confidence score, reasoning trace, and cited policy articles. The caseworker reviews and decides: **AI-first, human-in-the-loop, audited**. Every override is captured for EU AI Act Art. 14 conformity. The 28-day baseline becomes 4 days — not because AI decides, but because AI does the preparation.
+> **TL;DR.** 🟡 **Partially deployed** today: the caseworker workspace is a model-driven Power App on the shared Dataverse environment `<your-dataverse-env>` in the DK system tenant. The artefact is `apps/d365/solutions/UDCSP_Core/customizations/apps/caseworker-app.xml`, with operator notes in `apps/powerapps/caseworker/README.md`, and imports through `pac solution import`. The Logic App `application-intake` still writes live submissions to standard Dataverse `tasks`. 🗺️ **Roadmap**: per-country D365 Customer Service environments, Copilot for Service runtime, SLA timers and writes to canonical `udcsp_application`.
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Case/actions in Dataverse `case` + `case_audit`; overrides in `eligibility_override`; Copilot conversations in `bot_session`; traces in App Insights → OneLake. |
+> | 🗄️ **Where stored** | 🟢 **Live** intake rows are Dataverse `tasks` in `<your-dataverse-env>`. 🟡 **Partially deployed** canonical table: `udcsp_application` is provisioned and matched by the Power App design, but the Logic App has not been repointed. 🔵 **In repo**: `udcsp_caseworker_decision` scaffold. 🗺️ **Roadmap**: D365 CS `case`, Copilot for Service chat persistence, persisted override table and Confidential Ledger write. |
+
+| Capability | Status | Current fact |
+|---|---|---|
+| Caseworker workspace | 🟡 **Partially deployed** | Model-driven Power App on shared Dataverse `<your-dataverse-env>`; `pac solution import` is still pending there. |
+| Per-country D365 Customer Service | 🗺️ **Roadmap** | DK, SE and NO Customer Service environments are not provisioned. |
+| Current intake storage | 🟢 **Live** | `application-intake` writes standard Dataverse `tasks`. |
+| Canonical target storage | 🟡 **Partially deployed** | `udcsp_application` schema and Power Fx names match the future D365 CS deployment, but the Logic App has not been repointed. |
+| Caseworker helper AI | 🟡 **Partially deployed** | Foundry `caseworker-helper` agent is deployed and APIM routes to it; Copilot for Service panel is not proven live. |
+| Override persistence | 🔵 **In repo** | `udcsp_caseworker_decision` is scaffolded but not persisted. No Confidential Ledger write is active. |
 
 ---
 
 > [!NOTE]
-> D365 Customer Service and **Copilot for Service are unchanged**. Caseworker administration uses **Azure Bastion** per country (no public IPs), **Microsoft Entra Permissions Management** (CIEM) continuously checks cross-tenant permissions, and auditors can view Confidential Ledger-backed AI Act decision evidence.
+> 🗺️ **Roadmap.** D365 Customer Service, Copilot for Service, per-country Bastion administration, CIEM checks and Confidential Ledger-backed evidence remain target architecture unless separately deployed and validated.
 
 ## 📑 Table of contents
 
@@ -38,7 +49,7 @@
 2. [The mental model in one picture](#2-the-mental-model-in-one-picture)
 3. [The case lifecycle, step by step](#3-the-case-lifecycle-step-by-step)
 4. [The seven building blocks](#4-the-seven-building-blocks)
-5. [The AI co-pilot for caseworkers — Microsoft Copilot for Service](#5-the-ai-co-pilot-for-caseworkers--microsoft-copilot-for-service)
+5. [The AI co-pilot for caseworkers](#5-the-ai-co-pilot-for-caseworkers)
 6. [The eligibility AI — recommendation, not decision](#6-the-eligibility-ai--recommendation-not-decision)
 7. [Multilingual — caseworker and citizen can speak different languages](#7-multilingual--caseworker-and-citizen-can-speak-different-languages)
 8. [Accessibility — caseworker workflow accessibility](#8-accessibility--caseworker-workflow-accessibility)
@@ -146,21 +157,21 @@ The Foundry `topic-router` `escalate-to-human` topic (`foundry/agents/topic-rout
 sequenceDiagram
     autonumber
     actor BOT as 🤖 Foundry `topic-router` bot
-    participant PA as ⚡ Power Automate
-    participant D365 as 🏢 D365 Case
+    participant PA as ⚙️ Logic App / Power Automate
+    participant D365 as 🏢 Dataverse task today
     participant ELI as 🧠 Eligibility model
     participant CW as 🧑‍💼 Caseworker
-    participant CFS as 🤖 Copilot for Service
+    participant CFS as 🤖 Foundry helper today<br/>Copilot target
     participant ACS as 📩 ACS notify
     participant FAB as 📊 Fabric mirror
 
     BOT->>PA: escalation trigger (full context + traceparent)
-    PA->>D365: create case (escalation-to-human.json)
-    D365->>D365: classifier routes to country/language queue
+    PA->>D365: create task row today<br/>udcsp_application target
+    D365->>D365: parse task description today<br/>dedicated columns target
     D365->>ELI: ai-pre-assessment-on-create.json fires
     ELI-->>D365: recommendation + confidence + reasoning + KB citations
     Note over D365: case sits in queue with AI pre-assessment attached
-    CW->>D365: opens case from "My Open Cases" view
+    CW->>D365: opens model-driven Power App view
     CW->>CFS: "Summarise this case for me"
     CFS-->>CW: one-paragraph summary in caseworker language
     CW->>CFS: "What does the policy say about X?"
@@ -177,13 +188,13 @@ sequenceDiagram
 
 | Phase | Budget | How we hit it |
 |---|---|---|
-| Escalation → case creation | < 30 s | Power Automate cloud flow, no polling |
+| Escalation → case creation | < 30 s | 🟢 **Live** citizen intake uses Logic App to Dataverse `tasks`; D365 case creation is 🗺️ **Roadmap** |
 | AI pre-assessment attached | < 2 min | `ai-pre-assessment-on-create` fires on Dataverse `Create` event |
 | Queue routing to caseworker | < 1 business hour | SLA KPI `FirstResponse` = `P1D`; sla-risk-alert fires at 75 % |
-| Caseworker review + decision | ≤ 4 business days | SLA KPI `ResolveBy` = `P4D` (down from 28-day baseline) |
+| Caseworker review + decision | ≤ 4 business days | 🗺️ **Roadmap** SLA KPI `ResolveBy` = `P4D` once D365 CS is installed |
 | Citizen notification | < 5 min after resolve | `citizen-status-notify` triggered on case status change |
-| Fabric mirror sync | < 15 min | Near-real-time Dataverse Link to Fabric; bronze layer auto-refreshes |
-| AI Act audit row | < 15 min | Same mirror pipeline; Purview lineage event emitted by `mirror-config.json` |
+| Fabric mirror sync | < 15 min | 🗺️ **Roadmap** near-real-time Dataverse Link to Fabric |
+| AI Act audit row | < 15 min | 🟡 **Partially deployed** Foundry trace exists for exercised paths; Confidential Ledger override write is not active |
 
 The sequence also covers the **failure path**: if the eligibility model returns a confidence below the 0.70 threshold, the `escalation-to-human` flow skips the pre-assessment step and routes directly to a caseworker with a flag on the case — no citizen waits for a model that can't decide.
 
@@ -193,14 +204,14 @@ The sequence also covers the **failure path**: if the eligibility model returns 
 
 | # | Block | What it does | Where it lives |
 |:-:|---|---|---|
-| **1** | **`UDCSP_Core` solution + 4 entities** | Shared schema: `udcsp_application`, `udcsp_consent_record`, `udcsp_country_zone`, `udcsp_eligibility_assessment`. Every case ultimately writes to these tables. | `apps/d365/solutions/UDCSP_Core/solution.xml`, `customizations/entities/` |
-| **2** | **Per-country solutions `UDCSP_DK / SE / NO`** | Country-specific queue names, local terminology (Bopæl / Folkbokföring / Folkeregister), dependency on Core. Deployed on top of Core — **never standalone**. | `apps/d365/solutions/UDCSP_{DK,SE,NO}/country-overrides.json` |
-| **3** | **Business process flow `application-intake-bpf`** | Five locked stages: Receive → Classify → Pre-assess → Caseworker review → Decide. The `Caseworker review` stage cannot be bypassed. | `customizations/businessprocessflows/application-intake-bpf.xml` |
-| **4** | **Caseworker views + queues** | Three views: `My Open Cases`, `SLA-Risk`, `AI Pre-assessed`. Four queues: `residency-DK`, `tax-SE`, `social-NO`, `accessibility-help`. | `customizations/views/caseworker-views.xml`, `customizations/queues/case-queues.xml` |
-| **5** | **SLA `four-day-sla`** | `FirstResponse` KPI: fail after `P1D`. `ResolveBy` KPI: fail after `P4D`. Applies to residency, tax, social-benefit, cross-border case types. The headline 28d → 4d reduction from the case study. | `customizations/sla/four-day-sla.xml` |
-| **6** | **Copilot for Service prompts** | Two scaffold prompts (`summarize-application`, `draft-citizen-reply`) backed by the Foundry `caseworker-helper` agent (`foundry/agents/caseworker-helper/`). Full runtime set includes 5 prompts (summarise, draft reply, suggest next action, explain eligibility reasoning, cite policy). | `customizations/copilot-for-service/prompts.xml` |
-| **7** | **Power Automate flows × 5** | `escalation-to-human` — creates case; `ai-pre-assessment-on-create` — triggers eligibility model; `citizen-status-notify` — outbound SMS+email; `sla-risk-alert` — warns at 75 % SLA; `dataverse-to-fabric-mirror` — syncs to Fabric. | `apps/d365/power-automate-flows/` |
-| **8** | **Dataverse → Fabric mirror** | Tables `udcsp_application`, `udcsp_eligibility_assessment`, `udcsp_country_zone`, `udcsp_consent_record` mirrored near-real-time to the per-country Fabric bronze lakehouse. Lineage events emitted to Purview. | `apps/d365/dataverse-to-fabric-mirroring/mirror-config.json` |
+| **1** | **`UDCSP_Core` solution + 4 entities** | 🟡 **Partially deployed** target schema: `udcsp_application`, `udcsp_consent_record`, `udcsp_country_zone`, `udcsp_eligibility_assessment`. Live intake still writes `tasks`. | `apps/d365/solutions/UDCSP_Core/solution.xml`, `customizations/entities/` |
+| **2** | **Per-country solutions `UDCSP_DK / SE / NO`** | 🗺️ **Roadmap** country-specific queue names, local terminology and dependency on Core after per-country D365 CS exists. | `apps/d365/solutions/UDCSP_{DK,SE,NO}/country-overrides.json` |
+| **3** | **Business process flow `application-intake-bpf`** | 🔵 **In repo** five locked stages: Receive → Classify → Pre-assess → Caseworker review → Decide. D365 runtime activation is 🗺️ **Roadmap**. | `customizations/businessprocessflows/application-intake-bpf.xml` |
+| **4** | **Caseworker views + queues** | 🔵 **In repo** views and queues. Per-country D365 queue activation is 🗺️ **Roadmap**. | `customizations/views/caseworker-views.xml`, `customizations/queues/case-queues.xml` |
+| **5** | **SLA `four-day-sla`** | 🗺️ **Roadmap** D365 CS SLA: `FirstResponse` KPI fails after `P1D`, `ResolveBy` after `P4D`. | `customizations/sla/four-day-sla.xml` |
+| **6** | **Caseworker helper prompts** | 🟡 **Partially deployed** Foundry `caseworker-helper` agent exists and APIM routes to it. Copilot for Service prompt import is 🗺️ **Roadmap**. | `customizations/copilot-for-service/prompts.xml`, `foundry/agents/caseworker-helper/` |
+| **7** | **Power Automate flows × 5** | 🔵 **In repo** target flows for escalation, AI pre-assessment, citizen notification, SLA risk and Fabric mirror. Live citizen intake currently uses Logic App `application-intake`. | `apps/d365/power-automate-flows/` |
+| **8** | **Dataverse → Fabric mirror** | 🗺️ **Roadmap** tables `udcsp_application`, `udcsp_eligibility_assessment`, `udcsp_country_zone`, `udcsp_consent_record` mirrored to per-country Fabric. Purview lineage is not live while the endpoint is `placeholder.local`. | `apps/d365/dataverse-to-fabric-mirroring/mirror-config.json` |
 
 The eight blocks divide naturally into two layers: **Foundation** (blocks 1–2, the Dataverse schema and country customisations — must be deployed first) and **Orchestration** (blocks 3–8, the runtime behaviour — deployable incrementally after foundation).
 
@@ -211,9 +222,13 @@ Two cross-cutting concerns:
 | 📜 | **Correlation thread** — every case carries a `udcsp_traceparent` (W3C trace context) that links the Foundry `topic-router` conversation, the Power Automate flows, the Foundry eligibility trace, and the Fabric mirror row into a single observable request chain. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_application.xml` |
 | 🔐 | **Consent gating** — citizen consent for data processing is modelled in `udcsp_consent_record` and checked by `citizen-status-notify` before any outbound communication. Notifications are suppressed if consent has expired or been withdrawn. | `apps/d365/solutions/UDCSP_Core/customizations/entities/udcsp_consent_record.xml` |
 
-Every caseworker has a persistent **Copilot for Service panel** docked inside the D365 case form. It is powered by the `udcsp-caseworker-helper` Foundry agent (`foundry/agents/caseworker-helper/agent.yaml`) — model `gpt-5.4` (was `gpt-5.5`, but `gpt-5.5` has zero quota in `swedencentral`), temperature `0.2`, `p95 ≤ 2 s` inside the D365 panel.
+## 5. The AI co-pilot for caseworkers
+
+🟡 **Partially deployed** today: the `udcsp-caseworker-helper` Foundry agent is deployed and APIM routes to it. 🗺️ **Roadmap**: a persistent Copilot for Service panel docked inside a D365 Customer Service case form. Do not describe Copilot for Service as live until the repo or tenant evidence proves that runtime.
 
 > ⚠️ **Today's caseworker surface is a shared model-driven Power App on Dataverse `<your-dataverse-env>`** — the per-country D365 Customer Service envs are not yet provisioned. The `udcsp_application` schema, Power Fx form and column logical names match what the future D365 deployment will use, so the artefact is a drop-in. See [`../tech/inprogress.md`](../tech/inprogress.md) § "Caseworker UI strategy".
+
+🟢 **Live storage constraint.** `application-intake` writes to the standard `tasks` activity entity today. The task `description` field creates a 2000-character practical truncation issue, so the SPA carries a 3-tier `descriptionParser.ts` compatibility layer to recover fields from old rows. Repointing the Logic App to `udcsp_applications` after D365 CS is installed removes that truncation path because the target table has dedicated columns.
 
 The five runtime prompts (two scaffolded in `prompts.xml`, three added at import time):
 
@@ -225,18 +240,20 @@ The five runtime prompts (two scaffolded in `prompts.xml`, three added at import
 | **explain-eligibility** | "Why did the model say ineligible?" | Step-by-step reasoning trace from `udcsp_eligibility_assessment` — confidence, features, KB citations |
 | **cite-policy** | "What does Article X say?" | Verbatim policy paragraph + source URL from the multilingual knowledge base |
 
-The agent's knowledge sources are the same Foundry KB indices used by the citizen-assistant — **one knowledge base, two audiences**. Caseworker prompts add the `d365-case-reader` tool so the agent can read the live case record, and the `draft-response-writer` tool so it can propose outbound messages.
+The agent's knowledge sources are the same Foundry KB indices used by the citizen-assistant. 🔵 **In repo** caseworker prompts add the `d365-case-reader` tool so the agent can read the target case record, and the `draft-response-writer` tool so it can propose outbound messages.
 
 Content safety is applied on both input and output (`azure-ai-content-safety-standard`). The `blockCategories` list includes `pii_exfiltration` — the co-pilot cannot be prompted into leaking citizen data outside the case context. The evaluation suite (`foundry/evaluations/eval-suites/caseworker-helper.yaml`) is run on every Foundry agent release to guarantee non-regression on summary quality, draft accuracy, and policy citation precision.
 
 > [!NOTE]
-> **Every AI suggestion is opt-in.** The caseworker accepts, edits, or rejects each Copilot output. No message leaves D365 without a human pressing **Send**. Accepted/edited/rejected outcomes are logged to Dataverse and mirrored to Fabric for quality tracking.
+> **Every AI suggestion is opt-in.** The caseworker accepts, edits, or rejects each AI output. 🗺️ **Roadmap** Copilot for Service and D365 send controls are activated after the per-country Customer Service environments exist.
 
 ---
 
 ## 6. The eligibility AI — recommendation, not decision
 
 The **Eligibility Pre-Assessor** (`foundry/agents/eligibility/agent.yaml`) is classified as a **high-risk AI system** under the EU AI Act (`governance/ai-act/registry/eligibility-model.yaml`). Its role is strictly advisory:
+
+🟡 **Partially deployed** today: eligibility pre-assessment is invoked from the citizen portal and the verdict travels in the submit payload. The caseworker disposal surface is the model-driven Power App. The Logic App still writes `tasks`, so reads from `udcsp_application` and linked `udcsp_eligibility_assessment` rows are target architecture until the repoint is done.
 
 1. On case creation, the `ai-pre-assessment-on-create` Power Automate flow invokes the eligibility model via APIM.
 2. The model reads the `udcsp_application` record, retrieves validated policy reference data from Fabric silver, and produces:
@@ -280,7 +297,7 @@ The case carries two language fields: `citizenLanguage` (set at escalation time 
 
 | Scenario | What happens |
 |---|---|
-| Citizen in PL, caseworker in SV | Copilot for Service auto-presents the case narrative in SV; draft citizen reply is proposed in PL |
+| Citizen in PL, caseworker in SV | 🗺️ **Roadmap** Copilot for Service auto-presents the case narrative in SV; draft citizen reply is proposed in PL |
 | Citizen in AR, caseworker in DA | KB search returns DA articles for the caseworker; outbound draft is in AR with RTL formatting |
 | Citizen and caseworker both in NB | No translation required; native pass-through |
 | Citizen in UK, caseworker in EN | Foundry translator bridges UK → EN for the case narrative |
@@ -298,20 +315,22 @@ The `caseworker-helper` agent (`agent.yaml`) lists all 12 locales in its `langua
 
 Caseworkers themselves may have disabilities. UDCSP is built to that bar:
 
-- ♿ **WCAG 2.1 AA** — the D365 web client meets WCAG 2.1 AA out of the box; Microsoft publishes accessibility conformance reports for D365 Customer Service.
-- ⌨️ **Keyboard-only case navigation** — all queue views, case forms, BPF stage controls, and Copilot for Service panel are fully keyboard-navigable. No action requires a mouse.
+- ♿ **WCAG 2.1 AA** — 🗺️ **Roadmap** D365 web client accessibility applies after Customer Service is installed. The current Power App should be tested in `<your-dataverse-env>` after import.
+- ⌨️ **Keyboard-only case navigation** — 🔵 **In repo** queue views, case forms and BPF stage controls are standard Dataverse metadata; Copilot for Service panel validation is 🗺️ **Roadmap**.
 - 🔊 **Screen-reader-friendly queue views** — the `My Open Cases`, `SLA-Risk`, and `AI Pre-assessed` saved queries in `caseworker-views.xml` are implemented as standard Dataverse grids with proper ARIA roles and column headers.
-- 🎯 **Focus-visible on AI suggestions panel** — the Copilot for Service panel's accept / edit / reject controls carry explicit `:focus-visible` outlines at 3 px contrast-compliant weight.
+- 🎯 **Focus-visible on AI suggestions panel** — 🗺️ **Roadmap** Copilot for Service panel controls are validated after runtime activation.
 - 🎞️ **Reduced-motion respected** — the BPF stage-progress animation respects `prefers-reduced-motion: reduce` via the D365 theming layer.
 - 🖋️ **High-contrast mode** — D365's built-in high-contrast theme is tested in CI against the three custom entities and the Copilot panel via axe-core.
 
-The `accessibility-help` queue (`case-queues.xml`) is a cross-country priority queue for cases where the citizen has signalled an accessibility need. Caseworkers assigned to this queue receive additional training on handling citizens with disabilities and are equipped with Copilot for Service's plain-language drafting prompt to ensure replies are at CEFR B1 reading level or below.
+The `accessibility-help` queue (`case-queues.xml`) is 🔵 **In repo** as a cross-country priority queue for cases where the citizen has signalled an accessibility need. Copilot for Service plain-language drafting is 🗺️ **Roadmap**.
 
 Accessibility is not just a citizen concern — caseworkers with low vision, motor impairments, or cognitive load differences use this channel all day, every day. UDCSP is designed to the same bar for both sides of the service window.
 
 ---
 
 ## 9. Sovereignty — one Dataverse environment per country, one mirror per country, one queue tree per country
+
+🗺️ **Roadmap.** This is the target country-split model. 🟡 **Partially deployed** today, the shared DK system tenant Dataverse environment `<your-dataverse-env>` hosts the model-driven Power App stance until per-country D365 Customer Service environments exist.
 
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
@@ -363,12 +382,12 @@ The per-country queue trees (`apps/d365/solutions/UDCSP_{DK,SE,NO}/country-overr
 
 | | SLO | Target | How we measure |
 |:-:|---|---|---|
-| ⚡ | **Time-to-first-touch** (case assigned → caseworker opens it) | ≤ **1 business hour** p95 | SLA KPI `FirstResponse` in D365; `sla-risk-alert` fires at 75 % |
-| 🎯 | **Case resolution** | ≤ **4 business days** p95 | SLA KPI `ResolveBy`; Power BI per-country KPI tile |
+| ⚡ | **Time-to-first-touch** (case assigned → caseworker opens it) | ≤ **1 business hour** p95 | 🗺️ **Roadmap** SLA KPI `FirstResponse` in D365; `sla-risk-alert` fires at 75 % |
+| 🎯 | **Case resolution** | ≤ **4 business days** p95 | 🗺️ **Roadmap** SLA KPI `ResolveBy`; Power BI per-country KPI tile |
 | 🤖 | **AI-suggestion acceptance rate** | Track; guarantee non-degradation | `caseworker-helper` eval suite in `foundry/evaluations/eval-suites/caseworker-helper.yaml` |
 | 😊 | **Caseworker satisfaction with co-pilot** | ≥ **4 / 5** CSAT | Post-session survey embedded in D365 (A15 synthetic baseline; prod live survey) |
-| 📋 | **AI Act audit completeness** | **100 %** of eligibility decisions have an `udcsp_eligibility_assessment` row with caseworker action | Purview compliance dashboard + automated nightly check |
-| 🔁 | **Fabric mirror lag** | ≤ 15 min p95 | Dataverse Link to Fabric latency metric in Fabric monitoring |
+| 📋 | **AI Act audit completeness** | **100 %** of eligibility decisions have an `udcsp_eligibility_assessment` row with caseworker action | 🗺️ **Roadmap** Purview compliance dashboard + automated nightly check |
+| 🔁 | **Fabric mirror lag** | ≤ 15 min p95 | 🗺️ **Roadmap** Dataverse Link to Fabric latency metric in Fabric monitoring |
 | 🛡️ | **Cross-border data isolation** | Zero cross-country data reads without explicit consent claim | APIM policy audit log scanned nightly for `cross-border-consent` violations |
 
 Risks tracked in `docs/tech/plan.md` (A8 / A11 risk register):
@@ -387,9 +406,9 @@ Risks tracked in `docs/tech/plan.md` (A8 / A11 risk register):
 A new caseworker goes live through six concrete steps:
 
 1. **AAD group membership** — the caseworker's work account is added to the correct country group (`CaseworkersDK`, `CaseworkersSE`, or `CaseworkersNO`) in Entra ID. This is the only step required to grant D365 environment access.
-2. **D365 security role assignment** — the `UDCSP Caseworker` security role is assigned in the target Dataverse environment. The role grants read/write on the four core entities, queue access to the country queues, and read-only access to `udcsp_eligibility_assessment`.
+2. **D365 security role assignment** — 🗺️ **Roadmap** the `UDCSP Caseworker` security role is assigned in the target Dataverse environment. The role grants read/write on the four core entities, queue access to the country queues, and read-only access to `udcsp_eligibility_assessment`.
 3. **Sandbox environment with synthetic cases** — the caseworker logs in to the DEV or UAT environment seeded with `Install-UDCSP.ps1 -SeedSyntheticData`. The `data/synthetic/` dataset includes ~200 realistic cases across all case types and all 12 languages — enough to rehearse every BPF path.
-4. **Copilot for Service trial week with shadowing** — the caseworker spends the first five working days processing synthetic cases alongside a senior colleague. Every Copilot suggestion is reviewed jointly; the caseworker learns when to trust, edit, or override.
+4. **Copilot for Service trial week with shadowing** — 🗺️ **Roadmap** after Copilot for Service is activated, the caseworker spends the first five working days processing synthetic cases alongside a senior colleague.
 5. **AI Act registry briefing + EU AI Act Art. 14 training** — mandatory 45-minute module covering: what the eligibility model does, what `riskLevel: high` means for the caseworker's legal responsibility, how to complete an override record correctly, and how to read the AI Act audit dashboard.
 6. **Production go-live with progressive case load** — first week: 10 cases / day (monitored); second week: 30 cases / day; third week: full queue. Override rates and CSAT are tracked per caseworker during the ramp period.
 
@@ -402,11 +421,13 @@ The ramp schedule is tracked in the per-country Dataverse environment. A supervi
 
 ## 12. The activation runbook
 
+🗺️ **Roadmap** for per-country D365 Customer Service. 🟡 **Partially deployed** current action is to import the model-driven Power App XML into `<your-dataverse-env>`, then keep the same schema for drop-in replacement later.
+
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
 flowchart TB
     P0["✅ Pre-reqs<br/><i>Foundry + APIM + Foundry `topic-router` bot live</i>"]
-    P1["1️⃣ Deploy UDCSP_Core<br/><i>pac solution import × 3 countries</i>"]
+    P1["1️⃣ Import current Power App<br/><i>pac solution import into <your-dataverse-env></i>"]
     P2["2️⃣ Deploy per-country solutions<br/><i>UDCSP_DK · UDCSP_SE · UDCSP_NO</i>"]
     P3["3️⃣ Import Power Automate flows × 5<br/><i>wire dataverseConnection + fabricWorkspaceId</i>"]
     P4["4️⃣ Wire D365 ↔ APIM ↔ Foundry<br/><i>Connection references + shared_commondataserviceforapps</i>"]
@@ -444,9 +465,9 @@ Core is always imported before the country solution — `UDCSP_DK/SE/NO` each ha
 
 | Level | Command | What it proves | Lead time |
 |---|---|---|---|
-| **🚦 Smoke (isolated)** | `pwsh apps/d365/scripts/Test-D365.ps1 -EnvironmentUrl $url -AccessToken $token` | Creates a synthetic application, validates BPF wiring, checks SLA timer starts, checks AI pre-assessment row is created. **No citizen data, no real Fabric write.** | < 60 s |
+| **🚦 Smoke (isolated)** | `pwsh apps/d365/scripts/Test-D365.ps1 -EnvironmentUrl $url -AccessToken $token` | 🔵 **In repo** target D365 smoke. Current shared Power App import into `<your-dataverse-env>` should be validated manually after `pac solution import`. | < 60 s |
 | **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-05-astrid-caseworker.spec.ts` | Escalates a synthetic chat to the SE caseworker queue; asserts the D365 case appears with AI pre-assessment; asserts Copilot summary is rendered; asserts override action is logged to Foundry trace. | ~ 3 min |
-| **👤 Live (real caseworker)** | Real caseworker logs in to D365 web client in UAT | The full human experience: queue view, Copilot panel, BPF progression, citizen-notify, Fabric mirror. Validates accessibility with screen reader. | Manual, ~20 min |
+| **👤 Live (real caseworker)** | Real caseworker logs in to the model-driven Power App in `<your-dataverse-env>` | 🟡 **Partially deployed** human experience: Power App caseworker workspace over the shared Dataverse environment. Copilot panel, D365 SLA and Fabric mirror are 🗺️ **Roadmap**. | Manual, ~20 min |
 
 The smoke script (`apps/d365/scripts/Test-D365.ps1`) requires `-EnvironmentUrl` and `-AccessToken`. Both are emitted by `Deploy-D365.ps1` into the install log so the test-run can be chained immediately after deployment without manual credential gathering.
 
@@ -459,12 +480,12 @@ The E2E spec (`tests/e2e/tests/scenario-05-astrid-caseworker.spec.ts`) maps to e
 
 ## 14. The demo script for a jury
 
-5 beats, ~7 minutes, no setup beyond the seeded DEV environment:
+5 beats, ~7 minutes. Use the 🟡 **Partially deployed** Power App stance for current demos and keep the D365 CS flow below as target narration.
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
 | 1 | Show Lars's voice case (Demo 2 aftermath) landing in the NO queue with full ACS transcript + AI pre-assessment verdict "likely eligible — confidence 0.82" | `social-NO` queue; SLA countdown started; AI assessment panel visible | #3 (28d→4d) · #16 (caseworker) |
-| 2 | Caseworker opens the case; Copilot for Service auto-summarises in NB ("Lars Eriksen applied for income supplement…") | One-paragraph summary; evidence checklist; SLA risk: green | #6 (GenAI assist) · #13 (multilingual) |
+| 2 | Caseworker opens the workspace; Foundry caseworker helper can provide the summary path today, while Copilot for Service is 🗺️ **Roadmap** | One-paragraph summary target; evidence checklist target; SLA risk target | #6 (GenAI assist) · #13 (multilingual) |
 | 3 | Caseworker asks: *"Hva sier loven om inntektsgrensen?"* (NB) | Copilot cites the correct NAV policy article in NB, with a direct link | #6 · #15 (audit) |
 | 4 | Caseworker clicks **Approve** — one click, one confirmation | Outbound SMS + email sent to Lars in NB; BPF advances to **Decide** | #3 · #4 (CSAT) · #13 |
 | 5 | Jury switches to Power BI / Fabric NO workspace | Resolution row in Fabric bronze; Foundry trace visible; AI Act audit row appended with `action: approved` | #10 (sovereignty) · #15 · #9 (GDPR/AI Act) |
@@ -489,7 +510,7 @@ This corresponds to **Demo 5** and **Demo 6** in [`uses.md`](./uses.md#️-demo-
 | Let the AI auto-decide (skip caseworker review) | `Caseworker review` BPF stage is mandatory; `udcsp_eligibility_assessment` requires a caseworker action field before `Decide` stage |
 | Share one D365 environment across countries | One Dataverse environment per country, enforced by `Install-D365.psm1` and AAD group separation |
 | Ignore the override signal | Override rate is a live exec KPI; every override feeds the Foundry monthly eval cycle |
-| Put the AI co-pilot outside the case context | Copilot for Service panel reads the live case record via `d365-case-reader` tool — it reasons on **this** citizen's data, not generic knowledge |
+| Put the AI co-pilot outside the case context | 🔵 **In repo** `d365-case-reader` target tool keeps assistance tied to the case record; Copilot for Service panel is 🗺️ **Roadmap** |
 | Email-to-case without classification | `escalation-to-human.json` routes to `accessibility-help` or the correct country/skill queue — no unclassified inbox |
 | Let citizen-language drift from caseworker reply | Copilot drafts the outbound reply in the **citizen's** language; caseworker cannot inadvertently reply in their own language without editing the draft |
 | No SLA timer | `four-day-sla.xml` starts the SLA KPI the moment the case is created; `sla-risk-alert.json` fires at 75 % of the failure window |
@@ -501,14 +522,15 @@ This corresponds to **Demo 5** and **Demo 6** in [`uses.md`](./uses.md#️-demo-
 
 ## 16. Where the caseworker activity is stored
 
-The caseworker channel is the legally accountable system of record: case state, human actions, and override decisions live in Dataverse, while every AI suggestion is correlated to a Foundry trace. Copilot for Service conversations use the same Microsoft conversational store as Foundry `topic-router`, and precedent knowledge is read from anonymised OneLake Gold only. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+The caseworker channel is the legally accountable system of record. 🟢 **Live** today, intake data lands in Dataverse `tasks`. 🟡 **Partially deployed** target schema, the `udcsp_application` table and Power App logical names are aligned for the D365 CS repoint. 🔵 **In repo** `udcsp_caseworker_decision` is scaffolded but not persisted. Copilot for Service conversations and Confidential Ledger override evidence are 🗺️ **Roadmap**.
 
 | What | Where | Retention |
 |---|---|---|
-| Case state + actions | Dataverse `case` + `case_audit` | 10 years |
-| Human override | Dataverse `eligibility_override` + Foundry `human-override` annotation | 10 years / case retention |
-| Copilot for Service chat | Dataverse `bot_session` | 6 months hot; 6 years OneLake |
-| AI traces + precedents | App Insights → OneLake Bronze; OneLake Gold read-only precedents | Traces 180 days hot; precedents anonymised |
+| Current intake state | 🟢 **Live** Dataverse `tasks` in `<your-dataverse-env>` | 10 years target |
+| Target case state + actions | 🗺️ **Roadmap** Dataverse `case` + `case_audit` in per-country D365 CS | 10 years |
+| Human override | 🔵 **In repo** `udcsp_caseworker_decision` scaffold; no persisted override or Confidential Ledger write yet | 10 years / case retention target |
+| Copilot for Service chat | 🗺️ **Roadmap** Dataverse `bot_session` | 6 months hot; 6 years OneLake |
+| AI traces + precedents | 🟡 **Partially deployed** App Insights traces for exercised paths; OneLake Gold precedents are target | Traces 180 days hot; precedents anonymised |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 

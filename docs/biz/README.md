@@ -4,7 +4,7 @@
 
 ### *Why* the platform exists · *Who* it serves · *How* every channel works
 
-[![Docs](https://img.shields.io/badge/📑_Docs-15-1565C0?style=for-the-badge)](#)
+[![Docs](https://img.shields.io/badge/📑_Docs-17-1565C0?style=for-the-badge)](#)
 [![Channels](https://img.shields.io/badge/📡_Channels-6-2E7D32?style=for-the-badge)](#)
 [![Personas](https://img.shields.io/badge/👥_Personas-15-AD1457?style=for-the-badge)](#)
 [![Scenarios](https://img.shields.io/badge/🎬_Scenarios-10-E65100?style=for-the-badge)](#)
@@ -13,7 +13,9 @@
 
 ---
 
-> ℹ️ **Deployed vs roadmap.** These docs describe the **target platform**. For what's actually live today across DK/SE/NO — including D365 Customer Service status, Verified ID, the Demo 2 no-handoff mode — see [`../tech/inprogress.md`](../tech/inprogress.md).
+> ℹ️ **Deployed vs roadmap.** These docs describe the **target platform**. For what is actually live today across DK/SE/NO, see [`../tech/inprogress.md`](../tech/inprogress.md), which is the source of truth for status.
+>
+> **Status vocabulary used across the documentation set:** 🟢 **Live** (deployed and exercised end to end) · 🟡 **Partially deployed** (limited to some countries or paths) · 🔵 **In repo** (code exists, not deployed) · ⚙️ **Scripted** (an installer phase or patch deploys it, not yet validated here) · 🗺️ **Roadmap** (designed, not built). The *Today* column below gives the headline status of each channel; the document itself carries the detail.
 
 ---
 
@@ -30,15 +32,15 @@
 
 ## 📡 Channels — How citizens reach the platform
 
-| Doc | Channel | Headline |
-|---|---|---|
-| 🌐 [`web.md`](./web.md) | **Web portal** | One unified portal replacing 47 country sites. |
-| 📱 [`mobile.md`](./mobile.md) | **Mobile app** | One React Native codebase, three countries, same Foundry brain. |
-| 💬 [`chat.md`](./chat.md) | **Chat widget** | Conversational front door, embeds the topic-router. |
-| 📞 [`voice.md`](./voice.md) | **Voice (PSTN)** | Telephone is a peer of web and mobile, not an afterthought. |
-| 📧 [`email.md`](./email.md) | **Email** | Inbound triage + outbound notifications with attachments. |
-| 📲 [`sms.md`](./sms.md) | **SMS** | Status updates and OTP flows. |
-| 🧑‍💼 [`caseworker.md`](./caseworker.md) | **Caseworker (D365)** | The back-office channel where every escalation lands and AI is supervised. |
+| Doc | Channel | Headline | Today |
+|---|---|---|---|
+| 🌐 [`web.md`](./web.md) | **Web portal** | One unified portal replacing 47 country sites. | 🟢 Live |
+| 📱 [`mobile.md`](./mobile.md) | **Mobile app** | The portal sized for a phone; the Expo native shell stays an artefact. | 🟢 Live (responsive) · 🔵 native shell |
+| 💬 [`chat.md`](./chat.md) | **Chat widget** | Conversational front door, embeds the topic-router. | 🟢 Live |
+| 📞 [`voice.md`](./voice.md) | **Voice (PSTN)** | Telephone is a peer of web and mobile, not an afterthought. | 🟡 NO live · DK/SE not deployed |
+| 📧 [`email.md`](./email.md) | **Email** | Inbound triage + outbound notifications with attachments. | 🔵 In repo |
+| 📲 [`sms.md`](./sms.md) | **SMS** | Status updates and OTP flows. | 🔵 In repo |
+| 🧑‍💼 [`caseworker.md`](./caseworker.md) | **Caseworker** | The back-office channel where every escalation lands and AI is supervised. | 🟡 Power App on shared Dataverse · D365 CS is the target |
 
 ---
 
@@ -48,6 +50,7 @@
 |---|---|
 | 🧠 [`ai.md`](./ai.md) | The AI architecture — Microsoft Foundry · topic-router · Azure OpenAI · 7 agents · 12 languages. |
 | 🛡️ [`guardian.md`](./guardian.md) | **UDCSP Guardian** — the proactive, autonomous, human-supervised entitlement layer. Flips the platform from reactive to *no-stop-shop*: it detects life events, assesses silently, and reaches out first, under caseworker control. |
+| 🔍 [`traceability.md`](./traceability.md) | **Who decided this, when, why, on what evidence.** The decision trail from citizen submission to caseworker disposition, mapped to EU AI Act articles, with the deployed hops separated from the target ones. |
 | 🛡️ [`datacompliance.md`](./datacompliance.md) | Every regulation we answer to · every control · every piece of evidence (GDPR, AI Act, eIDAS 2.0, NIS2, ePrivacy). |
 | 💶 [`cost.md`](./cost.md) | What the platform costs to run — fixed floor vs variable, scaled from 10k to 1M citizens per country, and the FinOps levers that drive ≈ €24 → €3 per citizen / year. |
 | 🔒 [`auditsecu.md`](./auditsecu.md) | Read-only full-repo security audit — methodology, the one MEDIUM finding, below-threshold observations, and the high-risk sinks verified safe (commit `661ec81`). |

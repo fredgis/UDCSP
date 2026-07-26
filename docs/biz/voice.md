@@ -6,6 +6,8 @@
 
 *How a citizen dials a Nordic toll-free number, talks to the same Foundry brain that powers the web, and gets a spoken answer in their own language — with full GDPR + EU AI Act compliance.*
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 [![Channel](https://img.shields.io/badge/📞_Channel-Telephone_PSTN-1565C0?style=for-the-badge)](#)
 [![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_topic--router-FF6F00?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Voices-6_neural_·_12_disclosure_scripts-AD1457?style=for-the-badge)](#)
@@ -21,11 +23,17 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen dials a country toll-free number → **Azure Communication Services Call Automation** answers → the **voice orchestrator Container App** (`apps/voice/call-automation/`) opens a bidirectional WebSocket to **Azure OpenAI gpt-realtime** for native low-latency STT + reasoning + TTS in one stream → from inside that stream the orchestrator calls **APIM** `/agents/topic-router` as a **function tool** to fan out to the same Foundry agents that power web/mobile → on `escalate=true` the call is **warm-transferred** to a D365 voice workstream queue. **Azure AI Speech is kept only for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11). **Voice invokes Foundry `topic-router` via APIM; no separate conversational façade is used.**
+> **TL;DR.** 🟢 **Live for Norway only.** A caller dials `+33 801 150 799`, routed through `udcsp-no-acs` (`dataLocation=Norway`, sovereignty intact). **Azure Communication Services Call Automation** answers, the **voice orchestrator Container App** (`apps/voice/call-automation/`) runs with a user-assigned managed identity and Key Vault backed secrets, opens **Azure OpenAI gpt-realtime** (`2025-08-28`) on `udcspai` in Sweden Central, then invokes the `lookup_topic_router` function tool through APIM `/agent-topic-router/messages` to the Foundry citizen-assistant. `UDCSP_LOCALE_OVERRIDE=en` is active for jury demos. 🗺️ **Roadmap for Denmark and Sweden.** No country-specific voice orchestrator is deployed for DK or SE today. 🗺️ **Roadmap for human transfer and audio recording.** Demo 2 v1 is no-handoff: `escalate_to_human` is gated on empty `D365_VOICE_QUEUE_ID`, so the tool is not exposed to gpt-realtime. Audio writing to `voice-recordings/` is gated off. 🟢 **Live for transcripts.** `realtime.assistant_transcript` and `realtime.user_transcript` flow into Application Insights with `traceparent` correlation end-to-end.
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Audio/STT in ADLS Gen2 `voice-recordings/`; dialog in Dataverse `bot_session`; ACS call events in `acs-events/`; Foundry traces in App Insights → OneLake with Confidential Ledger anchors. |
+> | 🗄️ **Where stored** | Transcript events in App Insights today (`realtime.assistant_transcript`, `realtime.user_transcript`) with ACS and Foundry traces correlated by `traceparent`. Audio/STT blobs in `voice-recordings/`, Dataverse `bot_session` mirroring and Confidential Ledger anchoring are 🗺️ **Roadmap** with D365 Customer Service NO. |
+
+| Country | Voice runtime status | What exists now |
+|---|---|---|
+| 🇳🇴 Norway | 🟢 **Live** | `+33 801 150 799` → `udcsp-no-acs` → orchestrator Container App → `gpt-realtime-no` on `udcspai` Sweden Central → APIM `/agent-topic-router/messages` → Foundry citizen-assistant. |
+| 🇩🇰 Denmark | 🗺️ **Roadmap** | IVR packs and ACS IaC are present, but no DK country-specific voice orchestrator is deployed. |
+| 🇸🇪 Sweden | 🗺️ **Roadmap** | IVR packs and ACS IaC are present, but no SE country-specific voice orchestrator is deployed. |
 
 ---
 
@@ -61,7 +69,7 @@ Three reasons telephone is a **first-class** channel in UDCSP, not a checkbox:
 
 - 🧓 **Inclusion.** A non-trivial fraction of the 2.1 M Scandinavian citizens UDCSP serves cannot, will not, or should not use a screen — elderly citizens, citizens with low digital literacy, citizens with motor or visual disabilities. Voice is the **inclusivity hatch**.
 - 📵 **Resilience.** When a portal is down, when an app is uninstalled, when a phone has no data plan, when a user is on the go and cannot type — voice still works. PSTN is the universal fallback.
-- 🤝 **Trust.** For sensitive topics (homelessness, domestic violence, child safety, identity theft) talking to a *voice* is more humane than typing into a chat box. The voice channel is configured to escalate to a human caseworker on those topics by default.
+- 🤝 **Trust.** For sensitive topics (homelessness, domestic violence, child safety, identity theft) talking to a *voice* is more humane than typing into a chat box. Human escalation is 🗺️ **Roadmap** in Demo 2 v1: `D365_VOICE_QUEUE_ID` is empty, so `escalate_to_human` is not exposed to gpt-realtime until D365 Customer Service NO is installed.
 
 The design principle, codified in `docs/biz/uses.md` § Demo 2:
 
@@ -76,20 +84,20 @@ flowchart TB
     PHONE["☎️ Citizen phone"] -->|PSTN| ACS["Azure Communication Services<br/>Call Automation"]
     ACS <-->|bidirectional audio WS| ORCH["Voice orchestrator Container App<br/>apps/voice/call-automation/"]
     ORCH <-->|gpt-realtime WS<br/>native STT + TTS| GPTRT["Azure OpenAI<br/>gpt-realtime"]
-    ORCH -->|function tool: lookup_topic_router| APIM["APIM<br/>/agents/topic-router"]
+    ORCH -->|function tool: lookup_topic_router| APIM["APIM<br/>/agent-topic-router/messages"]
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility · doc-extractor · caseworker-helper"]
-    ORCH -.->|escalate_to_human<br/>v2 only · needs D365 CS| D365["Dynamics 365<br/>voice workstream<br/>(optional in v1)"]
+    ORCH -.->|escalate_to_human<br/>Roadmap · needs D365 CS NO| D365["Dynamics 365<br/>voice workstream<br/>(not exposed in v1)"]
     ROUTER --> FABRIC["Fabric + App Insights<br/>transcripts + traces"]
     ORCH -->|end_call_with_recap| ACSOUT["ACS SMS récap"]
     ACSOUT -.-> PHONE
-    SPEECH["Azure AI Speech<br/>(reserved for D365 pre-orchestrator IVR menus<br/>+ post-call analytics — not in the live audio path)"]
+    SPEECH["Azure AI Speech<br/>(Roadmap for D365 IVR menus<br/>+ post-call analytics, not live audio)"]
     D365 -. menus .-> SPEECH
     classDef v2 stroke-dasharray:5 5,stroke:#888,color:#666
     class D365,SPEECH v2
 ```
 
-> 📖 **Reading the picture.** Voice keeps ACS for telephony and **gpt-realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agents/topic-router` invoked as a **function tool** so Foundry stays the only stateful brain. **The dashed D365 leg is enabled only in v2** (when Customer Service is provisioned per country); v1 — Demo 2 no-handoff — runs the citizen↔AI loop without warm-transfer (see § 11.4b). **Azure AI Speech is reserved for D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
+> 📖 **Reading the picture.** Voice keeps ACS for telephony and **gpt-realtime as the primary speech path** (native STT+TTS in one stream, lower latency than the classic STT→reasoning→TTS chain). The voice orchestrator Container App is the bridge: it owns the ACS audio WebSocket on one side and the GPT Realtime WebSocket on the other, with APIM `/agent-topic-router/messages` invoked as a **function tool** so Foundry stays the only stateful brain. **The dashed D365 leg is 🗺️ Roadmap for v2** (when Customer Service NO is provisioned); v1, Demo 2 no-handoff, runs the citizen↔AI loop without warm-transfer (see § 11.4b). **Azure AI Speech is reserved for 🗺️ Roadmap D365 pre-orchestrator IVR menus and post-call analytics** (see § 11.2 for the rationale).
 
 ---
 
@@ -114,7 +122,7 @@ sequenceDiagram
     GPTRT-->>ORCH: streaming partial transcript + intent
     ORCH->>API: function tool: lookup_topic_router(text, locale)
     API->>API: validate voice channel token · audit
-    API->>R: POST /agents/topic-router
+    API->>R: POST /agent-topic-router/messages
     R->>F: delegate answer / eligibility / translation
     F-->>R: answer + evidence + safety verdict
     R-->>API: channel-shaped response
@@ -212,7 +220,7 @@ ACS Call Automation answer() ─────┐
 5. La **WebSocket Realtime** s'ouvre — l'orchestrator négocie une session `gpt-realtime` sur `udcspai` (Sweden Central, seule région Nordic avec quota realtime). Audio bidirectionnel en PCM low-latency.
 6. Le **LLM realtime** lit d'abord le disclosure (TTS direct dans le pipeline), puis "How can I help?", puis écoute le citoyen.
 7. **Tool calls** — si le citoyen demande une action métier (statut d'un dossier, classification d'un cas…), le model appelle `topic_router` via function calling → POST APIM `/agent-topic-router/messages` avec `channel: "voice"` → réponse Foundry → speakée en retour via le pipeline TTS du Realtime.
-8. **Souveraineté** — audio + recordings ACS restent à `dataLocation=Norway`, le modèle realtime tourne à Sweden Central (bloc Nordic, EU). Pas d'audio sortant de la zone Nordic. Le `traceparent` généré au moment du POST EventGrid est propagé jusqu'à App Insights, ce qui permet la corrélation KQL bout-en-bout.
+8. **Sovereignty**: live call media stays on `udcsp-no-acs` with `dataLocation=Norway`, while the realtime model runs in Sweden Central (Nordic, EU). Audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off today. Transcript events and `traceparent` are propagated to App Insights for end-to-end KQL correlation.
 
 ---
 
@@ -221,8 +229,8 @@ ACS Call Automation answer() ─────┐
 | # | Block | What it does | Where it lives |
 |:-:|---|---|---|
 | **1** | **Azure Communication Services (PSTN)** | Decrochés des appels entrants, gestion des numéros toll-free, pont avec le RTC. **One ACS resource per country**, region-pinned for sovereignty. | `apps/voice/acs/acs-resource.bicep`, `apps/voice/acs/phone-numbers.bicep` |
-| **2** | **Azure AI Speech (STT + TTS)** | Streaming speech-to-text **and** text-to-speech, per-locale neural voices, civic-term lexicons. | `apps/voice/speech/speech-config.bicep`, `apps/voice/speech/voice-fonts.json` |
-| **3** | **Foundry `topic-router` agent · voice channel** | Owns dialog state, slot filling, barge-in, DTMF fallback, escalation rules. Talks **to** Foundry but is **not** Foundry. | `apps/voice/ivr/{da,sv,nb,en,de,ar}/*.yaml`, `foundry/agents/topic-router/topics/voice-fallback.yaml` |
+| **2** | **Azure AI Speech (STT + TTS)** | 🔵 **In repo** for D365 IVR menus and post-call analytics. The live NO audio path uses gpt-realtime native STT + TTS instead. | `apps/voice/speech/speech-config.bicep`, `apps/voice/speech/voice-fonts.json` |
+| **3** | **Foundry `topic-router` agent · voice channel** | Owns dialog state, slot filling, barge-in, DTMF fallback and escalation rules. Human escalation is 🗺️ **Roadmap** until `D365_VOICE_QUEUE_ID` is set. | `apps/voice/ivr/{da,sv,nb,en,de,ar}/*.yaml`, `foundry/agents/topic-router/topics/voice-fallback.yaml` |
 | **4** | **APIM gateway** | JWT validation, audit log, rate-limit (600 calls/min for voice vs 120 elsewhere), `x-channel-actor: voice` enforcement. The **only** legal entry point to Foundry from any channel. | `services/apim/apis/agent-topic-router/policy.xml`, `services/apim/apis/agent-topic-router/openapi.yaml` |
 | **5** | **Foundry agents (shared)** | Citizen-assistant, classifier, translator, eligibility — the **same** agents that power the web and mobile. **Voice does not get its own agents.** | `foundry/agents/*` |
 | **6** | **Outbound notifications** | SMS / email récap post-call via ACS. Localised templates per language. | `apps/voice/notifications/{sms,email}-templates.json` |
@@ -265,7 +273,7 @@ The voice channel is the **inclusivity hatch** of UDCSP — it must work for cit
 ```yaml
 fallbacks:
   '*': repeat_current_prompt   # always available
-  '0': transfer_human_agent    # always available
+  '0': transfer_human_agent    # Roadmap until D365_VOICE_QUEUE_ID is set
   '9': enable_slow_speech      # toggle
   '1': residency_application_status
   '2': tax_certificate_status
@@ -275,11 +283,11 @@ fallbacks:
 
 **🐢 Slow-speech mode** — pressing `9` at any time switches the TTS to a slower cadence and re-prompts; the choice is **sticky** for the rest of the call.
 
-**🛡️ Recording disclosure (GDPR Art. 5/13)** — the very first thing a caller hears is the disclosure in their detected language; pressing `0` opts out and routes to a non-recorded human queue. Example (Norwegian Bokmål):
+**🛡️ Recording disclosure (GDPR Art. 5/13)**: the very first thing a caller hears is the disclosure in their detected language. Audio recording is 🗺️ **Roadmap** today: writing to `voice-recordings/` is gated off, only transcript events are captured. Example (Norwegian Bokmål):
 
 > *"Samtalen kan tas opp og transkriberes for å behandle saken din. Trykk 1 for å godta eller 0 for en saksbehandler."*
 
-**🧯 Always-available human escape** — pressing `0` at any prompt, or saying "agent / human / caseworker / complaint", triggers a warm transfer to a D365 caseworker queue with the conversation context intact (`apps/voice/escalation/escalation-config.yaml`).
+**🧯 Human escape**: pressing `0` or saying "agent / human / caseworker / complaint" is 🗺️ **Roadmap** for warm transfer. In Demo 2 v1 the `escalate_to_human` tool is not registered because `D365_VOICE_QUEUE_ID` is empty, so the caller hears a callback offer instead of a D365 transfer.
 
 ---
 
@@ -316,7 +324,7 @@ flowchart LR
     class ACS_NO,SPEECH_NO,FAB_NO no
 ```
 
-What stays in-country: **call media, transcripts, recordings, IVR logs, SMS metadata, neural voice synthesis traces**. What is shared cross-country: **anonymised metrics + the Foundry agent definitions** (the brain is shared; the data is not).
+🟢 **Live in Norway:** call media and ACS metadata stay with `udcsp-no-acs` (`dataLocation=Norway`) and transcript events stay in NO Application Insights. 🗺️ **Roadmap in Denmark and Sweden:** the same per-country pattern is designed, but no DK or SE voice orchestrator is deployed today. Audio recordings remain gated off in every country until v2.
 
 The ACS `dataLocation` property is the load-bearing knob — it pins the persisted data (recordings, call records, SMS) to the country. See `apps/voice/acs/acs-resource.bicep`:
 
@@ -338,7 +346,7 @@ resource acs 'Microsoft.Communication/communicationServices@...' = {
 |:-:|---|---|---|
 | ⚡ | **Round-trip latency** (citizen says X → hears answer) | p95 ≤ **2 s** | App Insights custom event from STT-final to TTS-first-byte |
 | 🎯 | **Intent recognition** (correct route on first try) | ≥ **88 %** per locale | Foundry eval pipeline replays a labelled audio gold set per release |
-| 🤝 | **Successful answer without escalation** | ≥ **70 %** | D365 outcome tagging |
+| 🤝 | **Successful answer without escalation** | ≥ **70 %** | 🟢 **Live** via voice orchestrator events in NO; D365 outcome tagging is 🗺️ **Roadmap** for v2 |
 | 📞 | **PSTN reachability** | ≥ **99.9 %** monthly | ACS health metrics + synthetic call probes every 5 min per country |
 | 🛡️ | **Content safety triggers blocked** | **100 %** | Content Safety verdicts compared to red-team test set per release |
 
@@ -394,11 +402,11 @@ flowchart LR
    - 🇳🇴 **Norway** — toll-free: 1–3 weeks (Nkom review) · local: a few business days.
    - 🇩🇰 **Denmark** — toll-free: 1–3 weeks (ERST review) · local: a few business days.
 
-The number then appears under your ACS resource and can be assigned to the Foundry `topic-router` voice channel (APIM `/agents/topic-router` Speech connector) by name — **no code change is needed**.
+The number then appears under your ACS resource and can be assigned to the Foundry `topic-router` voice channel (APIM `/agent-topic-router/messages` connector) by name, with **no code change needed**.
 
 ### 9.3 The fast lane — what to do *today* for a demo
 
-If you don't want to wait 1–3 weeks for a real Nordic toll-free number, three lower-friction options are available **right now**:
+🟢 **Live for Norway**: `+33 801 150 799` is already routed through `udcsp-no-acs`. 🗺️ **Roadmap for Denmark and Sweden**: if you don't want to wait 1-3 weeks for those real Nordic toll-free numbers, three lower-friction options are available **right now**:
 
 | Option | Lead time | Caller experience | Best for |
 |---|---|---|---|
@@ -418,9 +426,9 @@ Microsoft documentation we anchor to:
 >
 > 1. **Live in the room** — open the ACS Web SDK demo client in a browser and call the Foundry-backed Foundry `topic-router` agent. **Zero phone-number dependency**, full audio + transcript + Foundry trace shown side-by-side.
 > 2. **Then prove the PSTN path** — dial a temporary US toll-free (provisioned in minutes) on the room speakerphone. Same backend, different ingress.
-> 3. **Then commit to a real Nordic number for production** — submit the KYC pack on the day of the kick-off; the Norwegian / Swedish / Danish toll-free arrives well before any actual citizen traffic.
+> 3. **Then commit to the remaining real Nordic numbers for production**: submit the KYC pack on the day of the kick-off; the Swedish / Danish toll-free arrives well before any actual citizen traffic.
 
-This is exactly what `apps/voice/acs/phone-numbers.bicep` is designed for: it is **deliberately** a placeholder Bicep with `+45...` / `+46...` / `+47...` outputs because the real numbers are issued by the regulator, not declared in source.
+This is exactly what `apps/voice/acs/phone-numbers.bicep` is designed for: it is **deliberately** a placeholder Bicep with `+45...` / `+46...` / `+47...` outputs because real numbers are issued by the regulator, not declared in source. The live NO demo number is tracked operationally as `+33 801 150 799`.
 
 ### 9.4 Once the number is active — wiring it in
 
@@ -430,7 +438,7 @@ The activation is a **one-line config change** in the Foundry `topic-router` voi
 # apps/voice/acs/phone-number-bindings.yaml  (created at activation time)
 bindings:
   - country: no
-    phoneNumber: "+47 800 12 345"     # the actual Nkom-approved toll-free
+    phoneNumber: "+33 801 150 799"     # live jury-demo number routed to udcsp-no-acs
     acsResource: "udcsp-no-acs"
     topicRouterAgent: "topic-router"          # Foundry agent owning the multilingual conversational façade
     voiceFont: "nb-NO-PernilleNeural"
@@ -438,7 +446,7 @@ bindings:
 
 `scripts/install/modules/Install-Voice.psm1` reads this file at install time and:
 
-1. Registers the number with the Foundry `topic-router` voice channel via the APIM `/agents/topic-router` Speech connector.
+1. Registers the number with the Foundry `topic-router` voice channel via the APIM `/agent-topic-router/messages` connector.
 2. Updates the SMS-récap "from" number for outbound notifications.
 3. Adds the number to the synthetic-call probe list (App Insights availability test every 5 min).
 
@@ -456,7 +464,7 @@ flowchart TB
     P2["2️⃣ Procure number<br/><i>see § 9</i>"]
     P3["3️⃣ Deploy AI Speech<br/><i>speech-config.bicep + voice-fonts.json</i>"]
     P4["4️⃣ Import 24 IVR YAMLs<br/><i>4 dialogs × 6 languages</i>"]
-    P5["5️⃣ Wire ACS → Foundry `topic-router`<br/><i>APIM `/agents/topic-router` Speech connector</i>"]
+    P5["5️⃣ Wire ACS → Foundry `topic-router`<br/><i>APIM `/agent-topic-router/messages` connector</i>"]
     P6["6️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric per country</i>"]
     P7["7️⃣ Activate SMS templates<br/><i>12 languages</i>"]
     P8["8️⃣ Self-test<br/><i>pwsh apps/voice/scripts/Test-Voice.ps1</i>"]
@@ -473,10 +481,10 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 
 ---
 
-## 11. 🧱 Voice runtime — implemented (Phase A complete)
+## 11. 🧱 Voice runtime, readiness vs scaffold (what's actually runnable today)
 
 > [!IMPORTANT]
-> **Status update.** The Phase A bridge between **Dynamics 365 Customer Service voice channel** (telephony / IVR / queue routing / recording) and the **Foundry `topic-router` agent** (the brain) is **implemented in `apps/voice/call-automation/`**. A real human dialling a real PSTN number bound to the country ACS resource will reach a low-latency conversational agent backed by Azure OpenAI **gpt-realtime** (native STT + reasoning + TTS in one stream). The same orchestrator can warm-transfer the call to a D365 voice workstream queue when the citizen asks for a human or the topic-router flips `escalate=true`.
+> **Status update.** 🟢 **Live**: Norway runs end-to-end on `+33 801 150 799` through ACS Call Automation, the orchestrator Container App, Azure OpenAI **gpt-realtime** and APIM `/agent-topic-router/messages` into the Foundry citizen-assistant. 🗺️ **Roadmap**: Denmark and Sweden have no deployed country-specific voice orchestrator. 🗺️ **Roadmap**: D365 warm-transfer and audio recording are gated off in Demo 2 v1 because D365 Customer Service NO is not provisioned. `D365_VOICE_QUEUE_ID` is empty, so `escalate_to_human` is not even exposed to gpt-realtime. Transcript events remain 🟢 **Live** in Application Insights with `traceparent` correlation.
 
 ### 11.1 The two layers in the voice story
 
@@ -484,22 +492,22 @@ The voice channel sits on **two stacks that already exist** plus one **new** orc
 
 | Layer | Provider | Where in the repo |
 |---|---|---|
-| **Telephony runtime** — PSTN ingress, IVR engine, call recording, real-time transcription, agent escalation, omnichannel queue routing | **D365 Customer Service voice channel** (built on Azure Communication Services) | `apps/d365/solutions/` (case management) + Copilot Service admin center workstream config (procured numbers + queues) |
-| **Conversational brain** — multi-turn dialog, intent classification, slot filling, content safety | **Foundry `topic-router` agent** + downstream agents | `foundry/agents/topic-router/`, exposed via APIM `/agents/topic-router/messages` (`services/apim/apis/agent-topic-router/`) |
-| **Bridge / voice cortex** — answers the call, opens a bidirectional audio stream to GPT Realtime, exposes `lookup_topic_router`, `escalate_to_human`, `end_call_with_recap` as function tools, warm-transfers to D365 on escalate | **Voice orchestrator Container App** (Node.js + ACS Call Automation SDK + GPT Realtime WebSocket) | **`apps/voice/call-automation/`** |
+| **Telephony runtime**: PSTN ingress, IVR engine, call recording, real-time transcription, agent escalation, omnichannel queue routing | **Azure Communication Services Call Automation** is 🟢 **Live** for NO PSTN ingress. **D365 Customer Service voice channel** is 🗺️ **Roadmap** for queue routing, recording and native transcription. | `apps/voice/acs/`, `apps/voice/call-automation/`; `apps/d365/solutions/` for the future case-management handoff |
+| **Conversational brain**: multi-turn dialog, intent classification, slot filling, content safety | **Foundry `topic-router` agent** + downstream agents | `foundry/agents/topic-router/`, exposed via APIM `/agent-topic-router/messages` (`services/apim/apis/agent-topic-router/`) |
+| **Bridge / voice cortex**: answers the call, opens a bidirectional audio stream to GPT Realtime, exposes `lookup_topic_router` and `end_call_with_recap`; `escalate_to_human` remains gated until `D365_VOICE_QUEUE_ID` is set | **Voice orchestrator Container App** (Node.js + ACS Call Automation SDK + GPT Realtime WebSocket) | **`apps/voice/call-automation/`** |
 
 ### 11.2 Why a custom orchestrator and not just D365 + Bot Framework?
 
 The earlier audit noted that the Bot Framework SDK is being **deprecated end of 2025** and the **Microsoft Agent Framework (MAF)** + M365 Agents SDK are the new direction. Both are *turn-based* (request → response). That works for chat but is the wrong shape for low-latency voice. Microsoft's own canonical sample for ACS + GPT-4o voice ([`Azure-Samples/acs-azopenai-voice-integration`](https://github.com/Azure-Samples/acs-azopenai-voice-integration)) connects ACS Call Automation **directly** to the Realtime WebSocket — neither Bot Framework nor MAF in the audio path. We follow that pattern; MAF still hosts the topic-router (the brain) reached via HTTP from the orchestrator's `lookup_topic_router` tool. **One brain, three channels (chat, voice, copilot) — no duplicated intelligence.**
 
-### 11.3 What D365 Customer Service voice channel still gives us for free
+### 11.3 What D365 Customer Service voice channel adds in v2
 
 (Source: [Microsoft Learn — Voice channel manage phone numbers](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-manage-phone-numbers))
 
-- ✅ **PSTN number ownership and procurement** — through the Copilot Service admin center for US toll-free trial numbers, or by purchasing in the ACS portal then [syncing into D365](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs) for non-US (DK / SE / NO).
-- ✅ **Workstream queue routing for warm transfers** — when the orchestrator calls `transferCallToParticipant` with the D365 voice workstream queue id, D365 routes the leg to the next available human caseworker. The orchestrator also passes a JSON `udcspEscalation` operation context so the caseworker sees the call summary on screen.
-- ✅ **Call recording / transcription** — recording is configured at the workstream level; transcripts land in Dataverse `callTranscript` and are picked up by the post-call enrichment pipeline (Dataverse → Fabric Lakehouse + Confidential Ledger anchor).
-- ✅ **Recording disclosure / consent** — supported natively at workstream config level; our 12-language `recording-disclosure.md` script is also injected by the orchestrator at call-pickup as the GPT Realtime first prompt for defence in depth.
+- 🗺️ **Roadmap, PSTN number ownership and procurement**: through the Copilot Service admin center for US toll-free trial numbers, or by purchasing in the ACS portal then [syncing into D365](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs) for non-US (DK / SE / NO).
+- 🗺️ **Roadmap, workstream queue routing for warm transfers**: when `D365_VOICE_QUEUE_ID` is populated, the orchestrator can register `escalate_to_human` and call `transferCallToParticipant` with the D365 voice workstream queue id.
+- 🗺️ **Roadmap, call recording and native transcription**: recording is configured at the workstream level; transcripts land in Dataverse `callTranscript` and are picked up by the post-call enrichment pipeline (Dataverse → Fabric Lakehouse + Confidential Ledger anchor). Today, audio writing to `voice-recordings/` is gated off and only Application Insights transcript events are captured.
+- 🟢 **Live, recording disclosure prompt**: our 12-language `recording-disclosure.md` script is injected by the orchestrator at call-pickup as the GPT Realtime first prompt.
 
 ### 11.4 What the orchestrator (`apps/voice/call-automation/`) does
 
@@ -507,9 +515,9 @@ The earlier audit noted that the Bot Framework SDK is being **deprecated end of 
 |---|---|---|
 | Event Grid `IncomingCall` | `src/call-handler.ts` | Validates the EventGrid handshake, calls `client.answerCall()` with `mediaStreamingOptions.transportUrl = wss://.../api/acs/media`. |
 | Bidirectional audio bridge | `src/realtime-bridge.ts` | ACS opens a WebSocket; the orchestrator opens a parallel WebSocket to `wss://{aoai}/openai/realtime?...&deployment=gpt-realtime` and proxies base64 PCM frames in both directions. Server-VAD turn detection + barge-in are configured on the GPT Realtime session. |
-| Function tools | `src/foundry-tool.ts`, `src/d365-handoff.ts` | `lookup_topic_router(text, locale)` POSTs to APIM `/agents/topic-router/messages` (same endpoint the chat widget calls); `escalate_to_human(reason, summary)` calls `transferCallToParticipant` with the country D365 voice queue id; `end_call_with_recap(recapText)` sends an SMS récap and hangs up. |
+| Function tools | `src/foundry-tool.ts`, `src/d365-handoff.ts` | `lookup_topic_router(text, locale)` POSTs to APIM `/agent-topic-router/messages`; `escalate_to_human(reason, summary)` is registered only when `D365_VOICE_QUEUE_ID` is populated; `end_call_with_recap(recapText)` sends an SMS récap and hangs up. |
 | IVR pack | `src/ivr-loader.ts` | Loads the existing `apps/voice/ivr/{locale}/*.yaml` (`kind: UDCSP.Voice.Dialog`) + recording disclosure markdown; the welcome prompt + disclosure are spoken verbatim by GPT Realtime as the first turn. |
-| Observability | `src/logger.ts` | App Insights with `LogContext` (callConnectionId, traceparent, country, locale, intent) — same correlation id Foundry uses, so a single call ties together ACS events, GPT Realtime tool calls, APIM logs, Foundry traces and D365 transfer audit. |
+| Observability | `src/logger.ts` | 🟢 **Live** App Insights with `LogContext` (callConnectionId, traceparent, country, locale, intent) plus `realtime.assistant_transcript` and `realtime.user_transcript`; D365 transfer audit is 🗺️ **Roadmap** for v2. |
 | Container App + Event Grid + Realtime deployment | `infra/voice-orchestrator.bicep`, `infra/event-grid-incoming-call.bicep`, `infra/gpt-realtime-deployment.bicep` | Per-country IaC. UAMI-bound, KV-backed secrets, public ingress with `transport: 'auto'` (WSS-capable). |
 
 #### 11.4a A call, end to end, in 5 steps
@@ -524,7 +532,7 @@ sequenceDiagram
     participant EG as 🔔 Event Grid
     participant ORCH as 🎚️ Voice orchestrator<br/>(Container App)
     participant GPT as 🧠 gpt-realtime
-    participant API as 🚪 APIM<br/>/agents/topic-router
+    participant API as 🚪 APIM<br/>/agent-topic-router/messages
     participant FND as 🤖 Foundry topic-router<br/>+ AI Search FAQ
     participant D365 as 📋 D365 voice queue<br/>(v2 · optional)
 
@@ -554,7 +562,7 @@ sequenceDiagram
     rect rgba(245,225,245,.4)
     Note over ORCH,FND: ③ + ④ GPT invokes lookup_topic_router tool
     GPT->>ORCH: function call: lookup_topic_router(text, "nb")
-    ORCH->>API: POST /agents/topic-router/messages<br/>x-channel-actor: voice
+    ORCH->>API: POST /agent-topic-router/messages<br/>x-channel-actor: voice
     API->>FND: route to topic-router agent
     FND-->>API: { text, escalate, confidence, trace }
     API-->>ORCH: response
@@ -570,7 +578,7 @@ sequenceDiagram
         GPT->>ORCH: end_call_with_recap(text)
         ORCH->>ACS: SMS récap NB + HangUpCall
         ACS-->>C: 📲 SMS recap
-    else v2 · escalate to human
+    else v2 · escalate to human after D365 CS NO
         GPT->>ORCH: escalate_to_human(reason, summary)
         ORCH->>D365: transferCallToParticipant<br/>+ udcspEscalation context
         D365-->>C: caseworker takes the leg
@@ -580,14 +588,14 @@ sequenceDiagram
 
 Same flow as the narrative below, hop by hop:
 
-1. **ACS answers the call.** The number `+47 800 …` is bound (via `Bind-AcsNumber.ps1`) to the `udcsp-no-acs` resource pinned to **Norway East** (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
+1. **ACS answers the call.** The live number `+33 801 150 799` is bound to the `udcsp-no-acs` resource with `dataLocation=Norway` (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
 2. **ACS opens a bidirectional audio WebSocket** to `/api/acs/media?callConnectionId={id}`. PCM 16 kHz frames flow in both directions.
 3. **The orchestrator opens a second WebSocket** to `wss://{aoai}/openai/realtime?deployment=gpt-realtime` (UAMI auth, audience `https://cognitiveservices.azure.com`). It configures server-VAD + barge-in, then proxies base64 PCM frames in both directions. gpt-realtime does **everything in one stream**: Whisper STT, GPT reasoning, neural TTS. **Latency p95 < 2 s** end-to-end.
 4. **GPT Realtime invokes function tools.** The system prompt declares three tools (see `src/foundry-tool.ts`):
-   - `lookup_topic_router(text, locale)` → POSTs to APIM `/agents/topic-router/messages` with `x-channel-actor: voice`. APIM hits the **same Foundry topic-router agent** that powers the web chat (gpt-5.4, prompt + AI Search FAQ index `udcsp-citizens-faq`). Returns `{text, escalate, confidence, trace}`. GPT Realtime turns the text into voice and speaks it back to Lars.
-   - `escalate_to_human(reason, summary)` → `transferCallToParticipant` with the D365 voice workstream queue id; the caseworker sees the `udcspEscalation` JSON context (transcript summary, traceparent, AI verdict) on screen before they answer.
+   - `lookup_topic_router(text, locale)` → POSTs to APIM `/agent-topic-router/messages` with `x-channel-actor: voice`. APIM hits the **same Foundry topic-router agent** that powers the web chat (gpt-5.4, prompt + AI Search FAQ index `udcsp-citizens-faq`). Returns `{text, escalate, confidence, trace}`. GPT Realtime turns the text into voice and speaks it back to Lars.
+   - `escalate_to_human(reason, summary)` → 🗺️ **Roadmap**. The tool is gated on `D365_VOICE_QUEUE_ID`; the env var is empty in Demo 2 v1, so the tool is not exposed to gpt-realtime. When D365 Customer Service NO is installed, it will call `transferCallToParticipant` with the D365 voice workstream queue id.
    - `end_call_with_recap(recapText)` → ACS SMS to Lars in NB (template `apps/voice/notifications/sms-templates.json`) + `hangUpCall`.
-5. **Warm-transfer or hang-up.** If the citizen says "I want a human" or GPT detects low confidence, `escalate_to_human` is invoked; otherwise, after the recap SMS, `hangUpCall` ends the call. Both legs land in App Insights correlated by the same `traceparent`.
+5. **No-handoff or v2 warm-transfer.** In Demo 2 v1, if the citizen asks for a human, the model offers a callback because `escalate_to_human` is not registered. In v2, after D365 Customer Service NO is installed and `D365_VOICE_QUEUE_ID` is set, the same path becomes a warm-transfer. The live transcript and tool-call events land in App Insights correlated by the same `traceparent`.
 
 **Why a Container App and not an Azure Function?** A long-lived bidirectional WebSocket per call (×2 — one to ACS, one to GPT Realtime) is the wrong shape for Functions: 5-minute timeouts, cold starts that ruin sub-2-second voice latency, no graceful KEDA scaling on RPS for WS-heavy workloads. The Container App handles WSS natively (ingress `transport: auto`), keeps warm pods, scales on connections, and is UAMI-bound — exactly the right primitive for a voice cortex.
 
@@ -600,8 +608,8 @@ Same flow as the narrative below, hop by hop:
 The Phase A orchestrator was designed assuming D365 Customer Service voice channel exists. **It does not need to.** When `D365_TRANSFER_TARGET_ID` and `D365_VOICE_QUEUE_ID` are left empty in the `Voice.<country>` config (see [`../tech/installation.md`](../tech/installation.md) § B5), the orchestrator:
 
 1. **Does not register the `escalate_to_human` function tool** with GPT Realtime — so the AI never tries to warm-transfer to a non-existent queue and never fails ungracefully mid-call.
-2. **Falls back to a polite verbal closure** when the citizen asks for a human: the topic-router prompt instructs the AI to say *"En saksbehandler vil ringe deg tilbake innen 2 virkedager"* / *"A caseworker will call you back within 2 business days"* and creates a Dataverse follow-up task (via the regular `tasks` write path used by Demos 1 + 3).
-3. **Keeps every other function** (`lookup_topic_router`, `end_call_with_recap` SMS, transcript pipeline, App Insights correlation, recording disclosure, sovereignty pinning).
+2. **Falls back to a polite verbal closure** when the citizen asks for a human: the topic-router prompt instructs the AI to say *"En saksbehandler vil ringe deg tilbake innen 2 virkedager"* / *"A caseworker will call you back within 2 business days"*.
+3. **Keeps the live v1 functions** (`lookup_topic_router`, App Insights correlation, recording disclosure, sovereignty pinning). Audio recording and D365 native transcription remain gated until v2.
 
 This mode covers **9 of the 10 case-study requirements** for Demo 2 (everything except the SLA + Power BI median-4d KPI which need caseworker outcome data). Once Customer Service NO is provisioned, populate the two GUIDs in `Voice.no`, redeploy with `Install-UDCSP.ps1 -Phase Voice`, and the `escalate_to_human` tool is re-enabled automatically.
 
@@ -619,17 +627,17 @@ D365 voice channel still owns PSTN, queue routing, recording and the human casew
 
 | Artefact | Status | Action |
 |---|---|---|
-| `apps/voice/call-automation/` | ✅ **Implemented** — the orchestrator. | Build (`npm install && npm run build`), containerise, deploy via `Deploy-Voice.ps1`. |
-| `apps/voice/acs/acs-resource.bicep` | ✅ Useful — the orchestrator needs the per-country ACS resource (sovereignty-pinned via `dataLocation`). | Keep. |
-| `apps/voice/acs/phone-numbers.bicep` + `phone-number-bindings.yaml` | ✅ Useful — the regulator pack and binding ledger; `Bind-AcsNumber.ps1` appends to the YAML. | Keep. |
-| `apps/voice/speech/speech-config.bicep` + `voice-fonts.json` | ⚠️ Reserved — GPT Realtime does its own TTS, so Speech voice fonts are now **only** used by D365 IVR pre-orchestrator menus or post-call analytics. | Document the narrowed scope; keep for D365 workstream prompts. |
-| `apps/voice/ivr/{lang}/*.yaml` (24 files) | ✅ Useful — loaded at runtime by `ivr-loader.ts` to build the welcome + escalation prompts. Schema corrected to `kind: UDCSP.Voice.Dialog`. | Keep. |
-| `apps/voice/transcript-pipeline/logic-app-transcription.json` | ⚠️ Blueprint — still superseded by D365 native transcription; pending promotion to a real Dataverse → Fabric + Confidential Ledger workflow. | Replace at next iteration. |
-| `apps/voice/escalation/escalation-config.yaml` | ✅ Useful — the orchestrator's `escalate_to_human` tool reads its rules; D365 workstream queues mirror the same routing. | Keep. |
-| `apps/voice/recording-consent/recording-disclosure.md` | ✅ Useful — read by `ivr-loader.ts` and injected as the first GPT Realtime prompt. | Keep. |
-| `apps/voice/notifications/{sms,email}-templates.json` | ✅ Useful — `end_call_with_recap` reads the SMS template; email récap is a follow-on Logic App. | Keep. |
-| `apps/voice/scripts/Deploy-Voice.ps1` / `Test-Voice.ps1` / `Bind-AcsNumber.ps1` | ✅ Real — Bicep deploy + healthz + EventGrid handshake + PSTN binding. | Use. |
-| `services/apim/apis/agent-topic-router/` | ✅ Created — single APIM facade for the topic-router agent, used by chat **and** voice. | Keep. |
+| `apps/voice/call-automation/` | 🟢 **Live** for Norway; same code is 🔵 **In repo** for DK/SE. | Build (`npm install && npm run build`), containerise, deploy via `Deploy-Voice.ps1`. |
+| `apps/voice/acs/acs-resource.bicep` | 🟢 **Live** for `udcsp-no-acs`; 🔵 **In repo** for the per-country pattern. | Keep. |
+| `apps/voice/acs/phone-numbers.bicep` + `phone-number-bindings.yaml` | 🟢 **Live** for `+33 801 150 799`; 🔵 **In repo** for future bindings. | Keep. |
+| `apps/voice/speech/speech-config.bicep` + `voice-fonts.json` | 🔵 **In repo**; 🗺️ **Roadmap** for D365 IVR prompts and post-call analytics. GPT Realtime does its own TTS today. | Keep for D365 workstream prompts. |
+| `apps/voice/ivr/{lang}/*.yaml` (24 files) | 🔵 **In repo**; NB/EN prompts are exercised by the NO runtime. | Keep. |
+| `apps/voice/transcript-pipeline/logic-app-transcription.json` | 🔵 **In repo** as a blueprint. It is superseded for v2 by D365 native transcription, then Dataverse → Fabric + Confidential Ledger. | Keep as design reference until v2 replaces it. |
+| `apps/voice/escalation/escalation-config.yaml` | 🔵 **In repo**; 🗺️ **Roadmap** at runtime until `D365_VOICE_QUEUE_ID` is set. | Keep. |
+| `apps/voice/recording-consent/recording-disclosure.md` | 🟢 **Live**; read by `ivr-loader.ts` and injected as the first GPT Realtime prompt. | Keep. |
+| `apps/voice/notifications/{sms,email}-templates.json` | 🔵 **In repo**; SMS recap path is not part of the audited live status. | Keep. |
+| `apps/voice/scripts/Deploy-Voice.ps1` / `Test-Voice.ps1` / `Bind-AcsNumber.ps1` | ⚙️ **Scripted** for Bicep deploy, healthz, EventGrid handshake and PSTN binding. | Use. |
+| `services/apim/apis/agent-topic-router/` | 🟢 **Live**; single APIM facade for the topic-router agent, used by chat **and** voice. | Keep. |
 
 ### 11.7 What Phase B still adds (regulator timelines, not code)
 
@@ -641,8 +649,8 @@ D365 voice channel still owns PSTN, queue routing, recording and the human casew
 
 | Demo | Path | What it actually exercises |
 |---|---|---|
-| 📞 **End-to-end voice** | Dial the procured PSTN number → ACS → orchestrator → gpt-realtime ↔ Foundry topic-router | Full citizen ↔ agent voice conversation, with warm transfer to D365 on "agent please". |
-| 🌐 **Chat with the same brain** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agents/topic-router/messages` → Foundry topic-router | Proves chat and voice share one brain — same APIM endpoint, different actor. |
+| 📞 **End-to-end voice** | Dial `+33 801 150 799` → `udcsp-no-acs` → orchestrator → gpt-realtime ↔ Foundry topic-router | 🟢 **Live** citizen ↔ agent voice conversation in no-handoff mode. Human transfer is 🗺️ **Roadmap** until D365 Customer Service NO is installed. |
+| 🌐 **Chat with the same brain** | `ChatWidget.tsx` (`apps/web/src/components/ChatWidget.tsx`) → APIM `/agent-topic-router/messages` → Foundry topic-router | Proves chat and voice share one brain, same APIM endpoint, different actor. |
 | 🚦 **Voice smoke test** | `pwsh apps/voice/scripts/Test-Voice.ps1 -Country no -Env dev` | Hits `/healthz` and posts an EventGrid SubscriptionValidationEvent; asserts the orchestrator round-trips the validation code. |
 | 🧪 **Playwright trace simulation** | `npx playwright test tests/e2e/tests/scenario-02-lars-no-voice.spec.ts` | Web flow that posts to `/gateway/demo-scenarios/d2` and asserts the trace appears in App Insights. |
 
@@ -689,8 +697,8 @@ A few non-bug operational learnings worth keeping in mind:
 | 1 | Open the ACS Web SDK demo client in a browser; call the Norwegian agent | Greeting in NB; recording disclosure | #2 (federation) · #8 (a11y) · #12 (channels) |
 | 2 | Speak: *"Hvorfor er skatterefusjonen min så lav i år?"* (NO) | Streaming STT, intent classified in < 200 ms | #5 (AI 12 lang) · #6 (assistant) |
 | 3 | The agent answers in NB, citing the relevant rule | Spoken answer in `nb-NO-PernilleNeural`; trace visible in Foundry | #6 · #15 (audit) |
-| 4 | Press `0` (or say "agent") | Warm transfer to a caseworker queue with full context | #16 (caseworker) |
-| 5 | After hangup, jury looks at the Power BI dashboard | Call appears in CSAT chart, transcript stored in NO Fabric workspace | #4 (CSAT) · #10 (sovereignty) |
+| 4 | Say "agent" | The assistant explains the 🗺️ **Roadmap** human-callback status for v1; no `escalate_to_human` tool is exposed because `D365_VOICE_QUEUE_ID` is empty | #16 (caseworker, 🗺️ Roadmap for D365 CS NO) |
+| 5 | After hangup, jury opens App Insights NO | `realtime.assistant_transcript` and `realtime.user_transcript` are visible with the same `traceparent`; no audio blob is written to `voice-recordings/` | #10 (sovereignty) · #15 (audit) |
 
 > [!TIP]
 > If a real Nordic number has been provisioned, repeat beat 1 by dialling the toll-free on the room speakerphone — same backend, different ingress, **proof that PSTN works end-to-end**.
@@ -708,26 +716,26 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 | Batch STT (wait for end-of-utterance) | Streaming STT — partial results trigger early classification |
 | Buffer-then-play TTS | Streaming TTS — first audio frame plays while the rest synthesises |
 | One ACS for all three countries | One ACS **per** country, region-pinned, enforced by Bicep `dataLocation` |
-| Recording everything by default | Disclosure first; opt-out via `0` is a real, fully-functional path |
+| Recording everything by default | 🟢 **Live** transcript capture only; audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off today |
 | Voice has its own KB | Same KB as the web; voice queries the same RAG indices |
-| Skip the warm transfer (hard transfer to a queue) | Warm transfer with conversation context preserved into the D365 case |
+| Skip the warm transfer (hard transfer to a queue) | 🗺️ **Roadmap** warm transfer with conversation context preserved into the D365 case after D365 Customer Service NO is installed |
 
 ---
 
 ## 15. Where the conversation is stored
 
-Voice writes both media and dialog records: raw `.wav` plus STT JSON go to the per-country `voice-recordings/` store, while the Foundry `topic-router` conversation is retained as the canonical dialog transcript in Dataverse. ACS lifecycle events and Foundry traces stay in Zone 3 so audits can correlate call, transcript, and AI invocation. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+Voice writes transcript telemetry today, not audio blobs. 🟢 **Live**: `realtime.assistant_transcript` and `realtime.user_transcript` are ingested into Application Insights with `traceparent` correlation across ACS, orchestrator, APIM and Foundry. 🗺️ **Roadmap**: raw `.wav` plus STT JSON to `voice-recordings/`, Dataverse `bot_session` mirroring and Fabric + Confidential Ledger anchoring return in v2 after D365 Customer Service NO is installed. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
-| Audio `.wav` + STT JSON | ADLS Gen2 `voice-recordings/` (per country, WORM, CMK) | 90 days; audio purged for minimisation |
-| Dialog transcript | Dataverse `bot_session`; mirrored to OneLake | 6 months hot; 6 years OneLake |
+| Audio `.wav` + STT JSON | 🗺️ **Roadmap**: ADLS Gen2 `voice-recordings/` (per country, WORM, CMK). Gated off today. | 90 days target; audio purged for minimisation |
+| Dialog transcript | 🟢 **Live**: App Insights `realtime.assistant_transcript` + `realtime.user_transcript`. 🗺️ **Roadmap**: Dataverse `bot_session`; mirrored to OneLake. | 6 months hot; 6 years OneLake target |
 | ACS call events | ACS Event Hubs → ADLS Gen2 `acs-events/` | See § 5 retention matrix |
 | Foundry trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 
-> Audio is deliberately shorter-lived than transcripts: the transcript persists for EU AI Act Art. 26(6), while audio is purged after 90 days under GDPR minimisation.
+> Audio is deliberately disabled in v1. When v2 enables recording, audio is shorter-lived than transcripts: the transcript persists for EU AI Act Art. 26(6), while audio is purged after 90 days under GDPR minimisation.
 
 > 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 

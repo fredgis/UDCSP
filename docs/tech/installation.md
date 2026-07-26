@@ -1,8 +1,10 @@
 # UDCSP — Installation Guide
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 > **Audience.** Platform engineers and reviewers performing a clean install of the **Unified Digital Citizen Services Platform** on a sacrificial Microsoft Cloud tenant.
 >
-> **Outcome.** Every component referenced by [`architecture.md`](./architecture.md) provisioned in dependency order, smoke-tested, and ready to drive the 10 acceptance scenarios in [`recipe.md`](../biz/recipe.md).
+> **Outcome.** The scripted platform phases provision the core environment in dependency order. Manual tenant steps and the mandatory private-upload patch below are then required before the sandbox matches the live demo posture and can drive the acceptance scenarios in [`recipe.md`](../biz/recipe.md).
 
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
@@ -12,7 +14,7 @@ This guide is split into **4 collapsible sections**. Click any ▶ to expand.
 | Section | What it is | When to use |
 |---|---|---|
 | **🟦 A — Prerequisites** | Things you do **once** on your workstation and Microsoft Cloud tenants before touching the installer. | Day-1 setup. |
-| **🟩 B — Mandatory install** | The **linear sequence** that takes a clean tenant to a fully running platform. **Run every step in order.** | Every install. |
+| **🟩 B — Mandatory install** | The **linear sequence** for the scripted platform install, followed by the mandatory private-upload patch. **Run every step in order.** | Every install. |
 | **🟨 C — Re-run / Troubleshooting** | How to re-deploy a single phase, fix common errors, read reports. | After code changes or failed runs. |
 | **🟪 D — Post-install checklist** | What the installer covers vs. what stays manual on a real MCAPS sandbox tenant — gaps, licences to obtain, follow-up actions. | After a green install run. |
 | **📊 Platform monitoring** | Deploy the 9 App Insights workbooks (3 × DK/SE/NO) used by Demo 9, audit telemetry wiring, optional `diagnostic-settings` for APIM / ACS / Logic Apps. | After install, before demo prep — and any time a new component needs to be added to the operator view. |
@@ -378,6 +380,50 @@ This runs **23 of the 25 phases** sequentially in dependency order, idempotent, 
 > **Expected duration:** ≈ 60–90 minutes on a clean tenant (APIM Premium cold start is the long pole at ≈ 45 min; the installer streams progress every 60 s).
 
 > The full 25-phase DAG is detailed in **Appendix 1**.
+
+</details>
+
+<details>
+<summary><b>B3.5. Mandatory patch: Private upload path</b></summary>
+
+Run this mandatory post-phase patch after B3 has created the country VNets, storage accounts and APIM instances. It does **not** add a 26th installer phase. It is an explicit mandatory patch step for the current MCAPS sandbox posture.
+
+**Purpose.** Restores citizen document upload for the payslip on the *Child & family benefit* page and the employment contract on the *Residency transfer* page. Without it, APIM tries to PUT blobs from the public internet to private-only data lakes and the portal returns HTTP `403 upload_failed`.
+
+**Why it is required.** The MCAPS policy `StorageAccount_PublicNetwork_Modify` (assignment `MCAPSGovDeployPolicies`) forces the per-country data lakes `udcsp<c>prodlake` to `publicNetworkAccess = Disabled` and `allowSharedKeyAccess = false`. Because APIM is initially outside the VNet, its server-side blob PUT is rejected. The patch creates the private blob path and injects APIM into the VNet in **External** mode. Public APIM ingress and hostnames stay unchanged.
+
+**Prerequisites.**
+
+- Azure CLI logged into the MngEnvMCAP tenant and the target subscription.
+- Network contributor and APIM contributor permissions on the target resource groups.
+- PowerShell 7+.
+
+```powershell
+cd <repo-root>\patch
+
+# All three countries (default):
+./Enable-PrivateUploadPath.ps1
+
+# Useful switches:
+./Enable-PrivateUploadPath.ps1 -Countries no,se
+./Enable-PrivateUploadPath.ps1 -Countries se -SkipApimInjection
+./Enable-PrivateUploadPath.ps1 -WhatIf
+```
+
+> **Expected duration:** APIM VNet injection is asynchronous and usually takes ~30-45 min per APIM instance. Network preparation is idempotent and can be re-run safely.
+
+Control command while APIM injection is running:
+
+```powershell
+az apim show -n udcsp-<c>-prod-apim -g udcsp-<c>-apim-rg `
+  --query "{s:provisioningState,v:virtualNetworkType}" -o json
+```
+
+Wait for `s` to become `Succeeded` and `v` to be `External` for each patched country.
+
+**Final functional test.** Open the citizen portal, upload a document on either the *Child & family benefit* page or the *Residency transfer* page, and confirm the upload succeeds with no HTTP `403 upload_failed`.
+
+See [`patch/README.md`](../../patch/README.md) for the authoritative patch notes and [`network.md`](./network.md) for the private endpoint and APIM VNet context.
 
 </details>
 
@@ -801,7 +847,7 @@ End-to-end verification:
    ```
    Expect a single HTTP 200 with a `traceparent` linking back to the ACS call leg.
 
-✅ **Section B done — the platform is fully running, including the voice channel.** Jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios, or to section C if you need to troubleshoot or re-run a phase.
+✅ **Section B done.** The scripted phases, voice channel and mandatory private-upload patch are complete. Finish the post-configuration and manual checks below before treating the sandbox as equivalent to the live demo environment. Then jump to [`recipe.md`](../biz/recipe.md) for the 10 acceptance scenarios, or to section C if you need to troubleshoot or re-run a phase.
 
 </details>
 
@@ -895,7 +941,7 @@ Select-String -Path scripts/install/reports/*/install-*.log -Pattern '\[ERROR\]|
 <details>
 <summary><h2>🟪 D — POST-INSTALL CHECKLIST (what's done, what's still manual)</h2></summary>
 
-> Read this **after** your first successful end-to-end install run on a sandbox tenant. The installer is honest: when an Azure resource type, M365 SKU or first-party app is **not procurable via API**, the corresponding phase logs `[skip]` and the orchestrator marks the phase ✅ on the basis of the validation script (which only checks that source artefacts exist, not that Azure/M365 actually accepted them). This section lists the gaps and how to close them.
+> Read this **after** your first successful scripted install plus the mandatory private-upload patch on a sandbox tenant. The installer is honest: when an Azure resource type, M365 SKU or first-party app is **not procurable via API**, the corresponding phase logs `[skip]` and the orchestrator marks the phase ✅ on the basis of the validation script (which only checks that source artefacts exist, not that Azure/M365 actually accepted them). This section lists the gaps and how to close them.
 
 ---
 
@@ -1632,7 +1678,7 @@ Once the app exists in one environment, replay it on the others with
 
 The script auto-locates `pac.exe` under `%LOCALAPPDATA%\Microsoft\PowerAppsCLI\` if it isn't on `PATH`, runs `pac auth create` interactively, exports the solution from `-SourceEnv` (`pac solution export --include general,customization,autonumbering`), and imports it with `--publish-changes` to each `-TargetEnvs` entry.
 
-Path B blueprint lives in § A5 above and in `docs/tech/inprogress.md` § *Reminder when D365 Customer Service licence is acquired*.
+Path B plan lives in § A5 above and in `docs/tech/inprogress.md` § *Reminder when D365 Customer Service licence is acquired*.
 
 </details>
 
@@ -1672,6 +1718,8 @@ The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:123-149` a
 | 25 | `QA` | `Install-QA.psm1` | Wires CI eval / E2E / security / conformance pipelines to GitHub Actions |
 
 </details>
+
+> **Mandatory post-phase patch:** after the APIM and storage resources exist, run **B3.5 Private upload path**. This preserves the 25 installer phases while documenting the required network patch that restores citizen document upload in the current MCAPS sandbox.
 
 <details>
 <summary><h2>📎 Appendix 2 — Topology you will install</h2></summary>

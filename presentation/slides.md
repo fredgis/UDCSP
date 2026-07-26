@@ -57,7 +57,7 @@ Every claim carries one of five honesty labels. I show the full scorecard near t
 
 <div class="cards">
 <div class="card"><h3>🎯 A target vision</h3><p>The production-target architecture for a federated Nordic platform, end to end.</p></div>
-<div class="card teal"><h3>⚙️ A working core</h3><p>Deployed on a real Azure tenant with one command; the live demo runs on it.</p></div>
+<div class="card teal"><h3>⚙️ A working core</h3><p>Deployed on a real Azure tenant by one script; the live demo runs on it.</p></div>
 <div class="card orange"><h3>📐 Some blueprint</h3><p>A few bricks are designed and registered, not yet switched on, each with a roadmap gate.</p></div>
 </div>
 
@@ -485,14 +485,14 @@ So that web subnet is just the private door to the front-end, not a second copy 
 
 App, data, AI and the Logic Apps are also private and in-country. A shared hub handles the firewall, the private DNS, cross-border routing and monitoring.
 
-To get this right we leaned on patterns the industry already trusts. The full network map is in the annex. -->
+To get this right we leaned on patterns the industry already trusts. One honest note: the sandbox you will see serves the Static Web App directly, so the Front Door edge is the designed entry, not one I am claiming as live today. The full network map is in the annex. -->
 
 <div class="split" style="grid-template-columns:1.25fr 0.85fr;align-items:center">
 <div>
 
 **One entry, one experience: private and sovereign underneath.**
 
-- **One public entry**: a single Azure Front Door (web firewall) and one UI codebase; the citizen always sees the same portal.
+- **One public entry**: a single Azure Front Door (web firewall) and one UI codebase; the citizen always sees the same portal. <span class="pill orange">🟠 edge designed</span>
 - **Sovereign by design**: each country has its *own* private front-end origin : a Static Web App reached through a private endpoint in that country's `web` subnet, with no public origin.
 - That `web` subnet in each spoke is the private door to the front-end, not a separate copy of the app.
 - App, data, AI, Logic Apps are private and in-country too; a shared hub handles firewall, DNS, cross-border and monitoring.
@@ -639,7 +639,7 @@ Every channel comes in on the left: the website, the phone, the mobile app, the 
 
 From there, every message is scanned by Content Safety, on the way in and on the way out. Then the Topic Router picks the right specialist.
 
-One of them, the eligibility agent, is the only high-risk part under the EU AI Act. It runs in a sealed enclave with a tamper-proof record. I'll come back to why.
+One of them, the eligibility agent, is the only high-risk part under the EU AI Act. It is the one designed for a sealed enclave with a tamper-proof record. I'll come back to why.
 
 The whole brain is copied into each country, so the conversation stays home, just like the data. Now let me trace one real request through it. -->
 
@@ -681,7 +681,7 @@ Most only sort, translate, or answer from public information. Under the European
 
 One does not: the agent that pre-assesses eligibility. Because it affects access to an essential public service, the AI Act classes it as high risk.
 
-So we handle it differently. It runs in a sealed, protected enclave, and every answer it gives is written to a record that cannot be altered.
+So we handle it differently. It is the one agent designed to run in a sealed enclave, with every answer anchored in a record that cannot be altered. Both of those are built and registered, and both are gated on a capacity and a licence, so I label them honestly on the scorecard later.
 
 And it never has the final word. Whatever it proposes is only a suggestion to the caseworker, who confirms it, changes it, or rejects it.
 
@@ -692,7 +692,7 @@ One agent deserves a closer look, because it shows the AI acting on its own. -->
 | **Topic Router** | Orchestration · 12 languages · slot-filling | Fast | Limited |
 | **Request Classifier** | Intent · agency · language · urgency | Fast | Limited |
 | **Translator** | 12 languages · keeps admin terms exact | Strong + Translator | Limited |
-| **Eligibility Pre-Assessor** ⚖️ | Result + evidence · runs in a protected enclave · ledger-logged | Strong + rules | High (public service) |
+| **Eligibility Pre-Assessor** ⚖️ | Result + evidence · enclave + ledger designed, gated | Strong + rules | High (public service) |
 | **Citizen Assistant** | Answers only from the cited public knowledge base | Strong, grounded | Limited |
 | **Document Reader** | Passport / payslip / lease extraction | Fast + Doc Intelligence | Limited |
 | **Caseworker Helper** | Summarise · draft replies · suggest next action | Strong, grounded | Limited |
@@ -707,7 +707,7 @@ One agent deserves a closer look, because it shows the AI acting on its own. -->
 
 The call lands on Azure Communication Services, and we open a live, two-way audio link to a speech model. From there, the model runs the conversation itself.
 
-When it needs information, it decides, on its own, to call into the brain. And when the caller needs a person, it decides, on its own, to transfer them warmly to a human.
+When it needs information, it decides, on its own, to call into the brain. The same pattern carries a warm transfer to a human: that second tool is wired but switched off for this demo, because the Dynamics voice queue is not provisioned yet, so today the model runs the call end to end on its own.
 
 We did not script that with rigid rules. The model chooses turn by turn.
 
@@ -715,7 +715,7 @@ It is the direction the whole industry is moving, and here it already works on a
 
 ![w:980](images/voice-flow.png)
 
-> Citizen dials → the call lands on Azure Communication Services → a small service opens a two-way audio stream to the speech model. The model decides on its own to call `lookup_topic_router` or `escalate_to_human` (a warm transfer). This is the Microsoft Agent Framework *Agents-as-Tools* pattern, on a real phone call.
+> Citizen dials → the call lands on Azure Communication Services → a small service opens a two-way audio stream to the speech model. The model decides on its own to call `lookup_topic_router`. A second tool, `escalate_to_human` (warm transfer), is wired but gated off until the Dynamics voice queue exists. This is the Microsoft Agent Framework *Agents-as-Tools* pattern, on a real phone call.
 
 ---
 
@@ -747,7 +747,7 @@ And if anything ever goes wrong, we roll back to the previous version in seconds
 
 The router hands work off to the specialists. A helper reviews the eligibility answer, like a second pair of eyes on the first.
 
-A cross-border case moves through clear stages and can step backwards when needed. On the phone, the model reaches for tools and for humans.
+A cross-border case moves through clear stages and can step backwards when needed. On the phone, the model reaches for its tools, and the reach for a human is wired behind the same pattern.
 
 And every model change is tested in the shadows before it goes live.
 
@@ -755,7 +755,7 @@ Hand-off, review, stages and tools are the building blocks of real agent teamwor
 
 ![w:740](images/agentic.png)
 
-> Handoff (router → six experts) · Reflection (the helper reviews the eligibility result) · State graph (the case is a 6-state workflow that can undo a step) · Function tool and warm transfer on voice · Shadow / canary for every model change.
+> Handoff (router → six experts) · Reflection (the helper reviews the eligibility result) · State graph (the case is a 6-state workflow that can undo a step) · Function tool on voice, with warm transfer wired behind the same pattern · Shadow / canary for every model change.
 
 ---
 
@@ -765,11 +765,11 @@ Hand-off, review, stages and tools are the building blocks of real agent teamwor
 
 Every message is screened for attempts to trick or jailbreak the model. Quality is tested on every change, in every language.
 
-Each agent is officially declared in a register (its purpose, risk and limits), exactly as the AI Act requires. Every high-risk answer is sealed in a record that cannot be altered.
+Each agent is officially declared in a register (its purpose, risk and limits), exactly as the AI Act requires. And every high-risk answer is designed to be sealed in a record that cannot be altered.
 
 No agent decides alone. A human caseworker always has the final say.
 
-And we never hide the AI. People are told, on screen and on the phone, in their language, that they are dealing with a machine. The high-risk agent even runs in a sealed enclave, where the data is protected from us, the operators, as well.
+And we never hide the AI. People are told, on screen and on the phone, in their language, that they are dealing with a machine. And the high-risk agent is designed to run in a sealed enclave, where the data would be protected from us, the operators, as well.
 
 That leads straight into security and compliance. -->
 
@@ -777,12 +777,12 @@ That leads straight into security and compliance. -->
 <div class="card"><h3>Content Safety</h3><p>A jailbreak and prompt-injection detector runs on every turn; a block raises a security event.</p></div>
 <div class="card teal"><h3>Evaluations</h3><p>Quality is tested on every change: language parity, grounding and safety.</p></div>
 <div class="card purple"><h3>AI Act register</h3><p>Each agent is declared with its purpose, risk level and limits, in a versioned file.</p></div>
-<div class="card red"><h3>Confidential Ledger</h3><p>Each high-risk result is hashed into a log that cannot be changed.</p></div>
+<div class="card red"><h3>Confidential Ledger</h3><p>Each high-risk result is hashed into a log that cannot be changed. Built and registered, gated on the licence.</p></div>
 <div class="card green"><h3>Human-in-the-loop</h3><p>No agent decides. A caseworker confirms, changes or rejects every result.</p></div>
 <div class="card orange"><h3>Transparency</h3><p>The citizen is always told AI is used: a chat badge and a spoken message in 12 languages.</p></div>
 </div>
 
-> The Eligibility agent is the only high-risk part. It runs inside a protected enclave (its data is encrypted in memory, even from an administrator), and it never decides alone.
+> The Eligibility agent is the only high-risk part. It never decides alone, and it is the one agent designed for a protected enclave, where data stays encrypted in memory even from an administrator. That enclave is built and registered, and gated on capacity.
 
 ---
 
@@ -894,7 +894,7 @@ Only then does the message go out, on the channels we already have, and every st
 
 In teal are the only two new pieces: the event scanner that starts the work on its own, and the critic that reviews the draft.
 
-Everything else is what you have already seen. The high-risk eligibility agent in its sealed enclave, the caseworker helper, the translator. The human gate in Dynamics. The outreach channels we already built for SMS, email, push and voice. And the same governance: consent, the tamper-proof ledger, the AI Act registry.
+Everything else is what you have already seen. The high-risk eligibility agent with its enclave gate, the caseworker helper, the translator. The human gate on the caseworker side. The outreach channels we already built for SMS, email, push and voice. And the same governance: consent, the ledger anchoring, the AI Act registry.
 
 Two new agents, one new workflow, one dashboard tile. Everything else is a re-wire. That is why this is credible, not science fiction. -->
 
@@ -914,7 +914,7 @@ Two new agents, one new workflow, one dashboard tile. Everything else is a re-wi
 ### Sovereign and safe
 
 - A Danish signal is assessed by the Danish brain, no border crossing without consent
-- The high-risk lane is unchanged: sealed enclave, ledger-anchored, never decides
+- The high-risk lane is unchanged, and so are its gates: enclave and ledger anchoring stay designed and registered, never deciding alone
 
 </div>
 </div>
@@ -1634,7 +1634,7 @@ Six specialist agents each took a separate part of the code, with no overlap, an
 
 After each audit they fixed what they found. It took 24 rounds before one came back completely clean. Today the repository holds around a thousand files.
 
-And the proof it holds together is simple: the whole platform installs with one command. -->
+And the proof it holds together is simple: the whole platform installs from one script. -->
 
 ![w:920](images/build-campaigns.png)
 
@@ -1668,7 +1668,7 @@ The infra folder holds the Bicep, and the scripts folder holds the installer. It
 
 ### The story starts in the docs
 - **`/docs/biz`**: the business story: who we build for, every channel, data-and-compliance, demo scenarios, and an acceptance recipe for "done".
-- **`/docs/tech`**: the engineering: architecture deep-dive, data model, network design, one-command install guide, disaster-recovery runbook.
+- **`/docs/tech`**: the engineering: architecture deep-dive, data model, network design, install guide, disaster-recovery runbook.
 - `/infra`: the Bicep that builds every zone · `/scripts`: the installer.
 
 <div class="parallel">
@@ -1884,7 +1884,7 @@ Nothing here is hand-waved. Every label is backed by code or a script in the rep
 <div class="card"><h3>EU AI Act evidence</h3><p>article-by-article trail</p><span class="pill">🔵 Implemented</span> <span class="pill orange">🟠 live ledger</span></div>
 <div class="card"><h3>GDPR rights</h3><p>records · access · erasure</p><span class="pill purple">🟣 Scripted</span></div>
 <div class="card"><h3>Sovereign monitoring</h3><p>9 workbooks, per country</p><span class="pill green">🟢 Live</span> <span class="pill orange">🟠 Fabric F64</span></div>
-<div class="card"><h3>One-command deploy</h3><p>25 phases, idempotent</p><span class="pill green">🟢 Live</span></div>
+<div class="card"><h3>One-script deploy</h3><p>25 phases, idempotent, plus prerequisites and one patch</p><span class="pill purple">🟣 Scripted</span></div>
 </div>
 
 <span class="pill green">🟢 Live: today</span> <span class="pill">🔵 Implemented: merged & tested</span> <span class="pill purple">🟣 Scripted: idempotent installer</span> <span class="pill orange">🟠 Blueprint: designed & gated</span>
@@ -1953,23 +1953,25 @@ Let me switch to the live system. -->
 
 <div class="steps">
 <div class="step"><div class="step-content"><strong>Anna moves DK → SE <span class="pill green">🟢 Live</span></strong><span>Sign in with a Danish eID · upload a passport and lease · the AI reads, translates and proposes a result · consent · the case crosses the border.</span></div></div>
-<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · a human transfer is offered.</span></div></div>
+<div class="step"><div class="step-content"><strong>Lars calls the voice line ⭐ <span class="pill green">🟢 Live</span></strong><span>A blind citizen dials a real free number · the model answers in Norwegian and routes itself · it runs the whole call, no human handoff in this version.</span></div></div>
 <div class="step"><div class="step-content"><strong>Maria uses a screen reader in Polish <span class="pill green">🟢 Live</span></strong><span>The whole portal in Polish, keyboard only, screen-reader clean: accessibility is a citizen right.</span></div></div>
 <div class="step"><div class="step-content"><strong>Erik photographs a payslip on iPhone <span class="pill green">🟢 Live</span></strong><span>The same web app on mobile · native iOS picker · structured fields and a result, inline.</span></div></div>
-<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill green">🟢 Live</span></strong><span>One command: 25 phases, sample data seeded, smoke tests green.</span></div></div>
+<div class="step"><div class="step-content"><strong>Ole builds it from a clean tenant <span class="pill purple">🟣 Scripted</span></strong><span>One script, 25 phases, sample data seeded, smoke tests green · plus the tenant prerequisites and the network patch, documented step by step.</span></div></div>
 </div>
 
 > Hero moment: a real phone call: dial `+33 801 150 799`, hear the model answer, and watch the live dashboard update within two minutes.
 
 ---
 
-# One command, from clean tenant to running platform.
+# One script, from clean tenant to running platform.
 
-<!-- ⏱ 0:45 · That single command isn't a demo trick. It is how we really ship.
+<!-- ⏱ 0:45 · That script isn't a demo trick. It is how we really ship.
 
 You clone the repository, run one script, and it builds 25 stages in order: from network, identity, security, and data, through the gateway, the AI, the case system, the front end, and the voice line, all the way to governance.
 
 At the end it runs its own health checks, and the same script runs automatically on every code change.
+
+Two things it does not do, and I would rather say so: a few tenant-level resources have to exist first, like the Foundry workspace and the Dynamics environment, and one network patch has to run after it to restore the private document upload. Both are written down, step by step, in the install guide.
 
 So this isn't a fragile demo machine. It is a platform we can rebuild from scratch, on demand. Let me bring it together. -->
 
@@ -1979,14 +1981,17 @@ cd UDCSP
 pwsh ./scripts/install/Install-UDCSP.ps1 `
      -Environment dev -Zone all `
      -SeedSyntheticData -Verbose
+
+# then, mandatory: restore the private document-upload path
+pwsh ./patch/Enable-PrivateUploadPath.ps1
 ```
 
 - 25 phases in order: landing zone → identity → security → data → monitoring → gateway → Foundry → Dataverse → frontend → voice → governance → quality
-- Sample data is seeded in parallel with the frontend
-- A smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
+- Sample data is seeded in parallel with the frontend; a smoke test runs at the end (identity · gateway · AI · case creation · dashboard · accessibility)
 - An HTML report is saved in `scripts/install/reports/<timestamp>/`
+- **Not covered by the script**: tenant prerequisites (Foundry workspace, Dataverse / D365 environment, Power BI tenant) and the mandatory `Enable-PrivateUploadPath.ps1` patch
 
-> From `git clone` to a working federated platform with real sample data: one command. The same script runs in our pipeline on every pull request.
+> One script, plus the documented prerequisites and one patch. The same script runs in our pipeline on every pull request.
 
 ---
 
@@ -2010,7 +2015,7 @@ Thank you. I'm happy to take your questions, and then run the demo. -->
 # UDCSP: a production accelerator with a named path to production.
 
 <p>
-3 sovereign zones · 7 AI agents · one private path from the portal to the case · every decision anchored to a regulation · every claim labelled and provable on a real Azure tenant. A working core you deploy with one command today, and a four-gate roadmap that takes the blueprint bricks to production. A real French government portal, seen by accident, proved the architecture was right.
+3 sovereign zones · 7 AI agents · one private path from the portal to the case · every decision anchored to a regulation · every claim labelled and provable on a real Azure tenant. A working core you deploy from one script today, and a four-gate roadmap that takes the blueprint bricks to production. A real French government portal, seen by accident, proved the architecture was right.
 </p>
 
 <p style="margin-top: 32px; opacity: 0.6; font-size: 0.85em">

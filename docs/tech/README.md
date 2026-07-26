@@ -4,7 +4,7 @@
 
 ### *What* is built · *How* it fits together · *How* to install, operate, recover
 
-[![Docs](https://img.shields.io/badge/📑_Docs-8-1565C0?style=for-the-badge)](#)
+[![Docs](https://img.shields.io/badge/📑_Docs-11-1565C0?style=for-the-badge)](#)
 [![Phases](https://img.shields.io/badge/🛠️_Install_phases-25-2E7D32?style=for-the-badge)](#)
 [![Zones](https://img.shields.io/badge/🌍_Sovereign_zones-3-AD1457?style=for-the-badge)](#)
 [![Stores](https://img.shields.io/badge/🗄️_Data_stores-25-E65100?style=for-the-badge)](#)
@@ -15,12 +15,26 @@
 
 ## 🎯 Start here
 
+> **Status vocabulary used across the documentation set:** 🟢 **Live** (deployed and exercised end to end) · 🟡 **Partially deployed** (limited to some countries or paths) · 🔵 **In repo** (code exists, not deployed) · ⚙️ **Scripted** (an installer phase or patch deploys it, not yet validated here) · 🗺️ **Roadmap** (designed, not built).
+>
+> For what is actually running today, [`inprogress.md`](./inprogress.md) is the source of truth. Every other document defers to it.
+
 | Doc | What it is | Read first if you are… |
 |---|---|---|
 | 🏛️ [`architecture.md`](./architecture.md) | **The platform definition.** Every layer, every sovereignty zone, every AI agent, every governance control. | New to the codebase — read this once. |
+| 📌 [`inprogress.md`](./inprogress.md) | **Demo readiness tracker.** The live state of all 10 demos, per country, with what blocks each one. **Source of truth for status.** | Checking what actually works today. |
 | 🗄️ [`data.md`](./data.md) | **Storage truth.** 5 zones · ~25 stores · retention matrix · compliance map. | Anyone touching data, retention, or DSR flows. |
-| 🌐 [`network.md`](./network.md) | **Network truth.** 3 sovereign spokes · ~25 private endpoints · 1 public IP per country (Bastion) · DDoS + NSG topology. Includes [`network.drawio`](./network.drawio) schematic. | Anyone wiring a new service into the spoke or troubleshooting connectivity. |
-| 🛠️ [`installation.md`](./installation.md) | **Install guide.** 4 collapsible sections (Prerequisites · Mandatory · Optional · Re-run). | About to deploy on a fresh tenant. |
+| 🌐 [`network.md`](./network.md) | **Network truth.** 3 sovereign spokes · 6 named subnets per country · ~25 private endpoints · 2 public IPs per country (Bastion + APIM) · DDoS + NSG topology. Includes [`network.drawio`](./network.drawio) schematic. | Anyone wiring a new service into the spoke or troubleshooting connectivity. |
+| 🛠️ [`installation.md`](./installation.md) | **Install guide.** Prerequisites · Mandatory (including the private-upload-path patch) · Optional · Re-run. | About to deploy on a fresh tenant. |
+| 🧠 [`aibrainetat.md`](./aibrainetat.md) | **AI brain: implementation vs target.** Claim-by-claim reconciliation of what the AI layer really does against what the architecture describes. | Auditing the AI story before repeating it. |
+
+---
+
+## 📈 Observe
+
+| Doc | What it covers |
+|---|---|
+| 📊 [`monitoring.md`](./monitoring.md) | Logging, metrics and traces: structured events, `traceparent` correlation, the 9 per-country App Insights workbooks, and the KQL behind them. |
 
 ---
 
@@ -39,6 +53,7 @@
 | Doc | What it covers |
 |---|---|
 | 🆘 [`runbook-dr.md`](./runbook-dr.md) | Disaster Recovery runbook — twice-yearly drills, per country, with caseworker simulation. |
+| 🩹 [`../../patch/`](../../patch/) | Operational fixes applied to the running environment that are not yet part of the declarative IaC. Each script is idempotent. `Enable-PrivateUploadPath.ps1` is **mandatory** after a fresh install: it restores citizen document upload (blob private endpoint + APIM VNet injection). See [`installation.md`](./installation.md) and [`network.md`](./network.md). |
 
 ---
 

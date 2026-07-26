@@ -2,11 +2,11 @@
 
 # 📱 UDCSP — The Mobile App
 
-### One React Native codebase. Three countries. The same Foundry brain as the web.
+### Responsive SPA today. Expo native app in the repo. The same Foundry brain as the web.
 
-*How a citizen in Copenhagen, Stockholm, or Oslo opens an app, snaps a photo of their passport or payslip, and gets a government answer in their own language — with native camera capture, push notifications, and the full OS accessibility stack.*
+*How a citizen in Copenhagen, Stockholm, or Oslo opens `udcsp.fredgis.com` on an iPhone, uses the native iOS document or photo chooser, and gets a government answer in their own language. The Expo native shell remains a repo artefact and 🗺️ **Roadmap** item.*
 
-[![Channel](https://img.shields.io/badge/📱_Channel-Mobile_·_Expo-1565C0?style=for-the-badge)](#)
+[![Channel](https://img.shields.io/badge/📱_Channel-Mobile_·_Responsive_SPA-1565C0?style=for-the-badge)](#)
 [![Stack](https://img.shields.io/badge/📦_Stack-React_Native_·_TS_·_MSAL-FF6F00?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12_shared_with_web-AD1457?style=for-the-badge)](#)
 [![Accessibility](https://img.shields.io/badge/♿_Accessibility-VoiceOver_·_TalkBack-2E7D32?style=for-the-badge)](#)
@@ -20,19 +20,29 @@
 
 ---
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 > [!IMPORTANT]
-> **TL;DR.** A citizen opens the UDCSP mobile app → **MSAL React Native** authenticates them against their country's **Microsoft Entra External ID** tenant → the app calls the **same APIM** gateway that the web portal uses → the **same Foundry agents** reason over the request → results (decisions, case status, eligibility) are pushed back as a **native push notification** (APNs / FCM) and shown in the app. Native extras — camera capture for ID or document scanning, biometric re-auth, OS locale propagation — make tasks frictionless that would be laborious on a browser. **One brain, many faces** — the mobile app is a channel adapter, not a second AI system.
+> **TL;DR.** 🟢 **Live** Demo 4 is the mobile-responsive SPA at `https://udcsp.fredgis.com`, not a packaged native app. The portal renders correctly on iPhone SE 375 px through iPhone 14 Pro Max 430 px using media queries in `home.css` and `accessibility.css`. The upload control uses the native iOS document or photo chooser, the chat widget remains pinned bottom-right, and the accessibility menu grid-stacks to one column under 600 px. 🔵 **In repo**: the Expo React Native shell and tests. 🗺️ **Roadmap**: signed iOS / Android binaries, APNs / FCM push, biometric re-auth, native camera capture and OS locale propagation.
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Same as web: `bot_session`, Redis ephemeral drafts plus PostgreSQL JSONB persisted drafts, ADLS `citizen-uploads/`, AI Search memory, App Insights traces; push receipts in Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) (TTL 30 days). |
+> | 🗄️ **Where stored** | Same live storage as the web SPA for the demonstrated path: Dataverse `tasks`, APIM-mediated `citizen-uploads/` blobs and App Insights traces where instrumented. Redis, PostgreSQL JSONB and push receipts are 🔵 **In repo** or 🗺️ **Roadmap** unless a deployed path proves otherwise. |
 
-> ℹ️ **Live vs roadmap.** Web portal is live on `udcsp.fredgis.com`. A packaged iOS / Android build and the Verified ID cross-border credential flow are **roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md).
+> ℹ️ **Live vs roadmap.** The demonstrated mobile channel is deliberately the responsive SPA / PWA. Native iOS / Android binary packaging is not on the critical path for Demo 4. See [`../tech/inprogress.md`](../tech/inprogress.md).
+
+| Capability | Status | Current fact |
+|---|---|---|
+| Responsive mobile SPA / PWA | 🟢 **Live** | `udcsp.fredgis.com` renders on iPhone widths 375 px to 430 px. |
+| Mobile CSS breakpoints | 🟢 **Live** | 21 media queries across `home.css` and `accessibility.css` at 560, 600, 800, 820 and 1100 px. |
+| Native iOS document or photo chooser | 🟢 **Live** | Browser file picker is used by the live upload flows. |
+| Expo React Native shell | 🔵 **In repo** | `apps/mobile/` exists but no native binary is packaged. |
+| APNs / FCM push, biometric re-auth, native camera capture, OS locale propagation | 🗺️ **Roadmap** | Designed for the Expo shell, not deployed as a live channel. |
 
 ---
 
 > [!NOTE]
-> The mobile app participates in **Microsoft Entra Verified ID** flows: it can present and receive cross-border residency credentials and eligibility receipts through the EUDI Wallet bridge (`infra/identity/verified-id/`).
+> 🗺️ **Roadmap.** The native mobile design participates in **Microsoft Entra Verified ID** flows through the EUDI Wallet bridge (`infra/identity/verified-id/`). Verified ID issuance is not built in the live tenant.
 
 ## 📑 Table of contents
 
@@ -59,15 +69,15 @@ The case study is explicit (`docs/biz/case-study-11.md` § AI Infusion Point):
 
 > *"A GenAI citizen assistant answers service queries in natural language across web, mobile, and telephone channels."*
 
-Mobile is not optional. Four reasons it is a **first-class** channel in UDCSP, not a checkbox:
+Mobile is not optional. The scope decision for Demo 4 is deliberate: 🟢 **Live** mobile means the responsive SPA / PWA, while the Expo native app is 🔵 **In repo** and 🗺️ **Roadmap** for a later packaged channel. Four reasons the mobile experience remains a first-class channel:
 
-- 📲 **Mobile-first usage in the Nordics.** Denmark, Sweden, and Norway consistently rank in the top tier of global smartphone penetration. The majority of citizens already reach government services from a phone first. A web-only strategy leaves them on a constrained browser; a native app gives them the platform they actually use.
-- 📷 **Native camera capture.** Submitting a passport scan, a payslip, or a lease from a browser requires downloading, scanning, uploading. From the mobile app it is: open app → tap → done. The `ApplyResidency` and income-supplement flows depend on this capability. Demo 4 (`uses.md`) is built around it:
+- 📲 **Mobile-first usage in the Nordics.** Denmark, Sweden, and Norway consistently rank in the top tier of global smartphone penetration. The majority of citizens already reach government services from a phone first. 🟢 **Live** today: the same SPA works tactile on iPhone widths from 375 px to 430 px.
+- 📷 **Document selection on phone.** 🟢 **Live** today: the browser file input opens the native iOS document or photo chooser for the Apply Child Benefit and Apply Residency upload flows. 🗺️ **Roadmap**: native in-app camera capture in the Expo shell.
 
   > *"Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and the platform extracts the figures, computes a provisional eligibility, and tells him in plain Danish what to expect — all in under 3 minutes from the citizen's side."*
 
-- 🔔 **Push notifications for case status.** Citizens should not have to poll a portal. When a caseworker closes a case or the eligibility model returns a result, the citizen's phone lights up — within 30 s p95. Timely notifications are a direct driver of the **+38 % CSAT** outcome promised by the case study.
-- 🧏 **OS-level accessibility stack.** VoiceOver (iOS) and TalkBack (Android) are far more mature than any custom accessibility widget a web developer can build. By putting citizen journeys in a native app, UDCSP inherits the entire OS accessibility infrastructure — screen readers, dynamic type, reduced motion, high-contrast mode — at zero marginal cost.
+- 🔔 **Push notifications for case status.** 🗺️ **Roadmap** for the native shell: APNs / FCM push replaces portal polling once signed binaries and push credentials exist.
+- 🧏 **Accessibility on mobile.** 🟢 **Live** today: the responsive SPA inherits browser and iOS assistive technology, with the accessibility menu stacking to one column under 600 px. 🔵 **In repo**: React Native accessibility primitives. 🗺️ **Roadmap**: full VoiceOver / TalkBack validation on signed native binaries.
 
 The design principle, codified in `docs/biz/uses.md` § Demo 4:
 
@@ -83,7 +93,7 @@ The design principle, codified in `docs/biz/uses.md` § Demo 4:
 %%{ init: { 'flowchart': { 'nodeSpacing': 30, 'rankSpacing': 35, 'padding': 6 }, 'themeVariables': { 'fontSize': '13px' } } }%%
 flowchart TB
     subgraph CITIZEN["📱 Citizen"]
-        PHONE["📱 iOS or Android<br/><i>EAS-built · App Store · Play</i>"]
+        PHONE["📱 Responsive SPA today<br/><i>Expo binary 🗺️ Roadmap</i>"]
     end
 
     subgraph EDGE["🔐 Auth — per country (DK · SE · NO)"]
@@ -99,7 +109,7 @@ flowchart TB
     subgraph BACK["📋 Back-office"]
         D365["Dynamics 365<br/><i>case spine</i>"]
         FABRIC["Microsoft Fabric<br/><i>audit traces</i>"]
-        PUSH["APNs / FCM<br/><i>push notifications</i>"]
+        PUSH["APNs / FCM<br/><i>🗺️ Roadmap push notifications</i>"]
         SMS["ACS SMS<br/><i>récap</i>"]
     end
 
@@ -126,7 +136,7 @@ flowchart TB
     class D365,FABRIC,PUSH,SMS back
 ```
 
-> 📖 **Reading the picture.** Green = citizen device. Orange = auth layer (per-country, sovereignty-preserving). Purple = the shared AI brain — the **same** Foundry agents and **same** APIM gateway that serve the web portal. Dark blue = back-office. **The brain is shared; only the auth and notification channels are mobile-specific.**
+> 📖 **Reading the picture.** Green = citizen device. 🟢 **Live** today, that device runs the responsive SPA in the browser. The Expo binary, native auth wrapper and push channel are 🔵 **In repo** or 🗺️ **Roadmap**. Purple = the shared AI brain, the same Foundry agents and APIM gateway that serve the web portal.
 
 The i18n bundles (`apps/web/i18n/messages/*.json`) and all Foundry agent definitions are **identical** to those used by the web channel — there is no mobile-specific fork of any AI logic.
 
@@ -134,7 +144,7 @@ The i18n bundles (`apps/web/i18n/messages/*.json`) and all Foundry agent definit
 
 ## 3. The lifecycle of one critical journey, step by step
 
-Camera-capture journey: a citizen captures a passport to apply for residency.
+🗺️ **Roadmap target journey.** Camera capture is retained here as the native-app design, not as the demonstrated Demo 4 path. The 🟢 **Live** Demo 4 path uses the responsive SPA upload control and the native iOS document or photo chooser.
 
 ```mermaid
 %%{ init: { 'sequence': { 'mirrorActors': false, 'actorMargin': 35 }, 'themeVariables': { 'fontSize': '12px' } } }%%
@@ -186,7 +196,7 @@ sequenceDiagram
 | Doc Extractor (AI Document Intelligence) | ~1 500 ms | Pre-built layout model; no training required |
 | Eligibility pre-assessor | ~800 ms | Small classification step before citizen-assistant |
 | APIM → app response | ~50 ms | Same-region APIM + App Insights |
-| Push notification delivery | ≤ 30 s p95 | ACS + APNs/FCM direct path |
+| Push notification delivery | ≤ 30 s p95 | 🗺️ **Roadmap** ACS + APNs/FCM direct path |
 
 ---
 
@@ -194,13 +204,13 @@ sequenceDiagram
 
 | # | Block | What it does | Where it lives |
 |:-:|---|---|---|
-| **1** | **Expo managed workflow** | One React Native codebase cross-compiled to iOS + Android via EAS Build. Three build profiles (`dk`, `se`, `no`) inject `UDCSP_COUNTRY` at build time. | `apps/mobile/app.json`, `apps/mobile/eas.json`, `apps/mobile/package.json` |
-| **2** | **`App.tsx` + screens** | Root entry point + six screens: `Home`, `Login`, `ApplyResidency`, `MyCases`, `CaseDetail`, `AccessibilitySettings`. Every screen exposes `accessibilityRole="header"` on its title. | `apps/mobile/App.tsx`, `apps/mobile/src/screens/*.tsx` |
-| **3** | **MSAL React Native + External ID** | OIDC sign-in and token management via `@azure/msal-react-native ^0.4.0`. Authority is computed per country: `https://udcsp{dk|se|no}.ciamlogin.com/...`. Stub in `externalIdAuth.ts` is replaced with a real interactive flow when tenant registrations exist. | `apps/mobile/src/auth/externalIdAuth.ts`, `infra/identity/external-id/{dk,se,no}-external-id.bicep` |
-| **4** | **Shared i18n — 12 languages from the web** | The `loadWebCatalogue()` function in `apps/mobile/src/i18n/index.ts` dynamically imports `apps/web/i18n/messages/{lang}.json`. The mobile app carries **no duplicate string files** — it resolves the web bundle at runtime. Supported locales: `da sv nb nn se en de fr pl ar uk fi`. | `apps/mobile/src/i18n/index.ts`, `apps/web/i18n/messages/*.json` |
-| **5** | **APIM client** | `apiFetch<T>()` in `apps/mobile/src/api/client.ts` — retries (up to 3 attempts with exponential back-off), injects `traceparent` W3C header for distributed tracing, reads `EXPO_PUBLIC_APIM_BASE_URL`. Calls the **same 8 APIM APIs** as the web: `citizen-applications`, `documents`, `eligibility-checks`, `notifications`, `case-management`, `agent-citizen-assistant`, `agent-classifier`, `data-export`. | `apps/mobile/src/api/client.ts`, `services/apim/apis/*/openapi.yaml` |
-| **6** | **Push notifications via Expo + ACS** | Case-status events from D365 flow via Logic Apps → ACS → APNs (iOS) / FCM (Android). The app registers for push at login; the notification opens the `CaseDetail` screen with the case in context. | `apps/mobile/src/screens/CaseDetail.tsx`, `services/apim/apis/notifications/openapi.yaml` |
-| **7** | **Accessibility components** | `AccessibleButton` wraps `Pressable` with `accessibilityRole="button"`, `accessibilityLabel`, and `accessibilityHint`. `ScreenReaderHints` wraps `Text` with `accessibilityLiveRegion="polite"`. `AccessibilitySettingsScreen` lets citizens override theme and font scale. | `apps/mobile/src/components/AccessibleButton.tsx`, `apps/mobile/src/components/ScreenReaderHints.tsx`, `apps/mobile/src/screens/AccessibilitySettings.tsx`, `apps/mobile/src/styles/themes.ts` |
+| **1** | **Expo managed workflow** | 🔵 **In repo** React Native codebase for iOS + Android via EAS Build. Signed binaries are 🗺️ **Roadmap**. | `apps/mobile/app.json`, `apps/mobile/eas.json`, `apps/mobile/package.json` |
+| **2** | **`App.tsx` + screens** | 🔵 **In repo** root entry point + six screens: `Home`, `Login`, `ApplyResidency`, `MyCases`, `CaseDetail`, `AccessibilitySettings`. | `apps/mobile/App.tsx`, `apps/mobile/src/screens/*.tsx` |
+| **3** | **MSAL React Native + External ID** | 🔵 **In repo** native auth scaffold. 🟢 **Live** mobile sign-in is the browser SPA using the web MSAL flow. | `apps/mobile/src/auth/externalIdAuth.ts`, `infra/identity/external-id/{dk,se,no}-external-id.bicep` |
+| **4** | **Shared i18n, 12 languages from the web** | 🔵 **In repo** native loader references the web catalogue. 🟢 **Live** mobile language switching is served by the responsive SPA. | `apps/mobile/src/i18n/index.ts`, `apps/web/i18n/messages/*.json` |
+| **5** | **APIM client** | 🔵 **In repo** native APIM client. 🟢 **Live** mobile APIM calls use the web SPA clients. | `apps/mobile/src/api/client.ts`, `services/apim/apis/*/openapi.yaml` |
+| **6** | **Push notifications via Expo + ACS** | 🗺️ **Roadmap** for signed binaries. Not deployed for Demo 4. | `apps/mobile/src/screens/CaseDetail.tsx`, `services/apim/apis/notifications/openapi.yaml` |
+| **7** | **Accessibility components** | 🔵 **In repo** native accessibility primitives. 🟢 **Live** mobile accessibility for Demo 4 is the responsive SPA plus `accessibility.css`. | `apps/mobile/src/components/AccessibleButton.tsx`, `apps/mobile/src/components/ScreenReaderHints.tsx`, `apps/mobile/src/screens/AccessibilitySettings.tsx`, `apps/mobile/src/styles/themes.ts` |
 
 > [!NOTE]
 > **One codebase, zero per-country forks.** The build profiles in `eas.json` differ only in the `UDCSP_COUNTRY` environment variable. The app binary is otherwise identical; per-country logic lives entirely in the auth layer (`externalIdAuth.ts`) and the APIM routing header (`X-UDCSP-Country`), not in screen code.
@@ -223,7 +233,7 @@ export async function loadWebCatalogue(lang) {
 
 The relative path resolves inside the Expo bundler's module graph at build time — no runtime file-system access is needed.
 
-**OS-level locale propagation** — the app reads the device locale on startup (React Native's `NativeModules.I18nManager` / `Intl` API) and selects the closest supported language, falling back to the user's last saved preference and then to English. This means a Danish citizen who switches their iPhone to Norwegian Bokmål gets the app in `nb` **immediately** on next launch, without any settings screen interaction.
+🗺️ **Roadmap.** **OS-level locale propagation** in the native shell reads the device locale on startup (React Native's `NativeModules.I18nManager` / `Intl` API) and selects the closest supported language, falling back to the user's last saved preference and then to English. The 🟢 **Live** responsive SPA uses the web language switcher and browser locale handling.
 
 | 🏳️ | Language | Bundle key | Notes |
 |:-:|---|---|---|
@@ -247,7 +257,7 @@ The relative path resolves inside the Expo bundler's module graph at build time 
 
 ## 6. Accessibility — VoiceOver, TalkBack, dynamic type, reduced motion
 
-The mobile app uses the **OS accessibility stack**, not custom WCAG widgets. React Native's `Pressable`, `Text`, and `View` components map directly to native iOS `UIAccessibilityElement` and Android `AccessibilityNodeInfo` objects — the same objects that VoiceOver and TalkBack consume. This is a deliberate architectural choice: no bespoke widget can match the breadth or quality of the OS stack.
+🟢 **Live** Demo 4 accessibility is the responsive SPA: the chat widget is pinned bottom-right, the accessibility menu stacks to one column under 600 px, and the same RouteAnnouncer and cookie-banner accessibility fixes from Demo 3 apply on mobile widths. 🔵 **In repo** native accessibility uses the OS stack. React Native's `Pressable`, `Text`, and `View` components map directly to native iOS `UIAccessibilityElement` and Android `AccessibilityNodeInfo` objects.
 
 ### 6.1 `AccessibleButton` — the primary interactive primitive
 
@@ -369,11 +379,11 @@ The EAS build profiles (`eas.json`) set `UDCSP_COUNTRY` at build time so that st
 
 | | SLO | Target | How we measure |
 |:-:|---|---|---|
-| ⚡ | **App cold-start** (splash → Home screen interactive) | p95 ≤ **2 s** | Expo performance events; EAS Insights |
-| 🔔 | **Push notification delivery** (D365 event → device) | p95 ≤ **30 s** | App Insights custom event from Logic App trigger to APNs/FCM ACK |
-| 💥 | **Crash-free sessions** | ≥ **99.5 %** | EAS / Expo Crash Reporting |
-| ♿ | **Accessibility audit pass** | **100 %** on VoiceOver + TalkBack | Automated `axe-react-native` per PR; manual audit per release |
-| 📤 | **Document upload + extraction** (tap → result) | p95 ≤ **4 s** | App Insights custom event: camera-capture-start → eligibility-response |
+| ⚡ | **App cold-start** (splash → Home screen interactive) | p95 ≤ **2 s** | 🗺️ **Roadmap** Expo performance events; EAS Insights |
+| 🔔 | **Push notification delivery** (D365 event → device) | p95 ≤ **30 s** | 🗺️ **Roadmap** App Insights custom event from Logic App trigger to APNs/FCM ACK |
+| 💥 | **Crash-free sessions** | ≥ **99.5 %** | 🗺️ **Roadmap** EAS / Expo Crash Reporting |
+| ♿ | **Accessibility audit pass** | **100 %** on VoiceOver + TalkBack | 🔵 **In repo** `axe-react-native`; 🟢 **Live** responsive SPA uses web axe-core gate |
+| 📤 | **Document upload + extraction** (tap → result) | p95 ≤ **4 s** | 🟢 **Live** responsive SPA upload path; native camera timing is 🗺️ **Roadmap** |
 | 🌐 | **API availability** (APIM mobile product) | ≥ **99.9 %** monthly | APIM metrics + synthetic probes every 5 min per country |
 
 **Mobile-relevant risks from `docs/tech/plan.md` § Risk register:**
@@ -390,14 +400,14 @@ The EAS build profiles (`eas.json`) set `UDCSP_COUNTRY` at build time so that st
 
 ## 9. 📷 Native capabilities — camera, push, biometric login
 
-Three native bridges make the mobile app more powerful than a mobile browser.
+The native bridges below are retained as target architecture. They are 🔵 **In repo** where code or configuration exists and 🗺️ **Roadmap** where a signed binary or platform credential is required.
 
 ### 9.1 Camera capture — Expo Camera
 
-**What it does:** Citizens take a photo of a document (passport, payslip, lease) directly inside the app. The JPEG is compressed client-side (target: < 500 KB) before upload.
+🗺️ **Roadmap.** Citizens take a photo of a document (passport, payslip, lease) directly inside the app. The JPEG is compressed client-side (target: < 500 KB) before upload. 🟢 **Live** today, citizens use the responsive SPA file picker, which opens the native iOS document or photo chooser.
 
 > [!NOTE]
-> **Scaffold status — read this before demoing.** The current `apps/mobile/src/screens/` set ships the auth, navigation, accessibility, push and case screens, but **`CaptureScreen.tsx` is not yet present**. The pieces that *are* shipped: (a) the EAS build profiles request `ios.infoPlist.NSCameraUsageDescription` + `android.permissions: ["CAMERA"]`, (b) the `expo-image-picker` and `expo-camera` packages are listed in `apps/mobile/package.json`, (c) the upload contract `POST /documents/upload` is fully defined in `services/apim/apis/documents/openapi.yaml` and the Foundry `doc-extractor` agent consumes it. Wiring the missing screen against that contract is a finite scaffolding task (~1 sprint), not a research item. Demo 4 in `recipe.md` should therefore be run from the **web upload** path until the mobile capture screen is delivered.
+> **🔵 In repo, read this before demoing.** The current `apps/mobile/src/screens/` set ships the auth, navigation, accessibility, push and case screens, but **`CaptureScreen.tsx` is not yet present**. The pieces that are 🔵 **In repo**: (a) the EAS build profiles request `ios.infoPlist.NSCameraUsageDescription` + `android.permissions: ["CAMERA"]`, (b) the `expo-image-picker` and `expo-camera` packages are listed in `apps/mobile/package.json`, (c) the upload contract `POST /documents/upload` is defined in `services/apim/apis/documents/openapi.yaml` and the Foundry `doc-extractor` agent consumes it. Wiring the missing screen against that contract is 🗺️ **Roadmap**. Demo 4 should be run from the responsive SPA upload path.
 
 **Where it is exercised:**
 - `ApplyResidency` screen — passport / ID card capture for residency applications.
@@ -412,7 +422,7 @@ Three native bridges make the mobile app more powerful than a mobile browser.
 
 ### 9.2 Push notifications — Expo Notifications + ACS
 
-**What it does:** When a D365 case changes state (decision ready, document requested, case closed), a Logic App publishes the event to ACS, which forwards it to APNs (iOS) or FCM (Android). The notification deep-links to the `CaseDetail` screen with the case ID pre-loaded.
+🗺️ **Roadmap.** When a D365 case changes state (decision ready, document requested, case closed), a Logic App publishes the event to ACS, which forwards it to APNs (iOS) or FCM (Android). The notification deep-links to the `CaseDetail` screen with the case ID pre-loaded.
 
 **The contract:** `POST /notifications/send` in `services/apim/apis/notifications/openapi.yaml` — payload includes `caseId`, `messageKey` (resolved against the i18n bundle in the citizen's locale), and `channel: push`.
 
@@ -422,7 +432,7 @@ Three native bridges make the mobile app more powerful than a mobile browser.
 
 ### 9.3 Biometric re-auth — MSAL biometric prompt
 
-**What it does:** After the initial OIDC sign-in (which may require MitID / BankID / BankID NO through the External ID user flow), the MSAL token cache is locked behind the device biometric (Face ID / Touch ID / fingerprint). On subsequent app opens, citizens authenticate with biometrics rather than re-entering credentials.
+🗺️ **Roadmap.** After the initial OIDC sign-in (which may require MitID / BankID / BankID NO through the External ID user flow), the MSAL token cache is locked behind the device biometric (Face ID / Touch ID / fingerprint). On subsequent app opens, citizens authenticate with biometrics rather than re-entering credentials.
 
 **Where it is configured:** `apps/mobile/src/auth/externalIdAuth.ts` — the MSAL `PublicClientApplication` is configured with `keychainSharingGroup` (iOS) and `BrokerRedirectUriRegistered` so the token cache survives app updates without requiring re-login.
 
@@ -431,6 +441,8 @@ Three native bridges make the mobile app more powerful than a mobile browser.
 ---
 
 ## 10. The activation runbook
+
+🗺️ **Roadmap.** This runbook packages the Expo shell after the responsive SPA demo path. It is not required to demonstrate Demo 4 today.
 
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 25, 'rankSpacing': 30 }, 'themeVariables': { 'fontSize': '12px' } } }%%
@@ -472,7 +484,7 @@ All of steps 1 and 3–5 are automated by `scripts/install/modules/Install-Apps.
 |---|---|---|---|
 | **🚦 Smoke (unit)** | `npm test` (in `apps/mobile/`) | `AccessibleButton` exposes correct `accessibilityLabel`; `traceparent` header matches W3C format `00-{32hex}-{16hex}-01`. No network. | < 15 s |
 | **🧪 E2E (simulated)** | `npx expo start` + Expo Go on a device / simulator | Full navigation flow (Home → Login → ApplyResidency → MyCases → CaseDetail → AccessibilitySettings) against the DEV APIM. VoiceOver / TalkBack can be toggled during the session. | ~2 min |
-| **📱 Live (store builds)** | TestFlight (iOS) or Play internal track (Android) | The full signed-binary path — real push notifications, real MSAL biometric prompt, real APIM JWT, real camera. Validates store provisioning profiles and redirect URI registration. | Manual (install once) |
+| **📱 Live (store builds)** | TestFlight (iOS) or Play internal track (Android) | 🗺️ **Roadmap** signed-binary path: real push notifications, MSAL biometric prompt, APIM JWT and camera. Validates store provisioning profiles and redirect URI registration. | Manual (install once) |
 
 > [!NOTE]
 > The QA agent (A14) scaffolded Playwright E2E tests for the web channel (`tests/e2e/`). Mobile-specific Appium / Detox tests are planned in `tests/e2e/` under the `mobile/` sub-folder and are seeded in the accessibility test suite (`tests/accessibility/`). Until those are wired to a device farm, Expo Go on a real device is the practical E2E harness for the mobile channel.
@@ -481,20 +493,20 @@ All of steps 1 and 3–5 are automated by `scripts/install/modules/Install-Apps.
 
 ## 12. The demo script for a jury
 
-5 minutes, no setup beyond the deployed DEV environment and a TestFlight / Play internal-track install:
+5 minutes, no setup beyond `https://udcsp.fredgis.com` on an iPhone-sized browser. This is the 🟢 **Live** Demo 4 path.
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
-| 1 | Open the app; the device locale is `da-DK`; the app launches in Danish | Home screen in DA; no locale picker needed — OS locale propagated automatically | #5 (AI 12 lang) · #8 (a11y) · #12 (channels) |
-| 2 | Tap "Sign in"; authenticate with synthetic MitID credential (from A15 persona "Erik Hansen") | MSAL launches the DK External ID browser sheet; MitID flow completes; access token returned | #2 (ID federation) · #10 (sovereignty) |
-| 3 | Tap "Apply for income supplement" → tap camera → snap the synthetic payslip (from `data/synthetic/documents/`) | Camera opens natively; photo taken; upload spinner; within 4 s: extracted gross amount DKK 42 500, employer "Hansen Tømrer ApS", confidence 0.97 | #3 (28d→4d) · #6 (assistant) · #7 (eligibility) · #14 (services) |
-| 4 | Review the confirmation screen; tap "Submit" | Case ID `DK-2024-00123` shown; "Decision expected in 4 days". Trace ID visible under "Decision details". | #15 (audit) · #17 (synth data) |
-| 5 | Enable VoiceOver (iOS) or TalkBack (Android); navigate back to Home with gestures | Screen reader announces every element correctly (`"Start residency application, button — Opens the residency form"`); no unlabelled interactive elements | #8 (WCAG) · #12 (channels) |
+| 1 | Open `https://udcsp.fredgis.com` on an iPhone SE width or 14 Pro Max width. | Home page and service cards reflow cleanly across 375 px to 430 px. | #5 (AI 12 lang) · #8 (a11y) · #12 (channels) |
+| 2 | Sign in through the DK External ID path. | The responsive SPA uses the same web MSAL and country tenant flow as desktop. | #2 (ID federation) · #10 (sovereignty) |
+| 3 | Open Apply Child Benefit or Apply Residency and choose a payslip or contract. | The native iOS document or photo chooser opens, then the SPA uploads through APIM. | #3 (28d→4d) · #6 (assistant) · #7 (eligibility) · #14 (services) |
+| 4 | Review extracted fields and submit. | Confirmation appears and the case can be rehydrated from My Cases. | #15 (audit) · #17 (synth data) |
+| 5 | Open the chat widget and accessibility menu. | Chat remains pinned bottom-right; the accessibility menu stacks to one column under 600 px. | #8 (WCAG) · #12 (channels) |
 
 This corresponds to **Demo 4** in [`uses.md`](./uses.md#-demo-4--erik-snaps-a-payslip-for-an-income-based-benefit-danish-mobile).
 
 > [!TIP]
-> For an even stronger jury impression, open the App Insights dashboard on a second screen while running beat 3. The `traceparent` injected by the mobile client links the camera-capture event in the app to the Doc Extractor trace in Foundry to the D365 case-create call — **one distributed trace, three hops, zero gaps**. That is the audit trail the DPO (Demo 7) will query six months later.
+> For an even stronger jury impression, open App Insights on a second screen while running beat 3. The `traceparent` injected by the responsive SPA links the upload event to the Doc Extractor trace and Dataverse `tasks` write. Native camera capture and D365 case create are 🗺️ **Roadmap**.
 
 ---
 
@@ -507,7 +519,7 @@ This corresponds to **Demo 4** in [`uses.md`](./uses.md#-demo-4--erik-snaps-a-pa
 | Custom accessibility widgets that bypass the OS stack | React Native's `accessibilityRole`, `accessibilityLabel`, `accessibilityHint` map to native UIAccessibility / AccessibilityNodeInfo — no bespoke widgets needed |
 | Hard-coded API URLs in source | `EXPO_PUBLIC_APIM_BASE_URL` from EAS build environment; no URL in committed source |
 | Secrets in `app.json` or `eas.json` | All secrets (MSAL client IDs, push credentials, APIM keys) live in Key Vault; only non-secret config in `app.json` and `eas.json` |
-| Polling for case-status updates | Push notifications (APNs / FCM) via ACS — no polling, no battery drain, p95 ≤ 30 s delivery |
+| Polling for case-status updates | 🗺️ **Roadmap** push notifications (APNs / FCM) via ACS replace polling once the native shell is packaged |
 | Separate i18n bundles for mobile | `loadWebCatalogue()` imports from `apps/web/i18n/messages/` at build time — single source of truth, zero string drift |
 | Per-channel Foundry agents | The same `citizen-assistant`, `doc-extractor`, and `eligibility-pre-assessor` agents serve web and mobile; mobile is a channel adapter, not a second AI system |
 
@@ -515,13 +527,14 @@ This corresponds to **Demo 4** in [`uses.md`](./uses.md#-demo-4--erik-snaps-a-pa
 
 ## 14. Where the conversation is stored
 
-Mobile intentionally shares the web channel's storage pattern because the app embeds the same bot/widget bundle in a WebView and calls the same APIM contracts. Native additions — camera captures and push receipts — land in the same document and operational stores rather than creating a second mobile-only archive. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+The demonstrated mobile channel is the responsive SPA, so it shares the web channel's live storage path. Native additions such as camera captures and push receipts are 🔵 **In repo** or 🗺️ **Roadmap** until a signed binary is deployed. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
 | Bot transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
-| Camera-captured documents | ADLS Gen2 `citizen-uploads/` (same as web) | While case open + lifecycle tiers |
-| Drafts + push receipts | Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h) | Draft TTL 30 days; receipts TTL 30 days |
+| Documents chosen on mobile browser | 🟢 **Live** ADLS Gen2 `citizen-uploads/` through APIM, same as web | While case open + lifecycle tiers |
+| Native camera captures | 🗺️ **Roadmap** ADLS Gen2 `citizen-uploads/`, same target as web | While case open + lifecycle tiers |
+| Drafts + push receipts | 🔵 **In repo** or 🗺️ **Roadmap** Azure Cache for Redis Enterprise plus PostgreSQL JSONB | Draft TTL 30 days; receipts TTL 30 days |
 | Memory + traces | Azure AI Search; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
@@ -532,7 +545,7 @@ For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 
 <div align="center">
 
-*The mobile app is the most personal front door of UDCSP — a camera, a fingerprint, and a push notification away from government.*  🇩🇰 🇸🇪 🇳🇴
+*The demonstrated mobile front door is the responsive SPA today, with the native Expo channel ready as the next packaging step.*  🇩🇰 🇸🇪 🇳🇴
 
 [![Demo](https://img.shields.io/badge/▶_Live_demo-Demo_4_in_uses.md-1565C0?style=for-the-badge)](./uses.md#-demo-4--erik-snaps-a-payslip-for-an-income-based-benefit-danish-mobile)
 [![Build agent](https://img.shields.io/badge/🤖_Build-A9_·_apps/mobile/-FF6F00?style=for-the-badge)](../tech/agents.md)

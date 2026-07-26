@@ -10,13 +10,15 @@
 
 ---
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 ## 📑 Project submission
 
 This repository is also the submission package for the Azure Master Architect Program — Use Case 11.
 
-The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)**. It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the UDCSP Guardian proactive-autonomy vision, the security and compliance posture, the ten-demo plan with live-vs-blueprint status, and the roadmap from demonstrator to production target. Every claim is tied to an artefact path in this repository.
+The executive overview is in **[`presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf`](./presentation/AMA_Use_Case_11_Project_Executive_Overall.pdf)**. It walks the jury through the citizen problem, the target Azure architecture, the multi-agent AI brain, the UDCSP Guardian proactive-autonomy vision, the security and compliance posture, the ten-demo plan with current deployment posture, and the path from demonstrator to production target. Every claim is tied to an artefact path in this repository.
 
-UDCSP is positioned as a *production-oriented demonstrator* — tenant-deployable today, with explicit roadmap gates for the items that still require live tenant validation. Status badges (*Live · Implemented · Scripted · Blueprint · Roadmap*) appear next to every claim throughout the dossier.
+UDCSP is positioned as a *production-oriented demonstrator*: tenant-deployable today, with explicit gates for the items that still require live tenant validation. Status markers use the canonical vocabulary: 🟢 **Live**, 🟡 **Partially deployed**, 🔵 **In repo**, ⚙️ **Scripted**, 🗺️ **Roadmap**.
 
 ### 🖼️ Presentation deck
 
@@ -156,17 +158,17 @@ Three Nordic governments collectively serve **2.1 million citizens** through **4
 
 UDCSP is a **unified citizen platform** that:
 
-- 🌐 **Unifies the front door** — the 47 national portals are rationalised into a single citizen experience across web, mobile and telephone in **12 languages**, **multilingual and inclusive by design** (voice, screen-reader, plain language) — while each country keeps its sovereign back-office systems intact.
+- 🟡 **Unifies the front door**: the 47 national portals are rationalised into a single citizen experience across web, responsive mobile web and telephone in **12 languages**, **multilingual and inclusive by design** (voice, screen-reader, plain language), while each country keeps its sovereign back-office systems intact. Native mobile packaging remains 🗺️ **Roadmap**.
   
-- 🤝 **Bridges to the national authorities, never replaces them** — every transaction is pre-filled, validated, then **submitted to the competent authority** (CPR / borger.dk / SKAT / Udbetaling DK in 🇩🇰, Skatteverket / Försäkringskassan in 🇸🇪, Skatteetaten / NAV / Altinn / UDI in 🇳🇴) and the official decision, certificate or status is mirrored back into the citizen's *My cases* timeline. UDCSP itself never issues residency, tax or benefit decisions.
+- 🟡 **Bridges to the national authorities, never replaces them**: the citizen-side DK rail is 🟢 **Live** and cross-country rules are in the topic-router. Cross-border fan-out to national authority back offices is 🗺️ **Roadmap**. UDCSP itself never issues residency, tax or benefit decisions.
   
-- 🔐 **Federates identity** across the three countries while preserving national data sovereignty (MitID · BankID · Freja+ · ID-porten · MinID via certified OIDC brokers).
+- 🟢 **Federates identity** across the three countries while preserving national data sovereignty through the live DK / SE / NO External ID tenants.
   
-- 🧠 **Puts AI at the center, under human control** — a Microsoft Foundry-hosted set of agents and models classifies requests, translates content, pre-determines benefit eligibility and answers citizen questions in natural language. **Every model recommendation is traceable, explainable and systematically validated or adjusted by a human caseworker** before any final decision (AI-first, but supervised).
+- 🟡 **Puts AI at the center, under human control**: Microsoft Foundry agents classify requests, translate content, pre-assess eligibility and answer citizen questions in natural language. Citizen-side eligibility is 🟢 **Live**, while full caseworker disposition and override persistence are still limited.
   
-- ⚙️ **Automates back-office routing** through Azure Logic Apps and a Dynamics 365 case-management spine.
+- 🟡 **Automates back-office routing** through Azure Logic Apps and a model-driven Power App on the shared Dataverse environment. Per-country D365 Customer Service environments are not provisioned yet and remain 🗺️ **Roadmap** for the live tenant.
   
-- 📊 **Closes the loop** with a unified data and governance layer powered by Microsoft Fabric, Power BI and **Microsoft Purview** — a single governance fabric (catalog, AI Act registry, end-to-end traceability) that makes cross-border data sharing strictly compliant with **GDPR, the EU AI Act and sector-specific EU directives — by design, not as an afterthought**.
+- 🟡 **Closes the loop** with Fabric, App Insights workbooks and **Microsoft Purview** governance artefacts. The executive Power BI report and full cross-border data-sharing evidence pack are 🗺️ **Roadmap**.
 
 > [!IMPORTANT]
 > **Target outcomes:** applications processed in **4 days instead of 28**, **+38 % citizen satisfaction**, **WCAG 2.1 AA** accessibility, and **2.1 M citizens** served via a single federated front door — without compromising national data sovereignty.
@@ -185,14 +187,14 @@ UDCSP is a **unified citizen platform** that:
 
 <div align="center">
 
-<img src="images/udcsp-diagram.png" alt="UDCSP simplified architecture: citizens on web, mobile and voice enter through federated identity and API Management, reach the Microsoft AI Foundry brain and Logic Apps to Dataverse, which bridges to the national authorities of Denmark, Sweden and Norway. Analytics flow to Fabric and Power BI, and Microsoft Purview governs every layer." width="100%" />
+<img src="images/udcsp-diagram.png" alt="UDCSP simplified architecture: citizens on web, responsive mobile web and voice enter through federated identity and API Management, reach the Microsoft AI Foundry brain and Logic Apps to Dataverse. Cross-border authority handoff and executive Power BI are 🗺️ Roadmap, while App Insights workbooks and Purview governance support the 🟢 Live sandbox paths." width="100%" />
 
 </div>
 
-- **Citizen entry:** 2.1 M citizens across 🇩🇰 🇸🇪 🇳🇴 reach one front door on web, mobile and voice, in 12 languages. Identity is federated through the national eIDs (MitID, BankID, ID-porten) behind Entra External ID and eIDAS, and every request is gated by Azure API Management.
-- **AI and process:** one Microsoft AI Foundry brain, a topic-router plus six worker agents on Azure OpenAI, classifies, translates, extracts documents and pre-assesses eligibility, with Content Safety on every call. Logic Apps then drives the case into Dynamics 365 and Dataverse.
-- **Bridge, never replace:** Logic Apps pre-fills, submits and polls the status against the competent national authority (borger.dk, CPR, SKAT and Udbetaling DK for 🇩🇰; Skatteverket and Försäkringskassan for 🇸🇪; Skatteetaten, NAV, Altinn and UDI for 🇳🇴), then mirrors the official decision back into the citizen's *My cases*.
-- **Data and governance:** analytics flow into Microsoft Fabric and Power BI, and Microsoft Purview governs every layer (GDPR, EU AI Act, WCAG 2.1 AA).
+- **Citizen entry:** 🟢 **Live** web portal, responsive mobile web and NO voice demo cover the current sandbox paths in 12 languages. Native mobile binaries are 🗺️ **Roadmap**.
+- **AI and process:** 🟡 **Partially deployed** Foundry agents classify, translate, extract documents and pre-assess eligibility through APIM. Logic Apps writes citizen submissions to Dataverse `tasks` today, with the canonical case table and full D365 Customer Service path still pending.
+- **Bridge, never replace:** 🗺️ **Roadmap** cross-border fan-out will submit to and poll the competent national authorities. The 🟢 **Live** tenant currently proves the citizen-side rail and topic-router rules, not the full authority handoff.
+- **Data and governance:** 🟡 **Partially deployed** App Insights workbooks are 🟢 **Live**. Governance artefacts are 🟢 **Live** or 🔵 **In repo**. The executive Power BI report is 🗺️ **Roadmap**.
 
 Want the full topology? See [`architecture.md` §2.1 High-level view](./docs/tech/architecture.md#21-high-level-view-whole-platform), then §2.3 National-authority integration map for the per-country bridge diagram, the per-service routing matrix (residency / tax certificate / child benefit) and the per-country constraints.
 
@@ -219,7 +221,7 @@ graph TB
         SMS["📲 SMS"]
         Email["📧 Email"]
     end
-    Case["🧑‍💼 Caseworker<br/>D365 + Copilot for Service"]
+    Case["🧑‍💼 Caseworker<br/>Shared Dataverse Power App"]
 
     APIM["🚪 APIM — single gateway<br/><i>auth · throttle · audit · /agents/topic-router</i>"]
     Safety["🛡️ Content Safety<br/><i>input + output scan, every call</i>"]
@@ -237,7 +239,7 @@ graph TB
 
     RAG["📚 RAG knowledge<br/>SharePoint · agency sites · Fabric"]
     Trace["🔍 Tracing — App Insights → Purview lineage"]
-    Ledger["🔒 Confidential Ledger<br/>AI Act Art. 26(6) tamper-evident log"]
+    Ledger["🔒 Confidential Ledger<br/>⚙️ Scripted, writes 🗺️ Roadmap"]
 
     CONV --> APIM
     Case --> APIM
@@ -275,7 +277,7 @@ graph TB
 
 - **Single entry:** every conversational channel (voice, web, mobile, chat) hits the same APIM endpoint `/agents/topic-router`.
 - **One orchestrator:** the topic-router is the only orchestrator and dispatches to six worker agents, with Content Safety scanning every input and every output.
-- **One high-risk lane:** the Eligibility agent is the only EU AI Act high-risk component. It runs in a Confidential Compute SEV-SNP Trusted Execution Environment, and every decision is anchored to Azure Confidential Ledger.
+- **One high-risk lane:** 🟡 **Partially deployed** Eligibility is the only EU AI Act high-risk component. The citizen-side pre-assessment path is 🟢 **Live**. Confidential Compute deployment is ⚙️ **Scripted**, and Confidential Ledger writes are 🗺️ **Roadmap** for the live tenant.
 - **Grounded and traced:** the RAG agents cite their sources, and the full conversation is traced in App Insights and indexed in Purview.
 
 Full agent catalogue, RAG strategy, safety and evaluation pipelines, AI Act registry and end-to-end flow: [`docs/biz/ai.md`](./docs/biz/ai.md).
@@ -288,7 +290,7 @@ Full agent catalogue, RAG strategy, safety and evaluation pipelines, AI Act regi
 
 The next era of the platform, told in full in [`docs/biz/guardian.md`](./docs/biz/guardian.md). Today UDCSP is **reactive**: a citizen must know they qualify, find the portal, and apply. Yet studies show **20 % to 60 % of eligible people never claim** their social benefits, mostly because they do not know they are entitled.
 
-Guardian flips the relationship, from the EU *once-only* principle to *no-stop-shop*. An autonomous agent detects a life event, runs the existing Eligibility agent in shadow (no application), has the Caseworker Helper draft an outreach, a new Critic agent reviews it, a **human caseworker approves**, and only then does the state reach out through channels that already exist (SMS, email, push, voice), in the citizen's language, consent-gated and ledger-anchored. It is the first genuinely autonomous behaviour on the platform, built almost entirely by re-wiring bricks that are already live.
+Guardian flips the relationship, from the EU *once-only* principle to *no-stop-shop*. It is 🗺️ **Roadmap**: an autonomous agent would detect a life event, run the existing Eligibility agent in shadow (no application), have the Caseworker Helper draft an outreach, ask a new Critic agent to review it, require **human caseworker approval**, then reach out through existing channel patterns (SMS, email, push, voice), in the citizen's language and with consent gating.
 
 ```mermaid
 %%{ init: { 'flowchart': { 'nodeSpacing': 24, 'rankSpacing': 30, 'padding': 6 }, 'themeVariables': { 'fontSize': '12px' } } }%%
@@ -320,7 +322,7 @@ graph LR
     end
 
     Citizen["👤 'You may be<br/>entitled to X'"]
-    Gov["🔒 Consent · Confidential Ledger · AI Act registry"]
+    Gov["🔒 Consent · AI Act registry<br/>Ledger writes 🗺️ Roadmap"]
 
     SIG --> Scan --> Eli --> Help --> Critic --> Human
     Human -- approved --> OUT --> Citizen
@@ -348,8 +350,8 @@ graph LR
 - **Autonomous trigger:** a life event in the sovereign zone triggers the autonomous Event Scanner, which calls the existing high-risk Eligibility agent in shadow, with no application attached.
 - **Draft and review:** the Caseworker Helper drafts a cited outreach in the citizen's language, and a new Critic agent reviews it for legal basis, tone and false positives.
 - **Human gate:** nothing advances past the human caseworker, who approves, adjusts or rejects (EU AI Act Article 14).
-- **Governed delivery:** approved outreach goes out on the channels that already exist, and every autonomous step is consent-gated and anchored in Azure Confidential Ledger.
-- **Mostly a re-wire:** two new agents, one new workflow and one dashboard tile. Everything else already exists.
+- **Governed delivery:** approved outreach would use existing channel patterns. Consent gating is required, while Confidential Ledger writes are 🗺️ **Roadmap** for the live tenant.
+- **Mostly a re-wire:** two new agents, one new workflow and one dashboard tile, designed to reuse existing platform patterns.
 
 The full story, architecture, multi-agent coordination patterns, governance and the executive KPI (*unclaimed entitlements recovered*): [`docs/biz/guardian.md`](./docs/biz/guardian.md).
 
@@ -363,7 +365,7 @@ The full story, architecture, multi-agent coordination patterns, governance and 
 | 🌐 | **Federated, not centralised — bridge to national authorities** | Each country keeps its sovereign data zone and its competent authorities (CPR · borger.dk · SKAT · Udbetaling DK · Skatteverket · Försäkringskassan · Skatteetaten · NAV · Altinn · UDI). Identity, AI and orchestration meet in the middle through standards (eIDAS, OpenID Connect, OAuth 2.0). National eID (**MitID** for DK, **BankID** for SE, **BankID Norge / MinID** for NO) federates into Entra External ID via a certified OIDC broker (Criipto / Signicat). Per-service routing matrix and per-country constraints documented in [`architecture.md` §2.3](docs/tech/architecture.md#23-national-authority-integration-map-the-unified-platform-bridge) and [`architecture.md` §4](docs/tech/architecture.md#4-identity-federation-detail). |
 | ♿ | **Inclusive by design** | WCAG 2.1 AA baked into the design system; voice channel for citizens who cannot or will not use a screen; **12 official languages with native parity**, not a translation pass. |
 | 🛡️ | **Compliance by design** | Purview classifies and labels every dataset; Logic Apps enforces approval gates; AI agents are registered, evaluated, and monitored under the EU AI Act. |
-| 🔍 | **Auditable end-to-end** | Every agent decision and every case action is traced into Fabric and made visible in Power BI dashboards for citizens, caseworkers, and auditors. |
+| 🔍 | **Auditable end-to-end** | 🟡 **Partially deployed** traces flow to App Insights workbooks today. Executive Power BI reporting is 🗺️ **Roadmap**. |
 
 ---
 
@@ -377,8 +379,8 @@ UDCSP treats **language and accessibility as platform invariants**, not as an en
 | 🤖 | **Conversational AI** | Microsoft **Foundry `topic-router` agent** owns the multi-turn dialog logic in 12 languages, with slot-filling state in **Azure Cache for Redis**; topics are reviewed per locale; falls through to specialised Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator). |
 | 🧠 **AI Brain (Foundry)** | The **Translator agent** chains Azure OpenAI with **Azure AI Translator** to preserve administrative terminology; the **Classifier** and **Citizen Assistant** are evaluated per language with golden datasets. |
 | 📄 **Documents** | **Azure AI Document Intelligence** + LLM verification handle multilingual passports, payslips, leases, and forms. |
-| 📋 **Case management** | **D365 Customer Service** multilingual knowledge base; outbound communications translated and edited by a caseworker before sending. |
-| 📊 **Data & insights** | Per-language tagging in Fabric; Power BI semantic models slice satisfaction, accuracy, and SLA KPIs **by language** to surface inequity. |
+| 📋 **Case management** | 🟡 **Partially deployed** model-driven Power App on shared Dataverse today. Per-country **D365 Customer Service** environments and multilingual knowledge base are 🗺️ **Roadmap**. |
+| 📊 **Data & insights** | 🟡 **Partially deployed** per-country App Insights workbooks exist today. Power BI semantic models for satisfaction, accuracy and SLA KPIs are 🗺️ **Roadmap**. |
 
 > [!NOTE]
 > **Accessibility is non-negotiable.** axe-core gates every web build in CI/CD, and an annual third-party WCAG 2.1 AA audit is part of the operating contract.
@@ -401,7 +403,7 @@ timeline
       W1 Horizontals (parallel) : A2 Identity : A3 Security : A4 Fabric : A5 Observability : A15 SyntheticData
       W2 Verticals (parallel) : A6 Foundry+AI : A7 APIM+LogicApps : A8 D365 : A9 Web+Mobile : A10 Voice+Channels
       W3 Intelligence (parallel) : A11 Topic-router : A12 i18n+a11y : A13 Purview
-      W4 Qualification : A14 QA+Evals : A16 One-shot installer
+      W4 Qualification : A14 QA+Evals : A16 25-phase installer
     section Campaign 2 — Post-audit refactor (plan_post_audit.md §1-§6)
       7 sub-agents (parallel, strict folder boundaries) : SA-1 PostgreSQL+Redis : SA-2 ConfLedger+ConfCompute+DDoS+Backup+Chaos+DefenderAPIs : SA-3 VerifiedID+Bastion+CIEM : SA-4 Copilot Studio→Foundry topic-router : SA-5 PBI Embedded→HTML+Chart.js : SA-6 Priva (GDPR DSR) : SA-7 docs/biz refresh
     section Campaign 3 — Iterative audit (plan_post_audit.md §7)
@@ -418,7 +420,7 @@ flowchart LR
     W1["W1 · Horizontals (∥)<br/>A2 Identity · A3 Security · A4 Fabric<br/>A5 Observability · A15 SyntheticData"]:::wave
     W2["W2 · Verticals (∥)<br/>A6 Foundry+AI · A7 APIM+LogicApps<br/>A8 D365 · A9 Web+Mobile · A10 Voice"]:::wave
     W3["W3 · Intelligence (∥)<br/>A11 Topic-router · A12 i18n+a11y · A13 Purview"]:::wave
-    W4["W4 · Qualification<br/>A14 QA+Evals · A16 One-shot installer"]:::wave
+    W4["W4 · Qualification<br/>A14 QA+Evals · A16 25-phase installer"]:::wave
     W0 --> W1 --> W2 --> W3 --> W4
 ```
 
@@ -427,7 +429,7 @@ Two agents are highlighted because they make the case study **demonstrable end-t
 | | Agent | What it produces | Why it matters |
 |:-:|---|---|---|
 | 🎲 | **A15 · Synthetic Data & Personas** | GDPR-safe personas, applications, documents, multilingual conversations and golden eval datasets for **DK · SE · NO** in **all 12 languages**, regenerable. | Realistic multi-country dataset for cross-border journeys, agent training/eval, accessibility audits — without ever touching real PII. |
-| 🛠️ | **A16 · Installer & Developer Experience** | One-shot **PowerShell installer** (`Install-UDCSP.ps1`) — landing zone → identity → security → data → Foundry → integration → D365 → frontends → voice → governance — plus tear-down + dev onboarding. | Goes **from a clean Azure tenant to a running federated platform in one command**. Repeatable, idempotent, CI-validated. |
+| 🛠️ | **A16 · Installer & Developer Experience** | **25-phase PowerShell installer** (`Install-UDCSP.ps1`) for landing zone, identity, security, data, Foundry, integration, D365 scaffolding, frontends, voice and governance, plus tear-down and dev onboarding. | ⚙️ **Scripted** platform provisioning. Live-parity setup also requires the manual tenant and workspace prerequisites in [`installation.md`](./docs/tech/installation.md) plus the mandatory private-upload network patch in [`patch/README.md`](./patch/README.md). |
 
 > Full agent catalogue, dependency graph, per-wave sub-diagrams and risk register: [`plan.md`](./docs/tech/plan.md).
 
@@ -436,14 +438,14 @@ Two agents are highlighted because they make the case study **demonstrable end-t
 | SA | Mission | Net stack diff |
 |:-:|---|---|
 | **SA-1** | Data refactor | `−` Cosmos · `+` PostgreSQL Flexible (×3 countries) · `+` Redis Enterprise |
-| **SA-2** | Security additions | `+` Confidential Ledger · Confidential Compute · DDoS Std · Backup+ASR · Chaos Studio · Defender for APIs |
-| **SA-3** | Identity additions | `+` Verified ID · Bastion · CIEM (Permissions Management) |
+| **SA-2** | Security additions | ⚙️ **Scripted** Confidential Ledger · Confidential Compute · DDoS Std · Backup+ASR · Chaos Studio · Defender for APIs |
+| **SA-3** | Identity additions | ⚙️ **Scripted** Verified ID · Bastion · CIEM (Permissions Management). Verified ID is 🗺️ **Roadmap** for the sandbox. |
 | **SA-4** | Copilot Studio → Foundry | `−` Copilot Studio · `+` Foundry `topic-router` agent (12 langs absorbed) |
 | **SA-5** | Power BI Embedded → HTML | `−` PBI Embedded *citizen-facing* · `+` Chart.js + React wrappers |
 | **SA-6** | Priva (GDPR DSR) | `+` Microsoft Priva (industrialises Subject Rights Requests) |
 | **SA-7** | docs/biz refresh | All 10 channel/biz `.md` files re-aligned to the new stack |
 
-**Net result:** 4 services suppressed · 9 services added · installer phases **15 → 25** · 2 future swaps documented but **not implemented** ([`§Future Recommendations`](#-future-recommendations-not-implemented-in-this-repository)).
+**Net result:** 4 services suppressed · 9 services added · installer phases **15 → 25** · 2 future swaps documented as out of scope ([`§Future Recommendations`](#-future-recommendations-out-of-scope-for-this-repository)).
 
 > Full diff, DAG, sub-agent boundaries: [`plan_post_audit.md`](./docs/tech/plan_post_audit.md) §1-§6.
 
@@ -481,7 +483,7 @@ flowchart LR
 > Tableau cycle-par-cycle, patterns d'erreurs récurrents, leçons apprises : [`plan_post_audit.md`](./docs/tech/plan_post_audit.md) §7.
 
 > [!TIP]
-> **From zero to running platform in one command.** Once Wave 4 closed (and after 24 audit cycles polished every edge), an evaluator can clone the repo, run `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`, sign in to Azure, and watch the federated platform — populated with realistic DK/SE/NO data in 12 languages — come up.
+> **From scripted install to live-parity sandbox.** An evaluator can clone the repo and run the 25 scripted phases with `./scripts/install/Install-UDCSP.ps1 -Environment dev -SeedSyntheticData`. To match the live tenant posture, also complete the manual tenant and workspace prerequisites in [`installation.md`](./docs/tech/installation.md) and the mandatory private-upload network patch in [`patch/README.md`](./patch/README.md).
 
 ---
 
@@ -497,16 +499,16 @@ flowchart LR
 
 ---
 
-## 🚧 Future Recommendations (not implemented in this repository)
+## 🚧 Future Recommendations (out of scope for this repository)
 
-An internal architecture audit surfaced two larger replacements that would meaningfully reduce vendor lock-in but were **deliberately not implemented** in this case-study scaffolding (the case study mandates D365 and Logic Apps as part of the 9 Microsoft services). They are documented here as a forward-looking note for any team taking UDCSP into production:
+An internal architecture audit surfaced two larger replacements that would meaningfully reduce vendor lock-in but were **deliberately kept out of scope** for this case-study scaffolding (the case study mandates D365 and Logic Apps as part of the 9 Microsoft services). They are documented here as a forward-looking note for any team taking UDCSP into production:
 
 | Current | Proposed replacement | Why it would be considered |
 |---|---|---|
 | Dynamics 365 Customer Service | Camunda 8 (BPMN/DMN) + a custom caseworker UI on Container Apps + Dataverse-free Power Apps **or** ServiceNow GovCloud | D365 is the platform's largest single vendor lock-in and is priced per-seat. The Nordic public sector is actively standardising on **BPMN 2.0** for case lifecycles. Camunda handles long-running stateful workflows and exposes **DMN** decision tables that are first-class auditable artefacts — exactly what the high-risk Eligibility Pre-Assessor (AI Act) demands. |
 | Azure Logic Apps | Camunda 8 / Zeebe (chosen consistently with the D365 → Camunda move) | The headline "28 d → 4 d" SLO is a textbook BPMN case. Logic Apps remains a JSON black box; **BPMN diagrams are directly readable by lawyers and Data Protection Authorities** — a meaningful audit advantage at every renewal. |
 
-These are forward-looking recommendations only; the implemented platform keeps Dynamics 365 Customer Service and Azure Logic Apps exactly as the case study requires.
+These are forward-looking recommendations only; the current repository keeps Dynamics 365 Customer Service and Azure Logic Apps exactly as the case study requires.
 
 ---
 

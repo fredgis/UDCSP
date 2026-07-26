@@ -2,6 +2,8 @@
 
 # ⚖️ UDCSP — Traceability
 
+_Last verified: 2026-07-26 · commit 5a8d591_
+
 ### Every citizen action and every AI decision, retrievable, attributable, defensible
 
 *A non-technical view of how GDPR and the EU AI Act are honoured in practice — what is recorded, who can see it, for how long, and how a citizen, a caseworker or an auditor gets the answer they need.*
@@ -13,7 +15,7 @@
 
 [![Citizen rights](https://img.shields.io/badge/👤_Citizen_rights-GDPR_Art._13/15/17/22-5E35B1?style=flat-square)](#)
 [![Oversight](https://img.shields.io/badge/🧑‍⚖️_Human_oversight-EU_AI_Act_Art._14-00796B?style=flat-square)](#)
-[![Immutability](https://img.shields.io/badge/🔐_Caseworker_overrides-Confidential_Ledger-FF6F00?style=flat-square)](#)
+[![Immutability](https://img.shields.io/badge/🔐_Caseworker_overrides-Roadmap_ledger_anchor-FF6F00?style=flat-square)](#)
 [![No_PII_in_telemetry](https://img.shields.io/badge/🚫_No_PII_in_telemetry-Data_minimisation-37474F?style=flat-square)](#)
 
 </div>
@@ -21,13 +23,17 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP gives a citizen a single answer to *"who decided this, when, why, and on what evidence?"* The platform writes a **W3C distributed trace** for every interaction, a **structured record** for every model invocation, and an **immutable ledger entry** for every caseworker override. Three audiences consume these records: **the citizen** (Art. 13/15 access), **the caseworker** (Art. 14 oversight), **the regulator** (Art. 12 record-keeping, Annex III §5(b) high-risk audit). All technical details — KQL, schema, retention configuration — live in [`docs/tech/monitoring.md`](../tech/monitoring.md). This document is the **promise**, not the recipe.
+> **TL;DR.** UDCSP gives a citizen a single answer to *"who decided this, when, why, and on what evidence?"* The platform writes a **W3C distributed trace** for exercised interactions and a **structured record** for model invocation paths that are wired today. Caseworker override anchoring in Azure Confidential Ledger is 🗺️ **Roadmap**, not yet active. Three audiences consume these records: **the citizen** (Art. 13/15 access), **the caseworker** (Art. 14 oversight), **the regulator** (Art. 12 record-keeping, Annex III §5(b) high-risk audit). Technical details, including KQL, schema and retention configuration, live in [`docs/tech/monitoring.md`](../tech/monitoring.md). This document is the **promise**, not the recipe.
 >
 > | Audience | What they get | Time to answer |
 > |---|---|---|
-> | 👤 **Citizen** | "Show me every decision that affected my case" | < 30 days (Art. 12 GDPR) — typically < 24 h |
-> | 🧑‍💼 **Caseworker** | "Why did the AI propose this verdict?" | seconds (workbook drill) |
-> | 🧑‍⚖️ **DPO / regulator** | "Reconstruct the eligibility decision of 6 months ago" | minutes (LAW query) |
+> | 👤 **Citizen** | "Show me every decision that affected my case" | 🟡 **Partially deployed**: *My cases* shows Dataverse cases; DSAR export is 🗺️ **Roadmap** |
+> | 🧑‍💼 **Caseworker** | "Why did the AI propose this verdict?" | 🟡 **Partially deployed**: shared Dataverse Power App path, with D365 CS rollout still 🗺️ **Roadmap** |
+> | 🧑‍⚖️ **DPO / regulator** | "Reconstruct the eligibility decision of 6 months ago" | 🟡 **Partially deployed**: minutes via LAW query where traces exist; no DPO console |
+
+### Current deployed reality
+
+🟡 **Partially deployed**: the eligibility verdict travels in the submission payload and the caseworker disposition is written to Dataverse today through the `tasks` activity entity. The canonical `udcsp_application` table is provisioned, but the Logic App is not repointed to it. App Insights carries the correlation trace for exercised paths. Azure Confidential Ledger anchoring and `udcsp_caseworker_decision` persistence are 🗺️ **Roadmap** until the Logic App callback writes the decision row and ledger hash. The DPO console, Purview lineage beyond `placeholder.local`, and the Priva DSR connector are also 🗺️ **Roadmap**.
 
 ---
 
@@ -52,7 +58,7 @@ Three regulations converge on the same demand: when AI participates in a public-
 - **GDPR Art. 13 + 15** — A citizen must be told that AI is used (transparency), and must be able to request a copy of the data used about them (access). The platform answers both through the citizen portal: a visible AI-assisted badge at the point of use, and a one-click *"download my file"* in *My cases*.
 - **EU AI Act Art. 12 + Art. 14 + Annex III §5(b)** — Access to essential public services is a *high-risk* AI domain. The platform must keep automatic logs (Art. 12), allow human oversight (Art. 14), and document risk for the eligibility model (Annex III).
 
-UDCSP treats these articles **as the product**, not as a checklist. The same dashboard that lets an SRE debug a slow API call is the dashboard that lets a DPO reconstruct a 6-month-old verdict. **Same data, three audiences.**
+UDCSP treats these articles **as the product**, not as a checklist. The same telemetry pattern that lets an SRE debug a slow API call is the evidence base for DPO replay. The dedicated DPO console is 🗺️ **Roadmap**. **Same data, three audiences.**
 
 ---
 
@@ -74,7 +80,7 @@ flowchart LR
     R1["📝 Action trace<br/><i>who, when, channel</i>"]:::trace
     R2["🤖 AI verdict<br/><i>which model, why, score</i>"]:::trace
     R3["🧑‍💼 Caseworker disposition<br/><i>confirm · adjust · reject</i>"]:::trace
-    R4["🔐 Immutable anchor<br/><i>Confidential Ledger</i>"]:::immut
+    R4["🗺️ Immutable anchor<br/><i>Roadmap: Confidential Ledger</i>"]:::immut
     R1 --> R2 --> R3 --> R4
   end
 
@@ -96,7 +102,9 @@ flowchart LR
   classDef audience fill:#AD1457,stroke:#6a0b35,color:#fff,stroke-width:2px
 ```
 
-**One sentence:** every blue action on the left produces a green record in the middle, anchored by an orange immutable hash, and consumable by three pink audiences on the right.
+**One sentence:** every blue action on the left produces a green record in the middle. The orange ledger hop is 🗺️ **Roadmap**, not yet active, and the records are consumable by three pink audiences on the right.
+
+**Legend:** R1, R2 and R3 are 🟡 **Partially deployed** across the exercised paths; R4 is 🗺️ **Roadmap** until the Logic App callback writes the Azure Confidential Ledger hash.
 
 > 🛠️ The same diagram, with every Azure resource named, lives in [`docs/tech/monitoring.md` § 1](../tech/monitoring.md#diagram).
 
@@ -106,11 +114,11 @@ flowchart LR
 
 | What | Where it lands | How long it is kept | Why |
 |---|---|---|---|
-| **Action trace** — every citizen click, signin, consent, submit, voice turn | Per-country **App Insights** (`udcsp-{c}-prod-shared-appi`) — voice live today, SPA on roadmap | 90 days (Azure default, EU-region) | Operational observability + Art. 15 access request fulfilment |
-| **AI verdict** — every model call (eligibility, classifier, translator, voice realtime, topic-router) with prompt tokens, completion tokens, latency, model deployment | Per-country **Log Analytics workspace** (`udcsp-{c}-prod-law`) via Azure Monitor diagnostic-settings | **Up to 730 days** (configured to satisfy AI Act Art. 12.3 minimum + buffer) | EU AI Act Art. 12 record-keeping for high-risk systems |
-| **Caseworker disposition** — confirm / adjust / reject / request more info, plus free-text rationale if any | **Dataverse** `udcsp_application` + Power App audit log + scaffolded `udcsp_caseworker_decision` | 7 years (matches the underlying case retention per national archive law) | Art. 14 human oversight evidence + national archive obligations |
-| **Immutable anchor** — hash of the verdict + disposition pair | **Azure Confidential Ledger** (`infra/security/confidential-ledger/`) | Permanent (write-only, tamper-evident) | Forensic-grade non-repudiation when a decision is challenged years later |
-| **Citizen-facing journey events** — page views, form submissions, locale, channel | Per-country App Insights *(planned, Phase B in monitoring.md)* | 90 days | Inequity detection (per-language gap surfacing), per-channel adoption metrics |
+| **Action trace**: every citizen click, signin, consent, submit, voice turn | 🟡 **Partially deployed**: per-country **App Insights** (`udcsp-{c}-prod-shared-appi`) has voice traces in NO and exercised citizen paths; full SPA instrumentation is 🗺️ **Roadmap** | 90 days (Azure default, EU-region) | Operational observability + Art. 15 access request fulfilment |
+| **AI verdict**: model calls with prompt tokens, completion tokens, latency, model deployment | 🟡 **Partially deployed**: eligibility calls are in the submit payload and LA audit path; full per-country LAW diagnostic validation is ⚙️ **Scripted** | **Up to 730 days** after diagnostic validation | EU AI Act Art. 12 record-keeping for high-risk systems |
+| **Caseworker disposition**: confirm / adjust / reject / request more info, plus free-text rationale if any | 🟡 **Partially deployed**: **Dataverse** `tasks` activity entity today. `udcsp_application` is provisioned, and `udcsp_caseworker_decision` is 🔵 **In repo** scaffold only | 7 years (design retention) | Art. 14 human oversight evidence + national archive obligations |
+| **Immutable anchor**: hash of the verdict + disposition pair | 🗺️ **Roadmap**: **Azure Confidential Ledger** design under `infra/security/confidential-ledger/`; no caseworker override entry is written today | Permanent after the callback is added | Forensic-grade non-repudiation when a decision is challenged years later |
+| **Citizen-facing journey events**: page views, form submissions, locale, channel | 🟡 **Partially deployed** in App Insights for exercised paths; full SPA journey capture is 🗺️ **Roadmap** | 90 days | Inequity detection (per-language gap surfacing), per-channel adoption metrics |
 | **Consent record** — banner accept, AI-assistance opt-in, voice recording acknowledgement | Dataverse `udcsp_consent_record` + the matching `consent.given` `customEvent` in App Insights | 6 years after last interaction | GDPR Art. 7 (proof of consent) |
 | **Cross-border share envelope** — when a DK citizen's residency case moves to SE/NO | Dataverse audit + signed envelope in country lake (`signed-claims-envelope/`) | 7 years | Sovereignty + eIDAS Regulation 910/2014 evidence trail |
 
@@ -124,8 +132,8 @@ flowchart LR
 |---|---|---|
 | **Art. 5 — Principles** | Data is processed lawfully, minimally, with purpose limits | Telemetry never logs free-text form fields, names, CPR/BankID, payment details; only technical identifiers (event name, locale, route, correlationId). Enforced by typed event helper. |
 | **Art. 13 — Transparency** | "I know AI is being used on me, and what for" | Visible AI-assisted badge on every page where a Foundry agent contributes; spoken disclosure on voice calls; *"How the AI helps"* explainer one click away |
-| **Art. 15 — Access** | "Show me all my data" | One-click *Download my file* in *My cases* (DSAR fulfilment via Logic App `gdpr-data-export`); JSON bundle includes the action traces, the AI verdicts and the caseworker dispositions |
-| **Art. 17 — Erasure** | "Delete me" | One-click *Erase my data* in *My cases* (DSAR fulfilment via Logic App `gdpr-data-erase` + Microsoft Priva); certificate returned with 30-day SLA |
+| **Art. 15 — Access** | "Show me all my data" | 🟡 **Partially deployed**: *My cases* reads Dataverse `tasks` rows today; full DSAR export via Logic App `gdpr-data-export` is 🗺️ **Roadmap** |
+| **Art. 17 — Erasure** | "Delete me" | 🟡 **Partially deployed**: erasure stub returns a certificate and the SPA wipes local cache; Microsoft Priva DSR connector is 🗺️ **Roadmap** and needs an E5 licence |
 | **Art. 22 — Solely automated** | "No AI alone makes a final decision about me" | **By design**: every eligibility verdict is a *proposal* to a caseworker; the citizen sees the proposal before consenting, the caseworker disposes. The AI never closes a case on its own. |
 | **Art. 30 — Records of processing** | The controller can list every processing activity | `governance/gdpr/ropa.md` registers each processing flow (citizen rail, voice channel, telemetry, DSAR) with purpose, lawful basis, recipients, retention |
 | **Art. 32 — Security of processing** | "My data is encrypted, only the right people can see it" | Encryption at rest (platform-managed keys, customer-managed available); MI-only auth (no API keys); RBAC scoped per country; per-country App Insights isolates telemetry |
@@ -136,11 +144,11 @@ flowchart LR
 
 | Article | What it demands | How UDCSP delivers |
 |---|---|---|
-| **Art. 12 — Record-keeping for high-risk AI** | Automatic recording of events during the system's operational life, minimum 6 months | AOAI `RequestResponse` log → per-country LAW → **730-day retention** (2× the minimum). Every model call captured: deployment, latency, tokens, status. Joinable to the citizen request via W3C `traceparent`. |
+| **Art. 12 — Record-keeping for high-risk AI** | Automatic recording of events during the system's operational life, minimum 6 months | 🟡 **Partially deployed**: exercised paths carry W3C `traceparent` correlation. Full AOAI `RequestResponse` to per-country LAW with **730-day retention** is ⚙️ **Scripted**. |
 | **Art. 13 — Transparency to deployers** | The deployer (here: the public administration) must be able to interpret outputs | Each Foundry agent has a registry entry in `governance/ai-act/registry/` with intended purpose, training data summary, known limitations, performance metrics. Evals run on a fixed multilingual golden dataset. |
-| **Art. 14 — Human oversight** | Caseworker must be able to interpret, override, intervene | Eligibility verdict shows confidence %, rule-by-rule evidence, missing-evidence list, citizen-friendly summary, caseworker rationale. Override goes to Dataverse + Confidential Ledger. The W3C `traceparent` makes the AI-to-human handoff replayable. |
+| **Art. 14 — Human oversight** | Caseworker must be able to interpret, override, intervene | 🟡 **Partially deployed**: eligibility verdict shows confidence %, rule-by-rule evidence, missing-evidence list, citizen-friendly summary and caseworker rationale. Disposition goes to Dataverse `tasks` today. Azure Confidential Ledger anchoring is 🗺️ **Roadmap**. |
 | **Annex III §5(b) — High-risk** *(Access to essential public services)* | Eligibility for benefits → high-risk classification | `eligibility` agent declared `risk: high` in its registry entry. Other agents (classifier, translator, doc-extractor, citizen-assistant, topic-router) declared `risk: limited` — they support the flow but do not propose final-decision verdicts. |
-| **Annex III §5(c)** *(Emergency triage)* | Not in scope today | Not used — UDCSP eligibility is not an emergency-triage system |
+| **Annex III §5(c)** *(Emergency triage)* | Emergency triage systems | 🔵 **In repo**: UDCSP eligibility is not an emergency-triage system |
 | **Art. 50 — Disclosure for chatbots** | Citizens told they interact with an AI | Voice channel plays a spoken disclosure on the first call turn (12 languages, accessibility-aware); chat widget shows an AI badge above the conversation; assistant agents prefix complex answers with *"Based on UDCSP guidance…"* |
 
 ---
@@ -150,10 +158,10 @@ flowchart LR
 ### 6.1 Anna asks — *"What data does UDCSP hold about me?"* (GDPR Art. 15)
 
 1. Anna signs in on `udcsp.fredgis.com` → opens **My cases** → clicks **Download my file**.
-2. APIM calls Logic App `gdpr-data-export` with her authenticated subject.
-3. The LA aggregates: action traces (App Insights), AI verdicts (LAW), caseworker dispositions (Dataverse), consent record. Strips internal IDs, applies GDPR PII redaction.
-4. Anna receives a signed JSON bundle in her *My cases* timeline, downloadable for 7 days.
-5. **Time to delivery: minutes** (Art. 12 GDPR allows 30 days).
+2. 🟡 **Partially deployed** today: *My cases* reads her Dataverse `tasks` rows through APIM.
+3. 🗺️ **Roadmap**: Logic App `gdpr-data-export` aggregates action traces (App Insights), AI verdicts (LAW), caseworker dispositions (Dataverse) and consent record, then applies GDPR PII redaction.
+4. 🗺️ **Roadmap**: Anna receives a signed JSON bundle in her *My cases* timeline, downloadable for 7 days.
+5. 🗺️ **Roadmap** time to delivery: minutes (Art. 12 GDPR allows 30 days).
 
 ### 6.2 Astrid the caseworker asks — *"Why did the AI propose this verdict?"* (AI Act Art. 14)
 
@@ -161,7 +169,7 @@ flowchart LR
 2. The verdict card shows: confidence %, rules matched, missing evidence, summary.
 3. Clicks **Show evidence** → workbook `ai-decision-traces` opens filtered on the case's `operation_Id`.
 4. Drill into Transaction search → full W3C trace from web form to model call to verdict.
-5. Astrid disposes: confirm / adjust / reject + free-text rationale → written to Dataverse + anchored in Confidential Ledger.
+5. Astrid disposes: confirm / adjust / reject + free-text rationale. 🟡 **Partially deployed**: the disposition is written to Dataverse `tasks` today. 🗺️ **Roadmap**: the Logic App callback writes `udcsp_caseworker_decision` and the Azure Confidential Ledger anchor.
 
 ### 6.3 Hans the DPO asks — *"Reconstruct the eligibility decision of 6 months ago"* (AI Act Art. 12)
 
@@ -169,8 +177,8 @@ flowchart LR
 2. Filters `AzureDiagnostics` on `ResourceProvider == "MICROSOFT.COGNITIVESERVICES"` and the citizen's `correlationId` (derived from the DSAR request).
 3. Sees the exact model deployment, prompt tokens, completion tokens, latency, response code.
 4. Pivots to the APIM `ApiManagementGatewayLogs` on the same `operation_Id` to see the API request that produced the verdict.
-5. Pivots to Dataverse to see the caseworker disposition; checks Confidential Ledger for the anchor hash.
-6. Reconstructs the full decision in **minutes**, even though it happened 6 months ago.
+5. Pivots to Dataverse to see the caseworker disposition. The Azure Confidential Ledger anchor hash is 🗺️ **Roadmap**.
+6. 🟡 **Partially deployed**: Hans can reconstruct exercised traces through LAW and App Insights. A dedicated DPO console and full six-month replay path are 🗺️ **Roadmap**.
 
 > 🛠️ The exact KQL queries Hans runs → [`monitoring.md` § 5.6](../tech/monitoring.md#compliance) (4-minute demo pitch).
 
@@ -183,7 +191,7 @@ Telemetry sovereignty is enforced at the **resource layer**, not at the applicat
 - **3 separate App Insights** instances (`udcsp-{dk,se,no}-prod-shared-appi`), one per country region (`northeurope` · `swedencentral` · `norwayeast`).
 - **3 separate Log Analytics workspaces**, same residency.
 - A DK citizen's events land **only** in DK App Insights. A NO voice call lands **only** in NO App Insights.
-- **No cross-border telemetry traffic.** Even Power BI aggregation (planned) uses Direct Query that returns aggregates server-side from Fabric — raw rows never move between countries.
+- **No cross-border telemetry traffic.** Power BI aggregation is 🗺️ **Roadmap** and uses Direct Query so aggregates return server-side from Fabric. Raw rows never move between countries.
 
 > 💡 In the executive demo, the proof is visual: open the **NO** workbook after a NO voice call → populated. Open the **DK** workbook on the same query → empty. The silence is the sovereignty proof, not a bug.
 

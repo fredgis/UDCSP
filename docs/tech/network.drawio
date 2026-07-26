@@ -9,7 +9,7 @@
         <mxCell id="title" value="UDCSP — Network Topology (DK / SE / NO sovereign spokes)" style="text;html=1;align=center;fontSize=20;fontStyle=1;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="40" y="20" width="2320" height="32" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" value="Each country = isolated VNet in its own Azure region; Private Endpoints for every PaaS; Azure Bastion = only public IP per country" style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#555555;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="subtitle" value="Each country = isolated VNet in its own Azure region; Private Endpoints for every PaaS; two public IPs per country: Azure Bastion (admin) + API Management (citizen API ingress)" style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#555555;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="40" y="52" width="2320" height="20" as="geometry" />
         </mxCell>
 
@@ -58,7 +58,7 @@
         <mxCell id="hubFw" value="🔥 Azure Firewall Premium&#10;forced egress (UDR 0.0.0.0/0)&#10;FQDN allow-list · TLS inspection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="100" y="258" width="350" height="46" as="geometry" />
         </mxCell>
-        <mxCell id="hubDns" value="🧭 Private DNS Zones&#10;13 privatelink.* surfaces&#10;linked to country VNet only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="hubDns" value="🧭 Private DNS Zones&#10;privatelink.* surfaces (incl. blob + dfs)&#10;linked to country VNet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="470" y="258" width="350" height="46" as="geometry" />
         </mxCell>
         <mxCell id="hubMtls" value="🤝 mTLS Partner Gateway&#10;eIDAS · EU SDG · OOTS&#10;per-country client certs + Idempotency-Key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;fontStyle=1;" vertex="1" parent="1">
@@ -123,7 +123,7 @@
         <mxCell id="dkKvPe" value="Key Vault PE&#10;privatelink.vaultcore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
           <mxGeometry x="845" y="425" width="135" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="dkLakePe" value="Storage Lake PE&#10;privatelink.dfs.core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
+        <mxCell id="dkLakePe" value="Storage Lake PE ×2&#10;privatelink.blob.core&#10;privatelink.dfs.core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
           <mxGeometry x="990" y="425" width="135" height="50" as="geometry" />
         </mxCell>
         <mxCell id="dkPgPe" value="PostgreSQL PE&#10;privatelink.postgres" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
@@ -152,7 +152,7 @@
         <mxCell id="dkSbPe" value="Service Bus PE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=8;" vertex="1" parent="1">
           <mxGeometry x="1735" y="425" width="170" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="dkApimInt" value="APIM Premium · internal mode (when enabled)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=8;" vertex="1" parent="1">
+        <mxCell id="dkApimInt" value="APIM now VNet-injected in its own apim subnet (10.10.6.0/24) ↓" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=8;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="1555" y="485" width="350" height="40" as="geometry" />
         </mxCell>
 
@@ -180,10 +180,30 @@
         <mxCell id="dkBsHost" value="Azure Bastion Standard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=10;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="110" y="615" width="220" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="dkBsPip" value="Public IP&#10;udcsp-dk-prod-bastion-pip&#10;(only public IP per country)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#B71C1C;fontSize=8;" vertex="1" parent="1">
+        <mxCell id="dkBsPip" value="Public IP&#10;udcsp-dk-prod-bastion-pip&#10;(admin plane)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#B71C1C;fontSize=8;" vertex="1" parent="1">
           <mxGeometry x="350" y="615" width="220" height="60" as="geometry" />
         </mxCell>
         <mxCell id="dkBsArrow" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#B71C1C;" edge="1" parent="1" source="dkBsHost" target="dkBsPip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- apim subnet — added by patch/Enable-PrivateUploadPath.ps1 (commit 5a8d591) -->
+        <mxCell id="dkApimSub" value="subnet: apim · 10.10.6.0/24 · NSG inbound 443 / 3443 / 6390" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="90" y="712" width="500" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimHost" value="API Management Premium&#10;External VNet injection (stv2)&#10;public ingress + hostname unchanged" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="745" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimPip" value="Public IP (Standard, static)&#10;udcspdkprodapim&#10;(citizen API ingress)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#B71C1C;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="350" y="745" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimPipArrow" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#B71C1C;" edge="1" parent="1" source="dkApimHost" target="dkApimPip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimEgress" value="MI-authenticated egress: POST /documents/upload-url → server-side PUT to the lake blob PE (storage is publicNetworkAccess: Disabled)" style="text;html=1;align=left;fontSize=9;fontStyle=2;fontColor=#2E7D32;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="610" y="750" width="900" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="dkApimToLake" style="endArrow=classic;html=1;rounded=0;strokeColor=#2E7D32;strokeWidth=2;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="dkApimHost" target="dkLakePe">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
@@ -221,14 +241,14 @@
         </mxCell>
 
         <!-- =================== SE / NO COMPACT LANES =================== -->
-        <mxCell id="seVnet" value="SE · spoke VNet · 10.20.0.0/16 · region: swedencentral · RG: udcsp-se-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 SE Foundry hub) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#006064;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="seVnet" value="SE · spoke VNet · 10.20.0.0/16 · region: swedencentral · RG: udcsp-se-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 SE Foundry hub) · apim (.6.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory (incl. blob + dfs on the lake), Bastion PIP + APIM PIP (udcspseprodapim), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#006064;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="60" y="1050" width="1140" height="120" as="geometry" />
         </mxCell>
         <mxCell id="seVnetTitle" value="SE spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#006064;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="80" y="1058" width="200" height="20" as="geometry" />
         </mxCell>
 
-        <mxCell id="noVnet" value="NO · spoke VNet · 10.30.0.0/16 · region: norwayeast · RG: udcsp-no-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 NO Foundry hub — gpt-realtime via SE hub until norwayeast quota) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory, separate Bastion (1 PIP), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="noVnet" value="NO · spoke VNet · 10.30.0.0/16 · region: norwayeast · RG: udcsp-no-prod-platform-rg&#10;&#10;Identical layout as DK: web (.1.0/24) · app (.2.0/24) · data (.3.0/24) · integration (.4.0/24) · ai (.5.0/24 · 🧠 NO Foundry hub — gpt-realtime via SE hub until norwayeast quota) · apim (.6.0/24) · AzureBastionSubnet (.250.0/26)&#10;Same NSG-per-subnet, same PE inventory (incl. blob + dfs on the lake), Bastion PIP + APIM PIP (udcspnoprodapim), associated to the shared DDoS plan; egress through the hub Azure Firewall." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=0;fontSize=11;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="1200" y="1050" width="1140" height="120" as="geometry" />
         </mxCell>
         <mxCell id="noVnetTitle" value="NO spoke VNet" style="text;html=1;align=left;fontSize=12;fontStyle=1;fontColor=#E65100;fillColor=none;" vertex="1" parent="1">
@@ -290,7 +310,7 @@
         <mxCell id="legPub" value="public IP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#B71C1C;fontSize=9;" vertex="1" parent="1">
           <mxGeometry x="1320" y="1235" width="80" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="legPubLbl" value="Public IP (Bastion only)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="legPubLbl" value="Public IP (Bastion + APIM)" style="text;html=1;align=left;fontSize=10;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="1410" y="1238" width="200" height="24" as="geometry" />
         </mxCell>
 
