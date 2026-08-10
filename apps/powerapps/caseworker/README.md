@@ -138,7 +138,14 @@ validation. Only **steps 4-5 below remain** after the script.
    > **For the demo today**, also add a second page in the model-driven app
    > pointing at the standard **`Task`** table — that's where every existing
    > submission (Child & Family Benefit, Residency, etc.) actually lives.
-   > Filter the view on `Subject contains [UDCSP-`. The `udcsp_application`
+   > Filter the view on `Subject contains UDCSP-` — **without the leading
+   > `[`**. Dataverse compiles `contains` / `startswith` to a T-SQL `LIKE`,
+   > where `[...]` is a character-class wildcard, so a literal `[` is never
+   > matched: `contains(subject,'[UDCSP-')` and
+   > `startswith(subject,'[UDCSP-')` both return **0 rows** even though the
+   > subjects do start with `[UDCSP-`. Use `contains(subject,'UDCSP-')`, or
+   > escape the bracket as `startswith(subject,'[[]UDCSP-')`. (Verified
+   > against `<your-dataverse-env>` — 4 rows returned vs 0.) The `udcsp_application`
    > page will populate once the LA is repointed (see migration note below).
 
    Add the form and views from `application-main-form.xml` + `caseworker-views.xml` (copy
