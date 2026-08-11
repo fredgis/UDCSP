@@ -6,7 +6,7 @@
 
 *How a citizen dials a Nordic toll-free number, talks to the same Foundry brain that powers the web, and gets a spoken answer in their own language — with full GDPR + EU AI Act compliance.*
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 [![Channel](https://img.shields.io/badge/📞_Channel-Telephone_PSTN-1565C0?style=for-the-badge)](#)
 [![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_topic--router-FF6F00?style=for-the-badge)](#)

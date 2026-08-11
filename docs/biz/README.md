@@ -53,7 +53,7 @@
 | 🔍 [`traceability.md`](./traceability.md) | **Who decided this, when, why, on what evidence.** Correlation, DSR identity binding, synthetic provenance, and target audit sinks, with deployed and source-only controls separated. |
 | 🛡️ [`datacompliance.md`](./datacompliance.md) | Compliance control map with live, partial, in-repo, scripted, and roadmap evidence status. |
 | 💶 [`cost.md`](./cost.md) | What the platform costs to run — fixed floor vs variable, scaled from 10k to 1M citizens per country, and the FinOps levers that drive ≈ €24 → €3 per citizen / year. |
-| 🔒 [`auditsecu.md`](./auditsecu.md) | Security review at `f0bd850`: **1 CRITICAL, 8 HIGH, 6 MEDIUM, 9 LOW/INFO**, scope correction versus `661ec81`, source remediation status, and the live deployment gap. |
+| 🔒 [`auditsecu.md`](./auditsecu.md) | Security review at `fde8352`: **1 CRITICAL, 8 HIGH, 6 MEDIUM, 9 LOW/INFO**, scope correction versus `67b0ec6`, source remediation status, and the live deployment gap. |
 
 ---
 

@@ -4,7 +4,7 @@
 
 # 🛡️ UDCSP Guardian
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**
 

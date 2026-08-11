@@ -20,7 +20,7 @@
 
 ---
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 > [!IMPORTANT]
 > **TL;DR.** 🟡 **Partially deployed** today: the caseworker workspace is a model-driven Power App on the shared Dataverse environment `<your-dataverse-env>` in the DK system tenant. The artefact is `apps/d365/solutions/UDCSP_Core/customizations/apps/caseworker-app.xml`, with operator notes in `apps/powerapps/caseworker/README.md`, and imports through `pac solution import`. The Logic App `application-intake` still writes live submissions to standard Dataverse `tasks`. 🗺️ **Roadmap**: per-country D365 Customer Service environments, Copilot for Service runtime, SLA timers and writes to canonical `udcsp_application`.

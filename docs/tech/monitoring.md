@@ -4,7 +4,7 @@
 >
 > **Outcome.** 🟢 **Live** telemetry comes from the NO voice orchestrator and server-side chain today: `call.*`, `realtime.*`, `topic_router.*` and `escalation.*` records land in NO App Insights with W3C `traceparent` correlation to APIM gateway logs and AOAI request/response records. The running NO container still uses the previous image, logs verbatim voice transcripts and mirrors telemetry to stdout. This is a security exposure, not an audit feature. 🔵 **In repo, not deployed:** the remediated logger keeps event names and correlation but records only `transcriptLength` and tool `argumentKeys`, omits caller IDs, response bodies and realtime error payloads, and disables console mirroring unless `VOICE_UNSAFE_DEBUG_LOGGING=true`. 🟡 **Partially deployed** operator coverage is 9 App Insights workbooks, 3 per country, but only NO receives live data. DK and SE stay empty by design until a country-specific orchestrator or SPA instrumentation exists. 🗺️ **Roadmap** executive coverage: `apps/reporting/cio-dashboard.pbix` on Fabric workspace `UDCSP-Platform-Reporting` is not built.
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 > [!IMPORTANT]
 > This file is the **plan and recipe**. It is *not* a status tracker — the live state of demos and roll-outs sits in [`inprogress.md`](./inprogress.md). The installer steps live in [`installation.md`](./installation.md) § Platform monitoring.

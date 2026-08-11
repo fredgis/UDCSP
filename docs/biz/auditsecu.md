@@ -2,7 +2,7 @@
 
 # 🔒 UDCSP - Security Audit
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 ### What was reviewed · what was found · what is fixed in source · what remains exposed live
 
@@ -13,8 +13,8 @@ _Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not
 [![Critical · High](https://img.shields.io/badge/🟣🔴_Critical_·_High-1_·_8-C62828?style=for-the-badge)](#)
 [![Remediation](https://img.shields.io/badge/🔵_Remediation-In_repo_·_not_deployed-455A64?style=for-the-badge)](#)
 
-[![Commit](https://img.shields.io/badge/📍_Reviewed_commit-f0bd850-37474F?style=flat-square)](#)
-[![Previous](https://img.shields.io/badge/↩️_Previous_audit-661ec81-00796B?style=flat-square)](#)
+[![Commit](https://img.shields.io/badge/📍_Reviewed_commit-fde8352-37474F?style=flat-square)](#)
+[![Previous](https://img.shields.io/badge/↩️_Previous_audit-67b0ec6-00796B?style=flat-square)](#)
 [![Method](https://img.shields.io/badge/🧪_Method-OWASP_+_manual_retest-5E35B1?style=flat-square)](#)
 [![Date](https://img.shields.io/badge/🗓️_Remediation_review-11_Aug_2026-AD1457?style=flat-square)](#)
 
@@ -66,7 +66,7 @@ The review was static and source-based. It did not send exploit requests, interr
 
 The previous audit listed these four scans:
 
-| Previous review | Surface as described at commit `661ec81` |
+| Previous review | Surface as described at commit `67b0ec6` |
 |---|---|
 | Application code | `apps/**`, `services/**` in TS, TSX, JS, and MJS |
 | Infrastructure as code | Bicep and Bicep parameter files |
@@ -145,7 +145,7 @@ EU AI Act Article 14 requires effective human oversight. A human cannot meaningf
 
 ### The previous audit was right within its scope
 
-At commit `661ec81`, the previous audit correctly reported:
+At commit `67b0ec6`, the previous audit correctly reported:
 
 - no hardcoded credentials
 - no weak cryptography or disabled TLS validation
@@ -173,7 +173,7 @@ The new review followed those decisions as code. The change from **0 HIGH to 8 H
 
 ### The previous MEDIUM remained open
 
-The previous audit's only formal finding was Logic Apps host storage reachable over the public network with shared-key authentication and the key materialized into `AzureWebJobsStorage`. At reviewed commit `f0bd850`, it was still unchanged. This remediation finally corrects it in source through private endpoints, deny-by-default network ACLs, disabled shared keys, and managed-identity host storage.
+The previous audit's only formal finding was Logic Apps host storage reachable over the public network with shared-key authentication and the key materialized into `AzureWebJobsStorage`. At reviewed commit `fde8352`, it was still unchanged. This remediation finally corrects it in source through private endpoints, deny-by-default network ACLs, disabled shared keys, and managed-identity host storage.
 
 It is still live until the Logic Apps infrastructure is redeployed.
 

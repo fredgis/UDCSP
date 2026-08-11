@@ -4,7 +4,7 @@
 
 </div>
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 > ℹ️ **Live vs roadmap.** 🟢 **Live** on `https://udcsp.fredgis.com`: Static Web App, per-country External ID sign-in, the 12-language wizard, Foundry-driven eligibility pre-submit, APIM document upload, Dataverse `tasks` write, My Cases re-hydration and case detail parsing. 🗺️ **Roadmap**: Front Door + WAF in front of the public site, Microsoft Entra Verified ID issuance, per-country D365 Customer Service, cross-border fan-out and Confidential Ledger anchoring. See [`../tech/inprogress.md`](../tech/inprogress.md).
 

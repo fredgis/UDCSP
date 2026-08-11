@@ -1,6 +1,6 @@
 # UDCSP Microsoft Foundry Assets
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f940d39_
 
 ## Purpose
 Defines seven Foundry agents, shared prompts, evaluation suites and golden datasets for the UDCSP case study.

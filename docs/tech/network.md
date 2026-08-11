@@ -2,7 +2,7 @@
 
 > **Every packet's path, every private endpoint, every NSG, every public IP.** Companion to [`architecture.md`](./architecture.md) (the *what is built*) and [`data.md`](./data.md) (the *where bytes live*). This document is the **network truth**: 3 sovereign spokes, 1 optional federation hub, 18 named workload subnets plus 3 Bastion subnets, the status-scoped Private Endpoint inventory below, 2 public IPs per country (Bastion and APIM), 0 shared data path.
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 ---
 
@@ -179,7 +179,7 @@ The 3 spokes are isolated from each other at L3, there is no spoke-to-spoke peer
 
 ### 4.2 Citizen document upload path
 
-🟢 **Live** after commit `5a8d591`: citizen document uploads use a private server-side path, not a public blob link.
+🟢 **Live** after commit `cb74870`: citizen document uploads use a private server-side path, not a public blob link.
 
 1. The web app calls `POST /documents/upload-url` on the country APIM gateway.
 2. APIM authenticates to Azure Storage with its managed identity, as defined in `services/apim/apis/documents/operations/post-documents-upload-url.xml`.
@@ -252,7 +252,7 @@ Added by capability modules:
 
 ### 5.1 Private DNS Zones (one per surface, per country)
 
-The private upload patch creates country-scoped zones in each country platform RG and links them to the matching country VNet. The older hub-hosted DNS wording is a 🗺️ **Roadmap** target design, not what commit `5a8d591` deployed.
+The private upload patch creates country-scoped zones in each country platform RG and links them to the matching country VNet. The older hub-hosted DNS wording is a 🗺️ **Roadmap** target design, not what commit `cb74870` deployed.
 
 | Zone | Linked to VNet(s) | Resolved Private Endpoints | Status / source |
 |---|---|---|---|
@@ -324,7 +324,7 @@ The most subtle network failure modes the installer has hit (and now guards agai
 | `InUsePrefixCannotBeDeleted: 10.X.250.0/26` | Different CIDR computed by LZ vs Bastion → ARM tried to change the prefix on an in-use subnet | Both modules now derive the prefix from the same `cidrSubnet(addressPrefix, 26, 1000)` (commit `be46598`). |
 | `InUseSubnetCannotBeDeleted: data` (KV/ACR/Lake PEs attached) | Migration from inline to child subnet resources triggered DELETE+CREATE on subnets that already had PEs | Reverted to inline subnets — the LZ is the single ARM owner; no other module re-declares them. |
 | Bastion DK deploy lands in SE/NO RGs | Old Bastion bicep iterated over countries inside one deploy | Refactored to single-country (`@allowed(['dk','se','no']) param country`); installer loops per country (commit `552a5aa`). |
-| HTTP `403 upload_failed` on citizen document upload | MCAPS policy forced `udcsp<c>prodlake` private-only while APIM was outside the VNet, so APIM's server-side PUT to `udcsp<c>prodlake.blob.core.windows.net` used public egress and storage rejected it | 🟢 **Live** patch `5a8d591`: create blob/dfs Private DNS zones, add blob PE and DNS zone groups, create `apim` subnet + NSG + Standard static APIM PIP, then inject APIM in External mode. See [`patch/README.md`](../../patch/README.md) and [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1). |
+| HTTP `403 upload_failed` on citizen document upload | MCAPS policy forced `udcsp<c>prodlake` private-only while APIM was outside the VNet, so APIM's server-side PUT to `udcsp<c>prodlake.blob.core.windows.net` used public egress and storage rejected it | 🟢 **Live** patch `cb74870`: create blob/dfs Private DNS zones, add blob PE and DNS zone groups, create `apim` subnet + NSG + Standard static APIM PIP, then inject APIM in External mode. See [`patch/README.md`](../../patch/README.md) and [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1). |
 
 ---
 

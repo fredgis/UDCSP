@@ -20,7 +20,7 @@
 
 ---
 
-_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+_Last verified: 2026-08-11 · commit f940d39 · security remediation committed, not deployed_
 
 > [!IMPORTANT]
 > **TL;DR.** 🟢 **Live** Demo 4 is the mobile-responsive SPA at `https://udcsp.fredgis.com`, not a packaged native app. The portal renders correctly on iPhone SE 375 px through iPhone 14 Pro Max 430 px using media queries in `home.css` and `accessibility.css`. The upload control uses the native iOS document or photo chooser, the signed-in chat launcher remains pinned bottom-right, and the accessibility menu grid-stacks to one column under 600 px. 🔵 **In repo**: the Expo React Native shell and tests. 🗺️ **Roadmap**: signed iOS / Android binaries, APNs / FCM push, biometric re-auth, native camera capture and OS locale propagation.

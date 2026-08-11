@@ -1,6 +1,6 @@
 # UDCSP Web Citizen Portal
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f940d39_
 
 ## Purpose
 Accessible React citizen portal for Denmark, Sweden and Norway. It provides the single front door for residency, tax-certificate, child-benefit, case-status, consent and AI assistant chat journeys.

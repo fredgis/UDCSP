@@ -187,7 +187,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <!-- apim subnet — added by patch/Enable-PrivateUploadPath.ps1 (commit 5a8d591) -->
+        <!-- apim subnet — added by patch/Enable-PrivateUploadPath.ps1 (commit cb74870) -->
         <mxCell id="dkApimSub" value="subnet: apim · 10.10.6.0/24 · NSG inbound 443 / 3443 / 6390" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1565C0;fontStyle=1;fontSize=10;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="90" y="712" width="500" height="130" as="geometry" />
         </mxCell>
