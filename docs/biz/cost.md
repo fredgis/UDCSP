@@ -2,6 +2,10 @@
 
 # 💶 UDCSP — Cost to Run
 
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
+Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**
+
 ### *What the platform costs at rest, and what it costs at national scale*
 
 *A non-technical, FinOps view of the run-rate — what is a fixed platform floor, what scales with citizens, and why the cost per citizen falls sharply as the platform grows.*
@@ -49,6 +53,8 @@
 > | **Combined** | **22.3 M** | three regions | — | **≈ €5.28 M** | **≈ €2.84** |
 >
 > *All figures are **indicative list prices** (EUR, 2026), before Microsoft Customer Agreement discounts, Azure Reservations and Savings Plans — which typically remove a further **30–40 %** from the compute and AI lines. The **price index** is the indicative Azure-infrastructure premium of each region relative to North Europe. "Citizens" at national scale is the **addressable population (ceiling)**; the realistic steady state is ≈ 80 % adoption (≈ 17.8 M). This is a **run-rate** (steady-state operating cost); one-time build, migration and certification costs are out of scope (see §10).*
+>
+> **Implementation boundary.** This is a target operating-cost model, not a bill for the current demonstrator. It includes Azure AI Document Intelligence, Confidential Ledger operations, and Microsoft Priva as planned production services. Today, document fields are synthetic filename inferences, the ledger writer does not exist, and the Priva DSR connector is not operational. Pending security fixes are 🔵 **In repo** and not deployed.
 
 ---
 
@@ -111,8 +117,8 @@ Cost follows behaviour. The estimate turns "an active citizen" into a measurable
 | 📞 Voice (PSTN) calls | 0.06 (≈ 4 min) | Realtime AI capacity + telephony | AI, Communications |
 | 📲 SMS (status + OTP) | 0.6 | Per-message telephony | Communications |
 | 📧 Email (notifications) | 1.0 | Per-message + storage | Communications |
-| 🧾 Eligibility assessments | 0.15 | Strong-model + Confidential Compute | AI & Foundry |
-| 📄 Documents extracted | 0.30 | Small-model + Document Intelligence | AI & Foundry |
+| 🧾 Eligibility assessments | 0.15 | Strong model today; target Confidential Compute runtime | AI & Foundry |
+| 📄 Documents processed | 0.30 | Small-model today; target Document Intelligence for real extraction | AI & Foundry |
 | 🧑‍💼 Escalations to a caseworker | ≈ 4 % of conversations | D365 licences + Dataverse | Dynamics 365 |
 
 At the **full-addressable ceiling** (22.3 M registered, 8.92 M MAU) the monthly load is:
@@ -125,26 +131,26 @@ At the **full-addressable ceiling** (22.3 M registered, 8.92 M MAU) the monthly 
 | Eligibility assessments | ≈ 1.8 k | ≈ 18 k | ≈ 1.34 M |
 | Caseworkers needed (with multilingual + shift cover) | ≈ 20 | ≈ 150 | ≈ 7 400 |
 
-The **AI brain** keeps cost flat per turn by routing cheap work to a small model. Only the assistant, eligibility, translation and caseworker-helper run on the **strong** model; the topic-router, classifier and document-extractor run on **`gpt-5.4-mini`**, which is roughly an order of magnitude cheaper per token (see [`ai.md`](./ai.md) §13).
+The **AI brain** keeps cost flat per turn by routing cheap work to a small model. Only the assistant, eligibility, translation and caseworker-helper run on the **strong** model; the topic-router, classifier and current synthetic document path run on **`gpt-5.4-mini`**. The cost model adds Document Intelligence for the future real-extraction path.
 
 ---
 
 ## 3. Where the cost comes from — the ten cost centres
 
-Every deployed service maps to one of ten cost centres. The table names the **real services** in the repository (`infra/`, `services/`, `apps/`) so each line is auditable.
+Every modeled service maps to one of ten cost centres. The table names current and target services from the repository (`infra/`, `services/`, `apps/`) so each cost assumption can be traced.
 
 | # | Cost centre | What is inside | Scales with |
 |:-:|---|---|---|
-| 1 | 🧠 **AI & Foundry** | Azure AI Foundry (3 hubs) · Azure OpenAI **PTU** pools for `gpt-5.4` (assistant, eligibility, translator, caseworker-helper) and `gpt-realtime` (voice) · pay-as-you-go `gpt-5.4-mini` (router, classifier, doc-extractor) · Content Safety · Document Intelligence | Peak concurrency + turns |
+| 1 | 🧠 **AI & Foundry** | Azure AI Foundry (3 hubs) · Azure OpenAI **PTU** pools for `gpt-5.4` and `gpt-realtime` · pay-as-you-go `gpt-5.4-mini` · Content Safety · target Document Intelligence service | Peak concurrency + turns |
 | 2 | 🧑‍💼 **Dynamics 365 & Power Platform** | D365 Customer Service Enterprise · Copilot for Service · Dataverse capacity · model-driven caseworker Power App | Caseworker headcount |
 | 3 | 🛡️ **Network & Security** | Front Door Premium + WAF · Azure Firewall Premium (1 / zone) · DDoS Protection Standard · Bastion Standard · Defender for Cloud · Sentinel · Entra Permissions Management (CIEM) | Floor + resource count |
-| 4 | ⚙️ **Compute & Integration** | API Management Premium (VNet, multi-region) · Logic Apps Standard · Azure Functions · Confidential Compute (eligibility enclave) | Floor + throughput |
-| 5 | 🗄️ **Data & Caching** | PostgreSQL Flexible (HA / zone) · Redis Enterprise · ADLS / Blob storage · Confidential Ledger | Data volume |
+| 4 | ⚙️ **Compute & Integration** | API Management Premium (VNet, multi-region) · Logic Apps Standard · Azure Functions · target Confidential Compute eligibility runtime | Floor + throughput |
+| 5 | 🗄️ **Data & Caching** | PostgreSQL Flexible (HA / zone) · Redis Enterprise · ADLS / Blob storage · Confidential Ledger resource, with writer pipeline roadmap | Data volume |
 | 6 | 🔭 **Observability** | Log Analytics + Application Insights ingestion (3 zones) | Telemetry volume |
 | 7 | 📡 **Communications** | Azure Communication Services — PSTN voice, SMS, email + phone-number rental | Messages + minutes |
 | 8 | 📊 **Analytics** | Microsoft Fabric capacity (F-SKU) · Power BI Premium semantic models (internal) | Data + report users |
 | 9 | 🪪 **Identity** | Entra External ID (per-country, MAU-billed) · Entra ID P2 (workforce) · Verified ID | MAU + workforce |
-| 10 | 📒 **Governance** | Microsoft Purview · Microsoft Priva (DSR + privacy risk) | Catalogue + subjects |
+| 10 | 📒 **Governance** | Microsoft Purview · target Microsoft Priva DSR and privacy-risk services | Catalogue + subjects |
 
 ---
 
@@ -275,7 +281,7 @@ Two platforms can land on the **same** total at the ceiling yet cost very differ
 
 | Shape | Behaviour as MAU grows | Main services | Why it behaves this way |
 |---|---|---|---|
-| 📈 **Linear (metered)** | Cost ∝ MAU — a straight line through ≈ 0 | ACS **SMS / voice / email**, Content Safety, Document Intelligence, `gpt-5.4-mini` pay-as-you-go, External ID MAU | Billed per unit consumed — every extra active citizen adds a fixed marginal cost |
+| 📈 **Linear (metered)** | Cost ∝ MAU, a straight line through ≈ 0 | ACS **SMS / voice / email**, Content Safety, target Document Intelligence, `gpt-5.4-mini` pay-as-you-go, External ID MAU | Billed per unit consumed, so every extra active citizen adds a fixed marginal cost |
 | 🧱 **Block-reserved** | High fixed base, then steps up in chunks | AI **PTU pools** (`gpt-5.4`, `gpt-realtime`) | Provisioned Throughput is reserved to **peak concurrency** (≈ 2 % of MAU) for latency + price |
 | 🪜 **Stepped (SKU / scale-unit)** | Flat inside a tier, jumps at thresholds | **API Management** units, **Microsoft Fabric** F-SKU, PostgreSQL / Redis SKUs, Firewall instances | Capacity is bought in discrete units, not per request |
 | 👤 **Headcount-linear** | Tracks people; slightly sub-linear (AI deflection improves) | **Dynamics 365** caseworker licences | 1 caseworker ≈ 1 200 active citizens **after** AI deflection |
@@ -348,7 +354,7 @@ The estimate above is **list price with no optimisation**. Each lever below is a
 | 🎚️ Lever | What it does | Typical saving |
 |---|---|--:|
 | 🏷️ **Reservations & Savings Plans** | 1- or 3-year commitment on PTU, App Service, PostgreSQL, Fabric | **−30 % to −40 %** on those lines |
-| 🧠 **Model routing (mini-first)** | Cheap `gpt-5.4-mini` handles routing/classification/extraction; the strong model is reserved for reasoning | ≈ 10× cheaper per routed token |
+| 🧠 **Model routing (mini-first)** | Cheap `gpt-5.4-mini` handles routing, classification, and the current synthetic document path; the strong model is reserved for reasoning | ≈ 10× cheaper per routed token |
 | 📐 **PTU right-sizing to peak** | Reserve AI capacity to *peak concurrency*, autoscale pay-as-you-go for spikes only | Avoids over-provisioning the 98 % off-peak |
 | 📲 **Push & email before SMS** | SMS is the most usage-sensitive line; prefer in-app push and email, keep SMS for OTP/critical | Can halve the Communications line |
 | 🔭 **Telemetry sampling & tiering** | Adaptive sampling in App Insights, basic-tier logs, archive to cheap storage | −40 % to −60 % on Observability at scale |
@@ -392,7 +398,7 @@ The whole estimate starts from one chain — registered citizens become activity
 | SMS / month | MAU × 0.6 | 5 352 000 |
 | Email / month | MAU × 1.0 | 8 920 000 |
 | Eligibility assessments / month | MAU × 0.15 | 1 338 000 |
-| Documents extracted / month | MAU × 0.30 | 2 676 000 |
+| Documents processed / month | MAU × 0.30 | 2 676 000 |
 | Caseworker escalations / month | conversations × 4 % | 285 440 |
 
 > For **Pilot** and **Regional**, swap the 8 920 000 MAU for **12 000** and **120 000** and every line scales linearly — only the fixed-floor centres (§11.6) stay flat.
@@ -405,8 +411,8 @@ Reserved **PTU** (Provisioned Throughput Units) are sized to sustain **peak** to
 |---|---|--:|
 | `gpt-5.4` PTU pool (assistant · eligibility · translator · caseworker-helper) | ≈ 6 600 PTU × €260 | €1 716 000 |
 | `gpt-realtime` PTU pool (voice, centralised in Sweden Central) | ≈ 1 450 PTU × €260 | €377 000 |
-| `gpt-5.4-mini` pay-as-you-go (router · classifier · doc-extractor) | ≈ 42.8 M routed turns + 2.68 M extractions | €290 000 |
-| Document Intelligence | 2 676 000 docs × ≈ 3 pages × €0.01 | €80 000 |
+| `gpt-5.4-mini` pay-as-you-go (router · classifier · document path) | ≈ 42.8 M routed turns + 2.68 M document-processing calls | €290 000 |
+| Target Document Intelligence | 2 676 000 docs × ≈ 3 pages × €0.01 | €80 000 |
 | Content Safety | 42.8 M turns checked in + out ÷ 1 000 × €0.70 | €60 000 |
 | Azure AI Foundry hubs & endpoints (3 hubs, national-grade) | fixed baseline | €37 000 |
 | **Sub-total** | | **≈ €2 560 000** |
@@ -456,10 +462,10 @@ The remaining centres are mostly **platform floor**: paid whether 30 000 or 22 3
 |---|---|--:|
 | 🛡️ Network & Security | Front Door + WAF · 3× Firewall Premium · DDoS · Bastion · Defender · Sentinel · CIEM | €465 000 |
 | ⚙️ Compute & Integration | APIM Premium (multi-region units) · Logic Apps Standard · Functions · Confidential Compute enclave | €273 000 |
-| 🗄️ Data & Caching | 3× PostgreSQL HA · 3× Redis Enterprise · ADLS/Blob · Confidential Ledger | €281 000 |
+| 🗄️ Data & Caching | 3× PostgreSQL HA · 3× Redis Enterprise · ADLS/Blob · target Confidential Ledger operations | €281 000 |
 | 🔭 Observability | Log Analytics + App Insights ingestion (3 zones, sampled) | €317 000 |
 | 📊 Analytics | Fabric F256 + Power BI semantic models | €117 000 |
-| 📒 Governance | Purview catalogue + Priva DSR / subjects | €92 000 |
+| 📒 Governance | Purview catalogue + target Priva DSR / subjects | €92 000 |
 
 These six are the lines the **regional price index** in §4 bites hardest on: they sit in each country's own region, so Norway East's ≈ +20 % premium lands here, not on the region-neutral licence lines.
 

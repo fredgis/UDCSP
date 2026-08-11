@@ -6,7 +6,7 @@
 
 *How a citizen dials a Nordic toll-free number, talks to the same Foundry brain that powers the web, and gets a spoken answer in their own language — with full GDPR + EU AI Act compliance.*
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 [![Channel](https://img.shields.io/badge/📞_Channel-Telephone_PSTN-1565C0?style=for-the-badge)](#)
 [![Stack](https://img.shields.io/badge/🛰️_Stack-ACS_·_AI_Speech_·_topic--router-FF6F00?style=for-the-badge)](#)
@@ -23,11 +23,11 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** 🟢 **Live for Norway only.** A caller dials `+33 801 150 799`, routed through `udcsp-no-acs` (`dataLocation=Norway`, sovereignty intact). **Azure Communication Services Call Automation** answers, the **voice orchestrator Container App** (`apps/voice/call-automation/`) runs with a user-assigned managed identity and Key Vault backed secrets, opens **Azure OpenAI gpt-realtime** (`2025-08-28`) on `udcspai` in Sweden Central, then invokes the `lookup_topic_router` function tool through APIM `/agent-topic-router/messages` to the Foundry citizen-assistant. `UDCSP_LOCALE_OVERRIDE=en` is active for jury demos. 🗺️ **Roadmap for Denmark and Sweden.** No country-specific voice orchestrator is deployed for DK or SE today. 🗺️ **Roadmap for human transfer and audio recording.** Demo 2 v1 is no-handoff: `escalate_to_human` is gated on empty `D365_VOICE_QUEUE_ID`, so the tool is not exposed to gpt-realtime. Audio writing to `voice-recordings/` is gated off. 🟢 **Live for transcripts.** `realtime.assistant_transcript` and `realtime.user_transcript` flow into Application Insights with `traceparent` correlation end-to-end.
+> **TL;DR.** 🟢 **Live for Norway only.** A caller dials `+33 801 150 799`, routed through `udcsp-no-acs` (`dataLocation=Norway`, sovereignty intact). **Azure Communication Services Call Automation** answers, the **voice orchestrator Container App** (`apps/voice/call-automation/`) runs with a user-assigned managed identity and Key Vault backed secrets, opens **Azure OpenAI gpt-realtime** (`2025-08-28`) on `udcspai` in Sweden Central, then invokes the `lookup_topic_router` function tool through APIM `/agent-topic-router/messages` to the Foundry citizen-assistant. `UDCSP_LOCALE_OVERRIDE=en` is active for jury demos. 🗺️ **Roadmap for Denmark and Sweden.** No country-specific voice orchestrator is deployed for DK or SE today. 🗺️ **Roadmap for human transfer and audio recording.** Demo 2 v1 is no-handoff: `escalate_to_human` is gated on empty `D365_VOICE_QUEUE_ID`, so the tool is not exposed to gpt-realtime. Audio writing to `voice-recordings/` is gated off. 🔵 **In repo, not deployed:** each call gets a 32-byte, single-use media nonce with a 30-second expiry; ACS callbacks require an RS256 JWT validated against the ACS JWKS; Event Grid deliveries get strict subscription, header, event-type and batch-shape checks; telemetry keeps `traceparent` but records transcript lengths and tool argument keys only. The running NO container still uses the previous image, whose media WebSocket is unauthenticated, whose callbacks lack these checks, and whose telemetry includes verbatim transcripts. Treat these as live risks until the container is rebuilt and deployed.
 >
 > | Field | Value |
 > |---|---|
-> | 🗄️ **Where stored** | Transcript events in App Insights today (`realtime.assistant_transcript`, `realtime.user_transcript`) with ACS and Foundry traces correlated by `traceparent`. Audio/STT blobs in `voice-recordings/`, Dataverse `bot_session` mirroring and Confidential Ledger anchoring are 🗺️ **Roadmap** with D365 Customer Service NO. |
+> | 🗄️ **Where stored** | The current deployed image still sends verbatim `realtime.assistant_transcript` and `realtime.user_transcript` content to NO App Insights. This is a legacy security exposure, not a supported audit feature. 🔵 **In repo, not deployed:** the same event names retain `traceparent` correlation but carry only `transcriptLength`; tool-call telemetry carries argument keys, not values. Audio/STT blobs in `voice-recordings/`, Dataverse `bot_session` mirroring and Confidential Ledger anchoring are 🗺️ **Roadmap** with D365 Customer Service NO. |
 
 | Country | Voice runtime status | What exists now |
 |---|---|---|
@@ -88,7 +88,7 @@ flowchart TB
     APIM --> ROUTER["Foundry topic-router"]
     ROUTER --> FOUNDRY["Foundry agents<br/>classifier · citizen-assistant · translator · eligibility · doc-extractor · caseworker-helper"]
     ORCH -.->|escalate_to_human<br/>Roadmap · needs D365 CS NO| D365["Dynamics 365<br/>voice workstream<br/>(not exposed in v1)"]
-    ROUTER --> FABRIC["Fabric + App Insights<br/>transcripts + traces"]
+    ROUTER --> FABRIC["Fabric + App Insights<br/>telemetry events + traces"]
     ORCH -->|end_call_with_recap| ACSOUT["ACS SMS récap"]
     ACSOUT -.-> PHONE
     SPEECH["Azure AI Speech<br/>(Roadmap for D365 IVR menus<br/>+ post-call analytics, not live audio)"]
@@ -117,7 +117,7 @@ sequenceDiagram
     C->>ACS: dial country toll-free number
     ACS->>C: greeting + recording disclosure
     C->>ACS: consent / utterance
-    ACS->>ORCH: bidirectional audio WebSocket
+    ACS->>ORCH: bidirectional audio WebSocket<br/>nonce-bound in pending source
     ORCH->>GPTRT: stream audio frames (Realtime WS)
     GPTRT-->>ORCH: streaming partial transcript + intent
     ORCH->>API: function tool: lookup_topic_router(text, locale)
@@ -178,7 +178,8 @@ https://udcsp-no-dev-voice-orch.<env>.norwayeast.azurecontainerapps.io
   ▼
 ACS Call Automation answer() ─────┐
                                    │ 6. Bidirectional WebSocket
-                                   │    (audio in PCM 16 kHz)
+                                   │    /api/acs/media?nonce=<single-use token>
+                                   │    (audio in PCM 16 kHz, pending image)
                                    ▼
                           Voice orchestrator
                           Container App, NO, UAMI-bound
@@ -220,7 +221,7 @@ ACS Call Automation answer() ─────┐
 5. La **WebSocket Realtime** s'ouvre — l'orchestrator négocie une session `gpt-realtime` sur `udcspai` (Sweden Central, seule région Nordic avec quota realtime). Audio bidirectionnel en PCM low-latency.
 6. Le **LLM realtime** lit d'abord le disclosure (TTS direct dans le pipeline), puis "How can I help?", puis écoute le citoyen.
 7. **Tool calls** — si le citoyen demande une action métier (statut d'un dossier, classification d'un cas…), le model appelle `topic_router` via function calling → POST APIM `/agent-topic-router/messages` avec `channel: "voice"` → réponse Foundry → speakée en retour via le pipeline TTS du Realtime.
-8. **Sovereignty**: live call media stays on `udcsp-no-acs` with `dataLocation=Norway`, while the realtime model runs in Sweden Central (Nordic, EU). Audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off today. Transcript events and `traceparent` are propagated to App Insights for end-to-end KQL correlation.
+8. **Sovereignty and telemetry**: live call media stays on `udcsp-no-acs` with `dataLocation=Norway`, while the realtime model runs in Sweden Central (Nordic, EU). Audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off today. The deployed image still sends transcript text to NO App Insights. 🔵 **In repo, not deployed**, transcript events retain `traceparent` for end-to-end KQL correlation but contain only `transcriptLength`.
 
 ---
 
@@ -240,7 +241,7 @@ Two cross-cutting concerns:
 | | Concern | Where |
 |:-:|---|---|
 | ⚖️ | **Recording consent** — disclosure script in 12 languages, opt-out ("press 0") routes to a non-recorded human queue. | `apps/voice/recording-consent/recording-disclosure.md` |
-| 📜 | **Transcript pipeline** — Logic App that pushes call transcripts to the **per-country** Fabric workspace, pseudonymised, correlated with Foundry traces by `correlation-id`. | `apps/voice/transcript-pipeline/logic-app-transcription.json` |
+| 📜 | **Transcript pipeline**: 🔵 **In repo** as an inactive blueprint for a future governed post-call record. It is not fed by the remediated voice telemetry, which contains no transcript text. | `apps/voice/transcript-pipeline/logic-app-transcription.json` |
 
 ---
 
@@ -283,7 +284,7 @@ fallbacks:
 
 **🐢 Slow-speech mode** — pressing `9` at any time switches the TTS to a slower cadence and re-prompts; the choice is **sticky** for the rest of the call.
 
-**🛡️ Recording disclosure (GDPR Art. 5/13)**: the very first thing a caller hears is the disclosure in their detected language. Audio recording is 🗺️ **Roadmap** today: writing to `voice-recordings/` is gated off, only transcript events are captured. Example (Norwegian Bokmål):
+**🛡️ Recording disclosure (GDPR Art. 5/13)**: the very first thing a caller hears is the disclosure in their detected language. Audio recording is 🗺️ **Roadmap** today: writing to `voice-recordings/` is gated off. The deployed image still logs transcript text, while 🔵 **In repo, not deployed**, transcript events contain lengths only. Example (Norwegian Bokmål):
 
 > *"Samtalen kan tas opp og transkriberes for å behandle saken din. Trykk 1 for å godta eller 0 for en saksbehandler."*
 
@@ -324,7 +325,7 @@ flowchart LR
     class ACS_NO,SPEECH_NO,FAB_NO no
 ```
 
-🟢 **Live in Norway:** call media and ACS metadata stay with `udcsp-no-acs` (`dataLocation=Norway`) and transcript events stay in NO Application Insights. 🗺️ **Roadmap in Denmark and Sweden:** the same per-country pattern is designed, but no DK or SE voice orchestrator is deployed today. Audio recordings remain gated off in every country until v2.
+🟢 **Live in Norway:** call media and ACS metadata stay with `udcsp-no-acs` (`dataLocation=Norway`) and voice telemetry stays in NO Application Insights. The current image includes transcript text; 🔵 **In repo, not deployed**, only transcript lengths remain. 🗺️ **Roadmap in Denmark and Sweden:** the same per-country pattern is designed, but no DK or SE voice orchestrator is deployed today. Audio recordings remain gated off in every country until v2.
 
 The ACS `dataLocation` property is the load-bearing knob — it pins the persisted data (recordings, call records, SMS) to the country. See `apps/voice/acs/acs-resource.bicep`:
 
@@ -424,7 +425,7 @@ Microsoft documentation we anchor to:
 > [!TIP]
 > **For the case-study jury, our recommended sequence is:**
 >
-> 1. **Live in the room** — open the ACS Web SDK demo client in a browser and call the Foundry-backed Foundry `topic-router` agent. **Zero phone-number dependency**, full audio + transcript + Foundry trace shown side-by-side.
+> 1. **Live in the room:** open the ACS Web SDK demo client in a browser and call the Foundry-backed Foundry `topic-router` agent. **Zero phone-number dependency**, full audio interaction plus correlated telemetry and Foundry trace shown side-by-side. Do not present verbatim transcript telemetry as an audit feature.
 > 2. **Then prove the PSTN path** — dial a temporary US toll-free (provisioned in minutes) on the room speakerphone. Same backend, different ingress.
 > 3. **Then commit to the remaining real Nordic numbers for production**: submit the KYC pack on the day of the kick-off; the Swedish / Danish toll-free arrives well before any actual citizen traffic.
 
@@ -465,7 +466,7 @@ flowchart TB
     P3["3️⃣ Deploy AI Speech<br/><i>speech-config.bicep + voice-fonts.json</i>"]
     P4["4️⃣ Import 24 IVR YAMLs<br/><i>4 dialogs × 6 languages</i>"]
     P5["5️⃣ Wire ACS → Foundry `topic-router`<br/><i>APIM `/agent-topic-router/messages` connector</i>"]
-    P6["6️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric per country</i>"]
+    P6["6️⃣ Keep transcript pipeline gated<br/><i>future governed record only</i>"]
     P7["7️⃣ Activate SMS templates<br/><i>12 languages</i>"]
     P8["8️⃣ Self-test<br/><i>pwsh apps/voice/scripts/Test-Voice.ps1</i>"]
     P9["✅ Phase complete"]
@@ -484,7 +485,7 @@ All of this is automated by `scripts/install/modules/Install-Voice.psm1` (phase 
 ## 11. 🧱 Voice runtime, readiness vs scaffold (what's actually runnable today)
 
 > [!IMPORTANT]
-> **Status update.** 🟢 **Live**: Norway runs end-to-end on `+33 801 150 799` through ACS Call Automation, the orchestrator Container App, Azure OpenAI **gpt-realtime** and APIM `/agent-topic-router/messages` into the Foundry citizen-assistant. 🗺️ **Roadmap**: Denmark and Sweden have no deployed country-specific voice orchestrator. 🗺️ **Roadmap**: D365 warm-transfer and audio recording are gated off in Demo 2 v1 because D365 Customer Service NO is not provisioned. `D365_VOICE_QUEUE_ID` is empty, so `escalate_to_human` is not even exposed to gpt-realtime. Transcript events remain 🟢 **Live** in Application Insights with `traceparent` correlation.
+> **Status update.** 🟢 **Live**: Norway runs end-to-end on `+33 801 150 799` through ACS Call Automation, the orchestrator Container App, Azure OpenAI **gpt-realtime** and APIM `/agent-topic-router/messages` into the Foundry citizen-assistant. 🗺️ **Roadmap**: Denmark and Sweden have no deployed country-specific voice orchestrator. 🗺️ **Roadmap**: D365 warm-transfer and audio recording are gated off in Demo 2 v1 because D365 Customer Service NO is not provisioned. `D365_VOICE_QUEUE_ID` is empty, so `escalate_to_human` is not even exposed to gpt-realtime. 🔵 **In repo, not deployed**: media and callback authentication plus telemetry minimisation. The current NO image still has the unauthenticated media-socket path and verbatim transcript logging.
 
 ### 11.1 The two layers in the voice story
 
@@ -506,18 +507,19 @@ The earlier audit noted that the Bot Framework SDK is being **deprecated end of 
 
 - 🗺️ **Roadmap, PSTN number ownership and procurement**: through the Copilot Service admin center for US toll-free trial numbers, or by purchasing in the ACS portal then [syncing into D365](https://learn.microsoft.com/en-us/dynamics365/customer-service/administer/voice-channel-sync-from-acs) for non-US (DK / SE / NO).
 - 🗺️ **Roadmap, workstream queue routing for warm transfers**: when `D365_VOICE_QUEUE_ID` is populated, the orchestrator can register `escalate_to_human` and call `transferCallToParticipant` with the D365 voice workstream queue id.
-- 🗺️ **Roadmap, call recording and native transcription**: recording is configured at the workstream level; transcripts land in Dataverse `callTranscript` and are picked up by the post-call enrichment pipeline (Dataverse → Fabric Lakehouse + Confidential Ledger anchor). Today, audio writing to `voice-recordings/` is gated off and only Application Insights transcript events are captured.
+- 🗺️ **Roadmap, call recording and native transcription**: recording is configured at the workstream level; transcripts land in Dataverse `callTranscript` and are picked up by the post-call enrichment pipeline (Dataverse → Fabric Lakehouse + Confidential Ledger anchor). Today, audio writing to `voice-recordings/` is gated off. The current image still exposes transcript text in Application Insights; the pending source emits transcript lengths only.
 - 🟢 **Live, recording disclosure prompt**: our 12-language `recording-disclosure.md` script is injected by the orchestrator at call-pickup as the GPT Realtime first prompt.
 
 ### 11.4 What the orchestrator (`apps/voice/call-automation/`) does
 
 | Concern | File | What happens |
 |---|---|---|
-| Event Grid `IncomingCall` | `src/call-handler.ts` | Validates the EventGrid handshake, calls `client.answerCall()` with `mediaStreamingOptions.transportUrl = wss://.../api/acs/media`. |
-| Bidirectional audio bridge | `src/realtime-bridge.ts` | ACS opens a WebSocket; the orchestrator opens a parallel WebSocket to `wss://{aoai}/openai/realtime?...&deployment=gpt-realtime` and proxies base64 PCM frames in both directions. Server-VAD turn detection + barge-in are configured on the GPT Realtime session. |
+| Event Grid `IncomingCall` | `src/call-handler.ts`, `src/webhook-auth.ts` | 🔵 **In repo, not deployed:** requires the expected subscription name and validates the `aeg-event-type`, validation handshake, incoming-call event type and single-event batch before `answerCall()`. Event Grid delivery still lacks cryptographic origin authentication until an Entra webhook application or shared secret is provisioned. |
+| ACS lifecycle callbacks | `src/index.ts`, `src/webhook-auth.ts` | 🔵 **In repo, not deployed:** requires an RS256 JWT from the ACS issuer, verifies it against the ACS JWKS with audience and expiry checks, then validates CloudEvents shape and `callConnectionId`. The current NO image accepts these callbacks without JWT authentication. |
+| Bidirectional audio bridge | `src/call-handler.ts`, `src/index.ts`, `src/realtime-bridge.ts` | 🔵 **In repo, not deployed:** `answerIncomingCall()` creates a 32-byte base64url nonce, places it in `/api/acs/media?nonce=...`, expires it after 30 seconds and consumes it atomically on upgrade. `attachMediaSocket()` refuses to replace an existing or attaching bridge. The current NO image still uses unauthenticated orphan-session matching. |
 | Function tools | `src/foundry-tool.ts`, `src/d365-handoff.ts` | `lookup_topic_router(text, locale)` POSTs to APIM `/agent-topic-router/messages`; `escalate_to_human(reason, summary)` is registered only when `D365_VOICE_QUEUE_ID` is populated; `end_call_with_recap(recapText)` sends an SMS récap and hangs up. |
 | IVR pack | `src/ivr-loader.ts` | Loads the existing `apps/voice/ivr/{locale}/*.yaml` (`kind: UDCSP.Voice.Dialog`) + recording disclosure markdown; the welcome prompt + disclosure are spoken verbatim by GPT Realtime as the first turn. |
-| Observability | `src/logger.ts` | 🟢 **Live** App Insights with `LogContext` (callConnectionId, traceparent, country, locale, intent) plus `realtime.assistant_transcript` and `realtime.user_transcript`; D365 transfer audit is 🗺️ **Roadmap** for v2. |
+| Observability | `src/logger.ts`, `src/realtime-bridge.ts` | The current deployed image logs verbatim transcripts and mirrors telemetry to stdout. 🔵 **In repo, not deployed:** Azure Monitor OpenTelemetry log records keep `LogContext`, transcript events carry only `transcriptLength`, tool calls carry sorted `argumentKeys`, and caller IDs, response bodies and realtime error payloads are omitted. Console mirroring is off unless `VOICE_UNSAFE_DEBUG_LOGGING=true`. |
 | Container App + Event Grid + Realtime deployment | `infra/voice-orchestrator.bicep`, `infra/event-grid-incoming-call.bicep`, `infra/gpt-realtime-deployment.bicep` | Per-country IaC. UAMI-bound, KV-backed secrets, public ingress with `transport: 'auto'` (WSS-capable). |
 
 #### 11.4a A call, end to end, in 5 steps
@@ -589,13 +591,13 @@ sequenceDiagram
 Same flow as the narrative below, hop by hop:
 
 1. **ACS answers the call.** The live number `+33 801 150 799` is bound to the `udcsp-no-acs` resource with `dataLocation=Norway` (sovereignty). ACS emits an Event Grid `IncomingCall` event → `/api/acs/eventgrid` on the orchestrator → `client.answerCall()` with the recording disclosure played as the first prompt (12-language script from `apps/voice/recording-consent/recording-disclosure.md`).
-2. **ACS opens a bidirectional audio WebSocket** to `/api/acs/media?callConnectionId={id}`. PCM 16 kHz frames flow in both directions.
+2. **ACS opens a bidirectional audio WebSocket.** 🔵 **In repo, not deployed**, the URL is `/api/acs/media?nonce={single-use-token}`. The 43-character token expires after 30 seconds and is consumed once. The current NO image still opens the unauthenticated URL and uses `findOrphanSessionId()` to select the most recently answered call. PCM frames flow in both directions.
 3. **The orchestrator opens a second WebSocket** to `wss://{aoai}/openai/realtime?deployment=gpt-realtime` (UAMI auth, audience `https://cognitiveservices.azure.com`). It configures server-VAD + barge-in, then proxies base64 PCM frames in both directions. gpt-realtime does **everything in one stream**: Whisper STT, GPT reasoning, neural TTS. **Latency p95 < 2 s** end-to-end.
 4. **GPT Realtime invokes function tools.** The system prompt declares three tools (see `src/foundry-tool.ts`):
    - `lookup_topic_router(text, locale)` → POSTs to APIM `/agent-topic-router/messages` with `x-channel-actor: voice`. APIM hits the **same Foundry topic-router agent** that powers the web chat (gpt-5.4, prompt + AI Search FAQ index `udcsp-citizens-faq`). Returns `{text, escalate, confidence, trace}`. GPT Realtime turns the text into voice and speaks it back to Lars.
    - `escalate_to_human(reason, summary)` → 🗺️ **Roadmap**. The tool is gated on `D365_VOICE_QUEUE_ID`; the env var is empty in Demo 2 v1, so the tool is not exposed to gpt-realtime. When D365 Customer Service NO is installed, it will call `transferCallToParticipant` with the D365 voice workstream queue id.
    - `end_call_with_recap(recapText)` → ACS SMS to Lars in NB (template `apps/voice/notifications/sms-templates.json`) + `hangUpCall`.
-5. **No-handoff or v2 warm-transfer.** In Demo 2 v1, if the citizen asks for a human, the model offers a callback because `escalate_to_human` is not registered. In v2, after D365 Customer Service NO is installed and `D365_VOICE_QUEUE_ID` is set, the same path becomes a warm-transfer. The live transcript and tool-call events land in App Insights correlated by the same `traceparent`.
+5. **No-handoff or v2 warm-transfer.** In Demo 2 v1, if the citizen asks for a human, the model offers a callback because `escalate_to_human` is not registered. In v2, after D365 Customer Service NO is installed and `D365_VOICE_QUEUE_ID` is set, the same path becomes a warm-transfer. App Insights correlation remains keyed by the same `traceparent`. After the pending image is deployed, transcript events carry lengths and tool-call events carry argument keys, not citizen speech or argument values.
 
 **Why a Container App and not an Azure Function?** A long-lived bidirectional WebSocket per call (×2 — one to ACS, one to GPT Realtime) is the wrong shape for Functions: 5-minute timeouts, cold starts that ruin sub-2-second voice latency, no graceful KEDA scaling on RPS for WS-heavy workloads. The Container App handles WSS natively (ingress `transport: auto`), keeps warm pods, scales on connections, and is UAMI-bound — exactly the right primitive for a voice cortex.
 
@@ -609,7 +611,7 @@ The Phase A orchestrator was designed assuming D365 Customer Service voice chann
 
 1. **Does not register the `escalate_to_human` function tool** with GPT Realtime — so the AI never tries to warm-transfer to a non-existent queue and never fails ungracefully mid-call.
 2. **Falls back to a polite verbal closure** when the citizen asks for a human: the topic-router prompt instructs the AI to say *"En saksbehandler vil ringe deg tilbake innen 2 virkedager"* / *"A caseworker will call you back within 2 business days"*.
-3. **Keeps the live v1 functions** (`lookup_topic_router`, App Insights correlation, recording disclosure, sovereignty pinning). Audio recording and D365 native transcription remain gated until v2.
+3. **Keeps the live v1 functions** (`lookup_topic_router`, App Insights correlation, recording disclosure, sovereignty pinning). After the pending image is deployed, the correlation remains while transcript content is excluded. Audio recording and D365 native transcription remain gated until v2.
 
 This mode covers **9 of the 10 case-study requirements** for Demo 2 (everything except the SLA + Power BI median-4d KPI which need caseworker outcome data). Once Customer Service NO is provisioned, populate the two GUIDs in `Voice.no`, redeploy with `Install-UDCSP.ps1 -Phase Voice`, and the `escalate_to_human` tool is re-enabled automatically.
 
@@ -627,7 +629,7 @@ D365 voice channel still owns PSTN, queue routing, recording and the human casew
 
 | Artefact | Status | Action |
 |---|---|---|
-| `apps/voice/call-automation/` | 🟢 **Live** for Norway; same code is 🔵 **In repo** for DK/SE. | Build (`npm install && npm run build`), containerise, deploy via `Deploy-Voice.ps1`. |
+| `apps/voice/call-automation/` | 🟢 **Live** for Norway on the previous container image. The security-remediated source is 🔵 **In repo** for NO, DK and SE, and is not deployed. | Build (`npm install && npm run build`), containerise, deploy via `Deploy-Voice.ps1`, then verify nonce rejection, callback JWT validation and minimised telemetry. |
 | `apps/voice/acs/acs-resource.bicep` | 🟢 **Live** for `udcsp-no-acs`; 🔵 **In repo** for the per-country pattern. | Keep. |
 | `apps/voice/acs/phone-numbers.bicep` + `phone-number-bindings.yaml` | 🟢 **Live** for `+33 801 150 799`; 🔵 **In repo** for future bindings. | Keep. |
 | `apps/voice/speech/speech-config.bicep` + `voice-fonts.json` | 🔵 **In repo**; 🗺️ **Roadmap** for D365 IVR prompts and post-call analytics. GPT Realtime does its own TTS today. | Keep for D365 workstream prompts. |
@@ -662,11 +664,11 @@ Eight subtle bugs cost us a day of dial tests when first wiring the orchestrator
 |---|---|---|---|
 | 1 | `ENOENT '/apps/voice/recording-consent/recording-disclosure.md'` on first call | Dockerfile only copied `dist/` and missed the IVR + disclosure + escalation assets that `ivr-loader.ts` reads at runtime. | Dockerfile context = repo root; `COPY apps/voice/{recording-consent,ivr,escalation} /apps/voice/...` (commit 8c9d925). |
 | 2 | `az acr build` hangs 15+ min on upload | No `.dockerignore` at the repo root (the `apps/voice/call-automation/.dockerignore` no longer applies once the context is the repo root). | Top-level `.dockerignore` that keeps only the 6 paths the Dockerfile consumes (commit 7c0bf18). |
-| 3 | `media.upgrade_rejected — no callConnectionId in URL` | ACS Call Automation does **not** append `callConnectionId` to the `transportUrl`. Our upgrade handler required it and rejected the socket. | `findOrphanSessionId()` — fall back to the most recently answered session that has no bridge yet (commit 627d79b). |
+| 3 | `media.upgrade_rejected: no callConnectionId in URL` | ACS Call Automation does **not** append `callConnectionId` to the `transportUrl`. The old upgrade handler required it and rejected the socket. | 🔵 **In repo, not deployed:** `answerIncomingCall()` appends a cryptographic nonce to the exact ACS transport URL. `consumeMediaNonce()` accepts it once within 30 seconds, and bridge replacement is refused. The live image still uses the removed `findOrphanSessionId()` fallback. |
 | 4 | `ChainedTokenCredential authentication failed — Unable to load the proper Managed Identity` | Container has UAMI but no system-assigned identity, and `DefaultAzureCredential` can't pick a UAMI without a hint. | Pass `AZURE_CLIENT_ID = uami.clientId` env var (bicep param `userAssignedIdentityClientId`, commit 032c11e). |
 | 5 | AOAI Realtime returns HTTP 400 on connect | Bicep default `AZURE_OPENAI_REALTIME_DEPLOYMENT=gpt-realtime` but the actual deployment is per-country (`gpt-realtime-no`). | Default = `gpt-realtime-${country}` (commit a1e3fdf). |
 | 6 | `Invalid modalities: ['audio']. Supported combinations are: ['text'] and ['audio', 'text'].` | AOAI Realtime rejects `['audio']` alone for `response.create`. | `modalities: ['audio', 'text']` (commit b12955b). |
-| 7 | Transcript reaches our logs but no audio reaches the caller | `gpt-realtime` (2025-08-28+) emits the new event `response.output_audio.delta`; legacy `gpt-4o-realtime-preview` emits `response.audio.delta`. We listened only for the legacy name. | Switch case handles both names (commit eb08e9d). |
+| 7 | Transcript completion event arrives but no audio reaches the caller | `gpt-realtime` (2025-08-28+) emits the new event `response.output_audio.delta`; legacy `gpt-4o-realtime-preview` emits `response.audio.delta`. We listened only for the legacy name. | Switch case handles both names (commit eb08e9d). |
 | 8 | Audio deltas relayed yet caller still hears nothing | Three asymmetric details of the ACS Call Automation media-streaming protocol: <br/>(a) bidirectional playback requires `mediaStreamingOptions.enableBidirectional = true` (default is ACS→server only); <br/>(b) sample rate: gpt-realtime emits 24 kHz PCM, ACS defaults to 16 kHz — set `audioFormat = 'Pcm24KMono'` (PascalCase enum value); <br/>(c) outbound frames are `{ Kind, AudioData: { Data }, StopAudio: null }` (PascalCase, with the `StopAudio` sibling), even though inbound is camelCase. | All three combined in commit 0f5cc30. |
 
 A few non-bug operational learnings worth keeping in mind:
@@ -698,7 +700,7 @@ A few non-bug operational learnings worth keeping in mind:
 | 2 | Speak: *"Hvorfor er skatterefusjonen min så lav i år?"* (NO) | Streaming STT, intent classified in < 200 ms | #5 (AI 12 lang) · #6 (assistant) |
 | 3 | The agent answers in NB, citing the relevant rule | Spoken answer in `nb-NO-PernilleNeural`; trace visible in Foundry | #6 · #15 (audit) |
 | 4 | Say "agent" | The assistant explains the 🗺️ **Roadmap** human-callback status for v1; no `escalate_to_human` tool is exposed because `D365_VOICE_QUEUE_ID` is empty | #16 (caseworker, 🗺️ Roadmap for D365 CS NO) |
-| 5 | After hangup, jury opens App Insights NO | `realtime.assistant_transcript` and `realtime.user_transcript` are visible with the same `traceparent`; no audio blob is written to `voice-recordings/` | #10 (sovereignty) · #15 (audit) |
+| 5 | After hangup, jury opens App Insights NO | Show the correlated `call.*` and `realtime.*` event chain, not verbatim citizen speech. The current image may still expose transcript text; do not present it as audit evidence. After the pending deployment, transcript events show `transcriptLength` only. No audio blob is written to `voice-recordings/`. | #10 (sovereignty) · #15 (audit) |
 
 > [!TIP]
 > If a real Nordic number has been provisioned, repeat beat 1 by dialling the toll-free on the room speakerphone — same backend, different ingress, **proof that PSTN works end-to-end**.
@@ -716,7 +718,7 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 | Batch STT (wait for end-of-utterance) | Streaming STT — partial results trigger early classification |
 | Buffer-then-play TTS | Streaming TTS — first audio frame plays while the rest synthesises |
 | One ACS for all three countries | One ACS **per** country, region-pinned, enforced by Bicep `dataLocation` |
-| Recording everything by default | 🟢 **Live** transcript capture only; audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off today |
+| Recording everything by default | Audio recording to `voice-recordings/` is 🗺️ **Roadmap** and gated off. 🔵 **In repo, not deployed**, telemetry contains transcript lengths only. The current image's verbatim transcript logging is a remediation item, not the intended design. |
 | Voice has its own KB | Same KB as the web; voice queries the same RAG indices |
 | Skip the warm transfer (hard transfer to a queue) | 🗺️ **Roadmap** warm transfer with conversation context preserved into the D365 case after D365 Customer Service NO is installed |
 
@@ -724,18 +726,18 @@ This corresponds to **Demo 2** in [`uses.md`](./uses.md#-demo-2--lars-asks-the-v
 
 ## 15. Where the conversation is stored
 
-Voice writes transcript telemetry today, not audio blobs. 🟢 **Live**: `realtime.assistant_transcript` and `realtime.user_transcript` are ingested into Application Insights with `traceparent` correlation across ACS, orchestrator, APIM and Foundry. 🗺️ **Roadmap**: raw `.wav` plus STT JSON to `voice-recordings/`, Dataverse `bot_session` mirroring and Fabric + Confidential Ledger anchoring return in v2 after D365 Customer Service NO is installed. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
+The current deployed image writes verbatim transcript content to Application Insights. This is a legacy security exposure, not a supported transcript store or audit surface. 🔵 **In repo, not deployed**, `realtime.assistant_transcript` and `realtime.user_transcript` keep `traceparent` correlation across ACS, orchestrator, APIM and Foundry but store only `transcriptLength`. 🗺️ **Roadmap**: raw `.wav` plus STT JSON to `voice-recordings/`, a governed Dataverse `bot_session` record, and Fabric plus Confidential Ledger anchoring return in v2 after D365 Customer Service NO is installed. See [`../tech/data.md`](../tech/data.md) § 3.3 for the Zone 3 policy.
 
 | What | Where | Retention |
 |---|---|---|
 | Audio `.wav` + STT JSON | 🗺️ **Roadmap**: ADLS Gen2 `voice-recordings/` (per country, WORM, CMK). Gated off today. | 90 days target; audio purged for minimisation |
-| Dialog transcript | 🟢 **Live**: App Insights `realtime.assistant_transcript` + `realtime.user_transcript`. 🗺️ **Roadmap**: Dataverse `bot_session`; mirrored to OneLake. | 6 months hot; 6 years OneLake target |
+| Dialog transcript | No supported transcript store in the remediated source. The current deployed image still exposes verbatim content in App Insights; 🔵 **In repo, not deployed**, those events contain lengths only. 🗺️ **Roadmap**: governed Dataverse `bot_session`, mirrored to OneLake. | Legacy App Insights retention applies until remediation; 6 months hot and 6 years OneLake remain future governed-record targets |
 | ACS call events | ACS Event Hubs → ADLS Gen2 `acs-events/` | See § 5 retention matrix |
 | Foundry trace | App Insights → OneLake Bronze | 180 days hot; then Bronze |
 
 For the full retention matrix, use [`../tech/data.md`](../tech/data.md) § 5.
 
-> Audio is deliberately disabled in v1. When v2 enables recording, audio is shorter-lived than transcripts: the transcript persists for EU AI Act Art. 26(6), while audio is purged after 90 days under GDPR minimisation.
+> Audio is deliberately disabled in v1. If v2 enables recording, its governed transcript record is intended to outlive audio under the documented retention policy. This future record is separate from current App Insights telemetry.
 
 > 📖 Full storage architecture and retention rules: see [`../tech/data.md`](../tech/data.md).
 

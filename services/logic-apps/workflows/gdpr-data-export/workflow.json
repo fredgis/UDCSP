@@ -1,5 +1,5 @@
 {
-  "_comment": "Priva is the primary DSR access/portability orchestrator. This Logic App is a secondary technical export processor when priva-request-id is present; without that header it preserves the legacy transition flow. Downstream subject draft/session collection is represented as PostgreSQL + Redis placeholders.",
+  "_comment": "Priva is the primary DSR access/portability orchestrator. This Logic App is a secondary technical export processor when priva-request-id is present; without that header it preserves the legacy transition flow. Citizen self-service subject identity always comes from the trusted x-udcsp-citizen-upn header. A delegated DSR where a DPO acts for a citizen requires a separate authenticated actor/subject contract and is out of scope.",
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
     "contentVersion": "1.0.0.0",
@@ -90,7 +90,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "AppInsights_dimension": [
@@ -109,7 +109,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "Create_audit_record": [
@@ -129,7 +129,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "Collect_Dataverse_records": [
@@ -150,7 +150,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "mode": "session-metadata-export"
           }
         },
@@ -171,7 +171,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "export-redis-session": [
@@ -190,7 +190,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "Collect_Fabric_records": [

@@ -68,8 +68,12 @@ $egPayload = @(
 ) | ConvertTo-Json -Depth 6
 
 $egUrl = "$OrchestratorBaseUrl/api/acs/eventgrid"
+$egHeaders = @{
+    'aeg-event-type'       = 'SubscriptionValidation'
+    'aeg-subscription-name' = "udcsp-$Country-acs-incoming-call"
+}
 Write-Host "▶ POST $egUrl (SubscriptionValidationEvent)"
-$response = Invoke-RestMethod -Method Post -Uri $egUrl -Body $egPayload -ContentType 'application/json' -TimeoutSec 30
+$response = Invoke-RestMethod -Method Post -Uri $egUrl -Headers $egHeaders -Body $egPayload -ContentType 'application/json' -TimeoutSec 30
 if ($response.validationResponse -ne $validationCode) {
     throw "Event Grid handshake failed: expected '$validationCode', got '$($response.validationResponse)'."
 }

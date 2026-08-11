@@ -10,6 +10,8 @@ info:
     they match and rate-limits voice traffic separately.
 servers:
   - url: https://{gateway-host}/agents/topic-router
+security:
+  - bearer: []
 paths:
   /messages:
     post:

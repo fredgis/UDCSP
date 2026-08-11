@@ -2,6 +2,8 @@
 
 # 🎬 UDCSP — Demonstration Scenarios
 
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
 ### 10 scenarios · 1 case study · 100 % evaluation coverage
 
 *A scripted set of demonstrations that an evaluator can run end-to-end on the UDCSP platform.*
@@ -15,7 +17,7 @@
 
 ---
 
-> ℹ️ **Narrative vs deployed reality.** Each scenario below describes the **target end-state**. For what's actually live today (e.g. Demo 1 SE D365 Customer Service, Verified ID, Demo 2 warm-transfer to a human caseworker — all still **roadmap**), see [`../tech/inprogress.md`](../tech/inprogress.md). Demo 3 is the only one currently playable end-to-end live.
+> ℹ️ **Narrative vs deployed reality.** Each scenario below describes a target journey. Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**. [`../tech/inprogress.md`](../tech/inprogress.md) is the source of truth. The pending security remediation is 🔵 **In repo** and not deployed. In particular, document fields are synthetic filename inferences, voice transcript content is not retained in corrected telemetry, citizen DSR binding is source-only, and Confidential Ledger plus operational lineage remain roadmap capabilities.
 
 ---
 
@@ -162,8 +164,8 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 
 2. She selects **"Move to another Nordic country"** — the portal calls the **Foundry Classifier** through APIM; intent detected as `cross-border-residency-transfer`.
 3. The portal pre-fills the form with claims-based data from DK agencies — **Once-Only Principle (OOP)**. Anna only adds destination address and employer.
-4. She uploads her employment contract; **Document Extractor** (Foundry + AI Document Intelligence) confirms employer and salary.
-5. **Eligibility Pre-Assessor** (Foundry, EU AI Act high-risk) runs inside an Azure Confidential Computing TEE and computes provisional residency entitlement and triggers a **mandatory human review** flag.
+4. She uploads her employment contract. The current **Document Extractor** does not read it. It returns synthetic employer and salary values inferred from the filename. Real extraction with Azure AI Document Intelligence is 🗺️ **Roadmap**.
+5. **Eligibility Pre-Assessor** returns an advisory recommendation and triggers human review. A confidential-computing runtime for this workload is 🗺️ **Roadmap**, not an active control.
 6. **Logic Apps** orchestrates the cross-border handoff: claims-based mediation between the DK and SE sovereign zones — **no DK PII crosses the border, only signed claims**.
 7. A case lands in the **SE D365 Customer Service** queue; SLA target is 4 days.
 8. Astrid (SE caseworker) opens the case in D365 with **Copilot for Service** — multilingual KB suggests reply templates in SV.
@@ -180,20 +182,20 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 | +38 % satisfaction | #4 | Post-completion CSAT survey captured for the journey. |
 | AI classification & routing in 12 languages | #5 | Foundry Classifier picks the right case type from a DA description. |
 | GenAI assistant on web/mobile/voice | #6 | Citizen Assistant in chat widget guides Anna throughout. |
-| Automated eligibility pre-assessment | #7 | Eligibility model returns a TEE-protected provisional recommendation + confidence + explanation. |
-| GDPR + EU AI Act + sector compliance | #9 | Eligibility decision logged into AI Act registry backed by Confidential Ledger; DPIA reviewed. |
+| Automated eligibility pre-assessment | #7 | Eligibility returns a provisional recommendation, confidence, and explanation. Confidential runtime execution is 🗺️ Roadmap. |
+| GDPR + EU AI Act + sector compliance | #9 | Registry and DPIA assets exist in repo. Confidential Ledger anchoring is 🗺️ Roadmap. |
 | Sovereignty | #10 | Network trace shows DK data stays in NE Europe; SE in Sweden Central. |
 | DPA differences | #11 | Logic Apps applies the DK ⇄ SE data-sharing policy pack from Purview. |
 | Web channel | #12 | Static Web App + responsive UI used by Anna. |
 | Multilingual support | #13 | UI in EN; communications in SV; KB in SV; AI agents handle DA → SV. |
 | All 9 mandatory Azure services | #14 | External ID, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI all light up. |
-| Auditability of every AI decision | #15 | Foundry tracing → trace ID is shown to Anna and to the caseworker. |
+| AI decision traceability | #15 | 🟡 Exercised paths expose a trace ID and operational metadata. Complete decision lineage and immutable anchoring are roadmap. |
 | Caseworker productivity | #16 | Astrid uses Copilot for Service to compose reply in 90 s vs. 8 min baseline. |
 | Synthetic data | #17 | Anna and her DK history come from A15's persona library. |
 
 #### 🧰 Stack exercised
 - **Mandatory:** External ID, Entra ID, Azure OpenAI (via Foundry), Microsoft Fabric, D365 Customer Service, APIM, Purview, Logic Apps, Power BI.
-- **Additional:** Microsoft Foundry, Foundry topic-router, Static Web Apps, AI Document Intelligence, AI Translator, Azure Communication Services, Service Bus, Key Vault, Application Insights, Microsoft Entra Verified ID.
+- **Additional:** Microsoft Foundry, Foundry topic-router, Static Web Apps, AI Translator, Azure Communication Services, Service Bus, Key Vault, and Application Insights. AI Document Intelligence and Verified ID issuance are 🗺️ Roadmap for this journey.
 - **Foundry agents:** Classifier, Translator, Eligibility Pre-Assessor, Citizen Assistant, Document Extractor.
 - **Synthetic data (A15):** persona "Anna Jensen", DK address, employment contract PDF, Danish/Swedish KB articles, multilingual notification templates.
 
@@ -201,7 +203,7 @@ Anna logs in to the Danish citizen portal with her national eID. UDCSP recognise
 
 - 💬 *"Notice that Anna never re-enters anything Denmark already knows about her — that's the EU **Once-Only Principle** in action."*
 - 💬 *"The eligibility decision is **always human-reviewed** — that is mandatory under the EU AI Act for this high-risk category."*
-- 💬 *"Open the Foundry trace — every prompt, every model output, every safety filter result is captured for audit."*
+- 💬 *"Open the trace to show the correlation and available operational metadata. Do not claim complete prompt, response, or immutable lineage capture."*
 - 💬 *"Watch the HTML/JS insights tile — average residency-transfer SLA is now 4 days, against a 28-day baseline."*
 
 ---
@@ -232,7 +234,7 @@ Lars dials the national tax-administration toll-free number. He is greeted in No
 3. Foundry `topic-router` invokes the **Citizen Assistant agent** in Foundry; the agent retrieves the relevant tax-rule article from the multilingual knowledge base in Fabric.
 4. **Content Safety** filters input and output. **AI Speech (TTS)** speaks the response back to Lars in natural NB.
 5. Lars asks a follow-up about a specific deduction; the assistant detects low confidence, offers escalation.
-6. **Warm transfer** to a Norwegian caseworker; the **conversation transcript + Foundry trace ID** are pushed into D365 so the caseworker continues seamlessly.
+6. 🗺️ **Target:** warm transfer to a Norwegian caseworker with an authoritative case summary and correlation ID. The current no-handoff voice path does not push transcript content into D365.
 7. Post-call, Lars receives an **SMS in NB** summarising the case ID and next step (sent via ACS).
 
 #### ✅ Points demonstrated
@@ -244,11 +246,11 @@ Lars dials the national tax-administration toll-free number. He is greeted in No
 | AI classification in 12 languages | #5 | Classifier handles NB intent without translation hop. |
 | GenAI citizen assistant on telephone | #6 | Voice assistant powered by Foundry + Foundry `topic-router` + AI Speech. |
 | WCAG 2.1 AA (channel inclusivity) | #8 | Voice channel removes the digital-literacy and accessibility barrier. |
-| Sovereignty | #10 | Call media stays in Norway East ACS region; transcripts in Norwegian Fabric workspace. |
+| Sovereignty | #10 | ACS media is country-bound. Corrected source keeps voice event metadata and correlation in App Insights, not transcript content. |
 | Channel coverage | #12 | Telephone channel exercised end-to-end. |
 | Multilingual | #13 | NB throughout — STT, LLM, KB retrieval, TTS, SMS. |
 | All 9 services (subset) | #14 | Foundry/OpenAI, APIM, Fabric, Purview, Power BI exercised; Logic Apps queues the warm transfer. |
-| Auditability | #15 | Voice transcript + Foundry trace + content-safety verdicts persisted. |
+| Auditability | #15 | W3C correlation, event names, timing, transcript lengths, and tool argument keys are available after the source fix is deployed. |
 | Synthetic data | #17 | Persona "Lars Berg" and his tax history come from A15. |
 
 #### 🧰 Stack exercised
@@ -289,7 +291,7 @@ Maria applies for a Danish housing benefit. She uses NVDA in Polish. The portal 
 1. Maria opens the DK portal in PL locale; NVDA reads the page in Polish (ICU MessageFormat resolves PL strings).
 2. **axe-core** in CI has already gated the build — no critical or serious WCAG 2.1 AA violations.
 3. Maria starts the housing-benefit application; the **Citizen Assistant** offers contextual help in PL and explains in plain language what each field means.
-4. Maria uploads her lease (PL); **Document Extractor** + **Translator** extract structured data and present it back to her **for confirmation** before submission.
+4. Maria uploads her lease (PL). The current **Document Extractor** infers synthetic fields from the filename, and Translator localises the resulting demonstrator text. The UI must show the provenance before confirmation.
 5. **Eligibility Pre-Assessor** returns "likely eligible — confidence 0.78"; the UI shows the reasoning **in PL**, including the data points it relied on.
 6. Maria submits; the application enters the DK D365 queue with the AI assessment attached.
 7. A confirmation page shows estimated decision date (4 days) and provides a screen-reader-friendly tracking link.
@@ -311,7 +313,7 @@ Maria applies for a Danish housing benefit. She uses NVDA in Polish. The portal 
 
 #### 🧰 Stack exercised
 - **Mandatory:** External ID (DK tenant), Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
-- **Additional:** Microsoft Foundry, Static Web Apps, AI Document Intelligence, AI Translator, AI Content Safety, design system.
+- **Additional:** Microsoft Foundry, Static Web Apps, AI Translator, AI Content Safety, and the design system. AI Document Intelligence is 🗺️ Roadmap.
 - **Foundry agents:** Classifier, Translator, Citizen Assistant, Document Extractor, Eligibility Pre-Assessor.
 - **Synthetic data (A15):** persona "Maria Kowalska", PL lease document, PL/DA KB pair.
 
@@ -337,7 +339,7 @@ flowchart LR
         ASSIST[Citizen Assistant PL]
     end
 
-    PUR[(Purview<br/>lineage)]
+    PUR[(🗺️ Purview<br/>lineage target)]
 
     Maria -- "PL eID via DK External ID" --> SWA
     SWA -- "Bearer JWT · scp=access_as_user" --> APIM
@@ -345,7 +347,7 @@ flowchart LR
     APIM -- "POST /documents/upload-url<br/>(MI proxy)" --> LAKE
     APIM -- "POST /citizen-applications" --> LA
     LA --> DOC --> TR --> ELIG --> DV
-    LA -. "lineage event" .-> PUR
+    LA -. "future lineage event" .-> PUR
 
     classDef citizen fill:#dae8fc,stroke:#6c8ebf,color:#0b3a73;
     classDef app fill:#d5e8d4,stroke:#82b366,color:#1b5e20;
@@ -377,7 +379,7 @@ NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader fr
 3. **Open the portal** — https://icy-dune-01c23d903.7.azurestaticapps.net.
 4. **Switch the UI to Polish** — language switcher in the top-right header → *"Polski"*.
 5. **Sign in as a Danish resident** — country card *Danmark* → *Sign in / Create account* → CIAM hosted page → return.
-6. **Run the apply flow** — `Tab` to *"Apply for child benefit"*, `Enter` → upload `sample_payslip_maria_kowalska.pdf` → confirm extracted fields → submit. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse / focus mode.
+6. **Run the apply flow**: `Tab` to *"Apply for child benefit"*, `Enter`, upload `sample_payslip_maria_kowalska.pdf`, then inspect the displayed fields. They are synthetic filename inferences today and must be labelled as such before submission. Useful NVDA shortcuts: `H` jump heading, `F` jump form field, `K` jump link, `Insert + Space` toggle browse or focus mode.
 7. **What you should hear in Polish**: page title, every form label, the AI-disclosure banner, the document-extractor result card, the eligibility reasoning, the confirmation card and the case-reference number.
 8. **Verify the AI / data path** — Azure portal → Logic App `udcsp-dk-dev-application-intake` → *Runs history*: latest run = ✅ *Succeeded*; the new `Call_translator_to_caseworker_locale` step is green; `Create_D365_case` returns 204. Dataverse (`https://<your-dataverse-env>.crm4.dynamics.com`) → *Tasks* → new row with subject `[UDCSP-DK] …`.
 9. **Trigger the axe-core CI run** — push any change under `apps/web/**` (or run the workflow manually from the *Actions* tab → *web-axe* → *Run workflow*). Confirm 0 serious + 0 critical violations across `/`, `/login`, `/demos`, `/consent`.
@@ -388,7 +390,7 @@ NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader fr
 
 <p align="center"><img src="../../images/Demo4.png" alt="Demo 4 — Erik mobile payslip upload" width="480" /></p>
 
-> **Mobile + AI Document Intelligence + Eligibility — a paper-heavy process, paperless.**
+> **Mobile upload + synthetic extractor + Eligibility. Real Document Intelligence is roadmap.**
 > 📖 *For the full architecture of this channel — Expo native camera bridge, biometric MSAL re-auth, push notifications, OS-level a11y — see* 📱 [`mobile.md`](./mobile.md).
 
 | | |
@@ -401,14 +403,14 @@ NVDA = *NonVisual Desktop Access*, the free open-source Windows screen reader fr
 
 #### 📖 Story
 
-Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and the platform extracts the figures, computes a provisional eligibility, and tells him in plain Danish what to expect — all in under 3 minutes from the citizen's side.
+Erik opens the mobile experience and attaches payslips. The current demonstrator infers synthetic values from filenames, then computes a provisional eligibility result. It does not extract figures from the images.
 
 #### 🎞️ Walk-through
 
 1. Erik opens the mobile app; authenticates with **MitID** through External ID DK.
 2. He taps **"Apply for income supplement"**; the app guides him to capture payslips.
-3. **AI Document Intelligence** extracts gross/net amounts, employer, period — confidence per field.
-4. **Document Extractor (Foundry)** validates the extraction by cross-referencing tax records via APIM.
+3. The current APIM **Document Extractor** returns synthetic gross, net, employer, and period values inferred from the filename.
+4. The citizen must see `synthetic: true` and `provenance: inferred-from-filename`. Real OCR, confidence, and tax-record validation are 🗺️ **Roadmap**.
 5. **Eligibility Pre-Assessor** runs; returns "likely eligible — DKK X / month — confidence 0.84" with reasoning.
 6. Erik confirms and submits; case enters DK D365 queue.
 7. He receives an in-app notification within 4 days with the final decision; a HTML/JS insights tile shows him the average decision time for his case type.
@@ -418,7 +420,7 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 | Case-study requirement | Eval row | How it shows up |
 |---|:-:|---|
 | Cross-border identity (DK MitID) | #2 | National eID accepted by External ID DK. |
-| 28d → 4d | #3 | Extraction + pre-assessment shorten the back-office cycle. |
+| 28d → 4d | #3 | Upload and pre-assessment illustrate the target workflow. No extraction benefit is proven by the current synthetic path. |
 | +38 % satisfaction | #4 | In-app CSAT after decision. |
 | AI classification in 12 languages | #5 | DA intent classified directly. |
 | GenAI assistant | #6 | Plain-language explanation of next steps. |
@@ -427,18 +429,18 @@ Erik opens the UDCSP mobile app, takes pictures of his last three payslips, and 
 | Channels | #12 | Mobile channel. |
 | Multilingual | #13 | DA throughout — including AI-generated explanations. |
 | All 9 mandatory services | #14 | Same as Demo 1, mobile-flavoured. |
-| Auditability | #15 | Trace ID printed in the app under "Decision details". |
+| Auditability | #15 | Target UI exposes the trace ID under "Decision details"; current coverage depends on the exercised path. |
 | Synthetic data | #17 | Persona "Erik Hansen", payslips from A15's DK document templates. |
 
 #### 🧰 Stack exercised
 - **Mandatory:** External ID, Entra, OpenAI/Foundry, Fabric, D365, APIM, Purview, Logic Apps, Power BI.
-- **Additional:** Microsoft Foundry, AI Document Intelligence, mobile shell, ACS (push notifications), Key Vault.
+- **Additional:** Microsoft Foundry, mobile shell, ACS push notifications, and Key Vault. AI Document Intelligence is 🗺️ Roadmap.
 - **Foundry agents:** Classifier, Document Extractor, Eligibility Pre-Assessor, Citizen Assistant, Translator (none needed — DA-native).
 - **Synthetic data (A15):** persona "Erik Hansen", DK payslip templates with realistic amounts and watermark.
 
 #### 💡 Talking points
 
-- 💬 *"The citizen took **photos** — they did not fill in numbers. The AI did the typing. The citizen approved."*
+- 💬 *"The current values are synthetic filename inferences, not numbers read from the photos. They must be labelled before the citizen reviews them."*
 - 💬 *"That is the kind of friction removal that drives the **+38 % CSAT** outcome."*
 
 ---
@@ -500,7 +502,7 @@ Astrid opens her queue. Copilot for Service summarises each case in SV, suggests
 
 <p align="center"><img src="../../images/Demo56.png" alt="Demo 5/6 — AI proposes, caseworker disposes" width="480" /></p>
 
-> **EU AI Act high-risk system in production — with the safety net visible.**
+> **High-risk eligibility design with a partially deployed human-oversight path.**
 
 | | |
 |---|---|
@@ -512,14 +514,14 @@ Astrid opens her queue. Copilot for Service summarises each case in SV, suggests
 
 #### 📖 Story
 
-A case where the AI says "ineligible — confidence 0.71" but Astrid disagrees. The demo shows how the human override works, what gets logged, and how the decision can be replayed by an auditor a year later.
+A case where the AI says "ineligible, confidence 0.71" but Astrid disagrees. The current path can show the advisory recommendation and a partial Dataverse disposition. Complete replay and immutable anchoring remain roadmap.
 
 #### 🎞️ Walk-through
 
 1. Astrid opens a flagged case; the AI verdict is "ineligible — confidence 0.71" with **explanation** referencing two missing documents.
 2. Astrid spots that the citizen actually attached the documents to a previous case; she overrides with a justification recorded in a **structured override field** (mandatory, free text + classification).
-3. **D365 plugin** writes the override to Dataverse, mirrored to **Fabric audit lakehouse**, tagged in the **Foundry trace** as `human-override`, and anchored in **Azure Confidential Ledger**.
-4. Override + reason flow into the **AI Act registry** in Purview and Confidential Ledger; this case is added to the **shadow-mode evaluation** sample for next month.
+3. 🟡 **Partial:** the disposition path uses Dataverse today. Canonical `udcsp_caseworker_decision` persistence and Fabric audit mirroring are incomplete.
+4. 🗺️ **Roadmap:** write the override to operational lineage and Azure Confidential Ledger, then include it in shadow-mode evaluation.
 5. Astrid issues the favourable decision; the citizen receives a positive notification.
 6. A HTML/JS insights tile updates: **% AI overrides this week**, broken down by case type and reason.
 
@@ -529,7 +531,7 @@ A case where the AI says "ineligible — confidence 0.71" but Astrid disagrees. 
 |---|:-:|---|
 | 28d → 4d | #3 | Even with override, the SLA is preserved. |
 | Eligibility model + human review | #7 | The mandatory human-in-the-loop is explicit and instrumented. |
-| GDPR + EU AI Act | #9 | Override logged in the AI Act registry; documented for conformity assessment. |
+| GDPR + EU AI Act | #9 | Registry assets document the model. Override persistence is partial, and operational lineage is roadmap. |
 | Mandatory services | #14 | D365, Fabric, Purview, Power BI, OpenAI/Foundry. |
 | Auditability | #15 | The override is tied to the Foundry trace and the citizen's case. |
 | Caseworker productivity | #16 | Override workflow is one click + one paragraph, not a ticket-and-wait. |
@@ -537,13 +539,13 @@ A case where the AI says "ineligible — confidence 0.71" but Astrid disagrees. 
 
 #### 🧰 Stack exercised
 - **Mandatory:** OpenAI/Foundry, D365, Fabric, Purview, Power BI.
-- **Additional:** Azure Confidential Computing TEE, Azure Confidential Ledger, Foundry tracing, AI Act registry tooling, Application Insights.
+- **Additional:** Foundry tracing, AI Act registry assets, and Application Insights. Confidential Compute runtime and Confidential Ledger anchoring are 🗺️ Roadmap.
 - **Foundry agents:** Eligibility Pre-Assessor + tracing.
 - **Synthetic data (A15):** adversarial subset designed to exercise the override path.
 
 #### 💡 Talking points
 
-- 💬 *"This is what the EU AI Act calls **'meaningful human oversight'** — and we can prove it for every single decision."*
+- 💬 *"This shows the intended human-override control. Complete evidence for every decision still requires canonical persistence, real document provenance, and operational lineage."*
 - 💬 *"Override rate is a **product KPI**, not a hidden number — it's on the executive dashboard."*
 
 ---
@@ -557,47 +559,47 @@ A case where the AI says "ineligible — confidence 0.71" but Astrid disagrees. 
 | | |
 |---|---|
 | 👤 **Persona** | Hans Bjerg, Data Protection Officer for the Danish administration. |
-| 🌐 **Channels** | Power BI Premium audit dashboard + Foundry trace explorer + Purview catalog + Microsoft Priva. |
+| 🌐 **Channels** | Target Power BI audit dashboard, Foundry trace explorer, Purview catalog, and Microsoft Priva. |
 | 🌍 **Languages** | DA / EN. |
 | ⏱️ **Duration** | ~ 8 min |
 | 🎯 **Audience** | Auditors, DPOs, regulators. |
 
 #### 📖 Story
 
-A citizen complains that an eligibility decision from six months ago was unfair. Hans pulls the case in 90 seconds: every prompt, every input, every model output, every safety filter result, every human action, every data lineage hop — all reproducible.
+A citizen complains that an eligibility decision from six months ago was unfair. The target journey reconstructs the available model metadata, caseworker disposition, and data lineage. The current demonstrator cannot reproduce every prompt, model output, or lineage hop.
 
 #### 🎞️ Walk-through
 
 1. Hans opens the **Power BI audit dashboard** in the DK zone; filters to the citizen's case ID.
-2. He drills to the **Foundry trace** (linked from the dashboard); the trace shows: input redacted PII → classifier output → eligibility prompt → model output → content-safety verdict → human override decision.
+2. In the target journey, he drills from the dashboard to a Foundry trace containing the model and human-decision sequence. Today, only correlation and available operational metadata can be shown on exercised paths.
 3. Hans inspects the **AI Act registry entry** for the model version active that day — risk class, conformity assessment, evaluation results, dataset hash.
-4. He asks Purview for **data lineage** of the decision: which datasets, which Fabric items, which retention policy applied.
-5. Hans simulates a **DSAR (Data Subject Access Request)** through **Microsoft Priva**: a click produces a citizen-facing export including the AI decision rationale in DA.
+4. 🗺️ He asks Purview for complete **data lineage**. The current lineage backend does not exist; the corrected APIM endpoint fails closed with `503`.
+5. 🗺️ He runs a delegated DPO **DSAR** through Microsoft Priva. Citizen self-service subject binding is 🔵 **In repo**, but a DPO acting for another citizen needs a separate authenticated actor contract.
 6. He verifies that **per-country retention policies** were honoured (DK retention differs from SE).
 
 #### ✅ Points demonstrated
 
 | Case-study requirement | Eval row | How it shows up |
 |---|:-:|---|
-| Eligibility pre-assessment review | #7 | The challenged decision is replayable. |
-| GDPR + EU AI Act + sector | #9 | DSAR + AI Act registry + DPIA all visible. |
+| Eligibility pre-assessment review | #7 | Target replay is defined; current reconstruction is partial and metadata-based. |
+| GDPR + EU AI Act + sector | #9 | Registry and DPIA assets are visible. Full delegated DSAR and lineage are roadmap. |
 | Sovereignty | #10 | DK case is served by DK Fabric workspace; no cross-border data movement. |
-| DPA differences | #11 | Retention and DSAR mechanics differ by country — Hans's view is DK-specific. |
+| DPA differences | #11 | The target retention and DSR mechanics differ by country. |
 | Multilingual | #13 | Citizen-facing export in DA. |
 | Mandatory services | #14 | Foundry/OpenAI, Fabric, Purview, Power BI, D365. |
-| Auditability | #15 | This is the headline demo for #15. |
+| Auditability | #15 | This is the target headline for #15; complete six-month replay is not operational. |
 | Synthetic data | #17 | Six months of historical synthetic activity feed this audit. |
 
 #### 🧰 Stack exercised
 - **Mandatory:** OpenAI/Foundry, Fabric, Purview, Power BI, D365, APIM.
-- **Additional:** Foundry tracing, Purview Unified Catalog, Application Insights, AI Act registry.
-- **Foundry agents:** trace replay (no new inference).
+- **Additional:** Application Insights and AI Act registry assets are available. Complete Foundry trace replay and Purview lineage are target capabilities.
+- **Foundry agents:** no dedicated replay agent is operational.
 - **Synthetic data (A15):** six-month rolling history of synthetic decisions, including the challenged one.
 
 #### 💡 Talking points
 
-- 💬 *"From citizen complaint to full audit packet in **90 seconds**. That is the standard the EU AI Act sets — and that we meet."*
-- 💬 *"Hans never leaves Microsoft 365 / Azure tooling — no custom forensics platform, no spreadsheet."*
+- 💬 *"The 90-second audit packet is a target. Today we can show correlation and repository governance assets, not complete replay."*
+- 💬 *"The target keeps the audit workflow in Microsoft 365 and Azure tooling. The current demonstrator does not provide the complete workflow."*
 
 ---
 
@@ -693,7 +695,7 @@ Henrik opens his single executive workspace. He sees the 28d→4d trend, the +38
 | Channels | #12 | CSAT split by web/mobile/voice. |
 | Multilingual | #13 | CSAT, completion-rate, AI accuracy split by language. |
 | Mandatory services | #14 | Fabric + Power BI + Foundry data + Purview audit feeds. |
-| Auditability | #15 | Each tile drills down to underlying lineage. |
+| Auditability | #15 | Target tiles drill to lineage. The current operator workbooks drill to available App Insights metadata. |
 | Caseworker productivity | #16 | Productivity tile per country. |
 
 #### 🧰 Stack exercised
@@ -749,7 +751,7 @@ Ole clones the repo, runs **`Install-UDCSP.ps1 -Environment dev -SeedSyntheticDa
 
 #### 🧰 Stack exercised
 - **Mandatory:** all 9 — provisioned by the installer.
-- **Additional:** Microsoft Foundry, Static Web Apps, ACS, Foundry `topic-router`, Container Apps, Functions, Azure Cache for Redis Enterprise (ephemeral state) + PostgreSQL JSONB (drafts over 24 h), Key Vault, Bicep, GitHub Actions, AI Document Intelligence, AI Translator, AI Speech, Sentinel, Defender for Cloud, Application Insights.
+- **Additional:** Microsoft Foundry, Static Web Apps, ACS, Foundry `topic-router`, Container Apps, Functions, Azure Cache for Redis Enterprise, PostgreSQL JSONB, Key Vault, Bicep, GitHub Actions, AI Translator, AI Speech, Sentinel, Defender for Cloud, and Application Insights. AI Document Intelligence is a manual roadmap dependency.
 - **Foundry agents:** all seven imported and evaluated.
 - **Synthetic data (A15):** full DK / SE / NO seed in 12 languages.
 
@@ -769,7 +771,7 @@ Regardless of which demo is being run, these are the transversal proof points an
 |---|---|---|
 | 🇩🇰 🇸🇪 🇳🇴 **Per-country data residency** | Sovereignty is the platform's central design constraint. | 1 · 4 · 7 · 9 · 10 |
 | 🌍 **12-language parity** | Multilingual is a citizen-rights issue, not a feature. | 1 · 2 · 3 · 5 · 7 · 9 |
-| 🤖 **Every AI output has a trace ID** | EU AI Act + GDPR demand it. | All AI demos |
+| 🤖 **Trace IDs on exercised AI paths** | Correlation is available where wired; complete output and lineage coverage is not. | AI demos with verified tracing |
 | ♿ **Keyboard + screen reader work** | Accessibility is mandatory, not optional. | 3 · 9 |
 | 🛡️ **Content Safety on every prompt and response** | AI safety is built in, not bolted on. | 2 · 3 · 6 · 8 |
 | 👤 **Human in the loop on high-risk decisions** | EU AI Act conformity for the eligibility model. | 1 · 3 · 4 · 5 · 6 |

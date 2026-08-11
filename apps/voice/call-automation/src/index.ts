@@ -4,7 +4,7 @@
 //   GET  /healthz                        liveness/readiness probe (Container App + AKS)
 //   POST /api/acs/eventgrid              Event Grid webhook for IncomingCall (and validation handshake)
 //   POST /api/acs/callbacks              ACS Call Automation lifecycle events
-//   WS   /api/acs/media?callConnectionId ACS bidirectional Media Streaming socket
+//   WS   /api/acs/media?nonce             ACS bidirectional Media Streaming socket
 //
 // The same process exposes Express HTTP and an upgrade-handler for the
 // media WebSocket so ACS can open it inline.
@@ -15,6 +15,9 @@ import { WebSocketServer } from 'ws';
 import { loadConfig, isLiveMode } from './config.js';
 import { startTelemetry, logEvent, logError } from './logger.js';
 import { CallHandler } from './call-handler.js';
+import { authenticateAcsWebhook } from './webhook-auth.js';
+
+const MEDIA_NONCE = /^[A-Za-z0-9_-]{43}$/;
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
@@ -22,7 +25,7 @@ async function main(): Promise<void> {
   logEvent('boot', { country: cfg.country }, { liveMode: isLiveMode(cfg), publicBaseUrl: cfg.publicBaseUrl });
 
   const handler = new CallHandler(cfg);
-  handler.startOrphanCleanup();
+  handler.startSessionCleanup();
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
@@ -41,6 +44,12 @@ async function main(): Promise<void> {
 
   app.post('/api/acs/callbacks', async (req, res) => {
     try {
+      const authentication = await authenticateAcsWebhook(req, cfg.acs.resourceId);
+      if (!authentication.ok) {
+        logEvent('acs.callback_auth_rejected', {}, { reason: authentication.reason });
+        res.sendStatus(authentication.reason === 'missing_configuration' ? 503 : 401);
+        return;
+      }
       await handler.handleAcsCallback(req, res);
     } catch (err) {
       logError(err, {});
@@ -52,22 +61,16 @@ async function main(): Promise<void> {
   const wss = new WebSocketServer({ noServer: true });
 
   server.on('upgrade', (req, socket, head) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+    const url = new URL(req.url ?? '/', 'http://localhost');
     if (url.pathname !== '/api/acs/media') {
       socket.destroy();
       return;
     }
-    // ACS Call Automation does not append a callConnectionId to the media
-    // streaming URL. Prefer an explicit query parameter when present (so
-    // future ACS versions or test harnesses can scope the connection
-    // deterministically), otherwise fall back to the most-recent orphan
-    // session that just answered a call and is waiting for its media WS.
-    let callConnectionId = url.searchParams.get('callConnectionId') ?? '';
+    const nonces = url.searchParams.getAll('nonce');
+    const nonce = nonces.length === 1 && MEDIA_NONCE.test(nonces[0]) ? nonces[0] : '';
+    const callConnectionId = nonce ? handler.consumeMediaNonce(nonce) : null;
     if (!callConnectionId) {
-      callConnectionId = handler.findOrphanSessionId() ?? '';
-    }
-    if (!callConnectionId) {
-      logEvent('media.upgrade_rejected', {}, { reason: 'no_orphan_session', url: req.url ?? '' });
+      logEvent('media.upgrade_rejected', {}, { reason: 'invalid_or_replayed_nonce' });
       socket.destroy();
       return;
     }

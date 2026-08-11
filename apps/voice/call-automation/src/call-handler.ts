@@ -11,32 +11,44 @@
 import { CallAutomationClient, AnswerCallOptions } from '@azure/communication-call-automation';
 import { DefaultAzureCredential } from '@azure/identity';
 import type { Request, Response } from 'express';
+import { randomBytes } from 'node:crypto';
 import type WebSocket from 'ws';
 import type { Config } from './config.js';
 import { COUNTRY_LOCALES, loadIvrPack, type IvrPack } from './ivr-loader.js';
 import { logEvent, logError, type LogContext } from './logger.js';
 import { RealtimeBridge } from './realtime-bridge.js';
+import { parseAcsCallbackEvents, parseEventGridRequest, WebhookRequestError, type IncomingCallData } from './webhook-auth.js';
 
 interface CallSession {
   callConnectionId: string;
   serverCallId: string;
   bridge?: RealtimeBridge;
+  mediaAttaching: boolean;
+  mediaNonce?: string;
+  mediaNonceExpiresAt: number;
   ivr: IvrPack;
   ctx: LogContext;
-  answeredAt: number;
 }
 
-const sessions = new Map<string, CallSession>();
+const MEDIA_NONCE_TTL_MS = 30_000;
+
+interface CallHandlerDependencies {
+  client?: CallAutomationClient;
+  credential?: Pick<DefaultAzureCredential, 'getToken'>;
+}
 
 export class CallHandler {
-  private cfg: Config;
-  private client: CallAutomationClient;
-  private credential: DefaultAzureCredential;
+  private readonly cfg: Config;
+  private readonly client: CallAutomationClient;
+  private readonly credential: Pick<DefaultAzureCredential, 'getToken'>;
+  private readonly sessions = new Map<string, CallSession>();
 
-  constructor(cfg: Config) {
+  constructor(cfg: Config, dependencies: CallHandlerDependencies = {}) {
     this.cfg = cfg;
-    this.credential = new DefaultAzureCredential();
-    if (!cfg.acs.connectionString) {
+    this.credential = dependencies.credential ?? new DefaultAzureCredential();
+    if (dependencies.client) {
+      this.client = dependencies.client;
+    } else if (!cfg.acs.connectionString) {
       // Dev mode — instantiate a stub-friendly client. The CallAutomationClient
       // constructor still requires a connection-like input; we throw later if
       // any real ACS API is invoked without proper credentials.
@@ -48,36 +60,40 @@ export class CallHandler {
 
   // Event Grid sends a validation handshake first, then IncomingCall events.
   async handleEventGrid(req: Request, res: Response): Promise<void> {
-    const events = Array.isArray(req.body) ? req.body : [req.body];
-    for (const ev of events) {
-      if (ev.eventType === 'Microsoft.EventGrid.SubscriptionValidationEvent') {
-        res.status(200).json({ validationResponse: ev.data?.validationCode });
-        return;
-      }
-      if (ev.eventType === 'Microsoft.Communication.IncomingCall') {
-        await this.answerIncomingCall(ev.data);
-      }
+    let delivery;
+    try {
+      delivery = parseEventGridRequest(req, this.cfg.acs.eventGridSubscriptionName);
+    } catch (err) {
+      if (!(err instanceof WebhookRequestError)) throw err;
+      logEvent('eventgrid.rejected', {}, { reason: err.reason });
+      res.sendStatus(err.statusCode);
+      return;
+    }
+    if (delivery.kind === 'validation') {
+      res.status(200).json({ validationResponse: delivery.validationCode });
+      return;
+    }
+    for (const event of delivery.events) {
+      await this.answerIncomingCall(event);
     }
     res.sendStatus(200);
   }
 
-  private async answerIncomingCall(data: any): Promise<void> {
-    const incomingCallContext = data?.incomingCallContext;
-    const correlationId = data?.correlationId ?? '';
-    const callerId = data?.from?.rawId ?? '';
+  private async answerIncomingCall(data: IncomingCallData): Promise<void> {
+    const incomingCallContext = data.incomingCallContext;
+    const correlationId = data.correlationId ?? '';
     const ctx: LogContext = { traceparent: correlationId, country: this.cfg.country };
-    if (!incomingCallContext) {
-      logError(new Error('IncomingCall event missing incomingCallContext'), ctx);
-      return;
-    }
     const callbackUrl = `${this.cfg.publicBaseUrl}/api/acs/callbacks`;
-    const mediaWebSocketUrl = `${this.cfg.publicBaseUrl.replace(/^https?/, 'wss')}/api/acs/media`;
+    const mediaNonce = randomBytes(32).toString('base64url');
+    const mediaUrl = new URL('/api/acs/media', this.cfg.publicBaseUrl);
+    mediaUrl.protocol = mediaUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    mediaUrl.searchParams.set('nonce', mediaNonce);
 
     const options: AnswerCallOptions = {
       callIntelligenceOptions: { cognitiveServicesEndpoint: this.cfg.acs.cognitiveServicesEndpoint },
       mediaStreamingOptions: {
         transportType: 'websocket',
-        transportUrl: mediaWebSocketUrl,
+        transportUrl: mediaUrl.toString(),
         contentType: 'audio',
         audioChannelType: 'mixed',
         startMediaStreaming: true,
@@ -105,12 +121,14 @@ export class CallHandler {
       const session: CallSession = {
         callConnectionId,
         serverCallId,
+        mediaAttaching: false,
+        mediaNonce,
+        mediaNonceExpiresAt: Date.now() + MEDIA_NONCE_TTL_MS,
         ivr,
         ctx: { ...ctx, callConnectionId, locale: COUNTRY_LOCALES[this.cfg.country] },
-        answeredAt: Date.now(),
       };
-      sessions.set(callConnectionId, session);
-      logEvent('call.answered', session.ctx, { callerId, serverCallId });
+      this.sessions.set(callConnectionId, session);
+      logEvent('call.answered', session.ctx, {});
     } catch (err) {
       logError(err, ctx);
     }
@@ -119,10 +137,18 @@ export class CallHandler {
   // ACS sends CallConnected, MediaStreamingStarted, ParticipantsUpdated,
   // PlayCompleted, ContinuousDtmfRecognitionToneReceived, CallDisconnected.
   async handleAcsCallback(req: Request, res: Response): Promise<void> {
-    const events = Array.isArray(req.body) ? req.body : [req.body];
+    let events;
+    try {
+      events = parseAcsCallbackEvents(req.body);
+    } catch (err) {
+      if (!(err instanceof WebhookRequestError)) throw err;
+      logEvent('acs.callback_rejected', {}, { reason: err.reason });
+      res.sendStatus(err.statusCode);
+      return;
+    }
     for (const ev of events) {
-      const callConnectionId = ev?.data?.callConnectionId;
-      const session = callConnectionId ? sessions.get(callConnectionId) : undefined;
+      const callConnectionId = ev.data.callConnectionId;
+      const session = this.sessions.get(callConnectionId);
       if (!session) continue;
       switch (ev.type) {
         case 'Microsoft.Communication.CallConnected':
@@ -132,12 +158,16 @@ export class CallHandler {
           logEvent('call.media_started', session.ctx, {});
           break;
         case 'Microsoft.Communication.CallDisconnected':
-          logEvent('call.disconnected', session.ctx, { reason: ev?.data?.callDisconnectedReason });
+          logEvent('call.disconnected', session.ctx, {
+            reason: typeof ev.data.callDisconnectedReason === 'string' ? ev.data.callDisconnectedReason : undefined,
+          });
           session.bridge?.shutdown();
-          sessions.delete(callConnectionId);
+          this.sessions.delete(callConnectionId);
           break;
         case 'Microsoft.Communication.ContinuousDtmfRecognitionToneReceived':
-          await this.handleDtmfTone(session, ev?.data?.tone);
+          if (typeof ev.data.tone === 'string') {
+            await this.handleDtmfTone(session, ev.data.tone);
+          }
           break;
         default:
           break;
@@ -160,65 +190,64 @@ export class CallHandler {
     }
   }
 
-  // Called by index.ts when a new WebSocket connection arrives at /api/acs/media.
-  // ACS opens this socket once MediaStreaming is active. ACS does NOT include
-  // callConnectionId in the WebSocket URL — instead we match against the most
-  // recently created session that has no bridge yet AND was answered within
-  // the last 30 seconds. The freshness window protects against orphans left
-  // over by missed CallDisconnected events (otherwise a new call would inherit
-  // the conversation context of a stale session and skip the disclosure).
-  findOrphanSessionId(): string | null {
+  consumeMediaNonce(nonce: string): string | null {
     const now = Date.now();
-    let candidateId: string | null = null;
-    let candidateAge = Infinity;
-    for (const [id, s] of sessions) {
-      if (s.bridge) continue;
-      const age = now - s.answeredAt;
-      if (age > 30_000) continue;
-      if (age < candidateAge) {
-        candidateAge = age;
-        candidateId = id;
+    for (const [callConnectionId, session] of this.sessions) {
+      if (session.mediaNonce !== nonce) continue;
+      session.mediaNonce = undefined;
+      if (session.mediaNonceExpiresAt <= now || session.bridge || session.mediaAttaching) {
+        return null;
       }
+      return callConnectionId;
     }
-    if (candidateId) {
-      logEvent('media.orphan_matched', { callConnectionId: candidateId }, { ageMs: candidateAge });
-    }
-    return candidateId;
+    return null;
   }
 
-  // Periodically purge stale orphan sessions (e.g. missed CallDisconnected).
-  // The handler instantiates this on boot — cheap (one map scan per minute).
-  startOrphanCleanup(): void {
+  // Purge unanswered media sessions if ACS never opens the nonce-bound socket.
+  startSessionCleanup(): void {
     setInterval(() => {
       const now = Date.now();
-      for (const [id, s] of sessions) {
-        if (!s.bridge && now - s.answeredAt > 60_000) {
-          logEvent('session.purged_stale', { callConnectionId: id }, {});
-          sessions.delete(id);
+      for (const [callConnectionId, session] of this.sessions) {
+        if (!session.bridge && !session.mediaAttaching && session.mediaNonceExpiresAt <= now) {
+          logEvent('session.purged_stale', { callConnectionId }, {});
+          this.sessions.delete(callConnectionId);
         }
       }
     }, 30_000).unref();
   }
 
   async attachMediaSocket(callConnectionId: string, socket: WebSocket): Promise<void> {
-    const session = sessions.get(callConnectionId);
+    const session = this.sessions.get(callConnectionId);
     if (!session) {
-      logError(new Error(`No session for callConnectionId=${callConnectionId}`), { callConnectionId });
-      socket.close();
+      logEvent('media.attach_rejected', { callConnectionId }, { reason: 'unknown_session' });
+      socket.close(1008, 'Unauthorized');
       return;
     }
-    const token = await this.acquireOpenAiToken();
-    const bridge = new RealtimeBridge({
-      cfg: this.cfg,
-      acsClient: this.client,
-      callConnectionId,
-      acsMediaSocket: socket,
-      ivr: session.ivr,
-      sessionId: session.serverCallId || callConnectionId,
-      ctx: session.ctx,
-    });
-    session.bridge = bridge;
-    await bridge.start(token);
+    if (session.bridge || session.mediaAttaching) {
+      logEvent('media.attach_rejected', session.ctx, { reason: 'bridge_already_attached' });
+      socket.close(1008, 'Media already attached');
+      return;
+    }
+    session.mediaAttaching = true;
+    try {
+      const token = await this.acquireOpenAiToken();
+      const bridge = new RealtimeBridge({
+        cfg: this.cfg,
+        acsClient: this.client,
+        callConnectionId,
+        acsMediaSocket: socket,
+        ivr: session.ivr,
+        sessionId: session.serverCallId || callConnectionId,
+        ctx: session.ctx,
+      });
+      session.bridge = bridge;
+      await bridge.start(token);
+    } catch (err) {
+      session.bridge = undefined;
+      throw err;
+    } finally {
+      session.mediaAttaching = false;
+    }
   }
 
   private async acquireOpenAiToken(): Promise<string> {

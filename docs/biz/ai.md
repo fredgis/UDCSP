@@ -2,6 +2,8 @@
 
 # 🧠 UDCSP — The AI Architecture
 
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
 ### Microsoft Foundry · topic-router · Azure OpenAI · 7 agents · 12 languages
 
 *One brain: Microsoft Foundry. The `topic-router` agent owns the conversational façade and routes web chat, mobile chat, and voice through APIM.*
@@ -11,7 +13,7 @@
 [![Agents](https://img.shields.io/badge/🤖_Agents-7-2E7D32?style=for-the-badge)](#)
 [![Languages](https://img.shields.io/badge/🗣️_Languages-12-AD1457?style=for-the-badge)](#)
 
-[![Compliance](https://img.shields.io/badge/🛡️_EU_AI_Act-Registered-C62828?style=flat-square)](#)
+[![Compliance](https://img.shields.io/badge/🛡️_EU_AI_Act-Registry_in_repo-C62828?style=flat-square)](#)
 [![Safety](https://img.shields.io/badge/🛡️_Content_Safety-Always_On-1565C0?style=flat-square)](#)
 [![Eval](https://img.shields.io/badge/📊_Evals-Per_PR_·_Per_Release-5E35B1?style=flat-square)](#)
 [![Trace](https://img.shields.io/badge/🔍_Tracing-OTel_·_App_Insights-00796B?style=flat-square)](#)
@@ -21,9 +23,11 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP has **one AI brain: Microsoft Foundry**. Web chat, mobile chat, and voice IVR call APIM `/agents/topic-router`, which invokes the Foundry `topic-router` agent and delegates to the six worker agents — `citizen-assistant`, `classifier`, `translator`, `doc-extractor`, `eligibility`, and `caseworker-helper` — as needed.
+> **TL;DR.** UDCSP uses one Foundry-backed AI entry path. Web chat and voice call APIM `/agent-topic-router/messages`. The current APIM policy uses the Azure OpenAI Responses API with a topic-router prompt; it does not execute the full Foundry Agents state machine or delegate through all six worker agents at runtime. The seven agent contracts remain the target control-plane design.
 >
-> The conversational façade lives entirely in the Foundry `topic-router` agent. The EU AI Act registry, evaluations, traces, and content-safety controls stay in Foundry and are backed by Azure Confidential Ledger.
+> The conversational façade lives in the Foundry-backed `topic-router` path. Registry and evaluation assets exist in repo. Azure Confidential Ledger anchoring is 🗺️ **Roadmap**, and the lineage API has no backend. The pending security remediation authenticates the AI endpoints, separates user text from system instructions, and makes the lineage endpoint fail closed, but none of those changes is deployed.
+>
+> The current document extractor does **not** read uploaded documents. It receives only a short base64 prefix and is instructed to infer synthetic values from the filename. Its response now carries `synthetic: true` and `provenance: inferred-from-filename` in source. Real extraction requires Azure AI Document Intelligence, and every downstream workflow and caseworker view must preserve provenance.
 >
 > 📡 *For a **per-channel breakdown** — what AI fires on voice vs web vs mobile vs chat vs SMS vs email vs caseworker, with one consolidated matrix — see [§ 7. AI per communication channel](#7-ai-per-communication-channel).*
 >
@@ -148,7 +152,7 @@ flowchart TB
     subgraph SUPPORT["🎤 Supporting Azure AI services"]
         SPCH["Azure AI Speech<br/>(D365 IVR menus + post-call analytics —<br/>NOT in the live audio path)"]
         TXL["Azure AI Translator"]
-        DCI["Azure AI Document Intelligence"]
+        DCI["🗺️ Azure AI Document Intelligence<br/>not wired"]
     end
 
     %% Wiring
@@ -221,20 +225,20 @@ Each layer has **one** reason to change, which is why it can be evolved (and tes
 
 ## 3. Microsoft Foundry — the AI control plane
 
-> **One-liner.** Foundry is the production-grade home for *every* model call we make. Azure OpenAI is **never reached directly** — neither from the web app, nor from APIM, nor from a notebook. If an LLM is used, it is exposed as a Foundry agent.
+> **One-liner.** The target control plane is Microsoft Foundry. The current demonstrator reaches the Foundry project through APIM and calls the Azure OpenAI Responses API. It does not execute every interaction through the hosted Foundry Agents runtime.
 
 ### 3.1 What Foundry brings to UDCSP
 
 | Capability | Why UDCSP needs it |
 |---|---|
-| 🏛️ **Hub & projects** | **3 sovereign Foundry hubs in production — one per country.** DK hub in `northeurope`, SE hub in `swedencentral`, NO hub in `norwayeast`. Each hub hosts the same seven agents with country-specific model deployments, evaluation suites, knowledge bases and AI Act registry entries. No agent call ever crosses a national border. *Sovereignty exception:* `gpt-realtime` is not yet GA in `norwayeast`, so the NO voice orchestrator uses the SE hub's deployment under Microsoft EU Data Boundary + Nordic-DPA cooperation; the day quota lands in `norwayeast`, a single Bicep flip moves the inference home. See [`../tech/architecture.md`](../tech/architecture.md) § 5.2 and [`./voice.md`](./voice.md) § 11.2. One **Project** per agent so we can grant least-privilege access, version independently, and wire dedicated evals + tracing. |
+| 🏛️ **Hub & projects** | 🟡 Regional Foundry resources and repository contracts exist. The NO voice path is a documented exception because `gpt-realtime` inference runs in `swedencentral`, not `norwayeast`. See [`../tech/architecture.md`](../tech/architecture.md) § 5.2 and [`./voice.md`](./voice.md) § 11.2. |
 | 📦 **Model catalog** | A curated, versioned list of models (Azure OpenAI `gpt-5.4-mini`, `gpt-5.4`, `gpt-realtime`, plus open-source models for the Translator and embeddings). Catalog enforces region pinning, content-filter level, and approved fine-tunes. |
-| 🤖 **Hosted agents** | Each Foundry **Agent** = system prompt + tools + knowledge + model + evaluation suite + safety filter + trace, all versioned together. Replaces the brittle pattern of "prompt + plain-text file + ad-hoc API call" sprinkled across services. |
-| 🛡️ **Content Safety** | Every prompt and every response is screened for hate, sexual, violence, self-harm, jailbreak, and prompt-injection patterns. Centralised so we do not have to plumb safety into 6 different code paths. |
-| 📊 **Evaluations** | Versioned eval suites: groundedness, relevance, fluency, similarity, F1 against gold labels, cross-language consistency, bias panels. Runs **in CI** on every prompt change and gates promotion to PROD. |
-| 🔍 **Tracing** | OpenTelemetry-format traces of every call (input, retrieval set, tool invocation, model output, safety verdict, latency, tokens). Exported to App Insights and to Fabric for analytics. |
-| 📋 **EU AI Act registry** | First-class field on every agent: AI Act class (minimal / limited / high-risk), intended purpose, technical documentation pointer, post-market monitoring plan, conformity declaration. Signed off before deployment. |
-| 🎯 **Prompt optimizer** | Closes the loop: traces → evaluation failures → automatic prompt improvement experiments → ranked candidates → human approval → versioned prompt update. Cuts prompt-engineering cycle time without sacrificing audit trail. |
+| 🤖 **Hosted agents** | 🔵 Agent contracts, tools, topics, and connections exist in repo. The demonstrator path currently uses the Responses API rather than the hosted Agents runtime. |
+| 🛡️ **Content Safety** | 🟡 Safety controls exist on selected exercised paths. Universal input and output screening across every channel and agent remains a target, not a verified current property. |
+| 📊 **Evaluations** | Versioned evaluation assets exist. A complete CI promotion gate for every prompt change is not verified and remains a target operating pattern. |
+| 🔍 **Tracing** | 🟡 Exercised paths emit operational metadata and W3C correlation. Complete input, output, retrieval, and Fabric lineage capture is not operating end to end. |
+| 📋 **EU AI Act registry** | 🔵 Registry entries and classification fields exist in repo. Operational signing, append-only lineage, and deployment-time enforcement are not verified. |
+| 🎯 **Prompt optimizer** | 🗺️ Target loop from traces to evaluated prompt candidates and human approval. It is not an operating production control today. |
 
 ### 3.2 What lives in `foundry/` in this repo
 
@@ -297,7 +301,7 @@ flowchart LR
     ROUTER --> DOC["Document Extractor"]
     ROUTER --> TRA["Translator"]
     ELI --> TEE["Confidential Computing TEE"]
-    ROUTER -. evidence .-> LEDGER["Azure Confidential Ledger"]
+    ROUTER -. target evidence .-> LEDGER["🗺️ Confidential Ledger<br/>anchor not active"]
 ```
 
 The caseworker channel remains different: **Dynamics 365 Customer Service + Copilot for Service is unchanged** and calls Foundry through APIM as the workforce shell.
@@ -306,27 +310,27 @@ The caseworker channel remains different: **Dynamics 365 Customer Service + Copi
 
 ## 6. The agent catalogue
 
-Seven Foundry agents, deliberately small. Every one is registered, evaluated, traceable, and content-safety-filtered.
+Seven Foundry agent contracts, deliberately small. Registry and evaluation assets exist in repo, while runtime invocation, trace coverage, and safety integration vary by path.
 
 | # | Agent | Mission | Inputs | Outputs | Models | EU AI Act class | Human-in-the-loop |
 |---|---|---|---|---|---|---|---|
 | 1 | **topic-router** | Route web chat, mobile chat, and voice IVR turns to the correct Foundry agent; manage slot state and escalation. | Channel payload + locale + traceparent | `{route, slots, downstreamAgent, escalationAction}` | `gpt-5.4-mini` + deterministic routing tools | Limited risk | Caseworker receives escalations; DPO audits route traces. |
 | 2 | **Classifier** | Detect intent, target agency, language, urgency. | Citizen utterance + channel | `{intent, agency, language, urgency, confidence}` | `gpt-5.4-mini` (low latency) + periodic LoRA fine-tune on labelled traces | Limited risk | Caseworker can re-route. |
 | 3 | **Translator orchestrator** | Translate citizen content + outbound communications across the 12 languages, preserving administrative terminology. | Source text + source/target lang + domain glossary | Translated text + per-segment confidence + glossary hits | Azure AI Translator (mass) + `gpt-5.4` (admin terminology) hybrid | Limited risk | Caseworker can edit translation before sending. |
-| 4 | **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a **recommendation**, never a decision. | Application form + extracted document fields + citizen profile claims | `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` | Tool-using `gpt-5.4` + deterministic Python rule engine plug-in | **HIGH RISK** | **Always** reviewed by a caseworker; never auto-approves. |
+| 4 | **Eligibility Pre-Assessor** | Compute likelihood of benefit eligibility from structured + unstructured inputs; output a **recommendation**, never a decision. | Application form + citizen claims + document fields that are currently synthetic and must carry provenance | `{recommendation, score, evidence[], counter-evidence[], applicable rules[]}` | Tool-using `gpt-5.4` + deterministic Python rule engine plug-in | **HIGH RISK** | Human review is required; synthetic fields must not be treated as document evidence. |
 | 5 | **Citizen Assistant** | Answer citizen questions in natural language, perform safe actions on behalf of the citizen, escalate when in doubt. | Citizen question + persona + locale + retrieved chunks | Grounded answer + citations + suggested next action | `gpt-5.4` with strict RAG over public knowledge + Fabric anonymised case history | Limited risk | Escalation to human caseworker on demand. |
-| 6 | **Document Extractor** | Extract structured data from uploaded documents (passport, payslip, lease, ID card). | Document binary + expected schema | `{fields, confidences, redaction map, raw OCR}` | Azure AI Document Intelligence (custom + prebuilt) + `gpt-5.4-mini` for cross-field validation | Limited risk | Caseworker validates extraction. |
+| 6 | **Document Extractor** | Current demonstrator infers synthetic fields from the filename. It does not read the document. | Filename, type metadata, and a short unusable base64 prefix | Synthetic field object plus `synthetic: true` and `provenance: inferred-from-filename` in the corrected APIM response | `gpt-5.4-mini`; Azure AI Document Intelligence is required for real extraction | Limited risk, with a material evidence-integrity limitation | Caseworker must see the synthetic provenance and must not treat the fields as document evidence. |
 | 7 | **Caseworker Copilot Helper** | Summarise cases, draft replies, suggest knowledge articles, propose next-best-action. | D365 case record + thread + KB retrieval set | Summary + draft reply + cited sources + next-best-actions | `gpt-5.4` grounded on the case record + KB | Limited risk | Caseworker is the operator and signs every action. |
 
 ### 6.1 Confidential Computing for the Eligibility Pre-Assessor
 
-The Eligibility Pre-Assessor is the only high-risk AI Act system in UDCSP. It runs inside an **Azure Confidential Computing** trusted execution environment (`infra/security/confidential-compute/`) so cross-border prompts, retrieved evidence, model-tool inputs, and intermediate scores are protected while in use. The TEE attestation is attached to each eligibility trace before a caseworker sees the recommendation.
+The Eligibility Pre-Assessor is the only high-risk AI Act system in UDCSP. 🗺️ The target places it in an **Azure Confidential Computing** environment. The repository contains a Bicep skeleton, but the demonstrated inference runs through the standard Foundry path and no TEE attestation is attached to current traces.
 
-### 6.2 Confidential Ledger for AI decision audit trail
+### 6.2 Confidential Ledger target for the AI decision audit trail
 
-Every AI Act-relevant event — route decision, eligibility recommendation, human override, model version, eval gate, and post-market monitoring checkpoint — is anchored in **Azure Confidential Ledger** (`infra/security/confidential-ledger/`). The ledger provides the tamper-evident backing for Art. 26(6) log retention; Foundry remains the operational trace viewer, while the ledger proves the trace has not been rewritten.
+🗺️ **Roadmap.** Bicep can provision Azure Confidential Ledger under `infra/security/confidential-ledger/`, but the repository has no operating pipeline that hashes decisions and writes anchors. Foundry and App Insights remain the partial operational trace surfaces. They do not prove immutability.
 
-> **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `governance/ai-act/registry/eligibility-model.yaml` is the most complete: intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration, contact for the AI Act competent authority in each of DK/SE/NO. *No autonomous decision is ever taken by this agent — the recommendation goes to a caseworker queue in D365 with full evidence.*
+> **Note.** The eligibility agent is the only **high-risk** AI system in the platform. Its dossier in `governance/ai-act/registry/eligibility-model.yaml` is the most complete. The recommendation is advisory, but current filename-inferred document fields are not reliable evidence. Meaningful Article 14 oversight requires visible synthetic provenance or genuine extraction.
 
 ### 6.3 Bridge to national authorities — what the agents are NOT
 
@@ -334,10 +338,10 @@ UDCSP is **a unified citizen platform that bridges to the existing national auth
 
 | Service the citizen is trying to obtain | Authority that issues / decides | Where AI helps inside UDCSP |
 |---|---|---|
-| Residency registration 🇩🇰 | **CPR** + borger.dk + MitID. *CPR cannot be issued before the citizen has actually moved.* | Doc Extractor reads the passport / lease; Citizen Assistant explains the "after arrival" rule; Translator localises the form; topic-router escalates to a caseworker if the case is borderline. |
+| Residency registration 🇩🇰 | **CPR** + borger.dk + MitID. *CPR cannot be issued before the citizen has actually moved.* | Current Doc Extractor infers synthetic fields from the filename and must label them as such. Citizen Assistant explains the "after arrival" rule; Translator localises the form; topic-router escalates to a caseworker if the case is borderline. |
 | Residency registration 🇸🇪 | **Skatteverket Folkbokföring** + BankID/Freja+. *Required if stay ≥ 1 year.* | Same agents — Citizen Assistant grounds answers on Skatteverket pages and Info Norden. |
 | Residency registration 🇳🇴 | **Skatteetaten Folkeregisteret** (+ UDI for non-Nordic) + ID-porten. *> 6-month stay → must register; Nordic citizens don't need a permit but must notify.* | Same agents — Citizen Assistant explains the 6-month threshold and the Nordic exemption. |
-| Tax-residency certificate 🇩🇰 | **SKAT form 02.050** — request workflow, **not** instant download. | Doc Extractor pre-fills, Eligibility Pre-Assessor flags edge cases, but the certificate is issued by SKAT. |
+| Tax-residency certificate 🇩🇰 | **SKAT form 02.050**: request workflow, **not** instant download. | Current Doc Extractor can supply synthetic demonstrator fields only. Eligibility flags edge cases, but the certificate is issued by SKAT. |
 | Tax-residency certificate 🇸🇪 | **Skatteverket Hemvistintyg** — new e-service since Feb 2026 (or fallback form SKV 2734). | Same. UDCSP never claims "instant" issuance. |
 | Tax-residency certificate 🇳🇴 | **Altinn form RF-1306** + Skatteetaten. *Tax residence rule: > 183 days / 12 mo OR > 270 days / 36 mo.* | Same — Citizen Assistant restates the rule before pre-filling. |
 | Child & family benefit 🇩🇰 | **Udbetaling Danmark / lifeindenmark.dk**. *Income-based with a specific EU/EEA cross-border path; an apply-without-MitID flow exists for new arrivals.* | Eligibility Pre-Assessor scores the case and produces a recommendation; the actual benefit is decided and paid by Udbetaling Danmark. |
@@ -413,11 +417,11 @@ Per-channel AI footprint, in one row each:
 | Channel | Sync? | Foundry `topic-router` role | Foundry agents | Azure AI primitives | EU AI Act trigger | Channel doc |
 |---|---|---|---|---|---|---|
 | 📞 **Voice** | Real-time (≤ 2 s p95) | Voice orchestrator + gpt-realtime + `lookup_topic_router` function tool | Classifier · Citizen Assistant · Eligibility · Translator | **gpt-realtime native STT+TTS** · Content Safety · (Azure AI Speech reserved for D365 IVR menus + post-call analytics, **not** in the live audio path) | Eligibility (HR) when invoked | [`voice.md`](./voice.md) |
-| 🌐 **Web** | Real-time | Hosts the chat widget; portal forms call Foundry directly | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety · Document Intelligence (uploads) | Eligibility (HR) on form submission | [`web.md`](./web.md) |
-| 📱 **Mobile** | Real-time | Same widget bundle as web, embedded in `WebView` | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety · Document Intelligence (camera capture) | Eligibility (HR) on form submission | [`mobile.md`](./mobile.md) |
+| 🌐 **Web** | Real-time | Hosts the chat widget; portal forms call Foundry directly | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety; synthetic filename inference today; Document Intelligence 🗺️ Roadmap | Eligibility (HR) on form submission | [`web.md`](./web.md) |
+| 📱 **Mobile** | Real-time | Same widget bundle as web, embedded in `WebView` | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety; synthetic filename inference today; Document Intelligence 🗺️ Roadmap | Eligibility (HR) on form submission | [`mobile.md`](./mobile.md) |
 | 💬 **Chat** (widget) | Real-time | Direct APIM `/agents/topic-router` call; topics + slot filling in Foundry | Classifier · Citizen Assistant · Eligibility · Document Extractor · Translator | Content Safety | Eligibility (HR) when "run pre-check" topic fires | [`chat.md`](./chat.md) |
 | 📲 **SMS** | Async (mostly outbound) | None | Translator (template render) · Classifier (STOP / unknown inbound) | Content Safety (template QA) | None directly — downstream of decisions | [`sms.md`](./sms.md) |
-| 📧 **Email** | Async (bi-directional) | None | Classifier (inbound auto-route) · Caseworker Helper (draft) · Document Extractor (attachments) · Translator (template render) | Content Safety · Document Intelligence | None directly — drafts go through eval suite | [`email.md`](./email.md) |
+| 📧 **Email** | Async (bi-directional) | None | Classifier (inbound auto-route) · Caseworker Helper (draft) · Document Extractor contract · Translator (template render) | Content Safety; Document Intelligence 🗺️ Roadmap | None directly | [`email.md`](./email.md) |
 | 🧑‍💼 **Caseworker** | Real-time (workforce) | None — D365 Copilot for Service is the shell | Caseworker Helper · Translator · Eligibility (read-only review) | Content Safety | Eligibility (HR) reviewed here under Art. 14 oversight | [`caseworker.md`](./caseworker.md) |
 
 ```mermaid
@@ -451,7 +455,7 @@ flowchart LR
 
     subgraph AIPRIM["🎤 Azure AI primitives"]
         SPK["gpt-realtime (live audio path)<br/>+ Azure AI Speech (D365 IVR menus<br/>+ post-call analytics only)"]
-        DI["Document Intelligence"]
+        DI["🗺️ Document Intelligence<br/>not wired"]
         SAFE["Content Safety"]
     end
 
@@ -528,10 +532,10 @@ flowchart LR
 |---|---|
 | 🗣️ **Router** | The portal **hosts** the chat widget, which posts to APIM `/agents/topic-router`; the page itself is **not** a conversational brain |
 | 🤖 **Foundry agents** | Through the embedded widget: same five agents as Chat (§ 7.5). Through portal forms (no widget): Document Extractor (uploads), Eligibility (form submission) |
-| 🎤 **Azure AI primitives** | Document Intelligence (PDF / image uploads), Content Safety (chat path) |
+| 🎤 **Azure AI primitives** | Content Safety on the chat path. Document Intelligence is 🗺️ Roadmap; the current extractor returns filename-inferred synthetic fields. |
 | ⏱️ **Latency budget** | Async UX (form submit shows a "we're processing" state; eligibility callback in ≤ 5 s) |
 | 🌍 **Multilingual mechanism** | ICU MessageFormat in `apps/web/i18n/messages/{locale}.json`; the chat widget inherits the page locale |
-| 🛡️ **Safety extras** | XSS / CSRF on the upload path; Document Intelligence's PII detection runs **before** any LLM sees the OCR output (PII masked in the prompt) |
+| 🛡️ **Safety extras** | XSS and CSRF controls on the upload path. No OCR or Document Intelligence PII detection is wired in the current extractor. |
 | 📋 **EU AI Act class triggered** | Eligibility (HR) on form submission; Document Extractor (limited) on uploads |
 
 **What's special on this channel.**
@@ -550,10 +554,10 @@ flowchart LR
 |---|---|
 | 🗣️ **Façade** | The **same chat widget** as web, embedded in a `WebView` (Expo `react-native-webview`); the MSAL token is injected via `postMessage` |
 | 🤖 **Foundry agents** | Same as web/chat |
-| 🎤 **Azure AI primitives** | Document Intelligence on native camera captures; Content Safety on chat |
+| 🎤 **Azure AI primitives** | Content Safety on chat. Document Intelligence for camera captures is 🗺️ Roadmap. |
 | ⏱️ **Latency budget** | Same as web; offline queue for camera uploads when on cellular |
 | 🌍 **Multilingual mechanism** | Reuses `apps/web/i18n/messages/{locale}.json` — one bundle, two clients |
-| 🛡️ **Safety extras** | Native camera roll never leaves the device; the Document Extractor receives only the picture the citizen explicitly attached |
+| 🛡️ **Safety extras** | Native camera roll never leaves the device. The current APIM path receives attachment metadata and an unusable base64 prefix, not a genuine extraction result. |
 | 📋 **EU AI Act class triggered** | Eligibility (HR) on form submission; Document Extractor (limited) on captures |
 
 **What's special on this channel.**
@@ -615,11 +619,11 @@ flowchart LR
 | | |
 |---|---|
 | 🗣️ **Façade** | **None** — outbound triggered by D365 events; inbound auto-routed by D365 email-to-case |
-| 🤖 **Foundry agents** | Outbound: Translator (template) + Caseworker Helper (custom drafts). Inbound: Classifier (route reply onto correct case) + Document Extractor (attachments) |
-| 🎤 **Azure AI primitives** | Content Safety on every outbound; Document Intelligence on attachments; per-country DKIM/SPF/DMARC validation on inbound |
+| 🤖 **Foundry agents** | Outbound: Translator and Caseworker Helper contracts. Inbound: Classifier and Document Extractor contracts. |
+| 🎤 **Azure AI primitives** | Content Safety target on outbound; Document Intelligence on attachments is 🗺️ Roadmap; per-country DKIM/SPF/DMARC remains an inbound mail control |
 | ⏱️ **Latency budget** | Outbound: under 5 min from D365 event to mailbox delivery (S/MIME-signed); inbound: under 2 min from MX to case update |
 | 🌍 **Multilingual mechanism** | 12 templates per event (same `email-templates.json` pattern as SMS); Caseworker Helper writes free-form drafts in the citizen's case locale |
-| 🛡️ **Safety extras** | S/MIME signing for GDPR Art. 15 data exports; PII redaction before any LLM sees the inbound email body (Doc Extractor + Classifier both receive a redacted view) |
+| 🛡️ **Safety extras** | S/MIME is a target for GDPR exports. No current OCR-based PII redaction claim is made for email attachments. |
 | 📋 **EU AI Act class triggered** | None directly; email is downstream of decisions, but Caseworker Helper drafts go through the same eval suite as voice/chat outputs |
 
 **What's special on this channel.**
@@ -660,9 +664,9 @@ flowchart LR
 | **Notification channels (SMS, Email) bypass Foundry `topic-router`** | No conversation = no need for a façade. AI lives in the workflow (Logic Apps + Translator agent), not in a chat. | [`sms.md`](./sms.md) · [`email.md`](./email.md) |
 | **The workforce channel has its own Copilot** | Copilot for Service is to the caseworker what Foundry `topic-router` is to the citizen. | [`caseworker.md`](./caseworker.md) |
 | **Eligibility is invoked from 5 channels** (Voice, Web, Mobile, Chat, Caseworker) but **finalised in 1** (Caseworker) | EU AI Act Art. 14 — the recommendation can be computed anywhere; the decision lives with the human. | [`caseworker.md`](./caseworker.md) — § "Eligibility AI" |
-| **Document Extractor fires on 3 channels** (Web upload, Mobile camera, Email attachment) but **with the same prompt** | One prompt, three capture devices = one truth, three convenient inputs. | `foundry/projects/document-extractor/prompts/` |
+| **Document Extractor can be called from 3 channels** (Web upload, Mobile camera, Email attachment) | The current prompt produces the same synthetic filename inference on each channel. It is not one extracted truth. | `services/apim/apis/agent-doc-extractor/policy.xml` |
 | **Translator orchestrator is the cross-channel localiser** | It writes outbound SMS / email / push in 12 languages and harmonises admin terminology against per-country glossaries. | `foundry/projects/translator/` |
-| **Content Safety runs on every channel for every agent** | No channel has a "safe-by-vibes" path. | § 10.1 — pipeline is identical regardless of caller |
+| **Content Safety coverage** | Selected paths have safety controls. Complete input and output coverage for every channel and agent remains to be verified. | § 10.1 |
 
 ---
 
@@ -680,7 +684,7 @@ flowchart LR
 - Every Citizen Assistant answer must cite at least one source from an authoritative domain (national authority site, Info Norden, EU portal) or return "I do not know — let me connect you to a caseworker".
 - The assistant is **never allowed to claim** that UDCSP itself issues residency, tax-residence certificates or family benefits — those are issued by CPR / Skatteverket / Skatteetaten / SKAT / Försäkringskassan / NAV / Udbetaling DK respectively. Phrases like *"single application across DK/SE/NO"* and *"signed and verifiable in minutes"* are explicit no-go strings in the system prompt and in the eval suite.
 - Eligibility never grounds on the citizen's own prior cases (avoids feedback loops); it grounds on the rule set + the current submission only. Precedent cases are surfaced *to the caseworker*, separately, by the Caseworker Helper.
-- Doc Extractor's "verification" step is a strict-JSON LLM call with a low temperature that re-checks the OCR fields against the document schema — it is allowed to flag, never to overwrite.
+- Doc Extractor currently has no OCR fields to verify. It produces synthetic values inferred from metadata. Real verification requires a genuine extraction result and preserved provenance.
 
 ---
 
@@ -752,7 +756,7 @@ All evals live under `tests/eval/` and are driven by the YAML pipelines in `test
 
 ### 10.3 Tracing &amp; lineage
 
-Every Foundry call emits an OTEL trace with:
+The target trace schema includes:
 - `request_id` (correlated end-to-end through Foundry `topic-router` → APIM → Foundry → tools)
 - `agent_id`, `agent_version`, `prompt_version`, `model_id`, `model_version`
 - `safety_verdict` (input + output)
@@ -763,7 +767,7 @@ Every Foundry call emits an OTEL trace with:
 - `actor` (citizen channel / caseworker / system)
 - `country`
 
-Traces are stored in App Insights, exported nightly to a Fabric lakehouse for analytics, and indexed by Purview so that any answer can be re-traced to the prompt version, model version, knowledge source, and rule plug-in that produced it.
+🟡 **Partially deployed.** App Insights stores metadata for exercised paths and W3C `traceparent` supports correlation. The corrected voice source stores transcript lengths and argument keys, not conversation content. Nightly Fabric export and Purview indexing are not verified as operating end to end. The lineage API is 🔵 **In repo**, authenticated and fail-closed with `503`, because no backend exists.
 
 ---
 
@@ -776,16 +780,16 @@ Traces are stored in App Insights, exported nightly to a Fabric lakehouse for an
 | **Risk classification** per agent (minimal / limited / high) | `governance/ai-act/registry/<agent>.yaml` | Compliance + agent owner |
 | **Technical documentation** (Annex IV) | Same file + linked specs in `docs/` | Agent owner |
 | **Data governance** (training data summary, GDPR DPIA) | Purview catalog + `governance/dpia/` | DPO |
-| **Logging &amp; traceability** | App Insights traces (180-day hot per country) + per-country Log Analytics retention configured to **730 days** (= 2× the AI Act Art. 12.3 minimum of 6 months) · W3C `traceparent` propagated end-to-end · Confidential Ledger anchors per high-risk decision. Full implementation recipe + 4-min audit pitch in [`../tech/monitoring.md`](../tech/monitoring.md) § 5. | Platform team |
-| **Human oversight** | D365 caseworker queue for high-risk; escalation topics in Foundry `topic-router` | Service owner |
-| **Accuracy &amp; robustness metrics** | Foundry eval reports, exported nightly | Agent owner |
+| **Logging &amp; traceability** | 🟡 W3C `traceparent` correlation and metadata exist on exercised paths. Voice transcript content is excluded in the corrected source. ⚙️ Retention and selected diagnostics are scripted. 🗺️ Confidential Ledger anchors and the lineage backend are not active. See [`../tech/monitoring.md`](../tech/monitoring.md). | Platform team |
+| **Human oversight** | 🟡 Eligibility remains advisory and the current disposition path is partial. Synthetic document fields cannot support meaningful oversight unless provenance is preserved. | Service owner |
+| **Accuracy &amp; robustness metrics** | 🔵 Evaluation assets and scheduled workflows exist in repo. A complete operating release gate is not verified. | Agent owner |
 | **Cybersecurity** | Defender for Cloud, Sentinel, content-safety verdicts, jailbreak monitoring | SOC |
 | **Post-market monitoring plan** | `governance/ai-act/registry/<agent>.yaml` | Compliance |
 | **Conformity declaration** | Same file, signed before release | Compliance + product owner |
 | **Authority contact** (DK / SE / NO) | Same file | Compliance |
-| **GDPR Subject Rights Requests on AI traces** (right of access, erasure, rectification on AI conversation logs and Foundry traces) | **Microsoft Priva** Subject Rights Request workflow (`governance/priva/`), wired to the `gdpr-data-export` and `gdpr-data-erase` Logic Apps so that Foundry App Insights spans, knowledge-source extracts and eligibility evidence are part of the DSAR package — see [`datacompliance.md`](./datacompliance.md) § GDPR. | DPO |
+| **GDPR Subject Rights Requests on AI traces** | 🔵 Citizen self-service subject binding is in repo for export and erasure, but not deployed. 🗺️ Full Priva coordination and delegated DPO requests require a separate authenticated actor contract. Voice transcript content is not available from telemetry. See [`datacompliance.md`](./datacompliance.md) § GDPR. | DPO |
 
-**Purview integration.** Every Foundry agent registers itself as a Purview asset (custom type `MicrosoftFoundry.Agent`) and emits lineage edges to the knowledge sources it grounds on, the data products it reads, and the data products it writes. Result: a single Purview query "what AI assets touch citizen X's case Y?" returns the full graph.
+**Purview and lineage status.** Registry and lineage definitions exist in repo, but the operational lineage backend does not. The APIM lineage API now fails closed with `503` in source. A Purview query cannot yet be relied on to return a complete agent-to-data graph.
 
 ---
 
@@ -838,7 +842,7 @@ sequenceDiagram
     D365->>Anders: queue +1 with Citizen Assistant draft + Eligibility recommendation
     Anders->>D365: review evidence (same Foundry trace), approve / adjust
     D365-->>Anna: official decision
-    Note over Trc: Every step above emitted an OTEL span<br/>with the same request_id.<br/>The whole conversation is one trace.
+    Note over Trc: Target trace shape shown above.<br/>Current exercised paths share W3C correlation where wired.<br/>Complete span and lineage coverage is not operational.
 ```
 
 ---
@@ -847,12 +851,12 @@ sequenceDiagram
 
 | Concern | Approach |
 |---|---|
-| **Regions** | **3 sovereign Foundry hubs in production — one per country.** DK hub in `northeurope`, SE hub in `swedencentral`, NO hub in `norwayeast`. Each country's citizen interaction stays in its country's hub end-to-end; no agent call ever crosses a national border. Cross-country case handoffs travel as signed claims envelopes through APIM + the federation-hub mTLS gateway (see `architecture.md §13.1.1`). |
-| **gpt-realtime sovereignty exception** | Microsoft `gpt-realtime` is currently rolled out to `swedencentral` and `northeurope` but **not yet to `norwayeast`**. The NO voice orchestrator (ACS Call Automation + Container App, both in NO) opens its WebSocket to the SE hub's gpt-realtime under Microsoft EU Data Boundary + Nordic-DPA cross-border cooperation. Citizen-side audio + STT transcripts persist only in NO. The day gpt-realtime lands in `norwayeast`, a single Bicep parameter flip moves the inference to NO hub. |
-| **Model deployments** | Per hub: one PTU pool for `gpt-realtime` (voice baseline) + one PTU pool for `gpt-5.4` (eligibility + assistant + caseworker helper + translator) + one pay-as-you-go pool for `gpt-5.4-mini` (classifier + doc extractor + topic-router). Capacity reserved for Eligibility (high-risk SLA). |
-| **Capacity governance** | `foundry/projects/*/agent.yaml` declares `min_tps` and `max_tps` per hub. CI fails if total declared > pool capacity. |
+| **Regions** | 🟡 Regional resources are separated by country for the exercised paths, but the NO voice path uses `gpt-realtime` in `swedencentral`. Do not claim that every model call stays inside its citizen's national region. |
+| **gpt-realtime sovereignty exception** | Microsoft `gpt-realtime` is currently rolled out to `swedencentral` and `northeurope` but **not yet to `norwayeast`**. The NO voice orchestrator opens its WebSocket to the SE deployment. In the corrected source, NO App Insights retains event metadata and correlation, not transcript content. The day quota lands in `norwayeast`, a Bicep parameter can move inference to NO. |
+| **Model deployments** | 🟡 Deployed model aliases support the exercised paths. The per-hub PTU pattern is the target production capacity model. |
+| **Capacity governance** | 🔵 Repository declarations describe target throughput. A live CI capacity gate across all pools is not verified. |
 | **Cost guardrails** | Per-project + per-hub budget alerts in Cost Management; Foundry tracing exports `tokens_in/out` per agent per country; Power BI dashboard slices cost by agent / channel / language / country (see `architecture.md §11.6`). |
-| **Promotion** | DEV → STAGING → PROD via GitHub Actions, replicated in each of the 3 hubs. Every promotion runs the gold + bias + adversarial + per-locale parity evals; promotion blocks on regression > 1 % on any guarded metric. Champion-challenger pattern with 5 % shadow traffic for high-risk Eligibility (see `architecture.md §5.2.1`). |
+| **Promotion** | 🔵 Workflow and evaluation assets exist in repo. Complete DEV-to-STAGING-to-PROD promotion blocking, per-locale gates, and champion-challenger traffic are target controls, not verified operating behavior. |
 | **Rollback** | `<agent_name>:<version>` is immutable; rollback flips a Foundry deployment alias and is fully auditable. Per-hub, so a rollback in DK does not affect SE or NO. |
 | **DR** | Foundry config is in code (Bicep + YAML); active-passive per country with paired EU region within the same sovereign zone (RPO ≤ 15 min, RTO ≤ 4 h). Active-active across the 3 hubs is implicit because each hub serves only its country — the loss of one hub never stops the platform globally. |
 
@@ -869,7 +873,7 @@ sequenceDiagram
 | Letting a Foundry agent write to a domain database. | Foundry agents have **no** data-modifying side effects; they recommend, they do not commit. | Mutations go through APIM → domain microservice or Logic App, with caseworker approval where required. |
 | Hand-editing prompts in PROD. | Bypasses eval gating, no rollback. | Prompts versioned in `foundry/projects/*/prompts/`; CI deploys them. |
 | Sharing one Foundry project across all seven agents. | Loses per-agent RBAC, eval suite, registry entry. | One project per agent, by policy. |
-| Sending raw PII to a model. | GDPR + AI Act risk. | Doc Extractor redacts before any LLM call; Purview tags propagate to prompts; Content Safety has a "protected-material" check. |
+| Sending raw PII to a model. | GDPR + AI Act risk. | Minimise and classify model inputs at the gateway. The current extractor does not implement OCR-based redaction, so no document-content redaction claim is made. |
 
 ---
 
@@ -888,6 +892,6 @@ sequenceDiagram
 
 ## ✅ One-line recap for the evaluator
 
-> *Microsoft Foundry is the brain — it runs every model call, evaluates every output, traces every step, classifies every agent under the EU AI Act, and centralises Content Safety. Foundry `topic-router` agent is the citizen-side face — it owns the conversation, the channels, and the dialog state, and it delegates every reasoning step to a Foundry agent through APIM. D365 Copilot for Service is the workforce-side face — same delegation pattern, same six agents. Together they let UDCSP serve 2.1 M citizens in 12 languages on 7 channels (voice, web, mobile, chat, SMS, email, caseworker), with a single auditable AI control plane.*
+> *Microsoft Foundry is the target AI control plane. The demonstrator has a shared APIM-to-Responses path for web and voice, agent contracts in repo, and partial W3C correlation. Full agent orchestration, complete evaluation gates, document extraction, D365 workforce integration, operational lineage, and immutable anchors remain partial or roadmap.*
 
 — Companion docs: [`architecture.md`](../tech/architecture.md) (full platform), [`monitoring.md`](../tech/monitoring.md) (telemetry + AI Act art. 12 evidence trail), [`traceability.md`](./traceability.md) (citizen-facing GDPR + AI Act story), [`agents.md`](../tech/agents.md) (multi-agent build log), [`uses.md`](./uses.md) (demo scenarios).

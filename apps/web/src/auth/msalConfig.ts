@@ -1,4 +1,5 @@
-import { Configuration, PublicClientApplication } from '@azure/msal-browser';
+import { Configuration, EventType, PublicClientApplication } from '@azure/msal-browser';
+import { clearCases } from '../utils/caseStore';
 
 export type Country = 'dk' | 'se' | 'no';
 export const countries: { code: Country; label: string; flag: string; tenantDomain: string; locale: string }[] = [
@@ -52,4 +53,14 @@ export function createMsalConfig(country: Country = getCountry()): Configuration
   };
 }
 export const msalInstance = new PublicClientApplication(createMsalConfig());
+msalInstance.addEventCallback(({ eventType }) => {
+  if (
+    eventType === EventType.LOGIN_SUCCESS
+    || eventType === EventType.ACCOUNT_ADDED
+    || eventType === EventType.ACCOUNT_REMOVED
+    || eventType === EventType.ACTIVE_ACCOUNT_CHANGED
+  ) {
+    clearCases();
+  }
+});
 export const loginRequest = { scopes: [import.meta.env.VITE_APIM_SCOPE || 'openid', 'profile'] };

@@ -2,6 +2,8 @@ name: A14 Accessibility Gate
 on:
   workflow_dispatch:
   pull_request: { paths: ['tests/accessibility/**', 'tests/e2e/**', 'apps/web/**'] }
+permissions:
+  contents: read
 jobs:
   axe:
     runs-on: ubuntu-latest

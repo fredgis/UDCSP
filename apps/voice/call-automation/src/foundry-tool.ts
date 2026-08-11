@@ -49,10 +49,8 @@ async function getApimToken(cfg: Config): Promise<string> {
     if (!at) return '';
     cachedToken = { token: at.token, expiresAt: at.expiresOnTimestamp };
     return at.token;
-  } catch (err) {
-    // Log once and continue without a token.
-    // eslint-disable-next-line no-console
-    console.warn('[voice] getApimToken failed, falling back to anonymous topic-router call:', (err as Error)?.message);
+  } catch {
+    logEvent('topic_router.auth_fallback', {}, { reason: 'token_acquisition_failed' });
     return '';
   }
 }
@@ -91,8 +89,7 @@ export async function callTopicRouter(cfg: Config, req: TopicRouterRequest, ctx:
     }),
   });
   if (!res.ok) {
-    const body = await res.text().catch(() => '<no-body>');
-    const err = new Error(`topic-router HTTP ${res.status}: ${body.slice(0, 256)}`);
+    const err = new Error(`topic-router HTTP ${res.status}`);
     logError(err, ctx);
     throw err;
   }

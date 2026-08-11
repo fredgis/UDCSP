@@ -20,11 +20,29 @@ var tags = {
   owner: 'A1'
 }
 var rgName = 'udcsp-${country}-${env}-platform-rg'
+var observabilityRgName = 'udcsp-${country}-observability-rg'
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: rgName
   location: location
   tags: tags
+}
+
+resource observabilityRg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
+  name: observabilityRgName
+  location: location
+  tags: tags
+}
+
+module law '../observability/log-analytics.bicep' = {
+  name: 'law-${country}-${env}'
+  scope: observabilityRg
+  params: {
+    country: country
+    env: env
+    location: location
+    tags: tags
+  }
 }
 
 module network 'modules/networking.bicep' = {
@@ -49,6 +67,7 @@ module kv 'modules/keyvault.bicep' = {
     env: env
     location: location
     subnetId: network.outputs.dataSubnetId
+    logAnalyticsWorkspaceId: law.outputs.workspaceId
     tags: tags
   }
 }
@@ -61,6 +80,7 @@ module lake 'modules/storage.bicep' = {
     env: env
     location: location
     subnetId: network.outputs.dataSubnetId
+    logAnalyticsWorkspaceId: law.outputs.workspaceId
     tags: tags
   }
 }

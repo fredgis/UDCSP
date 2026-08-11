@@ -11,6 +11,85 @@
     </cors>
     <rate-limit-by-key calls="60" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
     <set-variable name="reqBody" value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+    <!-- Intentionally mirrors the accept lists in ApplyChildBenefitPage.tsx and ApplyResidencyPage.tsx; review client and gateway together before widening. -->
+    <set-variable name="validatedContentType" value="@{
+      try {
+        var b = (JObject)context.Variables[&quot;reqBody&quot;];
+        var filename = (string)(b[&quot;filename&quot;] ?? &quot;&quot;);
+        var supplied = (string)(b[&quot;contentType&quot;] ?? &quot;&quot;);
+        var dot = filename.LastIndexOf(&quot;.&quot;);
+        var extension = dot &gt;= 0 ? filename.Substring(dot).ToLowerInvariant() : &quot;&quot;;
+        var separator = supplied.IndexOf(&quot;;&quot;);
+        if (separator &gt;= 0) { supplied = supplied.Substring(0, separator); }
+        supplied = supplied.Trim().ToLowerInvariant();
+        string expected = &quot;&quot;;
+        if (extension == &quot;.pdf&quot;) { expected = &quot;application/pdf&quot;; }
+        else if (extension == &quot;.png&quot;) { expected = &quot;image/png&quot;; }
+        else if (extension == &quot;.jpg&quot; || extension == &quot;.jpeg&quot;) { expected = &quot;image/jpeg&quot;; }
+        return supplied == expected ? expected : &quot;&quot;;
+      } catch { return &quot;&quot;; }
+    }" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables[&quot;validatedContentType&quot;]))">
+        <return-response>
+          <set-status code="415" reason="Unsupported Media Type" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"unsupported_document_type","message":"Allowed extensions are .pdf, .png, .jpg and .jpeg; contentType must match the extension."}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <!-- 8 MiB decoded ceiling. The 11,184,812-character base64 guard prevents oversized allocation; decoded byte length is authoritative. -->
+    <set-variable name="contentValidation" value="@{
+      try {
+        var b = (JObject)context.Variables[&quot;reqBody&quot;];
+        var content = b[&quot;contentBase64&quot;];
+        if (content == null || content.Type != JTokenType.String) { return &quot;invalid&quot;; }
+        var b64 = (string)content;
+        if (string.IsNullOrEmpty(b64)) { return &quot;invalid&quot;; }
+        if (b64.Length &gt; 11184812) { return &quot;too_large&quot;; }
+        var decoded = System.Convert.FromBase64String(b64);
+        if (decoded.LongLength &gt; 8388608) { return &quot;too_large&quot;; }
+        if (decoded.Length &lt; 8) { return &quot;type_mismatch&quot;; }
+        var contentType = (string)context.Variables[&quot;validatedContentType&quot;];
+        if (contentType == &quot;application/pdf&quot;) {
+          return decoded[0] == 0x25 &amp;&amp; decoded[1] == 0x50 &amp;&amp; decoded[2] == 0x44 &amp;&amp; decoded[3] == 0x46 &amp;&amp; decoded[4] == 0x2D
+            ? &quot;ok&quot; : &quot;type_mismatch&quot;;
+        }
+        if (contentType == &quot;image/png&quot;) {
+          return decoded[0] == 0x89 &amp;&amp; decoded[1] == 0x50 &amp;&amp; decoded[2] == 0x4E &amp;&amp; decoded[3] == 0x47
+              &amp;&amp; decoded[4] == 0x0D &amp;&amp; decoded[5] == 0x0A &amp;&amp; decoded[6] == 0x1A &amp;&amp; decoded[7] == 0x0A
+            ? &quot;ok&quot; : &quot;type_mismatch&quot;;
+        }
+        if (contentType == &quot;image/jpeg&quot;) {
+          return decoded[0] == 0xFF &amp;&amp; decoded[1] == 0xD8 &amp;&amp; decoded[2] == 0xFF
+            ? &quot;ok&quot; : &quot;type_mismatch&quot;;
+        }
+        return &quot;type_mismatch&quot;;
+      } catch { return &quot;invalid&quot;; }
+    }" />
+    <choose>
+      <when condition="@(((string)context.Variables[&quot;contentValidation&quot;]) == &quot;too_large&quot;)">
+        <return-response>
+          <set-status code="413" reason="Payload Too Large" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"document_too_large","message":"Decoded document exceeds the 8 MiB limit."}</set-body>
+        </return-response>
+      </when>
+      <when condition="@(((string)context.Variables[&quot;contentValidation&quot;]) == &quot;type_mismatch&quot;)">
+        <return-response>
+          <set-status code="415" reason="Unsupported Media Type" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"document_content_type_mismatch","message":"The file content does not match the declared type."}</set-body>
+        </return-response>
+      </when>
+      <when condition="@(((string)context.Variables[&quot;contentValidation&quot;]) != &quot;ok&quot;)">
+        <return-response>
+          <set-status code="400" reason="Bad Request" />
+          <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"invalid_content_base64","message":"contentBase64 must be a non-empty valid base64 string."}</set-body>
+        </return-response>
+      </when>
+    </choose>
     <set-variable name="blobName" value="@(DateTime.UtcNow.ToString(&quot;yyyyMMdd&quot;) + &quot;/&quot; + Guid.NewGuid().ToString(&quot;N&quot;) + &quot;_&quot; + System.Text.RegularExpressions.Regex.Replace((string)((JObject)context.Variables[&quot;reqBody&quot;])[&quot;filename&quot;] ?? &quot;upload.bin&quot;, &quot;[^A-Za-z0-9._-]&quot;, &quot;_&quot;))" />
     <authentication-managed-identity resource="https://storage.azure.com/" output-token-variable-name="storageToken" ignore-error="false" />
     <send-request mode="new" response-variable-name="putResp" timeout="60" ignore-error="true">
@@ -19,10 +98,7 @@
       <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["storageToken"])</value></set-header>
       <set-header name="x-ms-version" exists-action="override"><value>2021-12-02</value></set-header>
       <set-header name="x-ms-blob-type" exists-action="override"><value>BlockBlob</value></set-header>
-      <set-header name="x-ms-blob-content-type" exists-action="override"><value>@{
-        var b = (JObject)context.Variables["reqBody"];
-        return (string)(b["contentType"] ?? "application/octet-stream");
-      }</value></set-header>
+      <set-header name="x-ms-blob-content-type" exists-action="override"><value>@((string)context.Variables["validatedContentType"])</value></set-header>
       <set-body>@{
         var b = (JObject)context.Variables["reqBody"];
         var b64 = (string)(b["contentBase64"] ?? "");
@@ -32,7 +108,15 @@
     <return-response>
       <set-status code="200" />
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{
+        var origin = context.Request.Headers.GetValueOrDefault("Origin","");
+        return origin == "https://udcsp.fredgis.com"
+            || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net"
+            || origin == "http://localhost:3000"
+            || origin == "http://localhost:5173"
+          ? origin
+          : "https://udcsp.fredgis.com";
+      }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-body>@{
@@ -61,7 +145,15 @@
     <return-response>
       <set-status code="500" />
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{
+        var origin = context.Request.Headers.GetValueOrDefault("Origin","");
+        return origin == "https://udcsp.fredgis.com"
+            || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net"
+            || origin == "http://localhost:3000"
+            || origin == "http://localhost:5173"
+          ? origin
+          : "https://udcsp.fredgis.com";
+      }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-body>@(new JObject(new JProperty("error", "internal_error"), new JProperty("message", context.LastError?.Message ?? "unknown")).ToString())</set-body>

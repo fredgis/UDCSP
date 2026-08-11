@@ -1,5 +1,7 @@
 name: A14 Weekly Security
 on: { workflow_dispatch: {}, schedule: [{ cron: '15 5 * * 1' }] }
+permissions:
+  contents: read
 jobs:
   security:
     runs-on: ubuntu-latest

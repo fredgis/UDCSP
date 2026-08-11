@@ -255,7 +255,7 @@ export function DemosIndexPage() {
           <p><FormattedMessage id="demos.scenarios.lede" defaultMessage="Each demo is self-contained and can be played independently." /></p>
         </div>
       </div>
-      <ul className="demo-grid" role="list">
+      <ul className="demo-grid">
         {demos.map((d) => {
           const t = tag[d.category];
           return (

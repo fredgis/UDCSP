@@ -4,7 +4,7 @@
 
 </div>
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 > ℹ️ **Live vs roadmap.** 🟢 **Live** on `https://udcsp.fredgis.com`: Static Web App, per-country External ID sign-in, the 12-language wizard, Foundry-driven eligibility pre-submit, APIM document upload, Dataverse `tasks` write, My Cases re-hydration and case detail parsing. 🗺️ **Roadmap**: Front Door + WAF in front of the public site, Microsoft Entra Verified ID issuance, per-country D365 Customer Service, cross-border fan-out and Confidential Ledger anchoring. See [`../tech/inprogress.md`](../tech/inprogress.md).
 
@@ -45,7 +45,10 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 | External ID sign-in | 🟢 **Live** | DK, SE and NO CIAM tenants are exercised by the SPA. |
 | Verified ID issuance | 🗺️ **Roadmap** | Demo 1 blockers list Verified ID issuance and SE portal auto-onboarding as not built. |
 | Application intake | 🟡 **Partially deployed** | Logic App `application-intake` writes Dataverse `tasks` today. `udcsp_application` and D365 CS are the target landing shape. |
-| Document upload | 🟢 **Live** | SPA calls APIM `POST /documents/upload-url`; APIM PUTs the blob with managed identity into private storage. |
+| Document upload transport | 🟢 **Live** | SPA calls APIM `POST /documents/upload-url`; APIM PUTs the blob with managed identity into private storage. |
+| Upload byte validation | 🔵 **In repo** | Pending APIM deployment: 8 MiB decoded limit, PDF/PNG/JPEG allow-list, magic-byte matching and server-derived Blob content type. |
+| Citizen API identity binding | 🔵 **In repo** | Pending APIM and Logic App deployment: caller identity is derived from the validated JWT, not accepted from the body or a caller-supplied header. |
+| Browser case-cache minimisation | 🔵 **In repo** | Pending SPA deployment: rich document and eligibility fields stay in memory, legacy entries are scrubbed and the cache is cleared on sign-out or account change. |
 | Redis / PostgreSQL conversational persistence | 🔵 **In repo** | Use as target architecture unless a live deployment record proves the path. |
 | Traceability | 🟡 **Partially deployed** | W3C `traceparent` and App Insights exist for exercised paths. Confidential Ledger anchoring is not active and the Purview lineage endpoint remains `placeholder.local`. |
 
@@ -224,21 +227,26 @@ sequenceDiagram
 | **2** | **Vite + React 18 + TypeScript** | Single-page application shell; React Router for client-side routing (10 pages: Home, Apply Residency, Apply Tax Cert, Apply Child Benefit, My Cases, Case Detail, Consent, Accessibility, Login, Logout Callback); Fluent UI v9 design system; hot module replacement in dev, optimised bundle in prod. | `apps/web/vite.config.ts`, `apps/web/src/App.tsx`, `apps/web/src/pages/` |
 | **3** | **MSAL.js + External ID per country** | 🟢 **Live** `@azure/msal-browser` + `@azure/msal-react` pick the per-country OIDC authority (`udcspdk/se/no.ciamlogin.com`) from `localStorage` country preference; tokens cached in `sessionStorage` (never `localStorage`); `loginRequest` includes the APIM scope; post-logout redirect to `/logout-callback`. Microsoft Entra Verified ID issuance via `infra/identity/verified-id/` is 🗺️ **Roadmap** and not exercised today. | `apps/web/src/auth/msalConfig.ts`, `infra/identity/verified-id/` |
 | **4** | **ICU MessageFormat i18n bundles** | `react-intl` (ICU MessageFormat) loads the locale catalogue from `/i18n/messages/{lang}.json` at runtime; 12 locale files produced by the A12 / agent-foundry translation pipeline; RTL direction toggled on `<html>` for `ar`; locale-aware date/number/currency formatting via `Intl` API. | `apps/web/i18n/messages/*.json`, `apps/web/src/utils/language.ts` |
-| **5** | **APIM contract clients** | Five typed fetch wrappers mirror the APIM OpenAPI contracts — `applications.ts`, `cases.ts`, `documents.ts`, `eligibility.ts`, `client.ts` (base, with exponential-backoff retry and W3C `traceparent` header on every request). | `apps/web/src/api/` |
-| **6** | **Foundry topic-router chat widget** | `ChatWidget.tsx` posts directly to APIM `/agents/topic-router`; passes `channel=web`, `locale`, and `traceparent`; lazy-loaded; backed by the same Foundry agents as voice/mobile. This replaces the previous iframe/channel-adapter approach. See **§ 9**. | `apps/web/src/components/ChatWidget.tsx` |
+| **5** | **APIM contract clients** | Five typed fetch wrappers mirror the APIM OpenAPI contracts: `applications.ts`, `cases.ts`, `documents.ts`, `eligibility.ts`, `client.ts` (base, with exponential-backoff retry and W3C `traceparent` header on every request). The pending citizen identity contract derives the citizen UPN from the validated token at APIM. | `apps/web/src/api/` |
+| **6** | **Foundry topic-router chat widget** | `ChatWidget.tsx` posts directly to APIM `/agent-topic-router/messages`; passes `channel=web`, `locale`, and `traceparent`; lazy-loaded; backed by the same Foundry agents as voice/mobile. 🔵 **In repo**, the request now fails closed unless a signed-in account can supply an access token. This replaces the previous iframe/channel-adapter approach. See **§ 9**. | `apps/web/src/components/ChatWidget.tsx` |
 | **7** | **WCAG 2.1 AA assistive layer** | `SkipNav` → `#main-content`; `AccessibilityMenu` (font scale, high-contrast, reduce-motion, dyslexic font); `BreadcrumbsAccessible`; `LoadingSpinnerAccessible`; CSS tokens (`tokens.css`, `accessibility.css`, `dyslexic-font.css`); `AccessibilityStatementPage`; axe-core in CI. | `apps/web/src/components/`, `apps/web/src/styles/`, `apps/web/i18n/accessibility/` |
 | **8** | **Citizen insights components** | Lightweight HTML/JS dashboards replace citizen-facing embedded BI: Chart.js + React wrappers render SLA, CSAT, and case progress without embedded BI licensing. Power BI Premium remains for internal ops, exec, and auditor users. | `apps/web/src/components/insights/` |
 
 > [!NOTE]
 > **Playwright is also in `apps/web`** (`playwright.config.ts`) but the E2E suite itself lives in `tests/e2e/` — owned by A14. The `apps/web` config is the configuration; the specs are in `tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` et al.
 
-### 4.1 Document upload path, live mechanics
+> [!IMPORTANT]
+> **🔵 In repo, not deployed.** Citizen-facing APIM policies delete any caller-supplied `x-udcsp-citizen-upn`, derive the value from the validated JWT and forward the trusted header. The `application-intake` Logic App reads only that header for the citizen UPN and email, so a request body cannot file an application under another citizen's identity.
+>
+> The pending SPA also restricts `localStorage` to allow-listed case metadata. `extractedFields`, `documentBlobUrl`, `documentBlobName`, `storageAccount`, `eligibility`, `decision` and `confidence` remain memory-only. A first read scrubs those fields from legacy entries, `getCase` requires the signed-in citizen identity, and sign-out or MSAL account changes clear the cache.
 
-🟢 **Live.** The browser does not receive a public blob upload link. `apps/web/src/utils/documentUpload.ts` reads the selected file as base64, enforces a 4 MB client cap, and calls APIM `POST /documents/upload-url` with `filename`, `contentType` and `contentBase64`. The APIM operation `services/apim/apis/documents/operations/post-documents-upload-url.xml` authenticates to Storage with its managed identity, decodes `contentBase64`, and performs the server-side `PUT` to `https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/<blobName>`.
+### 4.1 Document upload path and validation state
+
+🟢 **Live transport and client behavior.** The browser does not receive a public blob upload link. `apps/web/src/utils/documentUpload.ts` reads the selected file as base64, applies a 4 MiB browser cap, and calls APIM `POST /documents/upload-url` with `filename`, `contentType` and `contentBase64`. The deployed APIM operation authenticates to Storage with its managed identity, decodes `contentBase64`, and performs the server-side `PUT` to `https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/<blobName>`. The 4 MiB browser check is a user-experience guard, not an API security control. It displays `File is too large for this demo (max 4 MB).` before making the request.
+
+🔵 **In repo, not deployed.** The pending APIM policy enforces an authoritative 8 MiB decoded limit. It accepts only `.pdf`, `.png`, `.jpg` and `.jpeg` when the supplied media type matches the extension, then checks the decoded bytes for the PDF, PNG or JPEG signature. This validates the bytes, not just caller-provided labels, so renaming arbitrary content to `payslip.pdf` is rejected. Blob content type is derived from the validated type rather than echoed from the request. Malformed base64 returns `400 invalid_content_base64`, an oversized decoded document returns `413 document_too_large`, an unsupported extension/type pair returns `415 unsupported_document_type`, and a byte/type mismatch returns `415 document_content_type_mismatch`.
 
 🟢 **Live network stance.** The storage accounts are private-only. `patch/README.md` documents the private upload path: `udcsp<c>prodlake` has public network access disabled and APIM egress reaches Blob through the blob private endpoint after VNet injection.
-
-🟡 **Partially deployed limitation.** The current path has a 4 MB upload size limit. Its immediate source is the SPA safety cap in `documentUpload.ts`, set because APIM receives the file inside a JSON request body as base64 and then proxies the bytes to Blob. If a citizen selects a larger file, the portal stops before the APIM call and shows: `File is too large for this demo (max 4 MB).`
 
 ---
 
@@ -436,17 +444,19 @@ Risks tracked in `docs/tech/plan.md` § Risk Register that affect the web portal
 
 ## 9. 🌐 Embedding the AI assistant in the page
 
-> **Scope:** The web channel hosts the chat surface, but intelligence is in Foundry. This replaces the previous channel-adapter approach; it is now APIM `/agents/topic-router`.
+> **Scope:** The web channel hosts the chat surface, but intelligence is in Foundry. The launcher is available only after sign-in and AI-assistant consent. The direct route is APIM `/agent-topic-router/messages`.
 
 ### 9.1 The direct APIM call
 
 ```ts
-await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agents/topic-router`, {
+await fetch(`${apimBase}/agent-topic-router/messages`, {
   method: 'POST',
   headers: { Authorization: `Bearer ${token}`, traceparent },
-  body: JSON.stringify({ channel: 'web', locale, text })
+  body: JSON.stringify({ sessionId, channel: 'web', locale, text, citizen: { country }, cases })
 });
 ```
+
+🔵 **In repo, not deployed.** `ChatWidget.tsx` refuses to send if the signed-in account or refreshed access token is unavailable. The request body no longer carries `authenticated`, `name`, `givenName` or `upn`; APIM obtains identity from the validated token. `citizen.country` and the supplied case list remain caller-provided context, not identity proof.
 
 `ChatWidget.tsx` remains the host component, but it no longer renders an embedded assistant frame or requests a channel token. It sends the citizen utterance to APIM, receives a channel-shaped response from Foundry `topic-router`, and renders citations/actions as React components.
 
@@ -466,7 +476,7 @@ flowchart TB
     P2["2️⃣ swa deploy ./dist<br/><i>upload to Azure Static Web Apps × 3 countries</i>"]
     P3["3️⃣ Wire External ID<br/><i>OIDC redirect URIs + client ID per country</i>"]
     P4["4️⃣ Deploy APIM client config<br/><i>VITE_APIM_BASE_URL + VITE_APIM_SCOPE injected into SWA env</i>"]
-    P5["5️⃣ Set VITE_APIM_BASE_URL<br/><i>point ChatWidget at the Foundry `topic-router` APIM `/agents/topic-router` endpoint</i>"]
+    P5["5️⃣ Set VITE_APIM_BASE_URL<br/><i>point ChatWidget at APIM<br/>`/agent-topic-router/messages`</i>"]
     P6["6️⃣ Validate i18n catalogues<br/><i>pwsh apps/web/i18n/scripts/Validate-Translations.ps1</i>"]
     P7["7️⃣ Smoke test<br/><i>npm test + npm run test:a11y in apps/web</i>"]
     P8["✅ Phase complete — web portal live"]
@@ -532,10 +542,12 @@ This corresponds to **Demo 1** in [`uses.md`](./uses.md#-demo-1--anna-moves-from
 | **Hard-coded strings** in JSX or TypeScript | Every citizen-visible string is an ICU key in `apps/web/i18n/messages/{lang}.json`; `banner.aiDisclosure` is localised in all 12 languages |
 | **Server-side render of citizen data** — pre-rendering PII into the HTML | React SPA; no SSR; all citizen data is fetched client-side after OIDC authentication, never embedded in static HTML |
 | **"One giant SPA"** — all routes loaded eagerly | React Router with lazy-loaded routes; Vite code splitting; the ChatWidget panel is lazy-loaded` |
-| **Auth state in localStorage** | `sessionStorage` only (`msalConfig.ts`: `cacheLocation: 'sessionStorage'`); tokens are cleared on tab close; no cross-tab token sharing |
+| **Authentication tokens in localStorage** | `sessionStorage` only (`msalConfig.ts`: `cacheLocation: 'sessionStorage'`); tokens are cleared on tab close; no cross-tab token sharing |
+| **Sensitive case details in localStorage** | 🔵 **In repo**, only allow-listed case metadata persists. Rich fields stay in memory, legacy entries are scrubbed, citizen identity must match, and sign-out or account changes clear the cache. |
+| **Caller-supplied citizen identity** | 🔵 **In repo**, APIM replaces `x-udcsp-citizen-upn` with the identity derived from the validated JWT; Logic Apps do not trust identity fields in the request body. |
 | **Ignoring WCAG until the end** | WCAG 2.1 AA is a platform invariant from the first commit (P3); axe-core runs in CI from W2; design system components (Fluent UI v9) are keyboard-accessible by default |
 | **One External ID tenant for all three countries** | One External ID tenant **per** country, enforced by Bicep; per-country national eID connections; no cross-country token acceptance |
-| **Bypassing APIM** — calling Foundry or D365 directly from the browser | All backend calls go through APIM (`apiFetch` base client); JWT validation, audit log, and rate-limiting are enforced on every request |
+| **Bypassing APIM**, calling Foundry or D365 directly from the browser | All backend calls go through APIM (`apiFetch` base client). Citizen APIs validate JWTs today; topic-router JWT enforcement is 🔵 **In repo**, pending deployment. |
 | **Uncorrelated traces** | Every API call carries a W3C `traceparent` header generated by `src/utils/traceparent.ts`; chat widget inherits the same trace via query param |
 | **Static bundle for i18n** — locale strings compiled into the JS bundle | Runtime locale loading from `/i18n/messages/{lang}.json`; locale files can be updated independently of the app bundle |
 
@@ -549,6 +561,7 @@ The web portal separates typed dialog from portal transactions: the embedded Fou
 |---|---|---|
 | Chat widget transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
 | Portal form drafts | 🔵 **In repo** Redis Enterprise and PostgreSQL JSONB target design; not proven as live persistence for the current SPA demo path | TTL 30 days before submit |
+| Browser case cache | 🔵 **In repo** allow-listed metadata in `localStorage`; rich document and eligibility fields remain in memory and re-hydrate from APIM | Cleared on sign-out or MSAL account change |
 | Uploaded documents | 🟢 **Live** ADLS Gen2 `citizen-uploads/` behind APIM managed identity and private Blob endpoint | While case open + lifecycle tiers |
 | Memory + traces | 🟡 **Partially deployed** App Insights traces for exercised paths; AI Search memory and OneLake retention are target architecture unless separately deployed | Memory TTL 12 months; traces 180 days hot |
 

@@ -4,6 +4,10 @@
 
 # 🛡️ UDCSP Guardian
 
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
+Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**
+
 ### The proactive, autonomous, human-supervised entitlement layer
 
 *From once-only to no-stop-shop: the platform stops waiting for the citizen to ask, and reaches out first, in the citizen's language, always under a human caseworker's control.*
@@ -15,8 +19,8 @@
 
 [![Risk](https://img.shields.io/badge/🛡️_EU_AI_Act-High--risk_·_governed-C62828?style=flat-square)](#)
 [![GDPR](https://img.shields.io/badge/⚖️_GDPR-Art._22_·_consent--gated-6A1B9A?style=flat-square)](#)
-[![Ledger](https://img.shields.io/badge/🔒_Every_decision-Ledger--anchored-00796B?style=flat-square)](#)
-[![Status](https://img.shields.io/badge/🧭_Status-Vision_·_reuses_live_bricks-5E35B1?style=flat-square)](#)
+[![Ledger](https://img.shields.io/badge/🔒_Decision_anchor-Roadmap-00796B?style=flat-square)](#)
+[![Status](https://img.shields.io/badge/🗺️_Status-Roadmap_·_reuses_mixed_bricks-5E35B1?style=flat-square)](#)
 
 </div>
 
@@ -25,11 +29,11 @@
 > [!IMPORTANT]
 > **TL;DR.** UDCSP today is reactive: a citizen must know they are entitled, find the portal, and apply. Yet studies show that between 20 % and 60 % of eligible people never claim their social benefits, mostly because they do not know they qualify.[^oecd]
 >
-> UDCSP Guardian flips the relationship. A new autonomous agent watches for life events across the sovereign zones (a child is born, a citizen moves country, turns 67, loses a job), runs the existing Eligibility agent in shadow (no application needed), has the Caseworker Helper draft an outreach in the citizen's language, a new Critic agent reviews it, a human caseworker approves it, and only then does the platform reach out through the channels that already exist (SMS, email, push, voice). Every autonomous step is consent-gated and anchored in Azure Confidential Ledger.
+> UDCSP Guardian flips the relationship. A new autonomous agent watches for life events across the sovereign zones, runs Eligibility in shadow, has the Caseworker Helper draft outreach, adds Critic review, requires human approval, and only then contacts the citizen. In the target design, every step is consent-gated and ledger-anchored. The ledger writer does not exist today.
 >
 > It is the first genuinely autonomous behaviour on the platform, and it is built almost entirely by re-wiring bricks that are already live. This document tells the story, the architecture, the multi-agent coordination, the governance, and the executive impact.
 >
-> 🧭 *Guardian is a **vision** layer. Nothing here is coded yet; this is the design and the story. For what is live today, see [`../tech/inprogress.md`](../tech/inprogress.md).*
+> 🗺️ *Guardian is **Roadmap**. Nothing Guardian-specific is coded. Reused components have mixed statuses, and the pending security remediation is 🔵 **In repo**, not deployed. For current status, see [`../tech/inprogress.md`](../tech/inprogress.md).*
 
 ---
 
@@ -151,7 +155,7 @@ flowchart TB
         CR["4 · 🔎 Critic / Reflection<br/>check legal basis · tone · false positive"]
         HU["5 · 🧑‍💼 Human approval<br/>approve · adjust · reject"]
         OU["6 · 📨 Outreach<br/>SMS · email · push · voice"]
-        TR["7 · 🔒 Anchor<br/>Ledger · registry · consent log"]
+        TR["7 · 🗺️ Anchor target<br/>Ledger · registry · consent log"]
         SC --> AS --> DR --> CR --> HU
         HU -- approved --> OU --> TR
         HU -- rejected --> TR
@@ -183,7 +187,7 @@ The stages in words:
 - **4 · Critic and reflection.** A new Critic agent reviews the draft against the legal basis, the tone, and a false-positive guard, and can send it back. This is the reflection pattern the platform describes but does not yet run.
 - **5 · Human approval.** A caseworker sees the signal, the evidence, and the draft on one screen, and approves, adjusts, or rejects. Nothing is autonomous past this gate. This satisfies EU AI Act Article 14.
 - **6 · Outreach.** On approval, the message goes out through the channels that already exist: the ACS SMS and email templates, the mobile push registration, or an outbound voice call.
-- **7 · Anchor.** Every autonomous step, and the human disposition, is hashed into Azure Confidential Ledger, written to the AI Act registry and Purview lineage, and checked against the citizen's consent and opt-out.
+- **7 · Anchor target.** After a ledger writer and lineage backend exist, every autonomous step and human disposition can be hashed, registered, linked to lineage, and checked against consent. Those sinks are not operational today.
 
 ---
 
@@ -231,7 +235,7 @@ flowchart TB
     %% ---------------- Governance ----------------
     subgraph GOV["🛡️ Governance in the path · EXISTING"]
         CONSENT["✅ Consent + opt-out"]
-        LEDGER["🔒 Confidential Ledger"]
+        LEDGER["🗺️ Confidential Ledger<br/>writer not active"]
         REG["📋 EU AI Act registry"]
         PUR["🗂️ Purview lineage"]
     end
@@ -272,7 +276,7 @@ flowchart TB
 Two design choices carry the whole architecture:
 
 - **Sovereignty is preserved.** The Event Scanner runs inside each country zone. A Danish signal is assessed by the Danish brain and never crosses a border unless the citizen explicitly consents, exactly like the rest of the platform.
-- **The high-risk lane is unchanged.** The Eligibility agent still runs in its Confidential Compute enclave, still writes to the ledger, still never decides. Guardian only calls it earlier, before an application exists.
+- **The high-risk lane keeps the same target controls.** Eligibility remains advisory. Confidential Compute runtime and ledger writes are roadmap capabilities, not live controls.
 
 ---
 
@@ -285,7 +289,7 @@ Guardian is where the platform's agentic story becomes real rather than describe
 | 🧠 **Autonomy** | The Event Scanner starts work from a signal, with no human or citizen prompt. This is the first non-reactive behaviour on the platform. |
 | 🔀 **Orchestration** | A planner drives a multi-step pipeline across four existing agents and two new ones, in a fixed order with retries. |
 | 🔎 **Reflection** | The Critic agent reviews the drafted outreach and can send it back for revision before any human sees it. |
-| 🧭 **State graph** | The loop is an explicit seven-state graph with a hard human gate; rejected and approved paths both terminate in an audit anchor. |
+| 🧭 **State graph** | The target loop is a seven-state graph with a hard human gate. Rejected and approved paths would both terminate in a future audit anchor. |
 | 🤝 **Handoff** | Control passes agent to agent, then hands off to a human caseworker, then to the outreach channel. |
 | 👤 **Human-in-the-loop** | The state graph cannot advance past stage 5 without a caseworker decision, satisfying AI Act Article 14. |
 
@@ -298,7 +302,7 @@ Reaching out to citizens about their entitlements is exactly the kind of process
 - ⚖️ **GDPR Article 22.** Guardian never makes an automated decision with legal effect. It produces a proposal that a human approves, and the citizen action stays voluntary, so the automated-decision prohibition does not bite.
 - 🛡️ **EU AI Act, high-risk.** The Eligibility agent is already registered as high-risk. Guardian keeps the mandatory human oversight (Art. 14), the logging (Art. 12), and the transparency notice (Art. 50): every outreach states it was prepared with AI and reviewed by a human.
 - ✅ **Lawful basis and consent.** Proactive outreach fires only where a lawful basis exists, and every citizen has a standing, one-click opt-out. The consent state is checked at stage 6 and logged.
-- 🔒 **Tamper-evident trail.** The signal, the verdict, the draft, the critic's note and the human disposition are hashed into Azure Confidential Ledger, so a regulator can reconstruct any outreach months later.
+- 🗺️ **Tamper-evident trail target.** The design calls for hashing the signal, verdict, draft, critic note, and human disposition into Azure Confidential Ledger. No writer pipeline exists today.
 - 🎯 **False-positive guard.** The Critic agent exists partly to protect citizens from a wrong or distressing message. A low-confidence or ambiguous signal is dropped, not sent.
 - 📄 **DPIA.** Proactive profiling gets its own Data Protection Impact Assessment, alongside the existing eligibility DPIA.
 
@@ -327,21 +331,21 @@ The new KPI, *unclaimed entitlements recovered*, is a natural tile on the CIO da
 
 ## 9. What Guardian reuses (and what is new)
 
-The credibility of Guardian is that it is mostly assembly. The heavy, risky parts (PII handling, sovereignty, the high-risk lane, the channels, the ledger) are already built and governed.
+Guardian is mostly an assembly proposal, but its dependencies have mixed readiness. Channel and agent paths exist in several forms; consent enforcement, confidential runtime, operational lineage, and the ledger writer are incomplete.
 
 | Building block | Status today | Guardian role |
 |---|:-:|---|
-| Eligibility agent | 🟢 live (advisory) | Run in shadow mode, before an application |
-| `ai-decision-shadow-mode` workflow | 🟢 built | The template for the no-application assessment |
-| Caseworker Helper + next-best-action | 🟢 built | Draft the citizen outreach in locale |
-| Translator · Classifier | 🟢 live | Localise and contextualise the outreach |
-| SMS · email · push · voice | 🟢 present | Deliver the approved outreach |
-| Confidential Ledger · AI Act registry · Purview | 🟢 present | Anchor every autonomous step |
-| Consent + opt-out surface | 🟡 partial | Gate every outreach |
-| **Event Scanner / Planner** | 🔴 new | The autonomous orchestrator |
-| **Critic / Reflection agent** | 🔴 new | Review the draft before the human |
-| **`proactive-outreach` workflow** | 🔴 new | Twin of the shadow-mode workflow |
-| **Take-up KPI tile** | 🔴 new | Prove the impact on the CIO dashboard |
+| Eligibility agent | 🟡 Partially deployed | Run in shadow mode, before an application |
+| `ai-decision-shadow-mode` workflow | 🔵 In repo | The template for the no-application assessment |
+| Caseworker Helper + next-best-action | 🔵 In repo | Draft the citizen outreach in locale |
+| Translator · Classifier | 🟡 Partially deployed | Localise and contextualise the outreach |
+| SMS · email · push · voice | 🟡 Partially deployed | Deliver the approved outreach |
+| Confidential Ledger · AI Act registry · Purview | 🔵 In repo: templates and registry assets; 🗺️ Roadmap: writer and operational lineage | Future anchor and lineage |
+| Consent + opt-out surface | 🟡 Partially deployed | Gate every outreach |
+| **Event Scanner / Planner** | 🗺️ Roadmap | The autonomous orchestrator |
+| **Critic / Reflection agent** | 🗺️ Roadmap | Review the draft before the human |
+| **`proactive-outreach` workflow** | 🗺️ Roadmap | Twin of the shadow-mode workflow |
+| **Take-up KPI tile** | 🗺️ Roadmap | Prove the impact on the CIO dashboard |
 
 Two new agents, one new workflow, one dashboard tile, one screen. Everything else is a re-wire.
 
@@ -349,15 +353,17 @@ Two new agents, one new workflow, one dashboard tile, one screen. Everything els
 
 ## 10. Status and roadmap
 
-Guardian is a vision, presented here as design and story. It is not coded. The honesty labels below match the rest of the repository.
+Guardian is a roadmap design. It is not coded. The labels below use the repository status vocabulary.
 
 | Item | Label |
 |---|:-:|
-| The proactive model and this architecture | 🧭 Vision |
-| Reused bricks (eligibility, helper, channels, ledger) | 🟢 Live / built |
-| Event Scanner, Critic agent, outreach workflow | 🟠 Blueprint |
-| Consent and opt-out enforcement | 🟡 Partial today |
-| Take-up KPI on Fabric CIO dashboard | ⚪ Roadmap |
+| The proactive model and this architecture | 🗺️ Roadmap |
+| Eligibility, helper, and channel components | 🟡 Partially deployed |
+| Confidential Ledger resource template and registry assets | 🔵 In repo |
+| Ledger writer and operational lineage backend | 🗺️ Roadmap |
+| Event Scanner, Critic agent, and outreach workflow | 🗺️ Roadmap |
+| Consent and opt-out enforcement | 🟡 Partially deployed |
+| Take-up KPI on Fabric CIO dashboard | 🗺️ Roadmap |
 
 A pragmatic path to a live demo, entirely on synthetic personas:
 

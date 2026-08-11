@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import { load as loadYaml } from 'js-yaml';
 import type { Country } from './config.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -57,7 +57,7 @@ export function loadDisclosureScripts(): Record<string, string> {
 function loadDialog(locale: Locale, id: string): IvrDialog {
   const filePath = path.join(repoRoot, 'apps', 'voice', 'ivr', locale, `${id}.yaml`);
   const raw = fs.readFileSync(filePath, 'utf8');
-  const parsed = yaml.load(raw) as IvrDialog;
+  const parsed = loadYaml(raw) as IvrDialog;
   if (parsed.kind !== 'UDCSP.Voice.Dialog') {
     throw new Error(`Unexpected kind '${parsed.kind}' in ${filePath}; expected UDCSP.Voice.Dialog`);
   }
@@ -82,5 +82,5 @@ export function loadIvrPack(country: Country): IvrPack {
 export function loadEscalationPolicy(): unknown {
   const filePath = path.join(repoRoot, 'apps', 'voice', 'escalation', 'escalation-config.yaml');
   if (!fs.existsSync(filePath)) return null;
-  return yaml.load(fs.readFileSync(filePath, 'utf8'));
+  return loadYaml(fs.readFileSync(filePath, 'utf8'));
 }

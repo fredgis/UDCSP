@@ -140,6 +140,44 @@
           ]
         }
       },
+      "Resolve_document_blob_name_candidate": {
+        "_comment": "Prefer the blobName returned by the upload flow. Legacy callers can supply only documentBlobUrl, in which case strip the known citizen-uploads container prefix and any query or fragment.",
+        "type": "Compose",
+        "inputs": "@if(not(empty(triggerBody()?['documentBlobName'])), trim(string(triggerBody()?['documentBlobName'])), if(contains(string(coalesce(triggerBody()?['documentBlobUrl'], '')), '/citizen-uploads/'), first(split(first(split(last(split(string(triggerBody()?['documentBlobUrl']), '/citizen-uploads/')), '?')), '#')), ''))",
+        "runAfter": {
+          "Call_translator_to_caseworker_locale": [
+            "Succeeded",
+            "Skipped",
+            "Failed"
+          ]
+        }
+      },
+      "Inspect_document_blob_name": {
+        "type": "Compose",
+        "inputs": {
+          "candidate": "@outputs('Resolve_document_blob_name_candidate')",
+          "segments": "@split(outputs('Resolve_document_blob_name_candidate'), '/')",
+          "date": "@first(split(outputs('Resolve_document_blob_name_candidate'), '/'))",
+          "guid": "@take(last(split(outputs('Resolve_document_blob_name_candidate'), '/')), 32)",
+          "separator": "@take(skip(last(split(outputs('Resolve_document_blob_name_candidate'), '/')), 32), 1)",
+          "filename": "@skip(last(split(outputs('Resolve_document_blob_name_candidate'), '/')), 33)"
+        },
+        "runAfter": {
+          "Resolve_document_blob_name_candidate": [
+            "Succeeded"
+          ]
+        }
+      },
+      "Validate_document_blob_name": {
+        "_comment": "Return an empty string unless the candidate exactly matches ^[0-9]{8}/[0-9a-f]{32}_[A-Za-z0-9._-]+$. Native workflow expressions keep this validation compatible with both Standard and Consumption tiers.",
+        "type": "Compose",
+        "inputs": "@if(and(equals(length(outputs('Inspect_document_blob_name')?['segments']), 2), equals(length(outputs('Inspect_document_blob_name')?['date']), 8), empty(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(outputs('Inspect_document_blob_name')?['date'], '0', ''), '1', ''), '2', ''), '3', ''), '4', ''), '5', ''), '6', ''), '7', ''), '8', ''), '9', '')), equals(length(outputs('Inspect_document_blob_name')?['guid']), 32), empty(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(replace(outputs('Inspect_document_blob_name')?['guid'], '0', ''), '1', ''), '2', ''), '3', ''), '4', ''), '5', ''), '6', ''), '7', ''), '8', ''), '9', ''), 'a', ''), 'b', ''), 'c', ''), 'd', ''), 'e', ''), 'f', '')), equals(outputs('Inspect_document_blob_name')?['separator'], '_'), not(empty(outputs('Inspect_document_blob_name')?['filename'])), equals(uriComponent(outputs('Inspect_document_blob_name')?['filename']), outputs('Inspect_document_blob_name')?['filename']), not(contains(outputs('Inspect_document_blob_name')?['filename'], '!')), not(contains(outputs('Inspect_document_blob_name')?['filename'], '~')), not(contains(outputs('Inspect_document_blob_name')?['filename'], '*')), not(contains(outputs('Inspect_document_blob_name')?['filename'], decodeUriComponent('%27'))), not(contains(outputs('Inspect_document_blob_name')?['filename'], '(')), not(contains(outputs('Inspect_document_blob_name')?['filename'], ')'))), outputs('Inspect_document_blob_name')?['candidate'], '')",
+        "runAfter": {
+          "Inspect_document_blob_name": [
+            "Succeeded"
+          ]
+        }
+      },
       "Create_D365_case": {
         "type": "Http",
         "inputs": {
@@ -152,7 +190,7 @@
             "OData-Version": "4.0",
             "Prefer": "return=representation"
           },
-          "_comment": "Explicit field-by-field mapping to udcsp_application Dataverse columns. The whole payload no longer goes through; only known schema attributes are persisted, the rest is captured server-side via App Insights + Purview. Common columns first, then residency-only, then child-benefit-only, then AI verdict, then consents.",
+          "_comment": "Explicit field-by-field mapping to udcsp_application Dataverse columns. Citizen UPN/email come only from the trusted APIM header; caller citizenId is not persisted as an identity assertion. The document blob name is validated before persistence and the legacy URL is reconstructed server-side. Caller-supplied claimsEnvelope is unverified and intentionally not persisted.",
           "body": {
             "udcsp_name": "@{coalesce(triggerBody()?['displayTitle'], concat(coalesce(triggerBody()?['applicationType'],'application'), ' — ', coalesce(triggerBody()?['citizen']?['givenName'], triggerBody()?['parentName'], 'citizen')))}",
             "udcsp_country": "@parameters('country')",
@@ -164,12 +202,12 @@
             "udcsp_traceparent": "@outputs('Ensure_traceparent')",
             "udcsp_aiActRegistryId": "@parameters('aiActRegistryId')",
 
-            "udcsp_citizenid": "@triggerBody()?['citizenId']",
-            "udcsp_citizenupn": "@triggerBody()?['citizen']?['upn']",
+            "udcsp_citizenid": null,
+            "udcsp_citizenupn": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "udcsp_citizengivenname": "@coalesce(triggerBody()?['citizen']?['givenName'], triggerBody()?['parentName'])",
             "udcsp_citizenfamilyname": "@triggerBody()?['citizen']?['familyName']",
             "udcsp_citizenlanguage": "@coalesce(triggerBody()?['language'], 'en')",
-            "udcsp_citizenemail": "@triggerBody()?['email']",
+            "udcsp_citizenemail": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
 
             "udcsp_movedate": "@triggerBody()?['moveDate']",
             "udcsp_destinationaddress": "@triggerBody()?['destinationAddress']",
@@ -185,9 +223,9 @@
             "udcsp_adultsinhousehold": "@triggerBody()?['adultsInHousehold']",
             "udcsp_residence": "@triggerBody()?['residence']",
 
-            "udcsp_documentbloburl": "@triggerBody()?['documentBlobUrl']",
-            "udcsp_documentblobname": "@triggerBody()?['documentBlobName']",
-            "udcsp_storageaccount": "@triggerBody()?['storageAccount']",
+            "udcsp_documentbloburl": "@if(empty(outputs('Validate_document_blob_name')), null, concat('https://udcsp', parameters('country'), 'prodlake.blob.core.windows.net/citizen-uploads/', outputs('Validate_document_blob_name')))",
+            "udcsp_documentblobname": "@outputs('Validate_document_blob_name')",
+            "udcsp_storageaccount": "@if(empty(outputs('Validate_document_blob_name')), null, concat('udcsp', parameters('country'), 'prodlake'))",
             "udcsp_extractedfieldsjson": "@string(coalesce(triggerBody()?['extractedFields'], body('Call_document_extractor_if_attachments')?['fields']))",
             "udcsp_documentsummary": "@body('Call_document_extractor_if_attachments')?['summary']",
 
@@ -197,7 +235,6 @@
             "udcsp_estimateddecisiondate": "@addDays(utcNow(), 4)",
             "udcsp_workflowstepsjson": "@string(triggerBody()?['workflowSteps'])",
 
-            "udcsp_claimsenvelope": "@triggerBody()?['claimsEnvelope']",
             "udcsp_purviewlabel": "@if(coalesce(triggerBody()?['crossBorder'], false), 'Restricted-Cross-Border', 'Restricted')",
 
             "udcsp_consentcrossborder": "@if(triggerBody()?['consents']?['crossBorder'], utcNow(), null)",
@@ -207,10 +244,9 @@
           }
         },
         "runAfter": {
-          "Call_translator_to_caseworker_locale": [
+          "Validate_document_blob_name": [
             "Succeeded",
-            "Skipped",
-            "Failed"
+            "Skipped"
           ]
         }
       },

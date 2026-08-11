@@ -22,7 +22,7 @@ import type { Config } from './config.js';
 import type { IvrPack } from './ivr-loader.js';
 import type { LogContext } from './logger.js';
 import { logEvent, logError } from './logger.js';
-import { TOOL_DEFS, buildToolDefs, callTopicRouter } from './foundry-tool.js';
+import { buildToolDefs, callTopicRouter } from './foundry-tool.js';
 import { transferToD365Caseworker } from './d365-handoff.js';
 
 export interface BridgeOptions {
@@ -100,7 +100,7 @@ export class RealtimeBridge {
     this.realtime.on('open', () => this.onRealtimeOpen());
     this.realtime.on('message', (raw) => this.onRealtimeMessage(raw.toString()));
     this.realtime.on('close', (code, reason) => {
-      logEvent('realtime.closed', this.ctx, { code, reason: reason.toString() });
+      logEvent('realtime.closed', this.ctx, { code, reasonLength: reason.length });
       this.shutdown();
     });
     this.realtime.on('error', (err) => logError(err, this.ctx));
@@ -193,16 +193,23 @@ export class RealtimeBridge {
         break;
       case 'response.audio_transcript.done':
       case 'response.output_audio_transcript.done':
-        logEvent('realtime.assistant_transcript', this.ctx, { transcript: msg.transcript });
+        logEvent('realtime.assistant_transcript', this.ctx, {
+          transcriptLength: typeof msg.transcript === 'string' ? msg.transcript.length : 0,
+        });
         break;
       case 'conversation.item.input_audio_transcription.completed':
-        logEvent('realtime.user_transcript', this.ctx, { transcript: msg.transcript });
+        logEvent('realtime.user_transcript', this.ctx, {
+          transcriptLength: typeof msg.transcript === 'string' ? msg.transcript.length : 0,
+        });
         break;
       case 'response.function_call_arguments.done':
         await this.handleToolCall(msg.call_id, msg.name, msg.arguments);
         break;
       case 'error':
-        logError(new Error(`realtime error: ${JSON.stringify(msg.error)}`), this.ctx);
+        logEvent('realtime.error', this.ctx, {
+          errorType: typeof msg.error?.type === 'string' ? msg.error.type : undefined,
+          errorCode: typeof msg.error?.code === 'string' ? msg.error.code : undefined,
+        });
         break;
       default:
         // Surface every other event type once so we can diagnose schema drift
@@ -243,7 +250,8 @@ export class RealtimeBridge {
     } catch {
       // ignore
     }
-    logEvent('realtime.tool_call', this.ctx, { tool: name, args });
+    const argumentKeys = args !== null && typeof args === 'object' && !Array.isArray(args) ? Object.keys(args).sort() : [];
+    logEvent('realtime.tool_call', this.ctx, { tool: name, argumentKeys });
     let output: unknown = { ok: false, error: 'unknown_tool' };
     try {
       if (name === 'lookup_topic_router') {

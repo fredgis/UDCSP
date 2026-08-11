@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage } from 'react-intl';
 import { getCountry } from '../auth/msalConfig';
+import { clearCases } from '../utils/caseStore';
 import { Flag } from './Flag';
 
 const COUNTRY_NAME_LOCALIZED: Record<string, string> = {
@@ -33,6 +34,7 @@ export function UserBadge() {
     // to "current location" for the post-logout redirect, that location
     // is the home page rather than a protected /apply/* route. The
     // postLogoutRedirectUri below also explicitly forces origin + '/'.
+    clearCases();
     navigate('/');
     void instance.logoutRedirect({
       postLogoutRedirectUri: window.location.origin + '/',

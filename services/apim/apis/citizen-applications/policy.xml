@@ -4,6 +4,30 @@
     <include-fragment fragment-id="cors" />
     <include-fragment fragment-id="correlation-id" />
     <include-fragment fragment-id="jwt-validate-external-id" />
+    <set-variable name="rawBearer" value="@(context.Request.Headers.GetValueOrDefault(&quot;Authorization&quot;,&quot;&quot;).Replace(&quot;Bearer &quot;, &quot;&quot;))" />
+    <set-variable name="citizenUpn" value="@{
+        try {
+            var jwt = ((string)context.Variables[&quot;rawBearer&quot;]).AsJwt();
+            if (jwt == null) { return &quot;&quot;; }
+            string u = null;
+            if (jwt.Claims.ContainsKey(&quot;preferred_username&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;preferred_username&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;email&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;email&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;emails&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;emails&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;upn&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;upn&quot;,&quot;&quot;); }
+            return u ?? &quot;&quot;;
+        } catch { return &quot;&quot;; }
+    }" />
+    <set-header name="x-udcsp-citizen-upn" exists-action="delete" />
+    <choose>
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables[&quot;citizenUpn&quot;]) || !System.Text.RegularExpressions.Regex.IsMatch((string)context.Variables[&quot;citizenUpn&quot;], &quot;^[A-Za-z0-9!#$%&amp;'*+/=?^_`{|}~-]+(?:[.][A-Za-z0-9!#$%&amp;'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:[.][A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\z&quot;))">
+        <return-response>
+          <set-status code="401" reason="Unauthorized" />
+          <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
+          <set-body>{"error":"missing_citizen_claim"}</set-body>
+        </return-response>
+      </when>
+    </choose>
+    <set-header name="x-udcsp-citizen-upn" exists-action="override"><value>@((string)context.Variables["citizenUpn"])</value></set-header>
     <rate-limit-by-key calls="120" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
     <set-header name="traceparent" exists-action="skip"><value>@(context.Request.Headers.GetValueOrDefault("traceparent", Guid.NewGuid().ToString()))</value></set-header>
     <set-header name="x-request-tracing" exists-action="override"><value>true</value></set-header>

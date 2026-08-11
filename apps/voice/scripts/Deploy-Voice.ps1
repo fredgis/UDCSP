@@ -174,6 +174,7 @@ Invoke-AzDeployment `
         azureOpenAiEndpoint           = $AzureOpenAiEndpoint
         apimBaseUrl                   = $ApimBaseUrl
         cognitiveServicesEndpoint     = $CognitiveServicesEndpoint
+        acsResourceName               = $AcsResourceName
         d365TransferTargetId          = $D365TransferTargetId
         d365VoiceQueueId              = $D365VoiceQueueId
         appInsightsConnectionString   = $AppInsightsConnectionString

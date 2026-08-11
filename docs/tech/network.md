@@ -1,13 +1,15 @@
 # 🌐 Network Architecture
 
-> **Every packet's path, every private endpoint, every NSG, every public IP.** Companion to [`architecture.md`](./architecture.md) (the *what is built*) and [`data.md`](./data.md) (the *where bytes live*). This document is the **network truth**: 3 sovereign spokes, 1 optional federation hub, 18 named workload subnets plus 3 Bastion subnets, ~28 private endpoints, 2 public IPs per country (Bastion and APIM), 0 shared data path.
+> **Every packet's path, every private endpoint, every NSG, every public IP.** Companion to [`architecture.md`](./architecture.md) (the *what is built*) and [`data.md`](./data.md) (the *where bytes live*). This document is the **network truth**: 3 sovereign spokes, 1 optional federation hub, 18 named workload subnets plus 3 Bastion subnets, the status-scoped Private Endpoint inventory below, 2 public IPs per country (Bastion and APIM), 0 shared data path.
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** Each country (DK · SE · NO) runs in its own `/16` spoke VNet, in its own Azure region, in its own RG, with its own **Foundry hub** in the `ai` subnet. Every PaaS that touches citizen data is reached via **Private Endpoint** with `publicNetworkAccess: Disabled`. 🟢 **Live**: the citizen document-upload path now uses APIM managed identity to PUT to the storage **blob** endpoint through a blob Private Endpoint and country-linked `privatelink.blob.core.windows.net` DNS. 🟢 **Live**: each country has two public IPs, the Azure Bastion PIP for admin access and the APIM Standard static PIP required for External-mode stv2 VNet injection. There are still no jump-boxes and no NIC-level public IPs. 🗺️ **Roadmap**: the federation hub VNet, Azure Firewall Premium forced egress, mTLS partner gateway, hub-hosted DNS model, Lighthouse/B2B plane and hub-level Sentinel are target design unless their deployment is proven separately. The **LandingZone module is the single ARM owner of every subnet** (including `AzureBastionSubnet`); the private upload patch adds the `apim` subnet until the IaC catches up. 🔵 **In repo**: Azure DDoS Protection Standard IaC exists and attaches through the LandingZone when configured.
+> **TL;DR.** Each country (DK · SE · NO) runs in its own `/16` spoke VNet, in its own Azure region, in its own RG, with its own **Foundry hub** in the `ai` subnet. The target invariant is that every PaaS service touching citizen data uses a Private Endpoint with `publicNetworkAccess: Disabled`; each row below states its deployment status. 🟢 **Live**: the citizen document-upload path now uses APIM managed identity to PUT to the storage **blob** endpoint through a blob Private Endpoint and country-linked `privatelink.blob.core.windows.net` DNS. 🟢 **Live**: each country has two public IPs, the Azure Bastion PIP for admin access and the APIM Standard static PIP required for External-mode stv2 VNet injection. There are still no jump-boxes and no NIC-level public IPs. 🔵 **In repo, not deployed**: Logic Apps Standard host storage disables public and shared-key access and adds blob and file Private Endpoints. The allowed-regions initiative now pins DK to `northeurope`, SE to `swedencentral` and NO to `norwayeast`. 🗺️ **Roadmap**: the federation hub VNet, Azure Firewall Premium forced egress, mTLS partner gateway, hub-hosted DNS model, Lighthouse/B2B plane and hub-level Sentinel are target design unless their deployment is proven separately. The **LandingZone module is the single ARM owner of every subnet** (including `AzureBastionSubnet`); the private upload patch adds the `apim` subnet until the IaC catches up. 🔵 **In repo**: Azure DDoS Protection Standard IaC exists and attaches through the LandingZone when configured.
+>
+> ⚠️ The pending security remediation has not been deployed. The live private-upload patch remains valid and mandatory, but the live APIM policies, Logic Apps host-storage networking and Azure Policy assignments still reflect their previous state.
 >
 > 📐 The accompanying schematic is generated from [`network.drawio`](./network.drawio) and exported below as [`network.png`](./network.png). Re-render with the `drawio2png` skill if you edit the source.
 >
@@ -38,7 +40,7 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 |---|-----------|-----|
 | 1 | **Per-country sovereign spoke VNet** | Each citizen-data plane (DK, SE, NO) lives in its own VNet, in its own Azure region, in its own resource group. No cross-country data path at network layer. |
 | 2 | **Hub-and-spoke target topology** | 🗺️ **Roadmap**: each spoke peers to the **federation hub VNet** per sovereign zone. The hub target hosts Azure Firewall Premium, the hub-hosted Private DNS model, the mTLS partner gateway, the Lighthouse/B2B plane and hub-level Sentinel. The current repo keeps `hubVnetId` optional and the checked-in country parameters are empty, so do not treat the hub path as proven 🟢 **Live** from this file alone. |
-| 3 | **Private endpoints by default** | Every PaaS service that touches citizen data (Key Vault, Storage Account, ACR, PostgreSQL, Redis Enterprise, Recovery Services Vault) has `publicNetworkAccess: Disabled` and is reached via a Private Endpoint inside the spoke. |
+| 3 | **Private endpoints by default** | Target invariant: every PaaS service that touches citizen data has `publicNetworkAccess: Disabled` and a Private Endpoint. Deployment status remains per-resource; the new Logic Apps host-storage blob/file endpoints are 🔵 **In repo**, not live. |
 | 4 | **Two public IP exceptions: Bastion and APIM** | 🟢 **Live**: each country has a Bastion `pip` for admin access and an APIM Standard static `pip` for External-mode stv2 VNet injection. Admin sessions still go through Bastion, with no jump-box and no NIC-level public IPs. Policy tags such as `publicIpException` and `sovereigntyPolicy` must account for both approved exceptions. |
 | 5 | **NSG per subnet, not per workload** | Each named workload subnet (web, app, data, integration, ai, apim) gets its own NSG. Default-deny inbound from Internet; rules are added by capability modules or the private upload patch. |
 | 6 | **LandingZone owns ALL subnets** | The LZ is the single ARM owner of subnet definitions including `AzureBastionSubnet`. Every other module (Bastion, later Postgres delegated subnet, APIM premium, etc.) references subnets via `existing` so re-deploying the LZ stays idempotent and cannot accidentally drop in-use subnets. |
@@ -46,6 +48,7 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 | 8 | **Azure Firewall Premium as the single egress** | 🗺️ **Roadmap**: one Azure Firewall Premium per sovereign zone in the federation hub VNet becomes the controlled path out of spoke subnets. UDRs on spoke subnets force `0.0.0.0/0` to the firewall; FQDN allow-lists enforce least-privilege egress per workload type. TLS inspection applies to non-Microsoft destinations. |
 | 9 | **Per-country Private DNS Zones** | 🟢 **Live** for the private upload path: `privatelink.blob.core.windows.net` and `privatelink.dfs.core.windows.net` are created in each country platform RG and linked to that country VNet. The hub-hosted central DNS model remains 🗺️ **Roadmap** unless deployment evidence is added. See §5 for the zone inventory. |
 | 10 | **mTLS to every national authority** | 🗺️ **Roadmap** unless deployment evidence is added: Logic App `partner-cert-rotate` rotates per-partner client certs in the country Key Vault; APIM presents the cert on every outbound call. Inbound from partners, when applicable, uses the same pattern reversed. |
+| 11 | **Country-exact region policy** | 🔵 **In repo:** resource and resource-group locations are bound to DK `northeurope`, SE `swedencentral` and NO `norwayeast`. `westeurope` is no longer allowed for citizen-data resources. The revised initiative is not deployed, and a recovery region must be added explicitly before cross-region DR can work. |
 
 ---
 
@@ -58,6 +61,8 @@ The 3 country spokes use disjoint, RFC1918, `/16` blocks. Subnetting is fully de
 | DK | `northeurope` | `udcsp-dk-prod-platform-rg` | `10.10.0.0/16` |
 | SE | `swedencentral` | `udcsp-se-prod-platform-rg` | `10.20.0.0/16` |
 | NO | `norwayeast` | `udcsp-no-prod-platform-rg` | `10.30.0.0/16` |
+
+The checked-in allowed-regions initiative now encodes this table as a one-region allow-list per country. Do not treat another EU region as implicitly valid for citizen-data resources.
 
 Inside each spoke (replace `X` with `10`/`20`/`30`):
 
@@ -169,7 +174,7 @@ The 3 spokes are isolated from each other at L3, there is no spoke-to-spoke peer
 |---------|------|-------|
 | Citizen web/chat UI | Internet → Azure Front Door (**Premium, WAF**) → origin = Static Web App PE in `web` subnet | TLS 1.3; WAF in **Prevention** mode with `DefaultRuleSet 2.1` (OWASP CRS 3.3-derived) + `MicrosoftDefaultRuleSet 1.0` for bot protection + a tenant `RateLimitRuleSet` per citizen IP (200 req / 5 min on `/api/*`); Defender for APIs onboarded. |
 | Citizen voice | Internet → ACS (managed) → voice orchestrator Container App in `app` subnet | ACS is a Microsoft-hosted PaaS; the orchestrator runtime is private. One toll-free PSTN number per country. |
-| APIM gateway | Internet → APIM (External, Premium) → backends via VNet integration in `app` / `integration` / `apim` | APIM keeps public ingress on `udcsp-{c}-prod-apim.azure-api.net`. The Standard static APIM PIP is required for stv2 VNet injection, while APIM egress to private storage routes through the `apim` subnet. APIM rate-limit policy is enforced for `/agents/topic-router/messages` (see `services/apim`). |
+| APIM gateway | Internet → APIM (External, Premium) → backends via VNet integration in `app` / `integration` / `apim` | APIM keeps public ingress on `udcsp-{c}-prod-apim.azure-api.net`. The Standard static APIM PIP is required for stv2 VNet injection, while APIM egress to private storage routes through the `apim` subnet. 🔵 **In repo:** policies now require a JWT on every API, but the live gateways still serve the previously published policies until redeployed. |
 | Admin (operators only) | Internet → Azure Bastion PIP → SSH/RDP to NICs inside the spoke | Bastion is the approved admin-plane public IP. Conditional Access + PIM required; policy tags must distinguish this from the APIM public IP exception. |
 
 ### 4.2 Citizen document upload path
@@ -183,6 +188,10 @@ The 3 spokes are isolated from each other at L3, there is no spoke-to-spoke peer
 5. [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1) injects APIM into the `apim` subnet in External mode and creates the blob Private Endpoint plus `privatelink.blob.core.windows.net` DNS link.
 
 The gateway hostname stays `udcsp-{c}-prod-apim.azure-api.net`; only APIM egress changes. See [`patch/README.md`](../../patch/README.md) for the operational runbook and 30 to 45 minute APIM injection timing.
+
+🔵 **In repo, not live:** before the PUT, APIM now requires the External ID audience and `access_as_user` scope, enforces an 8 MiB decoded limit, permits only PDF, PNG and JPEG, checks decoded magic bytes, and derives the blob content type server-side.
+
+⚙️ **Scripted:** future installs grant the APIM identity `Storage Blob Data Contributor` only on `citizen-uploads`. The live tenant's existing account-scoped grant survives the installer change and needs a separate manual removal after the container-scoped path is verified.
 
 ### 4.3 Outbound (spoke → Internet / Azure)
 
@@ -217,7 +226,7 @@ NSG inter-subnet rules are restricted to the explicit pairs above; everything el
 
 ## 5. Private Endpoint inventory
 
-Per country, the LandingZone module and the private upload patch create these PEs:
+The status column identifies which source owns each Private Endpoint and whether it is deployed:
 
 | Service | Subnet | PE name pattern | DNS zone | Status / source |
 |---------|--------|-----------------|----------|-----------------|
@@ -225,6 +234,8 @@ Per country, the LandingZone module and the private upload patch create these PE
 | Storage Lake DFS (ADLS Gen2) | `data` | `udcsp-{c}-prod-lake-pe` | `privatelink.dfs.core.windows.net` | 🟢 **Live**: existing DFS PE, DNS zone group attached by patch |
 | Storage Blob (document upload) | `data` | `udcsp-{c}-prod-lake-blob-pe` | `privatelink.blob.core.windows.net` | 🟢 **Live**: [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1) |
 | Container Registry (ACR Premium) | `integration` | `udcsp-{c}-prod-acr-pe` | `privatelink.azurecr.io` | 🔵 **In repo**: LandingZone module |
+| Logic Apps host Storage Blob | `data` | `udcsp{c}{env}lawork-blob-pe` | `privatelink.blob.core.windows.net` | 🔵 **In repo**, not deployed; `workspace.bicep` has no DNS zone group |
+| Logic Apps host Storage File | `data` | `udcsp{c}{env}lawork-file-pe` | `privatelink.file.core.windows.net` | 🔵 **In repo**, not deployed; `workspace.bicep` has no DNS zone group |
 
 Added by capability modules:
 
@@ -237,6 +248,7 @@ Added by capability modules:
 | Foundry / AI Services | `ai` | `infra/foundry/*` |
 | Azure AI Search | `ai` | `infra/data/ai-search/*` |
 | Service Bus | `integration` | `infra/integration/service-bus/*` |
+| Logic Apps Standard host storage, blob + file | `data` | `services/logic-apps/workspace.bicep` |
 
 ### 5.1 Private DNS Zones (one per surface, per country)
 
@@ -246,6 +258,7 @@ The private upload patch creates country-scoped zones in each country platform R
 |---|---|---|---|
 | `privatelink.dfs.core.windows.net` | DK · SE · NO, one country zone and one country VNet link each | ADLS Gen2 DFS endpoint | 🟢 **Live**: [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1) |
 | `privatelink.blob.core.windows.net` | DK · SE · NO, one country zone and one country VNet link each | Blob endpoint of ADLS for document upload | 🟢 **Live**: [`patch/Enable-PrivateUploadPath.ps1`](../../patch/Enable-PrivateUploadPath.ps1) |
+| `privatelink.file.core.windows.net` | Country VNet only in target design | Logic Apps Standard host-storage file endpoint | 🔵 **In repo**; deployment and DNS-link state not verified |
 | `privatelink.vaultcore.azure.net` | Country VNet only in target design | Key Vault | 🔵 **In repo** / 🗺️ **Roadmap** deployment state not verified here |
 | `privatelink.azurecr.io` | Country VNet only in target design | ACR | 🔵 **In repo** / 🗺️ **Roadmap** deployment state not verified here |
 | `privatelink.postgres.database.azure.com` | Country VNet only in target design | PostgreSQL Flexible | 🔵 **In repo** / 🗺️ **Roadmap** deployment state not verified here |

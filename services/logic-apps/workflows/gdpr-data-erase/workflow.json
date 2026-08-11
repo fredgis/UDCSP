@@ -1,5 +1,5 @@
 {
-  "_comment": "Priva is the primary DSR orchestrator. This Logic App is now a secondary technical erasure processor when a priva-request-id header is present; without that header it runs the legacy transition flow. PostgreSQL + Redis cleanup placeholders are used for subject draft/session data.",
+  "_comment": "Priva is the primary DSR orchestrator. This Logic App is now a secondary technical erasure processor when a priva-request-id header is present; without that header it runs the legacy transition flow. Citizen self-service subject identity always comes from the trusted x-udcsp-citizen-upn header. A delegated DSR where a DPO acts for a citizen requires a separate authenticated actor/subject contract and is out of scope.",
   "definition": {
     "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2019-05-01/workflowdefinition.json#",
     "contentVersion": "1.0.0.0",
@@ -52,11 +52,11 @@
             "properties": {
               "subjectId": {
                 "type": "string",
-                "description": "Pseudonymous subject ID (never the raw national ID)."
+                "description": "Deprecated caller value; ignored. The authenticated subject comes from x-udcsp-citizen-upn."
               },
               "requestedBy": {
                 "type": "string",
-                "description": "Citizen self-service portal id, or caseworker id when raised on behalf of citizen."
+                "description": "Non-authoritative audit metadata only; delegated DSR authorization requires a separate flow."
               },
               "scope": {
                 "type": "array",
@@ -79,7 +79,6 @@
               }
             },
             "required": [
-              "subjectId",
               "requestedBy",
               "evidenceOfIdentity"
             ]
@@ -135,7 +134,7 @@
             "x-priva-request-id": "@outputs('Check-Priva-Owns-Request')?['privaRequestId']",
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
-          "body": "@triggerBody()"
+          "body": "@setProperty(triggerBody(), 'subjectId', triggerOutputs()?['headers']?['x-udcsp-citizen-upn'])"
         },
         "runAfter": {
           "AppInsights_dimension": [
@@ -156,7 +155,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "country": "@parameters('country')"
           }
         },
@@ -178,7 +177,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']",
             "mode": "tombstone-pseudonymise"
           }
@@ -201,7 +200,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
@@ -223,7 +222,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
@@ -246,7 +245,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "retentionHolds": "@body('Check_retention_holds')?['holds']"
           }
         },
@@ -269,7 +268,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "mode": "flush-subject-session"
           }
         },
@@ -292,7 +291,7 @@
             "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
           },
           "body": {
-            "subjectId": "@triggerBody()?['subjectId']",
+            "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
             "mode": "pseudonymise-only"
           }
         },
@@ -323,7 +322,7 @@
                 "x-dsr-processing-role": "@outputs('Check-Priva-Owns-Request')?['processingRole']"
               },
               "body": {
-                "subjectId": "@triggerBody()?['subjectId']",
+                "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
                 "outcome": "@if(empty(body('Check_retention_holds')?['holds']), 'completed', 'completed-with-archive-holds')",
                 "retentionHolds": "@body('Check_retention_holds')?['holds']"
               }
@@ -357,7 +356,7 @@
               "subject": "@{parameters('country')}/@{workflow().run.name}",
               "data": {
                 "traceparent": "@outputs('Ensure_traceparent')",
-                "subjectId": "@triggerBody()?['subjectId']",
+                "subjectId": "@triggerOutputs()?['headers']?['x-udcsp-citizen-upn']",
                 "scopesErased": [
                   "dataverse",
                   "fabric",

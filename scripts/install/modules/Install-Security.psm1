@@ -7,6 +7,81 @@
 #>
 Import-Module (Join-Path $PSScriptRoot '..\lib\InstallHelpers.psm1') -Force -DisableNameChecking
 
+function Get-BuiltInPolicyRoleCatalog {
+    param([Parameter(Mandatory)][string]$Subscription)
+
+    $raw = (& az policy definition list `
+        --subscription $Subscription `
+        --query '[].{id:id,name:name,displayName:displayName,roles:policyRule.then.details.roleDefinitionIds}' `
+        --output json `
+        --only-show-errors 2>$null) -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        throw "Could not read Azure built-in policy definitions needed to calculate remediation roles."
+    }
+
+    $catalog = @{}
+    foreach ($definition in @($raw | ConvertFrom-Json)) {
+        $roles = @($definition.roles | Where-Object { $_ })
+        if ($roles.Count -eq 0) { continue }
+
+        $entry = [pscustomobject]@{
+            DisplayName = if ($definition.displayName) { [string]$definition.displayName } else { [string]$definition.name }
+            Roles       = @($roles)
+        }
+        $id = ([string]$definition.id).ToLowerInvariant()
+        $name = ([string]$definition.name).ToLowerInvariant()
+        if ($id) { $catalog[$id] = $entry }
+        if ($name) { $catalog[$name] = $entry }
+    }
+    return $catalog
+}
+
+function Get-PolicySetRemediationRoles {
+    param(
+        [Parameter(Mandatory)][string]$PolicySetName,
+        [Parameter(Mandatory)][string]$Subscription,
+        [Parameter(Mandatory)][hashtable]$RoleCatalog
+    )
+
+    $raw = (& az policy set-definition show `
+        --name $PolicySetName `
+        --subscription $Subscription `
+        --output json `
+        --only-show-errors 2>$null) -join [Environment]::NewLine
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        throw "Could not read built-in policy initiative '$PolicySetName' to calculate remediation roles."
+    }
+
+    $policySet = $raw | ConvertFrom-Json
+    $references = if ($policySet.policyDefinitions) {
+        @($policySet.policyDefinitions)
+    } else {
+        @($policySet.properties.policyDefinitions)
+    }
+    $rolesById = @{}
+    foreach ($reference in $references) {
+        $definitionId = ([string]$reference.policyDefinitionId).ToLowerInvariant()
+        $baseDefinitionId = $definitionId -replace '/versions/[^/]+$', ''
+        $definitionName = ($baseDefinitionId -split '/')[-1]
+
+        $entry = $null
+        foreach ($lookupKey in @($definitionId, $baseDefinitionId, $definitionName)) {
+            if ($lookupKey -and $RoleCatalog.ContainsKey($lookupKey)) {
+                $entry = $RoleCatalog[$lookupKey]
+                break
+            }
+        }
+        if (-not $entry) { continue }
+
+        foreach ($roleDefinitionId in @($entry.Roles)) {
+            $roleId = ([string]$roleDefinitionId -split '/')[-1].ToLowerInvariant()
+            if (-not $roleId) { continue }
+            $rolesById[$roleId] = @($rolesById[$roleId]) + $entry.DisplayName
+        }
+    }
+    return $rolesById
+}
+
 function Install-Security {
     [CmdletBinding(SupportsShouldProcess)]
     param([Parameter(Mandatory)][hashtable]$Config, [Parameter(Mandatory)][string]$ReportDir)
@@ -19,6 +94,8 @@ function Install-Security {
     foreach ($f in @($defender, $sentinel, $policyInitiative)) { if (-not (Test-Path $f)) { throw "Missing $f" } }
 
     $initiative = Get-Content $policyInitiative -Raw | ConvertFrom-Json
+    $builtInPolicyRoleCatalog = $null
+    $policySetRoleCache = @{}
     $defsFile = Join-Path $ReportDir 'baseline-initiative-definitions.json'
     @($initiative.properties.policyDefinitions) | ConvertTo-Json -Depth 10 | Set-Content $defsFile
 
@@ -79,48 +156,62 @@ function Install-Security {
             foreach ($builtin in $initiative.properties._referencedBuiltInInitiatives) {
                 $guid = ($builtin.id -split '/')[-1]
                 $assignName = "udcsp-$($builtin.name)-$($scope.ToLower())"
-                # NIST 800-53 + ISO 27001 contain Modify / DeployIfNotExists
-                # policies, so ARM requires a managed identity on the
-                # assignment (Azure error: ResourceIdentityRequired).
-                # MCSB is Audit-only and tolerates --mi-system-assigned too,
-                # so we apply it uniformly. --location is mandatory when the
-                # MI flag is set, even for sub-scoped assignments.
+                $remediationRoles = $null
+                if (-not $whatIf) {
+                    if (-not $builtInPolicyRoleCatalog) {
+                        $builtInPolicyRoleCatalog = Get-BuiltInPolicyRoleCatalog -Subscription $sub
+                    }
+                    if (-not $policySetRoleCache.ContainsKey($guid)) {
+                        $policySetRoleCache[$guid] = Get-PolicySetRemediationRoles `
+                            -PolicySetName $guid `
+                            -Subscription $sub `
+                            -RoleCatalog $builtInPolicyRoleCatalog
+                    }
+                    $remediationRoles = $policySetRoleCache[$guid]
+                }
+
+                $assignmentCommand = @('az','policy','assignment','create',
+                                       '--name', $assignName,
+                                       '--subscription', $sub,
+                                       '--policy-set-definition', $guid,
+                                       '--scope', "/subscriptions/$sub")
+                # A managed identity is required only when a referenced policy
+                # documents a Modify/DeployIfNotExists remediation role.
+                if ($whatIf -or ($remediationRoles -and $remediationRoles.Count -gt 0)) {
+                    $assignmentCommand += @('--mi-system-assigned','--location',$region)
+                }
+                $assignmentCommand += @('--only-show-errors','--output','none')
                 Invoke-NativeCommand `
-                    -Command @('az','policy','assignment','create',
-                               '--name', $assignName,
-                               '--subscription', $sub,
-                               '--policy-set-definition', $guid,
-                               '--scope', "/subscriptions/$sub",
-                               '--mi-system-assigned',
-                               '--location', $region,
-                               '--only-show-errors','--output','none') `
+                    -Command $assignmentCommand `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
 
-                # Grant the MI the roles it needs to remediate. Microsoft
-                # publishes the exact role per built-in initiative; we use
-                # the documented minimum (User Access Administrator is NOT
-                # required for these three).  Idempotent: az role assignment
-                # create returns 0 when the assignment already exists.
-                if (-not $whatIf) {
+                # The initiatives span current and future resource groups, so
+                # their only complete common scope is the subscription. The
+                # privilege is narrowed to the exact roleDefinitionIds declared
+                # by each referenced policy; Contributor is granted only when
+                # a built-in policy explicitly documents that requirement.
+                if (-not $whatIf -and $remediationRoles.Count -gt 0) {
                     $miPrincipalId = (& az policy assignment show --name $assignName --scope "/subscriptions/$sub" --subscription $sub --query identity.principalId -o tsv --only-show-errors 2>$null)
                     if ($miPrincipalId) {
-                        # 'Contributor' = b24988ac-6180-42a0-ab88-20f7382dd24c
-                        # Broad but matches Microsoft's own remediation docs
-                        # for these regulatory initiatives. Tighten in a
-                        # follow-up if a customer requires least-privilege.
-                        Invoke-NativeCommand `
-                            -Command @('az','role','assignment','create',
-                                       '--assignee-object-id', $miPrincipalId.Trim(),
-                                       '--assignee-principal-type','ServicePrincipal',
-                                       '--role','b24988ac-6180-42a0-ab88-20f7382dd24c',
-                                       '--scope', "/subscriptions/$sub",
-                                       '--subscription', $sub,
-                                       '--only-show-errors','--output','none') `
-                            -LogFile $logFile `
-                            -WhatIfFlag $whatIf `
-                            -ContinueOnError
+                        foreach ($roleId in $remediationRoles.Keys) {
+                            $policyNames = @($remediationRoles[$roleId] | Sort-Object -Unique)
+                            if ($roleId -eq 'b24988ac-6180-42a0-ab88-20f7382dd24c') {
+                                Write-Log -LogFile $logFile -Message "[least-privilege] Contributor retained only because these policies declare it: $($policyNames -join '; ')"
+                            }
+                            Invoke-NativeCommand `
+                                -Command @('az','role','assignment','create',
+                                           '--assignee-object-id', $miPrincipalId.Trim(),
+                                           '--assignee-principal-type','ServicePrincipal',
+                                           '--role',$roleId,
+                                           '--scope', "/subscriptions/$sub",
+                                           '--subscription', $sub,
+                                           '--only-show-errors','--output','none') `
+                                -LogFile $logFile `
+                                -WhatIfFlag $whatIf `
+                                -ContinueOnError
+                        }
                     }
                 }
             }

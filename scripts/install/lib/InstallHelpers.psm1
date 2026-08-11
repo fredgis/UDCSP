@@ -22,6 +22,22 @@
 #>
 
 $Script:CliCheckCache = @{}
+$Script:SensitiveArgumentFlags = @(
+    '--deployment-token',
+    '--password',
+    '--secret',
+    '--key',
+    '--client-secret',
+    '--connection-string',
+    '--access-token',
+    '--refresh-token',
+    '--token',
+    '--api-key',
+    '--account-key',
+    '--sas-token',
+    '--credential',
+    '--certificate-password'
+)
 
 function Write-Log {
     param([string]$LogFile, [string]$Message)
@@ -29,6 +45,39 @@ function Write-Log {
         New-Item -ItemType Directory -Force -Path (Split-Path $LogFile -Parent) | Out-Null
     }
     "$([DateTime]::UtcNow.ToString('o')) $Message" | Add-Content -Path $LogFile -Encoding UTF8
+}
+
+function Get-RedactedCommand {
+    param([Parameter(Mandatory)][string[]]$Command)
+
+    $safeCommand = @($Command | ForEach-Object { [string]$_ })
+    for ($i = 0; $i -lt $safeCommand.Count; $i++) {
+        $argument = $safeCommand[$i]
+        if ($Script:SensitiveArgumentFlags -contains $argument.ToLowerInvariant()) {
+            if ($i + 1 -lt $safeCommand.Count) {
+                $safeCommand[$i + 1] = '<redacted>'
+                $i++
+            }
+            continue
+        }
+
+        if ($argument -match '^(?<name>[^=]+)=(?<value>.*)$') {
+            $parameterName = $Matches.name
+            $normalizedName = ($parameterName -replace '[-_.]', '').ToLowerInvariant()
+            if ($normalizedName -eq 'key' -or $normalizedName -match '(password|passwd|secret|token|apikey|clientsecret|connectionstring|credential|sastoken|accountkey|accesskey|subscriptionkey|privatekey|keyuri|keyvalue)') {
+                $safeCommand[$i] = "$parameterName=<redacted>"
+            }
+        }
+    }
+    return $safeCommand
+}
+
+function Format-CommandForLog {
+    param([Parameter(Mandatory)][string[]]$Command)
+
+    return ($Command | ForEach-Object {
+        if ($_ -match '\s|"') { '"' + ($_ -replace '"','\"') + '"' } else { $_ }
+    }) -join ' '
 }
 
 function Test-CliAvailable {
@@ -102,15 +151,16 @@ function Invoke-NativeCommand {
         [bool]$WhatIfFlag = $false,
         [switch]$ContinueOnError
     )
-    $cmdLine = ($Command | ForEach-Object { if ($_ -match '\s|"') { '"' + ($_ -replace '"','\"') + '"' } else { $_ } }) -join ' '
+    $loggedCommand = @(Get-RedactedCommand -Command $Command)
+    $cmdLine = Format-CommandForLog -Command $loggedCommand
     Write-Log -LogFile $LogFile -Message "[run] $cmdLine"
     # Compact human-readable label for console (no -Verbose required)
     $label = & {
-        if ($Command[0] -ne 'az') { return "$($Command[0]) $($Command[1])" }
-        $verb = ($Command[1..([Math]::Min(3,$Command.Count-1))]) -join ' '
-        $nameIdx = [Array]::IndexOf($Command, '--name')
-        if ($nameIdx -lt 0) { $nameIdx = [Array]::IndexOf($Command, '-n') }
-        $name = if ($nameIdx -ge 0 -and $nameIdx + 1 -lt $Command.Count) { " $($Command[$nameIdx + 1])" } else { '' }
+        if ($loggedCommand[0] -ne 'az') { return "$($loggedCommand[0]) $($loggedCommand[1])" }
+        $verb = ($loggedCommand[1..([Math]::Min(3,$loggedCommand.Count-1))]) -join ' '
+        $nameIdx = [Array]::IndexOf($loggedCommand, '--name')
+        if ($nameIdx -lt 0) { $nameIdx = [Array]::IndexOf($loggedCommand, '-n') }
+        $name = if ($nameIdx -ge 0 -and $nameIdx + 1 -lt $loggedCommand.Count) { " $($loggedCommand[$nameIdx + 1])" } else { '' }
         "az $verb$name"
     }
     Write-Host ("    ↳ {0,-90} " -f $label) -NoNewline -ForegroundColor DarkGray

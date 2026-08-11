@@ -8,12 +8,18 @@
       "category": "UDCSP"
     },
     "parameters": {
-      "listOfAllowedLocations": [
-        "northeurope",
-        "swedencentral",
-        "norwayeast",
-        "westeurope"
-      ]
+      "countryCode": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Sovereign country",
+          "description": "Required country binding: DK uses northeurope, SE uses swedencentral, and NO uses norwayeast."
+        },
+        "allowedValues": [
+          "DK",
+          "SE",
+          "NO"
+        ]
+      }
     },
     "policyDefinitions": [
       {
@@ -23,7 +29,7 @@
         "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c",
         "parameters": {
           "listOfAllowedLocations": {
-            "value": "[parameters('listOfAllowedLocations')]"
+            "value": "[createArray(if(equals(parameters('countryCode'), 'DK'), 'northeurope', if(equals(parameters('countryCode'), 'SE'), 'swedencentral', 'norwayeast')))]"
           }
         }
       },
@@ -34,7 +40,7 @@
         "policyDefinitionId": "/providers/Microsoft.Authorization/policyDefinitions/e765b5de-1225-4ba3-bd56-1ac6695af988",
         "parameters": {
           "listOfAllowedLocations": {
-            "value": "[parameters('listOfAllowedLocations')]"
+            "value": "[createArray(if(equals(parameters('countryCode'), 'DK'), 'northeurope', if(equals(parameters('countryCode'), 'SE'), 'swedencentral', 'norwayeast')))]"
           }
         }
       }

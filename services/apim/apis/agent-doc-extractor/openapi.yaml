@@ -29,12 +29,19 @@ paths:
                 language:     { type: string, example: en }
       responses:
         '200':
-          description: Extraction result
+          description: Demo result inferred from metadata; not document evidence
           content:
             application/json:
               schema:
                 type: object
+                required: [synthetic, provenance]
                 properties:
+                  synthetic:
+                    type: boolean
+                    enum: [true]
+                  provenance:
+                    type: string
+                    enum: [inferred-from-filename]
                   fields:     { type: object, additionalProperties: true }
                   confidence: { type: number, format: float }
                   reasoning:  { type: string }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
-import { listCases, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
+import { listCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
 import { parseDescription, extractEligibility, humanTitle, applicationIcon, humanStatus } from '../utils/descriptionParser';
 import { Flag } from '../components/Flag';
 
@@ -82,17 +82,6 @@ function toCase(c: StoredCase): Case {
   };
 }
 
-function normalize(items: IntakeApplication[]): Case[] {
-  return items.map((t, i) => ({
-    id: t.id || t.applicationId || t.caseId || t.activityid || `app-${i}`,
-    title: humanTitle(t.applicationType, t.title || t.subject),
-    status: humanStatus(t.status || t.state, t.statecode),
-    updatedAt: t.updatedAt || t.submittedAt || t.createdOn || t.createdon || '',
-    applicationType: t.applicationType,
-    country: t.country,
-  }));
-}
-
 // Find the rich local entry that corresponds to a remote item.
 // The apply page stores under a correlationId (random GUID returned by the LA)
 // while the GET-list returns the Dataverse activityid — those never collide.
@@ -133,6 +122,11 @@ export function MyCasesPage() {
     setError(null);
     const country = getCountry();
     const upn = accounts[0]?.username;
+    if (!upn) {
+      setCases([]);
+      setLoading(false);
+      return;
+    }
     const local: Case[] = listCases(country, upn).map(toCase);
     try {
       const apim = apimBaseUrlForCountry(country);
@@ -159,12 +153,10 @@ export function MyCasesPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const payload = (await res.json()) as { value?: IntakeApplication[] } | IntakeApplication[];
       const items = Array.isArray(payload) ? payload : payload.value ?? [];
-      // Build remote StoredCase entries, merge each with a matching rich local
-      // entry (apply page wrote one under correlationId — different id but same
-      // citizenUpn/applicationType/timestamp) so the detail page recovers
-      // workflowSteps, extractedFields, documentBlobUrl, eligibilityPreflight
-      // even when the Dataverse description was truncated.
-      const localPool = listAllCases();
+      // Build remote StoredCase entries and merge each with a matching
+      // same-session entry. localStorage retains only the minimal offline
+      // fallback, while rich values are re-hydrated from APIM after reload.
+      const localPool = listCases(country, upn);
       const consumed = new Set<string>();
       const merged: StoredCase[] = [];
       for (const it of items) {
@@ -343,7 +335,7 @@ export function MyCasesPage() {
                             const txt = await res.text().catch(() => '');
                             alert(`Server refused to delete (HTTP ${res.status}). The case is NOT removed.\n\n${txt.substring(0, 300)}`);
                           }
-                        } catch (e) {
+                        } catch {
                           alert('Server unreachable — case NOT removed. Try again later.');
                         }
                       }
@@ -364,4 +356,3 @@ export function MyCasesPage() {
     </section>
   );
 }
-

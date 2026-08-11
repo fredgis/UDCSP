@@ -95,20 +95,33 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
       traceparent: generateTraceparent(),
     };
 
-    if (isAuth && accounts[0]) {
-      try {
-        const tok = await instance.acquireTokenSilent({ scopes: [apiScopeForCountry(country)], account: accounts[0] });
-        if (tok.accessToken) headers.authorization = `Bearer ${tok.accessToken}`;
-      } catch {
-        // fall through anonymously — APIM may still allow
-      }
+    if (!isAuth || !accounts[0]) {
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'assistant', text: 'The assistant is temporarily unavailable because your sign-in session is no longer active. Please sign in again and retry.' },
+      ]);
+      setBusy(false);
+      return;
+    }
+
+    try {
+      const tok = await instance.acquireTokenSilent({ scopes: [apiScopeForCountry(country)], account: accounts[0] });
+      if (!tok.accessToken) throw new Error('access-token-missing');
+      headers.authorization = `Bearer ${tok.accessToken}`;
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'assistant', text: 'The assistant is temporarily unavailable because your sign-in session could not be renewed. Please sign out, sign in again, and retry.' },
+      ]);
+      setBusy(false);
+      return;
     }
 
     try {
       if (!apimBase) throw new Error('apim-base-not-configured');
       const acct = accounts[0];
-      const cases = isAuth
-        ? listCases(country, acct?.username).slice(0, 10).map((c) => ({
+      const cases = isAuth && acct?.username
+        ? listCases(country, acct.username).slice(0, 10).map((c) => ({
             id: c.id,
             title: c.title,
             status: c.status,
@@ -127,12 +140,8 @@ export function ChatWidget({ channel = 'web', locale }: Props) {
           channel,
           locale,
           text,
-          authenticated: isAuth,
           citizen: isAuth
             ? {
-                name: acct?.name ?? null,
-                givenName: acct?.name?.split(' ')[0] ?? null,
-                upn: acct?.username ?? null,
                 country,
               }
             : null,

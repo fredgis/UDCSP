@@ -33,7 +33,10 @@
     Nothing about the public site, APIM routes, products or policies changes.
 
 .PARAMETER SubscriptionId
-    Target subscription. Defaults to the UDCSP prod (MngEnvMCAP) subscription.
+    Target subscription. No default: pass it explicitly, or let the script fall
+    back to the subscription your Azure CLI session is already logged into.
+    Deliberately not hardcoded, so the real subscription id stays out of source
+    control.
 
 .PARAMETER Countries
     Which country stamps to patch. Defaults to dk, no, se.
@@ -45,21 +48,34 @@
 .EXAMPLE
     ./Enable-PrivateUploadPath.ps1 -Countries no,se
 
+.EXAMPLE
+    ./Enable-PrivateUploadPath.ps1 -SubscriptionId '<your-subscription-id>'
+
 .NOTES
-    Requires: Azure CLI (az), logged in to the MngEnvMCAP tenant, with network +
+    Requires: Azure CLI (az), logged in to the target tenant, with network +
     APIM contributor on the target resource groups. PowerShell 7+.
     APIM VNet injection is asynchronous and typically takes 30-45 minutes per
     instance; the gateway may see brief blips during the switch.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [string]$SubscriptionId = '<SUBSCRIPTION_ID>',
+    [string]$SubscriptionId,
     [ValidateSet('dk', 'no', 'se')]
     [string[]]$Countries = @('dk', 'no', 'se'),
     [switch]$SkipApimInjection
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Resolve the target subscription from the current az session when the caller
+# did not pass one. Keeps the real subscription id out of the repository.
+if (-not $SubscriptionId) {
+    $SubscriptionId = (az account show --query id -o tsv 2>$null)
+    if (-not $SubscriptionId) {
+        throw "No -SubscriptionId supplied and no active 'az login' session. Run 'az login' or pass -SubscriptionId explicitly."
+    }
+    Write-Host "Using subscription from the current az session: $SubscriptionId"
+}
 
 # --- Per-country stamp configuration -----------------------------------------
 # Everything follows the udcsp-<c>-prod-* naming convention; only the VNet base

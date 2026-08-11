@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { apimBaseUrlForCountry, apiScopeForCountry, getCountry } from '../auth/msalConfig';
-import { getCase, listAllCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
+import { getCase, listCases, removeCase, updateCase, upsertCase, type StoredCase } from '../utils/caseStore';
 import { parseDescription, extractEligibility, humanTitle, applicationIcon, humanStatus } from '../utils/descriptionParser';
 import { Flag } from '../components/Flag';
 
@@ -142,20 +142,29 @@ export function CaseDetailPage() {
   const navigate = useNavigate();
   const isAuth = useIsAuthenticated();
   const { instance, accounts } = useMsal();
-  const [c, setC] = useState<StoredCase | undefined>(() => (id ? getCase(id) : undefined));
+  const citizenUpn = accounts[0]?.username;
+  const [c, setC] = useState<StoredCase | undefined>(() => (id && citizenUpn ? getCase(id, citizenUpn) : undefined));
   const [hydrating, setHydrating] = useState(false);
+  const hydratedFor = useRef<string | null>(null);
+  const hydrationKey = id && citizenUpn ? `${id}:${citizenUpn.trim().toLowerCase()}` : null;
+  const caseBelongsToAccount = Boolean(
+    c?.citizenUpn
+    && citizenUpn
+    && c.citizenUpn.trim().toLowerCase() === citizenUpn.trim().toLowerCase(),
+  );
 
   useEffect(() => {
-    if (id) setC(getCase(id));
-  }, [id]);
+    setC(id && citizenUpn ? getCase(id, citizenUpn) : undefined);
+  }, [id, citizenUpn]);
 
   // If localStorage doesn't have the case (cross-device, hard refresh on a deep
-  // link, etc.), or the local entry is slim (missing workflowSteps), fetch the
-  // list from APIM, merge with rich legacy local entries, and re-read.
+  // link, etc.), or the local entry is the minimal offline fallback, fetch the
+  // list from APIM, merge with same-session in-memory data, and re-read.
   useEffect(() => {
-    if (!id || !isAuth || hydrating) return;
-    const hasRich = c && c.workflowSteps && c.workflowSteps.length > 0 && c.eligibility;
-    if (hasRich) return;
+    if (!id || !isAuth || !citizenUpn || !hydrationKey || hydrating) return;
+    const hasRich = caseBelongsToAccount && c && c.workflowSteps && c.workflowSteps.length > 0 && c.eligibility;
+    if (hasRich || hydratedFor.current === hydrationKey) return;
+    hydratedFor.current = hydrationKey;
     let cancelled = false;
     (async () => {
       setHydrating(true);
@@ -174,12 +183,14 @@ export function CaseDetailPage() {
         if (!res.ok) return;
         const payload = (await res.json()) as { value?: RemoteCase[] } | RemoteCase[];
         const items = Array.isArray(payload) ? payload : payload.value ?? [];
-        const localPool = listAllCases();
+        if (cancelled) return;
+        const localPool = listCases(country, citizenUpn);
         const consumed = new Set<string>();
         for (const it of items) {
-          const remoteStored = remoteToStored(it, country, accounts[0]?.username);
+          if (cancelled) return;
+          const remoteStored = remoteToStored(it, country, citizenUpn);
           if (!remoteStored.id) continue;
-          // Match with a rich legacy local entry on (upn, applicationType, ~time)
+          // Match with the same-session entry on (upn, applicationType, ~time).
           const remoteTs = new Date(remoteStored.updatedAt).getTime();
           let best: { l: StoredCase; delta: number } | undefined;
           for (const l of localPool) {
@@ -209,7 +220,7 @@ export function CaseDetailPage() {
           }
           upsertCase(remoteStored);
         }
-        if (!cancelled) setC(getCase(id));
+        if (!cancelled) setC(getCase(id, citizenUpn));
       } catch {
         // fall through to 'not found' UI
       } finally {
@@ -217,11 +228,11 @@ export function CaseDetailPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [id, c, isAuth, hydrating, accounts, instance]);
+  }, [id, c, isAuth, hydrating, accounts, instance, citizenUpn, caseBelongsToAccount, hydrationKey]);
 
   const steps = useMemo(() => (c ? (c.workflowSteps && c.workflowSteps.length ? c.workflowSteps : defaultSteps(c)) : []), [c]);
 
-  if (!c) {
+  if (!c || !citizenUpn || !caseBelongsToAccount) {
     return (
       <article className="apply-page">
         <h1>
@@ -293,7 +304,7 @@ export function CaseDetailPage() {
               if (isCanceled) return;
               if (!confirm(intl.formatMessage({ id: 'cases.cancelConfirm', defaultMessage: 'Cancel this application? You can re-apply later.' }))) return;
               updateCase(c.id, { status: 'Canceled by citizen' });
-              setC(getCase(c.id));
+              setC(getCase(c.id, citizenUpn));
             }}
           >
             <FormattedMessage id="cases.cancelLabel" defaultMessage="Cancel" />

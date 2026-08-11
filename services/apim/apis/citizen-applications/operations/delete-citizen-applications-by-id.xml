@@ -18,24 +18,24 @@
 <policies>
   <inbound>
     <base />
-    <set-variable name="rawBearer" value="@(context.Request.Headers.GetValueOrDefault("Authorization","").Replace("Bearer ", ""))" />
+    <set-variable name="rawBearer" value="@(context.Request.Headers.GetValueOrDefault(&quot;Authorization&quot;,&quot;&quot;).Replace(&quot;Bearer &quot;, &quot;&quot;))" />
     <set-variable name="citizenUpn" value="@{
         try {
-            var jwt = ((string)context.Variables["rawBearer"]).AsJwt();
-            if (jwt == null) { return ""; }
+            var jwt = ((string)context.Variables[&quot;rawBearer&quot;]).AsJwt();
+            if (jwt == null) { return &quot;&quot;; }
             string u = null;
-            if (jwt.Claims.ContainsKey("preferred_username")) { u = jwt.Claims.GetValueOrDefault("preferred_username",""); }
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("email")) { u = jwt.Claims.GetValueOrDefault("email",""); }
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("emails")) { u = jwt.Claims.GetValueOrDefault("emails",""); }
-            if (string.IsNullOrEmpty(u) && jwt.Claims.ContainsKey("upn")) { u = jwt.Claims.GetValueOrDefault("upn",""); }
-            return u ?? "";
-        } catch { return ""; }
+            if (jwt.Claims.ContainsKey(&quot;preferred_username&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;preferred_username&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;email&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;email&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;emails&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;emails&quot;,&quot;&quot;); }
+            if (string.IsNullOrEmpty(u) &amp;&amp; jwt.Claims.ContainsKey(&quot;upn&quot;)) { u = jwt.Claims.GetValueOrDefault(&quot;upn&quot;,&quot;&quot;); }
+            return u ?? &quot;&quot;;
+        } catch { return &quot;&quot;; }
     }" />
     <choose>
-      <when condition="@(string.IsNullOrEmpty((string)context.Variables["citizenUpn"]))">
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables[&quot;citizenUpn&quot;]) || !System.Text.RegularExpressions.Regex.IsMatch((string)context.Variables[&quot;citizenUpn&quot;], &quot;^[A-Za-z0-9!#$%&amp;'*+/=?^_`{|}~-]+(?:[.][A-Za-z0-9!#$%&amp;'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:[.][A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\z&quot;))">
         <return-response>
           <set-status code="401" reason="Unauthorized" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
@@ -43,12 +43,12 @@
         </return-response>
       </when>
     </choose>
-    <set-variable name="applicationId" value="@(context.Request.MatchedParameters.GetValueOrDefault("applicationId",""))" />
+    <set-variable name="applicationId" value="@(context.Request.MatchedParameters.GetValueOrDefault(&quot;applicationId&quot;,&quot;&quot;))" />
     <choose>
-      <when condition="@(string.IsNullOrEmpty((string)context.Variables["applicationId"]))">
+      <when condition="@(string.IsNullOrEmpty((string)context.Variables[&quot;applicationId&quot;]))">
         <return-response>
           <set-status code="400" reason="Bad Request" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
@@ -69,20 +69,20 @@
       <set-header name="OData-Version" exists-action="override"><value>4.0</value></set-header>
     </send-request>
     <choose>
-      <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode == 404)">
+      <when condition="@(((IResponse)context.Variables[&quot;dvGet&quot;]).StatusCode == 404)">
         <return-response>
           <set-status code="404" reason="Not Found" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
           <set-body>{"error":"not_found","message":"No Dataverse row with this activityid (likely a stale local-cache entry)."}</set-body>
         </return-response>
       </when>
-      <when condition="@(((IResponse)context.Variables["dvGet"]).StatusCode != 200)">
+      <when condition="@(((IResponse)context.Variables[&quot;dvGet&quot;]).StatusCode != 200)">
         <return-response>
           <set-status code="502" reason="Bad Gateway" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
@@ -92,17 +92,18 @@
     </choose>
     <set-variable name="ownsRow" value="@{
         try {
-            var body = ((IResponse)context.Variables["dvGet"]).Body.As<JObject>();
-            var desc = (string)body["description"] ?? "";
-            var upn = (string)context.Variables["citizenUpn"];
-            return desc.Contains("citizenUpn: " + upn);
+            var body = ((IResponse)context.Variables[&quot;dvGet&quot;]).Body.As&lt;JObject&gt;();
+            var desc = (string)body[&quot;description&quot;] ?? &quot;&quot;;
+            var upn = (string)context.Variables[&quot;citizenUpn&quot;];
+            var ownerToken = &quot;citizenUpn: &quot; + upn;
+            return desc.Contains(ownerToken + &quot; |&quot;) || desc.EndsWith(ownerToken, StringComparison.Ordinal);
         } catch { return false; }
     }" />
     <choose>
-      <when condition="@(!(bool)context.Variables["ownsRow"])">
+      <when condition="@(!(bool)context.Variables[&quot;ownsRow&quot;])">
         <return-response>
           <set-status code="403" reason="Forbidden" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
           <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
@@ -110,28 +111,56 @@
         </return-response>
       </when>
     </choose>
-    <set-variable name="documentBlobUrl" value="@{
+    <set-variable name="validatedBlobDeleteUrl" value="@{
         try {
-            var body = ((IResponse)context.Variables["dvGet"]).Body.As<JObject>();
-            var desc = (string)body["description"] ?? "";
-            var idx = desc.IndexOf("| text:");
-            if (idx < 0) { return ""; }
+            var body = ((IResponse)context.Variables[&quot;dvGet&quot;]).Body.As&lt;JObject&gt;();
+            var desc = (string)body[&quot;description&quot;] ?? &quot;&quot;;
+            var idx = desc.IndexOf(&quot;| text:&quot;, StringComparison.Ordinal);
+            if (idx &lt; 0) { return &quot;&quot;; }
             var json = desc.Substring(idx + 7).Trim();
             JObject parsed;
-            try { parsed = JObject.Parse(json); } catch { return ""; }
-            var url = (string)parsed["documentBlobUrl"];
-            return url ?? "";
-        } catch { return ""; }
+            try { parsed = JObject.Parse(json); } catch { return &quot;&quot;; }
+            var prefix = &quot;https://{{storage-account-name}}.blob.core.windows.net/citizen-uploads/&quot;;
+            var blobNamePattern = &quot;^[0-9]{8}/[0-9a-f]{32}_[A-Za-z0-9._-]+$&quot;;
+            if (parsed.Property(&quot;documentBlobName&quot;) != null) {
+                var blobName = (string)parsed[&quot;documentBlobName&quot;] ?? &quot;&quot;;
+                return System.Text.RegularExpressions.Regex.IsMatch(blobName, blobNamePattern)
+                    ? prefix + blobName
+                    : &quot;&quot;;
+            }
+            var legacyUrl = (string)parsed[&quot;documentBlobUrl&quot;] ?? &quot;&quot;;
+            if (!legacyUrl.StartsWith(prefix, StringComparison.Ordinal)) { return &quot;&quot;; }
+            var legacyBlobName = legacyUrl.Substring(prefix.Length);
+            return System.Text.RegularExpressions.Regex.IsMatch(legacyBlobName, blobNamePattern)
+                ? prefix + legacyBlobName
+                : &quot;&quot;;
+        } catch { return &quot;&quot;; }
     }" />
     <choose>
-      <when condition="@(!string.IsNullOrEmpty((string)context.Variables["documentBlobUrl"]))">
+      <when condition="@(!string.IsNullOrEmpty((string)context.Variables[&quot;validatedBlobDeleteUrl&quot;]))">
         <authentication-managed-identity resource="https://storage.azure.com/" output-token-variable-name="blobToken" ignore-error="true" />
-        <send-request mode="new" response-variable-name="blobDel" timeout="20" ignore-error="true">
-          <set-url>@((string)context.Variables["documentBlobUrl"])</set-url>
+        <send-request mode="new" response-variable-name="blobDel" timeout="20" ignore-error="false">
+          <set-url>@((string)context.Variables["validatedBlobDeleteUrl"])</set-url>
           <set-method>DELETE</set-method>
           <set-header name="Authorization" exists-action="override"><value>@("Bearer " + (string)context.Variables["blobToken"])</value></set-header>
           <set-header name="x-ms-version" exists-action="override"><value>2021-06-08</value></set-header>
         </send-request>
+        <choose>
+          <when condition="@(((IResponse)context.Variables[&quot;blobDel&quot;]).StatusCode == 404)">
+            <trace source="citizen-applications" severity="information">
+              <message>@("Blob already absent (404); continuing with Dataverse delete.")</message>
+              <metadata name="statusCode" value="404" />
+              <metadata name="correlationId" value="@(context.RequestId.ToString())" />
+            </trace>
+          </when>
+          <when condition="@(((IResponse)context.Variables[&quot;blobDel&quot;]).StatusCode != 202)">
+            <trace source="citizen-applications" severity="warning">
+              <message>@("Blob delete failed with status " + ((IResponse)context.Variables["blobDel"]).StatusCode + "; continuing with Dataverse delete.")</message>
+              <metadata name="statusCode" value="@(((IResponse)context.Variables[&quot;blobDel&quot;]).StatusCode.ToString())" />
+              <metadata name="correlationId" value="@(context.RequestId.ToString())" />
+            </trace>
+          </when>
+        </choose>
       </when>
     </choose>
     <send-request mode="new" response-variable-name="dvDel" timeout="20" ignore-error="true">
@@ -145,10 +174,10 @@
       <set-header name="OData-Version" exists-action="override"><value>4.0</value></set-header>
     </send-request>
     <choose>
-      <when condition="@(((IResponse)context.Variables["dvDel"]).StatusCode == 204 || ((IResponse)context.Variables["dvDel"]).StatusCode == 200 || ((IResponse)context.Variables["dvDel"]).StatusCode == 404)">
+      <when condition="@(((IResponse)context.Variables[&quot;dvDel&quot;]).StatusCode == 204 || ((IResponse)context.Variables[&quot;dvDel&quot;]).StatusCode == 200 || ((IResponse)context.Variables[&quot;dvDel&quot;]).StatusCode == 404)">
         <return-response>
           <set-status code="204" reason="No Content" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
         </return-response>
@@ -156,7 +185,7 @@
     </choose>
     <return-response>
       <set-status code="502" reason="Bad Gateway" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>
@@ -169,7 +198,7 @@
     <base />
     <return-response>
       <set-status code="500" reason="Internal Server Error" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{ var origin = context.Request.Headers.GetValueOrDefault("Origin",""); return origin == "https://udcsp.fredgis.com" || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net" || origin == "http://localhost:3000" || origin == "http://localhost:5173" ? origin : "https://udcsp.fredgis.com"; }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="content-type" exists-action="override"><value>application/json</value></set-header>

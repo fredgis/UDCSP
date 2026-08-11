@@ -2,11 +2,13 @@
 
 # 🍳 UDCSP — Acceptance Recipe
 
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
 ### 8 scenarios · ≈ 1 h 15 walkthrough · 100 % eval coverage
 
-*A directly-executable, step-by-step walkthrough an evaluator follows after install — proves every requirement in [`case-study-11.md`](./case-study-11.md) is met by the deployed platform. Mirrors [`uses.md`](./uses.md) demos 1-8 (demos 9-10 are not exercised live — see footer note).*
+*A mixed-status walkthrough for evaluating live paths, source-only controls, and roadmap gaps after installation. It mirrors [`uses.md`](./uses.md) demos 1-8; demos 9-10 are not exercised live.*
 
-[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-8_live-2E7D32?style=for-the-badge)](#)
+[![Scenarios](https://img.shields.io/badge/🎬_Scenarios-8_mixed_status-2E7D32?style=for-the-badge)](#)
 [![Walkthrough](https://img.shields.io/badge/⏱️_Walkthrough-≈_1h15-AD1457?style=for-the-badge)](#)
 [![Coverage](https://img.shields.io/badge/🎯_Eval_rows-1_→_18-E65100?style=for-the-badge)](#)
 
@@ -16,11 +18,13 @@
 
 > **Audience:** evaluators and platform owners walking through the platform end-to-end after install.
 >
-> **Goal:** prove that every requirement in [`case-study-11.md`](./case-study-11.md) is demonstrably met by the deployed platform — step by step, in the same order an auditor would follow.
+> **Goal:** verify each requirement against its actual live, partial, in-repo, scripted, or roadmap status, in the same order an auditor would follow.
 
 > ℹ️ **Live vs target steps.** Scenarios 1 (Anna · DK→SE) and 2 (Lars · voice) include steps that depend on D365 Customer Service per country + Verified ID issuance, which are **not yet provisioned**. Today, Scenario 2 runs in **no-handoff mode** (citizen↔AI loop only, verbal callback closure) and Scenario 1's SE landing is mocked via the shared Dataverse Power App. See [`../tech/inprogress.md`](../tech/inprogress.md) for the canonical live-vs-roadmap split.
+>
+> **Security remediation status:** 🔵 **In repo**, not deployed. Document fields are synthetic filename inferences, voice transcript content is not retained in corrected telemetry, citizen DSR identity is bound to the caller only in pending source, delegated DPO requests need a separate actor contract, and the lineage endpoint has no backend. Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**.
 
-Each step is **directly executable**, names the file/script involved, the expected outcome, and the **eval-matrix row** + **demo scenario from [`uses.md`](./uses.md)** it satisfies.
+Each step names the file or surface involved, the expected outcome, and the matching eval row and scenario. Some steps inspect source or target contracts rather than live behavior; those steps are labelled.
 
 This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
@@ -29,9 +33,9 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | 🟩 **1** | 👩‍💼 Anna — cross-border identity & residency (DK → SE) | Anna moves from Copenhagen to Stockholm and registers her Swedish residency using her Danish eID. | 🌐 Web | ~15 min | 1, 2, 3, 7, 12, 13 |
 | 🟪 **2** | 👨‍🦯 Lars — accessibility voice journey (NO) | Lars, blind, calls in Norwegian to check a tax-refund case and is warm-transferred to a human. | 📞 Voice | ~10 min | 4, 5, 11, 12, 17 |
 | 🟨 **3** | 👩‍🍼 Maria — Polish caregiver, screen-reader application (SE) | Maria applies for child benefit in Sweden using NVDA + keyboard, in Polish end-to-end. | 🌐 Web + 🦮 NVDA | ~10 min | 4, 5, 13 |
-| 🟧 **4** | 👨‍🔧 Erik — DK SMB mobile payslip upload | Erik snaps a payslip on mobile for an income-based benefit; AI extracts fields, AI is assistive. | 📱 Mobile | ~10 min | 7, 13, 16 |
+| 🟧 **4** | 👨‍🔧 Erik: DK SMB mobile payslip upload | Erik uploads a payslip; the current AI returns synthetic filename-inferred fields, not document extraction. | 📱 Mobile | ~10 min | 7, 13, 16 |
 | 🟫 **5** | 👩‍⚖️ Astrid — SE caseworker reviews AI pre-assessment | Astrid triages her D365 queue with Copilot, inspects AI reasoning, overrides one decision. | 🖥️ D365 | ~10 min | 6, 7, 12, 14, 15 |
-| ⬛ **6** | 🧑‍💼 Hans — DK DPO handles a Subject Access Request | Hans fulfils a citizen's GDPR data export end-to-end with Purview lineage. | 🛡️ APIM + Purview | ~5 min | 8, 9, 10, 18 |
+| ⬛ **6** | 🧑‍💼 Hans: DK DPO reviews the DSR contract | Citizen self-service is caller-bound in source. Delegated DPO export and Purview lineage are roadmap. | 🛡️ APIM + governance | ~5 min | 8, 9, 10, 18 |
 | 🟥 **7** | 🦸‍♀️ Ingrid — SOC investigates impossible-travel alert | Ingrid investigates a Sentinel alert on a caseworker account, runs the containment playbook. | 🛰️ Sentinel | ~10 min | 9, 10 |
 | 🟦 **8** | 👨‍💻 Henrik — CIO opens the cockpit | Henrik reads per-country / per-language outcomes; confirms 28→4-day SLA + 47-portal sunset. | 📊 Power BI | ~5 min | 11, 16 |
 | | | | **Total** | **≈ 1 h 15** | |
@@ -53,14 +57,14 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | 1.2 | Click "Logga in med dansk eID" | Login page | Federated External ID flow → DK External ID → eIDAS bridge → SE External ID |
 | 1.3 | Confirm citizen lands authenticated as `anna@SYNTH-PERSONAS-DK` | Portal header | Display name + DK→SE migration banner shown |
 | 1.4 | Apply for residency permit | Wizard "Apply / Boenderegistrering" | Multi-step accessible form, ARIA live region, no a11y violations |
-| 1.5 | Upload payslip + passport scan (samples in `data/synthetic/documents/`) | Upload step | Doc Extractor (Foundry agent) returns structured fields, latency < 4 s |
+| 1.5 | Upload payslip + passport scan (samples in `data/synthetic/documents/`) | Upload step | Current Doc Extractor returns synthetic fields inferred from the filename. After remediation, the response must visibly show `synthetic: true` and `provenance: inferred-from-filename`. |
 | 1.6 | Submit application | Final step | Citizen sees confirmation #, SLA 4 days, AI assistant offers next steps in Swedish |
 | 1.7 | Switch to caseworker view (D365) | `https://udcspse.crm4.dynamics.com/main.aspx?appid=UDCSP_CaseWorker` | Case appears in queue with AI pre-assessment, BPF at stage "Caseworker review" |
-| 1.8 | Open AI pre-assessment trace | "Show AI reasoning" tab | Eligibility agent's grounding, model version, AI Act registry ID, prompts shown |
+| 1.8 | Open AI pre-assessment trace | "Show AI reasoning" tab | Show the metadata available on the exercised path. Do not present synthetic document fields as extracted evidence or claim complete prompt and lineage capture. |
 | 1.9 | Caseworker approves | "Approve" button | Decision logged, citizen notified in Swedish, case closed |
-| 1.10 | Verify trace propagation | App Insights end-to-end transaction view, filtered by the case `traceparent` | One transaction across APIM → Logic App → Foundry → D365 → Fabric |
+| 1.10 | Verify trace propagation | App Insights transaction view, filtered by the case `traceparent` | Correlated spans for the components that are instrumented. Complete D365 and Fabric lineage is not an acceptance result today. |
 
-**Exit gate:** all 10 steps green; trace ID propagated; AI Act disclosure visible to citizen.
+**Exit gate:** live steps match their documented status, a trace ID is propagated where wired, and no synthetic field or missing lineage hop is presented as evidence.
 
 </details>
 
@@ -83,10 +87,10 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 | 2.4 | Verify the APIM hop happened | App Insights query: `requests \| where url contains "/agents/topic-router/messages" and customDimensions["x-channel-actor"] == "voice" \| where timestamp > ago(2m)` | Exactly one HTTP 200 with `traceparent` linking back to the ACS call leg |
 | 2.5 | Listen to the spoken status answer | Voice playback | Status read with the `nb-NO-FinnNeural` neural voice |
 | 2.6 | Say « Snakk med saksbehandler » | Voice | Warm transfer to the D365 voice queue (`Voice.no.d365VoiceQueueId`) |
-| 2.7 | Hang up and inspect the trace | App Insights end-to-end transaction view, filtered by the `traceparent` from 2.4 | One transaction spanning ACS → Voice Orchestrator → APIM → Foundry → D365 transfer; PII redacted |
+| 2.7 | Hang up and inspect the trace | App Insights transaction view, filtered by the `traceparent` from 2.4 | Correlated ACS, voice, APIM, and Foundry metadata. Transcript content and tool argument values are absent after the pending source fix is deployed. |
 | 2.8 | (Optional, CI) Re-run the function-tool unit suite | `cd apps/voice/call-automation && npm test` | All tests pass — proves GPT Realtime → APIM contract & IVR DTMF routing without a PSTN call |
 
-**Exit gate:** voice path works without touching a screen; APIM hop proven (step 2.4); D365 warm transfer fires (step 2.6); transcript captured in observability with masked PII. Without a real PSTN number, steps 2.1–2.2 + 2.8 still demonstrate the chain is wired correctly.
+**Exit gate:** voice path works without touching a screen and the APIM hop is correlated. Warm transfer is a roadmap gate. Observability must show event metadata and `traceparent`, not transcript content. Without a real PSTN number, steps 2.1, 2.2, and 2.8 demonstrate the source path only.
 
 </details>
 
@@ -121,7 +125,7 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 <p align="center"><img src="../../images/Demo4.png" alt="Scenario 4 — Erik mobile payslip" width="480" /></p>
 
-> *Erik, Danish small-business owner, snaps a photo of his payslip on mobile to apply for an income-based benefit; AI extracts the fields, AI is assistive, never autonomous.*
+> *Erik uploads a payslip from mobile. The current demonstrator infers synthetic fields from the filename. Real extraction is roadmap, and AI remains assistive.*
 
 > Maps to: **uses.md scenario 04** · **eval-matrix rows 7, 13, 16**
 
@@ -129,12 +133,12 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 |---|---|---|---|
 | 4.1 | Launch Expo dev build of the mobile app | `apps/mobile` | DK External ID login screen |
 | 4.2 | Login with `erik@SYNTH-PERSONAS-DK` | Native OIDC flow | Token acquired |
-| 4.3 | Take a photo of the payslip stub | `data/synthetic/documents/payslip_dk_001.jpg` | Image uploaded, virus-scanned (Defender for Storage), Doc Intelligence extracts fields |
-| 4.4 | App displays parsed payslip | Form prefill | Net pay, employer, period, NIN auto-populated; user confirms |
+| 4.3 | Take a photo of the payslip stub | `data/synthetic/documents/payslip_dk_001.jpg` | Image uploaded. The current extractor does not read it; Document Intelligence is 🗺️ Roadmap. |
+| 4.4 | App displays demonstrator fields | Form prefill | Values are synthetic filename inferences and must be labelled with provenance before the user confirms. |
 | 4.5 | App calls Foundry eligibility agent via APIM | Background | < 4 s, response contains AI Act registry ID and confidence |
 | 4.6 | App displays pre-assessment + "Talk to a human" link | Result screen | Citizen retains agency; nothing auto-decided |
 
-**Exit gate:** AI is **assistive**, never autonomous; full PII flow documented in Purview.
+**Exit gate:** AI is assistive, synthetic provenance is visible, and no claim of operational Purview lineage is made.
 
 </details>
 
@@ -151,37 +155,37 @@ This recipe is split into **collapsible sections**. Click any ▶ to expand.
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 5.1 | Astrid opens her queue in D365 | `https://udcspse.crm4.dynamics.com/` | "AI Pre-assessed" view lists cases with confidence, language, SLA |
-| 5.2 | Open a high-confidence case | Form | BPF on "Caseworker review", AI summary panel from Caseworker-helper agent |
-| 5.3 | Click "Show AI reasoning" | Side panel | Sources, prompt, model version, registry ID, fairness slice info |
-| 5.4 | Disagree with AI assessment | "Override" button | Form requests reason → captured in Dataverse → mirrored to Fabric for shadow-mode metrics |
-| 5.5 | Decision published | "Approve" | Logic App `caseworker-decision-publish` notifies citizen, archives event |
-| 5.6 | Open Foundry shadow-mode dashboard | **Compliance Audit** report in the Power BI Premium workspace | Astrid's override is added to the human-AI agreement metric |
+| 5.1 | Astrid opens her queue | Shared Dataverse Power App today; D365 Customer Service is roadmap | Current shell shows the partial caseworker path. |
+| 5.2 | Open a case | Case form | Inspect the advisory recommendation and available summary. |
+| 5.3 | Click "Show AI reasoning" | Side panel | Show available model metadata. Synthetic document fields must remain labelled and cannot be treated as evidence. |
+| 5.4 | Disagree with AI assessment | Disposition control | Current path records a partial Dataverse disposition. Canonical `udcsp_caseworker_decision` persistence and Fabric mirroring are roadmap. |
+| 5.5 | Publish a decision | Current caseworker path | Verify only the notification and persistence behavior that is actually wired. |
+| 5.6 | Inspect agreement metrics | Operator workbook or source assets | The complete shadow-mode dashboard and feedback loop are roadmap. |
 
-**Exit gate:** caseworker can override every AI decision; overrides feed back into model improvement.
+**Exit gate:** the advisory nature of AI is visible, the partial disposition path is demonstrated honestly, and no automatic feedback or complete lineage claim is made.
 
 </details>
 
 ---
 
 <details>
-<summary><h2>⬛ 6. Scenario 6 — 🧑‍💼 Hans (DK DPO) handles a Subject Access Request 🛡️</h2></summary>
+<summary><h2>⬛ 6. Scenario 6: 🧑‍💼 Hans (DK DPO) reviews the Subject Access Request contract 🛡️</h2></summary>
 
 <p align="center"><img src="../../images/Demo7.png" alt="Scenario 6 — Hans DPO Subject Access Request" width="480" /></p>
 
-> *Hans, Danish DPO, fulfils a citizen's GDPR data export end-to-end with audit trail and Purview lineage — proof of "GDPR by design".*
+> *Hans verifies what is implemented for citizen self-service and what still requires a delegated DPO actor contract.*
 
 > Maps to: **uses.md scenario 06** · **eval-matrix rows 8, 9, 10, 18**
 
 | # | Action | Where | Expected outcome |
 |---|---|---|---|
-| 6.1 | Hans opens the SAR API | APIM dev portal "data-export" API | OpenAPI shows GDPR scopes |
-| 6.2 | POST a SAR for `anna@SYNTH-PERSONAS-DK` | `tests/e2e/tests/scenario-06-hans-dpo.spec.ts` request fixture | Logic App `gdpr-data-export` triggered, ID returned |
-| 6.3 | Track progress | GET status endpoint | Pulls personal data from D365, Fabric, Foundry traces, ACS recordings |
-| 6.4 | Download bundle | Signed URL returned in 30 s for synthetic data | Encrypted ZIP with audit trail |
-| 6.5 | Verify Purview lineage | Purview Studio > Data lineage | Bundle export visible as a lineage edge |
+| 6.1 | Inspect the pending data-export and GDPR APIM policies | `services/apim/apis/data-export/policy.xml` and `services/apim/apis/gdpr/policy.xml` | Subject is derived from the validated token, caller-supplied trusted headers are removed, and a mismatching body subject returns `403`. |
+| 6.2 | After deployment, submit a request as Anna for Anna | Data-export endpoint with Anna's token | Request may proceed under the citizen self-service contract. |
+| 6.3 | After deployment, submit as Anna with another citizen in the body | Same endpoint | `403` mismatch. The body cannot select another subject. |
+| 6.4 | Attempt a DPO-for-citizen request | Separate DPO identity | Expected result: unsupported. Delegation needs a separate authenticated actor contract, role, subject binding, and audit record. |
+| 6.5 | Inspect lineage status | Lineage endpoint | Corrected source requires JWT and returns `503` because no backend exists. Purview lineage is not an acceptance result today. |
 
-**Exit gate:** SAR completes within target time; every data flow inventoried in Purview.
+**Exit gate:** source contract is accurately described, a mismatch is rejected after deployment, delegated DPO access is not simulated with a citizen token, and no operational lineage claim is made.
 
 </details>
 

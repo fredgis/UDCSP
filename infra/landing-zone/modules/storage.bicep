@@ -6,6 +6,7 @@ param country string
 param env string
 param location string
 param subnetId string
+param logAnalyticsWorkspaceId string
 param tags object
 
 resource st 'Microsoft.Storage/storageAccounts@2023-01-01' = {
@@ -27,6 +28,24 @@ resource st 'Microsoft.Storage/storageAccounts@2023-01-01' = {
       }
       keySource: 'Microsoft.Storage'
     }
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' existing = {
+  parent: st
+  name: 'default'
+}
+
+resource blobDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  scope: blobService
+  name: 'blob-to-loganalytics'
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      { category: 'StorageRead', enabled: true }
+      { category: 'StorageWrite', enabled: true }
+      { category: 'StorageDelete', enabled: true }
+    ]
   }
 }
 

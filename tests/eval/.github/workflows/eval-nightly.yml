@@ -1,5 +1,7 @@
 name: A14 Foundry Eval Nightly
 on: { workflow_dispatch: {}, schedule: [{ cron: "20 1 * * *" }] }
+permissions:
+  contents: read
 jobs:
   eval:
     runs-on: ubuntu-latest

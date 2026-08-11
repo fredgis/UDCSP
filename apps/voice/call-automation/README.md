@@ -60,7 +60,7 @@ apps/voice/call-automation/
 | GET    | `/healthz`                                 | Liveness + readiness                                     |
 | POST   | `/api/acs/eventgrid`                       | Event Grid `IncomingCall` (handles validation handshake) |
 | POST   | `/api/acs/callbacks`                       | ACS Call Automation lifecycle events                     |
-| WS     | `/api/acs/media?callConnectionId={id}`     | Bidirectional PCM 16k audio stream from/to ACS           |
+| WS     | `/api/acs/media?nonce={single-use-token}`   | Nonce-authenticated bidirectional media stream from ACS   |
 
 ## Function tools exposed to GPT Realtime
 
@@ -72,7 +72,9 @@ apps/voice/call-automation/
 
 ## Configuration
 
-All wiring is environment-driven so secrets stay in Key Vault and the same image runs in DK/SE/NO. Required variables are listed in `src/config.ts`; the Bicep template injects them automatically. `isLiveMode()` returns `false` until ACS, OpenAI, APIM and D365 endpoints are populated, which keeps `npm run dev` safe locally.
+All wiring is environment-driven so secrets stay in Key Vault and the same image runs in DK/SE/NO. Required variables are listed in `src/config.ts`; the Bicep template injects them automatically, including `ACS_RESOURCE_ID` for Call Automation webhook JWT validation. `isLiveMode()` returns `false` until ACS, OpenAI, APIM and D365 endpoints are populated, which keeps `npm run dev` safe locally.
+
+Structured events go to Application Insights only. `VOICE_UNSAFE_DEBUG_LOGGING=true` additionally mirrors telemetry and exception details to the console; it is off by default and must not be enabled in production because console output can expose sensitive call data.
 
 ## Local development
 

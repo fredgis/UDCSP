@@ -20,13 +20,13 @@ export function PlatformDiagram({ title, intro, groups }: PlatformDiagramProps) 
           <span className="platform-diagram__hub-name">UDCSP</span>
           <span className="platform-diagram__hub-tag">One guided intake</span>
         </div>
-        <ul className="platform-diagram__groups" role="list">
+        <ul className="platform-diagram__groups">
           {groups.map((g) => (
             <li key={g.country} className="platform-diagram__group">
               <div className="platform-diagram__country">
                 <Flag countryCode={g.code} ariaLabel={`${g.country} flag`} /> {g.country}
               </div>
-              <ul className="platform-diagram__pills" role="list">
+              <ul className="platform-diagram__pills">
                 {g.items.map((it) => (
                   <li key={it.label} className="platform-diagram__pill" title={it.sub}>
                     <span className="platform-diagram__pill-name">{it.label}</span>

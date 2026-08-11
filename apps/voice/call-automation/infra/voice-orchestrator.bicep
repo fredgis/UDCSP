@@ -41,15 +41,17 @@ param publicHostname string
 @description('Azure OpenAI endpoint hosting the gpt-realtime deployment.')
 param azureOpenAiEndpoint string
 
-@description('Name of the gpt-realtime model deployment in Azure OpenAI.')
-@description('Model deployment name. Must match the name created by gpt-realtime-deployment.bicep (gpt-realtime-${country}).')
-param azureOpenAiRealtimeDeployment string = 'gpt-realtime-${country}'
+@description('Model deployment name. Must match the country-specific name created by gpt-realtime-deployment.bicep.')
+param azureOpenAiRealtimeDeployment string = ''
 
 @description('Public APIM gateway base URL (e.g. https://udcsp-apim-no.azure-api.net).')
 param apimBaseUrl string
 
 @description('Cognitive Services endpoint registered with the ACS Call Intelligence pipeline.')
 param cognitiveServicesEndpoint string
+
+@description('Name of the country ACS resource. Used to validate signed Call Automation webhook tokens.')
+param acsResourceName string = ''
 
 @description('Communication identifier used as the warm-transfer destination for the D365 voice workstream queue.')
 param d365TransferTargetId string = ''
@@ -86,6 +88,13 @@ var tags = {
   dataClassification: 'Confidential'
   owner: 'A10'
   workload: 'voice-orchestrator'
+}
+
+var resolvedAcsResourceName = empty(acsResourceName) ? 'udcsp-${country}-acs' : acsResourceName
+var resolvedAzureOpenAiRealtimeDeployment = empty(azureOpenAiRealtimeDeployment) ? 'gpt-realtime-${country}' : azureOpenAiRealtimeDeployment
+
+resource acs 'Microsoft.Communication/communicationServices@2023-04-01' existing = {
+  name: resolvedAcsResourceName
 }
 
 resource voice 'Microsoft.App/containerApps@2024-03-01' = {
@@ -153,8 +162,10 @@ resource voice 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'PUBLIC_BASE_URL', value: 'https://${publicHostname}' }
             { name: 'ACS_CONNECTION_STRING', secretRef: 'acs-connection-string' }
             { name: 'ACS_COGNITIVE_SERVICES_ENDPOINT', value: cognitiveServicesEndpoint }
+            { name: 'ACS_RESOURCE_ID', value: acs.id }
+            { name: 'EVENT_GRID_SUBSCRIPTION_NAME', value: '${resolvedAcsResourceName}-incoming-call' }
             { name: 'AZURE_OPENAI_ENDPOINT', value: azureOpenAiEndpoint }
-            { name: 'AZURE_OPENAI_REALTIME_DEPLOYMENT', value: azureOpenAiRealtimeDeployment }
+            { name: 'AZURE_OPENAI_REALTIME_DEPLOYMENT', value: resolvedAzureOpenAiRealtimeDeployment }
             { name: 'AZURE_OPENAI_API_VERSION', value: '2025-04-01-preview' }
             { name: 'APIM_BASE_URL', value: apimBaseUrl }
             { name: 'APIM_TOPIC_ROUTER_PATH', value: '/agent-topic-router/messages' }

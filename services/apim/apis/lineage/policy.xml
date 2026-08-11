@@ -1,0 +1,20 @@
+<policies>
+  <inbound>
+    <base />
+    <include-fragment fragment-id="cors" />
+    <include-fragment fragment-id="correlation-id" />
+    <include-fragment fragment-id="jwt-validate-entra" />
+    <rate-limit-by-key calls="60" renewal-period="60" counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+    <!-- No lineage backend named value exists yet. Keep the API authenticated
+         and fail closed until a real registry endpoint is configured. -->
+    <return-response>
+      <set-status code="503" reason="Service Unavailable" />
+      <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>
+      <set-header name="x-correlation-id" exists-action="override"><value>@((string)context.Variables["correlationId"])</value></set-header>
+      <set-body>{"error":"lineage_backend_not_configured","message":"The lineage registry backend is not configured; no record was accepted."}</set-body>
+    </return-response>
+  </inbound>
+  <backend><base /></backend>
+  <outbound><base /></outbound>
+  <on-error><base /><set-header name="x-correlation-id" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header></on-error>
+</policies>

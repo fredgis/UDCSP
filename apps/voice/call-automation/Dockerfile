@@ -23,4 +23,4 @@ USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node", "dist/index.js"]
+CMD ["node", "--import", "@azure/monitor-opentelemetry/loader", "dist/index.js"]

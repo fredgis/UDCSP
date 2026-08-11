@@ -12,6 +12,8 @@ export interface Config {
   acs: {
     connectionString: string;
     cognitiveServicesEndpoint: string;
+    resourceId: string;
+    eventGridSubscriptionName: string;
   };
   azureOpenAI: {
     endpoint: string;
@@ -32,6 +34,7 @@ export interface Config {
   trace: {
     appInsightsConnectionString: string;
     serviceName: string;
+    unsafeDebugLogging: boolean;
   };
 }
 
@@ -51,6 +54,8 @@ export function loadConfig(): Config {
     acs: {
       connectionString: optional('ACS_CONNECTION_STRING', ''),
       cognitiveServicesEndpoint: optional('ACS_COGNITIVE_SERVICES_ENDPOINT', ''),
+      resourceId: optional('ACS_RESOURCE_ID', ''),
+      eventGridSubscriptionName: optional('EVENT_GRID_SUBSCRIPTION_NAME', `udcsp-${country}-acs-incoming-call`),
     },
     azureOpenAI: {
       endpoint: optional('AZURE_OPENAI_ENDPOINT', ''),
@@ -71,11 +76,12 @@ export function loadConfig(): Config {
     trace: {
       appInsightsConnectionString: optional('APPLICATIONINSIGHTS_CONNECTION_STRING', ''),
       serviceName: optional('OTEL_SERVICE_NAME', 'udcsp-voice-orchestrator'),
+      unsafeDebugLogging: optional('VOICE_UNSAFE_DEBUG_LOGGING', 'false').toLowerCase() === 'true',
     },
   };
 }
 
 export function isLiveMode(cfg: Config): boolean {
   // Live mode requires the three external systems to be reachable.
-  return !!(cfg.acs.connectionString && cfg.azureOpenAI.endpoint && cfg.apim.baseUrl !== 'https://example.invalid');
+  return !!(cfg.acs.connectionString && cfg.acs.resourceId && cfg.azureOpenAI.endpoint && cfg.apim.baseUrl !== 'https://example.invalid');
 }

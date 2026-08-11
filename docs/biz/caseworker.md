@@ -20,7 +20,7 @@
 
 ---
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 > [!IMPORTANT]
 > **TL;DR.** 🟡 **Partially deployed** today: the caseworker workspace is a model-driven Power App on the shared Dataverse environment `<your-dataverse-env>` in the DK system tenant. The artefact is `apps/d365/solutions/UDCSP_Core/customizations/apps/caseworker-app.xml`, with operator notes in `apps/powerapps/caseworker/README.md`, and imports through `pac solution import`. The Logic App `application-intake` still writes live submissions to standard Dataverse `tasks`. 🗺️ **Roadmap**: per-country D365 Customer Service environments, Copilot for Service runtime, SLA timers and writes to canonical `udcsp_application`.
@@ -37,8 +37,12 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 | Canonical target storage | 🟡 **Partially deployed** | `udcsp_application` schema and Power Fx names match the future D365 CS deployment, but the Logic App has not been repointed. |
 | Caseworker helper AI | 🟡 **Partially deployed** | Foundry `caseworker-helper` agent is deployed and APIM routes to it; Copilot for Service panel is not proven live. |
 | Override persistence | 🔵 **In repo** | `udcsp_caseworker_decision` is scaffolded but not persisted. No Confidential Ledger write is active. |
+| Document-derived fields | 🔵 **In repo**, not deployed | The document endpoint does not read the uploaded bytes. It invents synthetic values from the filename. The pending policy labels every response with `"synthetic": true` and `"provenance": "inferred-from-filename"`. Real extraction requires Azure AI Document Intelligence. |
 
 ---
+
+> [!CAUTION]
+> **Case-detail fields are not documentary evidence.** The current deployed endpoint can show invented values without the new provenance labels. A caseworker must open the attached payslip, lease or identity document and verify it directly. EU AI Act Art. 14 oversight cannot rely on synthetic filename-derived values.
 
 > [!NOTE]
 > 🗺️ **Roadmap.** D365 Customer Service, Copilot for Service, per-country Bastion administration, CIEM checks and Confidential Ledger-backed evidence remain target architecture unless separately deployed and validated.
@@ -144,7 +148,7 @@ flowchart TB
 
 > 📖 **Reading the picture.** Blue = front-stage channels. Orange = escalation layer (the bridge). Purple = D365 caseworker stack. Dark blue = back-office outcomes. **The caseworker channel is the convergence point — every escalation path leads here.**
 
-The voice channel (`docs/biz/voice.md`) ends with a warm transfer: *"D365 warm-transfer with full context"*. This is where that transfer arrives. The case is pre-populated with the full Foundry `topic-router` conversation transcript, the detected locale, the citizen's intent, and any slot-fill data collected during the conversation. The caseworker does not start from a blank case.
+The voice channel (`docs/biz/voice.md`) does not end with a live warm transfer today. Demo 2 v1 offers a callback because D365 Customer Service NO is not provisioned. In the future transfer path, the case should carry a purpose-built summary, detected locale, citizen intent and relevant slot-fill data. It must not depend on a transcript copied from monitoring telemetry. The pending voice logger keeps transcript lengths only.
 
 The Foundry `topic-router` `escalate-to-human` topic (`foundry/agents/topic-router/topics/escalate-to-human.yaml`) invokes the `d365-escalation` connector (`foundry/agents/topic-router/connections/d365-escalation.json`) to create the case before the agent hands off. By the time a caseworker picks up the case, the AI context is already there.
 
@@ -484,7 +488,7 @@ The E2E spec (`tests/e2e/tests/scenario-05-astrid-caseworker.spec.ts`) maps to e
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
-| 1 | Show Lars's voice case (Demo 2 aftermath) landing in the NO queue with full ACS transcript + AI pre-assessment verdict "likely eligible — confidence 0.82" | `social-NO` queue; SLA countdown started; AI assessment panel visible | #3 (28d→4d) · #16 (caseworker) |
+| 1 | Open a seeded NO case representing Demo 2 aftermath, with a purpose-built intake summary and AI pre-assessment verdict "likely eligible, confidence 0.82". Do not present an ACS transcript from monitoring. | `social-NO` queue; SLA countdown started; AI assessment panel visible | #3 (28d→4d) · #16 (caseworker) |
 | 2 | Caseworker opens the workspace; Foundry caseworker helper can provide the summary path today, while Copilot for Service is 🗺️ **Roadmap** | One-paragraph summary target; evidence checklist target; SLA risk target | #6 (GenAI assist) · #13 (multilingual) |
 | 3 | Caseworker asks: *"Hva sier loven om inntektsgrensen?"* (NB) | Copilot cites the correct NAV policy article in NB, with a direct link | #6 · #15 (audit) |
 | 4 | Caseworker clicks **Approve** — one click, one confirmation | Outbound SMS + email sent to Lars in NB; BPF advances to **Decide** | #3 · #4 (CSAT) · #13 |
@@ -494,7 +498,7 @@ This corresponds to **Demo 5** and **Demo 6** in [`uses.md`](./uses.md#️-demo-
 
 #### 💡 Talking points for the jury
 
-- 💬 *"Lars submitted by voice. The case landed in D365 with the full transcript, the AI assessment, and a countdown. The caseworker never typed an intake form."*
+- 💬 *"Lars submitted by voice. The case carries a purpose-built intake summary, the AI assessment and a countdown. It does not rely on a transcript harvested from monitoring."*
 - 💬 *"Copilot drafts; the caseworker disposes. **No outbound message leaves D365 without a human in the loop** — this is not a configuration option, it is an architectural constraint."*
 - 💬 *"Switch to the Power BI audit tile — the AI Act audit row is there in real time. That is what 'meaningful human oversight' looks like under EU AI Act Art. 14."*
 

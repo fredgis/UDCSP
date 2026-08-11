@@ -71,7 +71,15 @@
     </send-request>
     <return-response>
       <set-status code="200" reason="OK" />
-      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value></set-header>
+      <set-header name="Access-Control-Allow-Origin" exists-action="override"><value>@{
+        var origin = context.Request.Headers.GetValueOrDefault("Origin","");
+        return origin == "https://udcsp.fredgis.com"
+            || origin == "https://icy-dune-01c23d903.7.azurestaticapps.net"
+            || origin == "http://localhost:3000"
+            || origin == "http://localhost:5173"
+          ? origin
+          : "https://udcsp.fredgis.com";
+      }</value></set-header>
       <set-header name="Access-Control-Allow-Credentials" exists-action="override"><value>true</value></set-header>
       <set-header name="Vary" exists-action="override"><value>Origin</value></set-header>
       <set-header name="Content-Type" exists-action="override"><value>application/json</value></set-header>

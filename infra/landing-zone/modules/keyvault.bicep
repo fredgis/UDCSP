@@ -6,6 +6,7 @@ param country string
 param env string
 param location string
 param subnetId string
+param logAnalyticsWorkspaceId string
 param tags object
 
 resource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {
@@ -20,6 +21,18 @@ resource vault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     softDeleteRetentionInDays: 90
     enablePurgeProtection: true
     publicNetworkAccess: 'Disabled'
+  }
+}
+
+resource vaultDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  scope: vault
+  name: 'keyvault-to-loganalytics'
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      { category: 'AuditEvent', enabled: true }
+      { category: 'AzurePolicyEvaluationDetails', enabled: true }
+    ]
   }
 }
 

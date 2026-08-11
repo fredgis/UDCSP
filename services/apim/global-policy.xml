@@ -28,11 +28,17 @@
        response (e.g. validate-jwt failures wrapped to 500), the global <cors>
        policy does NOT add ACAO headers to that synthetic response. Without
        them, browsers refuse to expose the body to the SPA and report
-       "Failed to fetch" even for valid 4xx/5xx responses. Echo the request
-       Origin here so error bodies are readable cross-origin. -->
+       "Failed to fetch" even for valid 4xx/5xx responses. Echo only an
+       allow-listed request Origin so error bodies are readable safely. -->
   <on-error>
     <choose>
-      <when condition="@(context.Request.Headers.GetValueOrDefault(&quot;Origin&quot;,&quot;&quot;).Length > 0)">
+      <when condition="@{
+        var origin = context.Request.Headers.GetValueOrDefault(&quot;Origin&quot;,&quot;&quot;);
+        return origin == &quot;https://udcsp.fredgis.com&quot;
+          || origin == &quot;https://icy-dune-01c23d903.7.azurestaticapps.net&quot;
+          || origin == &quot;http://localhost:3000&quot;
+          || origin == &quot;http://localhost:5173&quot;;
+      }">
         <set-header name="Access-Control-Allow-Origin" exists-action="override">
           <value>@(context.Request.Headers.GetValueOrDefault("Origin",""))</value>
         </set-header>

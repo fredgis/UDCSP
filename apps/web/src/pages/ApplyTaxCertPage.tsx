@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
-import { countries, getCountry } from '../auth/msalConfig';
+import { getCountry } from '../auth/msalConfig';
 import { Flag } from '../components/Flag';
 import { appendCase } from '../utils/caseStore';
 import { PlatformDiagram } from '../components/PlatformDiagram';

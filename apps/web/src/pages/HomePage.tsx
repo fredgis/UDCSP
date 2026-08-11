@@ -146,7 +146,7 @@ export function HomePage(_: { locale?: string }) {
           <p><FormattedMessage id="home.principles.lede" defaultMessage="Four simple promises behind every screen — your data stays at home, AI helps but never decides alone, the portal is usable by everyone, and you stay in charge of your information." /></p>
         </div>
       </div>
-      <ul className="principles-grid" role="list">
+      <ul className="principles-grid">
         {principles.map((p) => (
           <li key={p.titleId} className="principle-card">
             <span className="principle-card__icon" aria-hidden="true">{p.icon}</span>

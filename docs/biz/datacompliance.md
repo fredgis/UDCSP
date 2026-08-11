@@ -2,13 +2,15 @@
 
 # 🛡️ UDCSP — Data Compliance
 
-### Every regulation we answer to · Every control we put in place · Every piece of evidence a regulator can demand
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
+
+### Every regulation mapped · Every control status stated · Every evidence gap visible
 
 *The single document a DPO, an auditor, a Data Protection Authority inspector, or a citizen advocate can open to understand — without reading 5 000 lines of code or a 700-line architecture deep-dive — exactly how UDCSP protects citizens' personal data and respects their rights.*
 
-[![GDPR](https://img.shields.io/badge/🛡️_GDPR-Compliant-2E7D32?style=for-the-badge)](#)
-[![EU AI Act](https://img.shields.io/badge/🛡️_EU_AI_Act-Registered-C62828?style=for-the-badge)](#)
-[![ePrivacy](https://img.shields.io/badge/🛡️_ePrivacy-Art._5_implemented-1565C0?style=for-the-badge)](#)
+[![GDPR](https://img.shields.io/badge/🛡️_GDPR-Control_map-2E7D32?style=for-the-badge)](#)
+[![EU AI Act](https://img.shields.io/badge/🛡️_EU_AI_Act-Registry_in_repo-C62828?style=for-the-badge)](#)
+[![ePrivacy](https://img.shields.io/badge/🛡️_ePrivacy-Controls_mixed-1565C0?style=for-the-badge)](#)
 [![WCAG](https://img.shields.io/badge/♿_WCAG_2.1-AA-AD1457?style=for-the-badge)](#)
 
 [![NIS2](https://img.shields.io/badge/🛡️_NIS2-Essential_entity-E65100?style=flat-square)](#)
@@ -22,11 +24,11 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** UDCSP processes the personal data of **2.1 million citizens** across **three Member States**, on **seven communication channels**, with **AI making recommendations on high-risk decisions** (eligibility for social benefits). That puts it squarely in the path of **eight overlapping regulations** — GDPR, EU AI Act, ePrivacy, eIDAS, NIS2, the EU Web Accessibility Directive, and three national administrative-law regimes (DK · SE · NO). This document is the **executive answer**: what each regulation demands, what UDCSP does about it, and where the evidence lives. Every control is implemented as Azure resource configuration (not "we'll remember to do it"), every retention period is anchored on a specific legal article, every AI decision is registered with the AI Act competent authority, and every right-of-the-data-subject (access, erasure, portability, rectification) is delivered through a tested operational playbook within the legal SLA.
+> **TL;DR.** UDCSP maps obligations across GDPR, the EU AI Act, ePrivacy, eIDAS, NIS2, accessibility law, and national administrative law. The implementation is mixed. Some controls are 🟢 **Live**, some are 🟡 **Partially deployed**, security corrections are currently 🔵 **In repo**, installer-led controls are ⚙️ **Scripted**, and several governance capabilities remain 🗺️ **Roadmap**. The current source binds citizen self-service export and erasure to the authenticated caller, but that fix is not deployed. Delegated DPO requests require a separate authenticated actor contract and are not implemented. Corrected voice source retains lengths and correlation metadata rather than transcript content; the deployed image has not changed. The document extractor still does not read documents: it returns synthetic values inferred from the filename, with provenance markers that downstream paths must preserve. The lineage API is authenticated and fail-closed in source, but has no backend. Confidential Ledger anchoring is not active.
 >
 > 📖 *For the **storage architecture and retention matrix** that operationalises every promise made here, see [`../tech/data.md`](../tech/data.md). For the **AI-specific governance** (high-risk classification, conformity declarations, post-market monitoring), see [`ai.md`](./ai.md) § 11.*
 
-> ℹ️ **Live vs roadmap.** Most GDPR / AI Act controls below are wired today. **Microsoft Entra Verified ID issuance for cross-border onboarding remains roadmap** — see [`../tech/inprogress.md`](../tech/inprogress.md). Other roadmap items are flagged inline where they appear.
+> ℹ️ **Status.** Do not read a repository artefact as proof that a control operates in Azure. The security remediation is source-only and every affected live exposure remains open until deployment. Status vocabulary: 🟢 **Live** · 🟡 **Partially deployed** · 🔵 **In repo** · ⚙️ **Scripted** · 🗺️ **Roadmap**. See [`../tech/inprogress.md`](../tech/inprogress.md), the source of truth for current status.
 
 ---
 
@@ -52,7 +54,7 @@
 
 **Operational machinery**
 
-12. [Citizen rights — operational SLAs](#12-citizen-rights--operational-slas)
+12. [Citizen rights: target SLAs and current delivery](#12-citizen-rights-target-slas-and-current-delivery)
 13. [Evidence and audit pack — what a regulator can demand and we hand over](#13-evidence-and-audit-pack--what-a-regulator-can-demand-and-we-hand-over)
 14. [Living compliance — how we keep up with regulation changes](#14-living-compliance--how-we-keep-up-with-regulation-changes)
 15. [Frequently anticipated questions](#15-frequently-anticipated-questions)
@@ -83,14 +85,14 @@ UDCSP must respect **eight regulatory regimes** that overlap. Read this table to
 |---|---|---|---|---|
 | 1 | **GDPR** (Reg. EU 2016/679) | Personal data of EU residents | 2.1 M citizen records, 7 channels of interaction | Lawful basis Art. 6(1)(e) "public interest task"; data minimisation by design; tested right-to-erasure cascade across 5 storage zones in ≤ 30 days; Purview = RoPA |
 | 2 | **EU AI Act** (Reg. EU 2024/1689) | Citizens against unsafe / opaque AI | Eligibility Pre-Assessor agent = HIGH-RISK (Annex III) | Registered in Foundry AI Act Registry with full conformity dossier; human oversight (Art. 14) by caseworker on every recommendation; logs ≥ 6 months (Art. 26(6)) |
-| 3 | **ePrivacy** (Dir. 2002/58/EC) | Confidentiality of electronic communications | Voice recordings, SMS, email, chat transcripts | Citizen notice at start of every interaction; lawful basis = Art. 6(1)(e), not consent (which is brittle for a regalian service); audio purged at 90 days |
+| 3 | **ePrivacy** (Dir. 2002/58/EC) | Confidentiality of electronic communications | Voice, SMS, email, and chat content | Current voice v1 does not persist audio. The pending source removes transcript content from telemetry while retaining correlation metadata. A future D365 recording path may apply a 90-day audio policy. |
 | 4 | **eIDAS** (Reg. EU 910/2014) | Cross-border identity + trust services | DK ↔ SE ↔ NO citizen federation across 3 Identity Providers | eIDAS bridge in Entra; assurance-level claim mapping; supports eIDAS 2.0 EUDI Wallet on the roadmap |
 | 5 | **NIS2** (Dir. EU 2022/2555) | Cybersecurity for essential / important entities | Public administration = "essential entity" by definition | Risk management framework (ISO 27001 aligned); 24-hour incident notification chain to national CSIRTs; supply-chain assurance via Microsoft attestations |
 | 6 | **Web Accessibility Directive** (Dir. EU 2016/2102) + **WCAG 2.1 AA** | Citizens with disabilities | Public-sector body = scope by definition | WCAG 2.1 AA on every channel; published accessibility statement per country; user-feedback channel in 12 languages |
 | 7 | **National administrative law** (DK · SE · NO) | National recordkeeping + transparency obligations | Each country has its own retention floors and citizen-information rules | Per-country Purview retention policies that **extend** (never shorten) the EU baseline; § 10 details DK · SE · NO specifics |
 | 8 | **Operational baselines** (ISO 27001 · SOC 2) | Security best practice | Customer expectation + insurer requirement | Built on Azure (Microsoft is ISO 27001 + SOC 2 Type II certified); UDCSP layer adds Defender for Cloud, Sentinel, Key Vault, managed identities, Azure Policy as code |
 
-> 💡 **The orthogonality insight.** None of these regulations *replace* each other — they overlap. A voice call is simultaneously: GDPR (it's personal data), ePrivacy (it's an electronic communication), AI Act (the citizen may be talking to or about a high-risk AI), NIS2 (the call infrastructure must be secure), eIDAS (the citizen may be authenticated cross-border), and Accessibility (the IVR must support hearing-impaired alternatives). UDCSP applies **all eight** at once on **every interaction** — that orthogonality is what makes "compliance by design" hard, and why this document exists.
+> 💡 **The orthogonality insight.** None of these regulations replace each other; they overlap. A voice call can engage GDPR, ePrivacy, the AI Act, NIS2, eIDAS, and accessibility duties at the same time. UDCSP maps those obligations together, while each control retains its own live, partial, in-repo, scripted, or roadmap status.
 
 ---
 
@@ -125,7 +127,7 @@ flowchart TB
         direction TB
         PV["Microsoft Purview<br/>(catalog + lineage<br/>+ RoPA)"]
         SENT["Microsoft Sentinel<br/>(SIEM + audit log)"]
-        DPO["DPO console<br/>(rights + investigations)"]
+        DPO["🗺️ DPO console<br/>(rights + investigations)"]
         ATT["Microsoft attestations<br/>(ISO 27001 / SOC 2)"]
     end
 
@@ -176,7 +178,7 @@ flowchart TB
     class DKA,SEA,NOA nat
 ```
 
-> **Reading the diagram.** *Regulations* (top) drive a set of *platform controls implemented as code* (middle). Those controls feed the *governance plane* (Purview + Microsoft Priva + Sentinel + DPO console + Microsoft attestations) which produces the *evidence pack* a regulator can demand at any moment. The chain is fully traceable both ways: pick any obligation and find the control that implements it; pick any control and find the audit event that proves it ran.
+> **Reading the diagram.** Regulations drive the mapped controls, and the target governance plane assembles evidence. The status labels determine whether a control is live, partial, in repo, scripted, or roadmap. The diagram is a control map, not proof that every audit event or evidence-pack path operates today.
 >
 > **The bridge boundary.** UDCSP is a *unified citizen platform* that **bridges to** the existing national authorities — it does not absorb them. The right-hand cluster (CPR, Skatteverket, NAV, …) are **separate data controllers** for the substantive decision (residency, tax-residence, family benefit). UDCSP is the front-door joint controller for the citizen-facing interaction (channels, AI assistance, eID acceptance, document upload, status mirroring). This boundary is the foundation of §10.5 below.
 
@@ -196,7 +198,7 @@ GDPR governs **every operation on personal data** of any EU/EEA resident. UDCSP 
 |---|---|---|---|
 | **Art. 5(1)(a)** Lawfulness, fairness, transparency | Process lawfully, fairly, transparently | Privacy notice at every channel entry; published in 12 languages; explains lawful basis, retention, rights | Per-country privacy notice (web portal footer + IVR opening + email signature) |
 | **Art. 5(1)(b)** Purpose limitation | Collect for specified, explicit, legitimate purposes | Each Foundry agent has a documented "intended purpose" in its AI Act registry; secondary use forbidden by Purview policy | `governance/ai-act/registry/{agent}.yaml` |
-| **Art. 5(1)(c)** Data minimisation | Adequate, relevant, limited | Redis Enterprise holds ephemeral state; PostgreSQL JSONB persists drafts older than 24 h with retention jobs; voice audio 90-day WORM purge; AI memory 12-month rolling TTL; no PII in logs | data.md § 5 retention matrix |
+| **Art. 5(1)(c)** Data minimisation | Adequate, relevant, limited | 🔵 Voice source now logs transcript lengths and tool argument keys, not content. `traceparent` correlation remains. This is not deployed. Other retention controls remain as documented targets. | Security audit UD-11; data.md § 5 retention matrix |
 | **Art. 5(1)(d)** Accuracy | Keep accurate, up to date | Citizen self-service correction in portal; caseworker correction in D365; rectification request workflow Art. 16 | D365 `case_audit` table |
 | **Art. 5(1)(e)** Storage limitation | Kept no longer than necessary | Lifecycle rules on every storage account; Purview retention policy enforces national-law extensions | data.md § 5 + Purview policy export |
 | **Art. 5(1)(f)** Integrity & confidentiality | Appropriate security | CMK at every layer (per-country Key Vault); private endpoints; managed identities; no shared secrets in code; Defender + Sentinel | data.md § 8 + architecture.md § 10 |
@@ -206,16 +208,16 @@ GDPR governs **every operation on personal data** of any EU/EEA resident. UDCSP 
 | **Art. 9** Special-category data | Stricter rules for health, biometrics, etc. | **No biometric authentication data stored centrally** — biometrics handled on-device only by MSAL; health data only in scope when an explicit social-benefit application requires it (lawful basis Art. 9(2)(b) — social protection) | architecture.md § 4 (identity), case-study mapping |
 | **Art. 12** Transparent communication | Concise, transparent, intelligible info | Privacy notice in 12 languages, plain-language version + technical version | Localised privacy notices per country |
 | **Art. 13-14** Information to data subject | At collection time, inform of processing | Channel-specific notice (IVR opening, web banner, email footer, SMS first-message disclosure) | Channel docs ([`voice.md`](./voice.md) opening notice, etc.) |
-| **Art. 15** Right of access | Provide a copy of personal data within 1 month | **Microsoft Priva** orchestrates the DSR and DPO console exports a citizen's full record across all 5 storage zones as a signed JSON pack; SLA 30 days | DPO console — `Export-CitizenRecord.ps1` |
+| **Art. 15** Right of access | Provide a copy of personal data within 1 month | 🔵 Citizen self-service subject binding is in repo: APIM derives the subject from the validated token, removes caller-supplied copies, and rejects a mismatch with `403`. Full aggregation, signed delivery, and a delegated DPO actor contract are 🗺️ Roadmap. | `services/apim/apis/data-export/policy.xml`; `gdpr-data-export` workflow |
 | **Art. 16** Right to rectification | Correct inaccurate data | Citizen self-service in portal + caseworker in D365 | D365 case audit |
-| **Art. 17** Right to erasure | Delete on request, ≤ 30 days, with cascading effect | **Microsoft Priva** coordinates discovery, approval, erasure cascade, and certificate issuance across 5 zones; legal-hold suspension if criminal investigation; certificate signed and delivered | data.md § 9 sequence diagram |
+| **Art. 17** Right to erasure | Delete on request, ≤ 30 days, with cascading effect | 🔵 Citizen self-service subject binding is in repo and rejects a mismatching body subject. The full Priva discovery, approval, legal-hold, and certificate flow is 🗺️ Roadmap. Delegated DPO erasure requires a separate authenticated actor contract. | `services/apim/apis/gdpr/policy.xml`; `gdpr-data-erase` workflow |
 | **Art. 18** Right to restriction | Mark data as restricted-from-processing | Restriction flag in Dataverse `case` table; processing pipelines honour the flag | D365 schema |
-| **Art. 20** Right to data portability | Machine-readable export | Priva case package + DPO console JSON export (Art. 15) is portable and structured | Same export as Art. 15 |
-| **Art. 21** Right to object | Stop processing on objection | Microsoft Priva DSR workflow pauses non-mandatory processing pending DPO review | `governance/priva/` |
-| **Art. 22** Automated decision-making | No solely automated decisions with legal effect without explicit consent or legal basis | **Eligibility Pre-Assessor never autonomously decides** — its output is a *recommendation* that a caseworker validates before any decision is communicated. This is also Art. 14 of the AI Act (human oversight) | ai.md § 6 — agent 4 |
+| **Art. 20** Right to data portability | Machine-readable export | 🗺️ Roadmap, using the same caller-bound export contract planned for Art. 15 | Same target as Art. 15 |
+| **Art. 21** Right to object | Stop processing on objection | 🗺️ Roadmap. `governance/priva/` contains design assets, not an operating Priva connector | `governance/priva/` |
+| **Art. 22** Automated decision-making | No solely automated decisions with legal effect without explicit consent or legal basis | 🟡 Eligibility is designed as an advisory recommendation. The current caseworker disposition path is partial, and canonical decision persistence is not complete. | `ai.md` § 6, agent 4 |
 | **Art. 25** Data protection by design and by default | Privacy as default | Encryption-at-rest enabled by default on every store; sensitivity labels auto-applied; least-privilege RBAC | Azure Policy as code |
 | **Art. 28** Processor obligations | Written contract; processor compliance | Microsoft is the processor for Azure / D365 / Foundry; the standard Microsoft Online Services DPA applies; sub-processor list reviewed | Microsoft DPA + sub-processor list |
-| **Art. 30** Records of Processing Activities (RoPA) | Maintain a register | **Microsoft Purview IS the RoPA** — auto-populated by daily scans + sensitivity classification + lineage; quarterly export delivered to DPO | Purview portal |
+| **Art. 30** Records of Processing Activities (RoPA) | Maintain a register | 🔵 RoPA definitions exist in repo. Automated Purview population, operational lineage, and quarterly DPO export remain to be verified | `governance/gdpr/ropa.md` |
 | **Art. 32** Security of processing | Appropriate technical measures | CMK per country, pseudonymisation in OneLake Silver, GZRS replication, encrypted backups, tested DR drills | data.md § 8 + § 10 |
 | **Art. 33-34** Breach notification | Notify supervisory authority within 72 h.; data subjects without undue delay if high risk | Sentinel detection rules + automated incident workflow that pages the DPO; 72-hour timer in the workflow | Sentinel runbook |
 | **Art. 35** DPIA | Data Protection Impact Assessment for high-risk processing | DPIA per Foundry agent; the **eligibility** agent has the most complete one; reviewed on every model upgrade | `governance/ai-act/registry/{agent}-model.yaml` + `governance/dpia/` |
@@ -271,7 +273,7 @@ UDCSP runs seven AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies 
 | 3 | Translator | Limited risk | Translation; no decision impact |
 | 4 | **Eligibility Pre-Assessor** | **HIGH-RISK** (Annex III, point 5(a) — access to public services + benefits) | Recommends eligibility; affects access to benefits |
 | 5 | Citizen Assistant | Limited risk | Conversational answer + citation |
-| 6 | Document Extractor | Limited risk | Form parsing; caseworker validates |
+| 6 | Document Extractor | Limited risk | Current APIM path does not read the document. It invents synthetic fields from the filename and labels the response with `synthetic: true` and `provenance: inferred-from-filename`. Downstream review is not meaningful evidence unless those markers remain visible. |
 | 7 | Caseworker Helper | Limited risk | Productivity aid; caseworker is operator |
 
 **One agent is high-risk.** That single agent is what triggers the heaviest AI Act obligations. UDCSP treats every other agent with the same diligence as a defensive posture, but the *binding* obligations are concentrated on the Eligibility Pre-Assessor.
@@ -283,28 +285,28 @@ UDCSP runs seven AI agents (see [`ai.md`](./ai.md) § 6). The AI Act classifies 
 | **Art. 9** Risk management system | Identify, analyse, reduce risks | Risk register per agent; mitigation cross-checked against Foundry safety pipeline; Eligibility inference runs in Azure Confidential Computing TEE | `infra/security/confidential-compute/` |
 | **Art. 10** Data governance — training data | Training data must be relevant, representative, free from errors, complete | Eligibility model trained on **anonymised** historical case decisions from OneLake; bias checked per language and per protected category | DPIA + bias eval report |
 | **Art. 11** Technical documentation | Maintain documentation up-to-date | Auto-generated technical doc per agent in Foundry; signed and versioned | Foundry registry export |
-| **Art. 12** Record-keeping (capability) | High-risk system must be **capable** of automatic event logging | Foundry traces every call and anchors AI Act events in Azure Confidential Ledger | `infra/security/confidential-ledger/` |
+| **Art. 12** Record-keeping (capability) | High-risk system must be **capable** of automatic event logging | 🟡 W3C correlation exists on exercised paths. 🔵 Corrected voice source excludes content, but is not deployed. 🗺️ Confidential Ledger anchoring and a functional lineage backend are not active. | `traceability.md`; security audit UD-11 and UD-15 |
 | **Art. 13** Transparency to deployers / users | Clear, accurate, complete information | Caseworker UI in D365 surfaces "AI suggested · click to see evidence" badge on every recommendation; explainability report per decision | D365 Copilot for Service UI |
-| **Art. 14** Human oversight | Effective human oversight; ability to override; awareness of automation bias | **Every Eligibility recommendation lands in a caseworker queue with full evidence; the caseworker decides; overrides are captured with reason text in `eligibility_override`** | Demo 6 in [`uses.md`](./uses.md) |
-| **Art. 15** Accuracy, robustness, cybersecurity | Performance levels declared; resilience tested | Eval suite gates every release: groundedness ≥ 0.85, jailbreak resistance, F1 by language; Content Safety always-on | Foundry eval reports |
+| **Art. 14** Human oversight | Effective human oversight; ability to override; awareness of automation bias | 🟡 Eligibility remains advisory and the caseworker path is partial. Document fields currently come from a synthetic filename inference, not document extraction. Human oversight cannot treat those fields as evidence until provenance is preserved or real extraction is wired. | Demo 6 in [`uses.md`](./uses.md); security audit UD-12 |
+| **Art. 15** Accuracy, robustness, cybersecurity | Performance levels declared; resilience tested | 🔵 Evaluation assets and scheduled workflows exist in repo. A complete operating release gate for every model and prompt change is not verified. | Foundry eval assets and workflow definitions |
 | **Art. 16** Provider obligations | Providers must implement Articles 8-15 | Microsoft + UDCSP team are joint providers; obligations split per ownership chart | `governance/ai-act/registry/_provider-chart.md` |
 | **Art. 17** Quality management system | Documented QMS | UDCSP QMS spans ML lifecycle (data governance, eval, deployment, monitoring); aligned with ISO 42001 | QMS doc in repo |
 | **Art. 18** Documentation retention | 10 years after placing on market | Foundry registry + DPIA stored in immutable storage with 10-year retention | Storage immutability policy |
 | **Art. 19** Logs retention (provider) | Logs kept appropriately | (See Art. 26(6) — deployer obligation is the binding floor) | — |
-| **Art. 26(6)** **Deployer log retention** | **Logs kept ≥ 6 months from creation** | **Foundry traces 180 days hot in App Insights + anonymised OneLake Bronze + tamper-evident Azure Confidential Ledger anchors** | `infra/security/confidential-ledger/` |
+| **Art. 26(6)** **Deployer log retention** | **Logs kept ≥ 6 months from creation** | ⚙️ Retention and diagnostic configuration is scripted for selected traces. After voice redeployment, telemetry contains metadata and correlation rather than transcript content. Azure Confidential Ledger anchoring is 🗺️ Roadmap. | `traceability.md`; `infra/security/confidential-ledger/` |
 | **Art. 27** Fundamental rights impact assessment (FRIA) | Public-sector deployers must assess impact on fundamental rights | FRIA per agent in `governance/ai-act/registry/`; reviewed on substantial modification | FRIA PDF in `governance/dpia/` |
 | **Art. 50** Transparency obligations for AI systems | Inform users they are interacting with AI | Citizen-facing notice on every channel: "You are being assisted by an AI; a human caseworker reviews any decision that affects you" | Channel docs (every channel has a notice) |
-| **Art. 71** EU database registration | High-risk system registered in EU DB | Eligibility agent registered; registration ID stored in registry JSON | EU AI Database confirmation |
-| **Art. 72** Post-market monitoring | Plan + execution | Monthly monitoring report compiled from Foundry evals + production traces; reviewed by AI Office | Monitoring report PDF |
+| **Art. 71** EU database registration | High-risk system registered in EU DB | 🔵 Registry dossier exists in repo. An EU database confirmation is not evidenced here | `governance/ai-act/registry/eligibility-model.yaml` |
+| **Art. 72** Post-market monitoring | Plan + execution | 🔵 Monitoring definitions and evaluation assets exist. Recurring production reporting is not verified | Registry and evaluation assets |
 | **Art. 79** Serious incident reporting | Notify market surveillance within 15 days | Sentinel detection rule for serious incidents (eligibility false-negative spike, content-safety bypass); incident workflow | Sentinel runbook |
 | **Art. 99-101** Penalties | Up to 7 % global turnover or €35 M | (Reason to comply; nothing to "implement") | — |
 
 ### Where to read more
 
-- [`ai.md`](./ai.md) § 11 (Governance, lineage, EU AI Act) — the technical view of how the registry works.
+- [`ai.md`](./ai.md) § 11 (Governance, lineage, EU AI Act): the technical view of registry assets and the missing operational lineage backend.
 - `governance/ai-act/registry/eligibility-model.yaml` — the canonical conformity dossier for the high-risk agent.
 - Demo 6 in [`uses.md`](./uses.md) — the human-oversight workflow in action.
-- Demo 7 in [`uses.md`](./uses.md) — DPO Hans audits a six-month-old AI decision (proves Art. 26(6) traceability).
+- Demo 7 in [`uses.md`](./uses.md): a target six-month audit journey. The current demonstrator proves correlation and repository governance assets, not complete replay.
 
 ---
 
@@ -318,7 +320,7 @@ ePrivacy is GDPR's specialised cousin for **electronic communications**. It gove
 
 | ePrivacy article | What it demands | UDCSP's response |
 |---|---|---|
-| **Art. 5(1)** Confidentiality of communications | No interception or recording without consent or legal basis | Voice IVR opens with: *"This call may be recorded for service-quality and AI-Act log-retention purposes; you have the right to request a copy or erasure"*. Lawful basis = GDPR Art. 6(1)(e). |
+| **Art. 5(1)** Confidentiality of communications | No interception or recording without consent or legal basis | Current voice v1 does not persist audio and the corrected source does not write transcript content to telemetry. If recording is enabled later, the channel must give the applicable notice and apply the declared legal basis and retention policy. |
 | **Art. 5(2)** Lawful business practice exception | Recording allowed for evidence of commercial transaction (or public-service equivalent) | Public-service equivalent applies; we still inform at the start. |
 | **Art. 5(3)** Terminal equipment storage (cookies + similar) | Consent required for non-essential storage | Cookie banner on web portal; only essential session cookie pre-consent; analytics cookies require explicit opt-in. |
 | **Art. 6** Traffic data | Erase or anonymise when no longer needed | Voice traffic data (CDRs) retained 6 months for billing reconciliation, then anonymised; ACS event capture follows the same window. |
@@ -441,7 +443,7 @@ UDCSP is **a unified citizen platform that bridges to the existing national auth
 |---|---|---|---|
 | Channel interaction (web/mobile/voice/chat session) | UDCSP per-country instance (joint controller with the agency that operates that channel) | Art. 6(1)(e) public interest task — performance of a public service | Sovereign Azure region of the country (DK = North Europe; SE = Sweden Central; NO = Norway East) |
 | eID assertion (MitID / BankID / Freja+ / ID-porten / MinID) | The national eID provider (controller for the assertion) → UDCSP joint-controller for storing the federation claim | eIDAS + Art. 6(1)(e) | Federation claim cached in External ID per country; original assertion retained by the eID provider |
-| AI assistance (classification, translation, eligibility recommendation, doc extraction, citizen Q&A) | UDCSP per-country instance | Art. 6(1)(e) + EU AI Act conformity (Art. 14 human oversight on the high-risk Eligibility agent) | Foundry traces in the country region; outputs are recommendations, not decisions |
+| AI assistance (classification, translation, eligibility recommendation, synthetic document-field inference, citizen Q&A) | UDCSP per-country instance | Art. 6(1)(e) + EU AI Act duties, including Art. 14 human oversight | Partial Foundry and App Insights metadata. Current document fields are synthetic and must carry provenance |
 | Substantive administrative decision (residency, tax-residence certificate, family benefit, permit) | **The competent national authority** — CPR / Skatteverket / Skatteetaten / SKAT / Försäkringskassan / NAV / Udbetaling DK / Altinn / UDI | National administrative law + Art. 6(1)(e) | The authority's own systems — UDCSP only mirrors the *status* into D365 |
 | Decision audit / appeals | The competent national authority | National administrative law (Forvaltningsloven / Förvaltningslagen / Forvaltningsloven) | The authority's case file; the citizen exercises the right to access (`partsaktindsigt` etc.) at the authority |
 
@@ -473,22 +475,22 @@ UDCSP runs on Microsoft Azure, D365, Foundry, and Foundry `topic-router`. **Micr
 
 ---
 
-## 12. Citizen rights — operational SLAs
+## 12. Citizen rights: target SLAs and current delivery
 
-The "right" exists in the regulation; the **delivery** is operational. UDCSP commits to delivering each right within the legal SLA, evidenced by automation:
+The legal rights are binding. The table below separates the intended service target from what is currently available. It is not evidence that every workflow is operating.
 
-| Right (GDPR article) | Legal SLA | UDCSP operational SLA | Operational owner | Tested by |
+| Right (GDPR article) | Legal SLA | Target service SLA | Current delivery | Evidence or next step |
 |---|---|---|---|---|
-| Information at collection (Art. 13/14) | At time of collection | Real-time (channel notice) | All channels | Privacy notice review per release |
-| Access (Art. 15) | 1 month | ≤ 5 working days | DPO console | Demo 7 in [`uses.md`](./uses.md) |
-| Rectification (Art. 16) | 1 month | ≤ 3 working days for self-service; ≤ 10 working days for caseworker-mediated | Citizen portal + D365 | Per-release smoke test |
-| **Erasure (Art. 17)** | **1 month** | **≤ 30 days end-to-end** with cascading deletion across 5 storage zones | DPO console + Logic App | data.md § 9 sequence diagram |
-| Restriction (Art. 18) | 1 month | ≤ 24 hours (flag set immediately) | DPO console | Smoke test |
-| Data portability (Art. 20) | 1 month | Same export as Art. 15 | DPO console | Smoke test |
-| Objection (Art. 21) | "Without undue delay" | ≤ 7 working days for DPO triage | DPO console | Smoke test |
-| No solely-automated decisions (Art. 22) | At all times | Hardcoded — Eligibility output **cannot** auto-decide | D365 workflow blocks | Demo 6 in [`uses.md`](./uses.md) |
-| Withdraw consent (Art. 7) | "As easy as giving" | One-click in cookie preferences; opt-out via SMS `STOP` / email link | Web portal + SMS workflow | Per-release |
-| Lodge complaint with DPA (Art. 77) | At all times | DPA contact in every privacy notice + every channel notice | All channels | — |
+| Information at collection (Art. 13/14) | At time of collection | Real-time channel notice | 🟡 Available on exercised channels | Verify each channel before release |
+| Access (Art. 15) | 1 month | ≤ 5 working days | 🔵 Caller-bound self-service contract in repo; full export and DPO console 🗺️ Roadmap | Deploy APIM and workflow, then test |
+| Rectification (Art. 16) | 1 month | ≤ 3 working days self-service; ≤ 10 working days caseworker-mediated | 🗺️ Roadmap as a complete flow | Define and test the authoritative write path |
+| **Erasure (Art. 17)** | **1 month** | **≤ 30 days end-to-end** | 🔵 Caller-bound request contract in repo; full cascade and Priva coordination 🗺️ Roadmap | Deploy, then verify every storage zone |
+| Restriction (Art. 18) | 1 month | ≤ 24 hours | 🗺️ Roadmap | Implement the authoritative restriction flag |
+| Data portability (Art. 20) | 1 month | Same package as Art. 15 | 🗺️ Roadmap | Reuse the caller-bound export contract |
+| Objection (Art. 21) | Without undue delay | ≤ 7 working days for DPO triage | 🗺️ Roadmap | Implement authenticated DPO workflow |
+| No solely automated decisions (Art. 22) | At all times | AI recommendation only | 🟡 Advisory design exists; caseworker persistence remains partial | Demo 6 status in `inprogress.md` |
+| Withdraw consent (Art. 7) | As easy as giving | One-click or channel opt-out | 🟡 Depends on channel | Verify web, SMS, and email separately |
+| Lodge complaint with DPA (Art. 77) | At all times | DPA contact in notices | 🟡 Notice coverage varies by channel | Release checklist |
 
 ### Logic Apps tier — production vs sandbox
 
@@ -529,7 +531,7 @@ the architectural rationale is in
 
 ## 13. Evidence and audit pack — what a regulator can demand and we hand over
 
-When a Data Protection Authority opens an investigation, when an AI Office auditor knocks, or when a citizen NGO files a complaint, UDCSP produces a structured **evidence pack** within 5 working days. The pack is **machine-generated** from Purview + Sentinel + Foundry + storage policies; it is **not** assembled by hand.
+The target operating model produces a structured **evidence pack** within 5 working days. Today, the repository contains the source definitions, registry files, queries, and infrastructure inventory needed to assemble it. The DPO console, complete Purview lineage, and end-to-end pack generation are 🗺️ **Roadmap**, so the current pack is not fully machine-generated.
 
 ### The standard evidence pack
 
@@ -571,9 +573,9 @@ flowchart LR
     class ROPA,CONF,DPIA_P,RETPOL,ENC_PROOF,AUD_TL,ACC,BREACH,INVENTORY pack
 ```
 
-| Document | What's in it | How long to generate |
+| Document | What's in it | Target generation time |
 |---|---|---|
-| **RoPA — Records of Processing Activities** | All processing operations, their purposes, categories of data, retention periods, recipients, transfers — auto-extracted from Purview | 1 minute |
+| **RoPA: Records of Processing Activities** | Target export of processing operations, purposes, data categories, retention, recipients, and transfers. Current source is `governance/gdpr/ropa.md`; Purview automation is not verified | 1 minute target |
 | **Conformity dossiers per AI agent** | Intended purpose, training-data summary, evaluation report, post-market monitoring plan, conformity declaration | 1 minute (registered) |
 | **DPIA + FRIA per agent** | Data Protection Impact Assessment + Fundamental Rights Impact Assessment, signed and versioned | Pre-existing PDFs |
 | **Retention policies in force** | Lifecycle rules + immutability policies + PostgreSQL JSONB + Redis TTLs + Purview policies — exported as a table | 1 minute |
@@ -583,14 +585,14 @@ flowchart LR
 | **Incident register** | All breaches notified under GDPR Art. 33-34 + NIS2 Art. 23 in the period | 5 minutes |
 | **Service inventory + region map** | All Azure resources + their region (proves no data left EU/EEA) | 5 minutes from Azure Resource Graph |
 
-**Total time-to-evidence-pack: typically under 1 hour** for a standard investigation. For a fully-personalised investigation (specific citizen, specific time window), the DPO console produces the pack in ≤ 1 working day.
+**Target time-to-evidence-pack: under 1 hour** for a standard investigation and ≤ 1 working day for a citizen-specific pack. These targets are not yet validated because the DPO console and full lineage path are not operational.
 
 ### Investigation-specific exports
 
 For a specific data subject:
-- **All-data export** (Art. 15): JSON pack with every record across all 5 storage zones, signed by the platform.
-- **All-decisions export**: every AI inference + every caseworker decision affecting this citizen, with the Foundry trace IDs that prove the decision chain.
-- **All-conversations export**: every voice transcript, every chat dialog, every email, every SMS — exported as a structured JSON archive.
+- **All-data export** (Art. 15): 🗺️ target JSON package across the governed stores. Citizen self-service subject binding is 🔵 in repo but not deployed.
+- **All-decisions export**: 🗺️ target AI and caseworker record set with correlation identifiers.
+- **All-conversations export**: 🗺️ target for content retained in authoritative stores. Corrected voice source no longer writes transcript content to Application Insights, but that image is not deployed. After deployment, `traceparent`, event names, lengths, and argument keys remain available for correlation.
 
 ---
 
@@ -613,7 +615,7 @@ Regulations move. The AI Act is barely 18 months old; the ePrivacy Regulation is
 
 ## 15. Frequently anticipated questions
 
-> Questions a DPO, an auditor, or a journalist is likely to ask. Each answer points to where the proof lives.
+> Questions a DPO, an auditor, or a journalist is likely to ask. Each answer identifies the current status and the relevant evidence or next step.
 
 ### "Where exactly is my data physically stored?"
 
@@ -621,23 +623,23 @@ In the citizen's own country's Azure region, in a country-specific resource grou
 
 ### "How long do you keep my voice recording?"
 
-**Audio: 90 days, immutable WORM, then auto-purged.** STT transcript: 6 months hot in Dataverse, then anonymised and kept in OneLake for the case retention period. Anchor: GDPR Art. 5(1)(c) + EU AI Act Art. 26(6). Detail in [`../tech/data.md`](../tech/data.md) § 5.
+Current voice v1 does not persist audio. In the corrected source, Application Insights receives transcript lengths and correlation metadata, not transcript text. A future D365 recording path may apply a 90-day audio policy, but it is not active today. Detail in [`../tech/inprogress.md`](../tech/inprogress.md).
 
 ### "I want all my data deleted. How and when?"
 
-Submit through the citizen portal, the DPO email, or in writing. **Acknowledged in 24 h., delivered in ≤ 30 days** — that's our SLA, tighter than GDPR's 1 month. The deletion cascades across all 5 storage zones with a signed certificate as proof. Active criminal investigations may suspend the right (GDPR Art. 23 / national law). Detail in [`../tech/data.md`](../tech/data.md) § 9.
+GDPR allows one month. UDCSP's target is acknowledgement within 24 hours and completion within 30 days, but that service level is not yet validated. Citizen self-service subject binding is 🔵 **In repo** and not deployed. Full cross-store deletion, legal-hold handling, Priva coordination, and a signed certificate are 🗺️ **Roadmap**. The target cascade is described in [`../tech/data.md`](../tech/data.md) § 9.
 
 ### "An AI made a decision about me. Can I see why?"
 
-**An AI never makes a final decision about you.** AI may make a *recommendation*; a human caseworker reviews and decides (AI Act Art. 14 + GDPR Art. 22). You have the right to see the recommendation, the evidence the AI based it on, and the caseworker's review. Use the DPO console or contact your caseworker; the trace is preserved for ≥ 6 months (AI Act Art. 26(6)). Demo 7 in [`uses.md`](./uses.md) walks through this.
+The design keeps AI output advisory and reserves the final disposition for a human caseworker. The current disposition and replay paths are partial. Document fields are synthetic filename inferences, not evidence read from an upload. A dedicated DPO console, complete six-month replay, operational lineage, and immutable anchoring are 🗺️ **Roadmap**. Demo 7 in [`uses.md`](./uses.md) shows the target journey and its current limits.
 
 ### "How do you know your AI is not biased?"
 
-Every AI agent has a **DPIA + FRIA** that includes bias evaluation per language, per protected category, per Member State. Evals run **per pull request and per release**, gated against documented thresholds. Failures block deploys. Reports are in `governance/ai-act/registry/{agent}.yaml` (`evalDataset` field) and the Foundry eval suites under `tests/eval/`. Demo 9 in [`uses.md`](./uses.md) shows the cross-language outcome dashboard.
+Registry and evaluation assets in repo describe risk classification, datasets, and multilingual checks. Scheduled eval workflows also exist. Do not treat those assets as proof that every pull request and release is blocked on a complete bias gate. Demo 9 in [`uses.md`](./uses.md) distinguishes the live operator workbooks from the roadmap executive dashboard.
 
 ### "What if there's a breach?"
 
-Sentinel detects → on-call paged within minutes → DPA notified within 72 h. (GDPR Art. 33) → national CSIRT notified within 24 h. (NIS2 Art. 23(1)) → affected citizens notified without undue delay if high risk (Art. 34). The chain is automated; the playbook is tested in yearly tabletop exercises. Anchor: § 14 above.
+The target process is Sentinel detection, on-call triage, DPA notification within 72 hours, national CSIRT early warning within 24 hours where NIS2 applies, and affected-citizen notice without undue delay for high-risk breaches. Automation and tabletop cadence must be verified from deployed playbooks and exercise records before being claimed as operating.
 
 ### "Can a citizen from Denmark use Swedish services with their Danish ID?"
 
@@ -649,7 +651,7 @@ On the roadmap. UDCSP architecture is ready (Microsoft Entra Verified ID proven 
 
 ### "Do you train your AI models on my conversations?"
 
-**Not your raw conversations.** We use **anonymised, aggregated** historical case decisions (with k-anonymity + suppression of quasi-identifiers, audited yearly) for the Eligibility model. Conversation transcripts are kept for AI Act log retention (Art. 26(6)) and for caseworker review — not for training. Detail in [`../tech/data.md`](../tech/data.md) § 12.
+**Not your raw conversations.** The corrected voice source does not retain transcript text in telemetry. Any future use of conversation content for training or caseworker review would require an authoritative store, declared purpose, retention, access control, and DSR coverage. The current documentation does not evidence such a production training pipeline.
 
 ### "What's the worst that could happen if you fail to comply?"
 
@@ -668,4 +670,4 @@ GDPR: fines up to €20 M or 4 % of global turnover. AI Act: up to €35 M or 7 
 
 ---
 
-> *UDCSP's compliance posture is not a checklist; it is a built-in property of the platform. Every regulation in § 2 maps to platform controls in § 3 that produce evidence in § 13 that survives a regulator's investigation. **Every retention period is anchored on a specific legal article. Every AI decision is registered. Every citizen right is delivered through a tested, automated workflow within (or under) the legal SLA.** Compliance by design — Architecture principle P3 — is what this document operationalises.*
+> *UDCSP's compliance posture is a control map, not a certification. Regulations in § 2 map to live, partial, in-repo, scripted, or roadmap controls. The status labels and deployment evidence determine whether a regulator can rely on each control today.*

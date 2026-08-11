@@ -89,7 +89,7 @@
 | 🧠 **AI** | Microsoft Foundry (`topic-router` agent + downstream agents · evals · tracing) | ⚠️ Foundry CLI |
 | | Azure AI Speech *(post-call analytics)* | ✅ Bicep |
 | | Azure AI Translator | ❌ Manual *(via Foundry hub)* |
-| | Azure AI Document Intelligence | ❌ Manual *(via Foundry hub)* |
+| | Azure AI Document Intelligence | ❌ Manual and not wired to the current extractor |
 | | Azure AI Content Safety | ❌ Manual *(via Foundry hub)* |
 | | Azure AI Search | ❌ Manual |
 | 🌐 **Edge** | Azure Front Door + WAF | ❌ Manual |
@@ -105,13 +105,13 @@
 | 💾 **Data** | Azure Database for PostgreSQL Flexible *(replaces SQL DB + Cosmos DB)* | ✅ Bicep |
 | | Azure Cache for Redis Enterprise *(topic-router sessions)* | ✅ Bicep |
 | | Azure Storage / ADLS Gen2 *(3 accounts per country)* | ✅ Bicep |
-| 🛡️ **Security & compliance** | **Azure Confidential Ledger** *(AI Act Art. 26(6))* | ✅ Bicep |
+| 🛡️ **Security & compliance** | **Azure Confidential Ledger** *(resource template; decision writer is roadmap)* | ✅ Bicep |
 | | **Azure Backup + Site Recovery** *(BCDR — RPO 15 min / RTO 4 h)* | ✅ Bicep |
 | | **Azure Chaos Studio** *(proves 99.9 % SLO)* | ✅ Bicep |
 | | **Azure Bastion Standard** *(sole admin shell path)* | ✅ Bicep |
 | | **Microsoft Entra Permissions Management (CIEM)** | ✅ Bicep |
 | | **Microsoft Entra Verified ID** *(EUDI Wallet / eIDAS 2.0)* | ✅ Bicep |
-| | **Microsoft Priva** *(GDPR DSR system-of-record)* | ⚠️ Graph API |
+| | **Microsoft Priva** *(design assets; operating DSR connector is roadmap)* | ⚠️ Graph API |
 | | Microsoft Defender for Cloud | ✅ Bicep |
 | | **Microsoft Defender for APIs** | ✅ Bicep |
 | | Microsoft Sentinel | ✅ Bicep |

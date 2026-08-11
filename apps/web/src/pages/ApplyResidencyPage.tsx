@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { apiFetch } from '../api/client';
-import { countries, getCountry } from '../auth/msalConfig';
+import { getCountry } from '../auth/msalConfig';
 import { Flag } from '../components/Flag';
 import { appendCase } from '../utils/caseStore';
 import { uploadDocument } from '../utils/documentUpload';
@@ -141,7 +141,9 @@ export function ApplyResidencyPage() {
     consentClaimsMediation: false,
   });
   const upd = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
-  useEffect(() => upd('fromCountry', country), [country]);
+  useEffect(() => {
+    setForm((current) => current.fromCountry === country ? current : { ...current, fromCountry: country });
+  }, [country]);
 
   // Pre-filled identity claims surfaced from MSAL account.
   const identity = useMemo(() => {

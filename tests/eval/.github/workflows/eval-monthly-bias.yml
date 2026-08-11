@@ -1,5 +1,7 @@
 name: A14 Foundry Monthly Bias and Safety
 on: { workflow_dispatch: {}, schedule: [{ cron: "45 3 1 * *" }] }
+permissions:
+  contents: read
 jobs:
   eval:
     runs-on: ubuntu-latest

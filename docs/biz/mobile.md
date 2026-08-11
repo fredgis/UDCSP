@@ -20,10 +20,10 @@
 
 ---
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 > [!IMPORTANT]
-> **TL;DR.** 🟢 **Live** Demo 4 is the mobile-responsive SPA at `https://udcsp.fredgis.com`, not a packaged native app. The portal renders correctly on iPhone SE 375 px through iPhone 14 Pro Max 430 px using media queries in `home.css` and `accessibility.css`. The upload control uses the native iOS document or photo chooser, the chat widget remains pinned bottom-right, and the accessibility menu grid-stacks to one column under 600 px. 🔵 **In repo**: the Expo React Native shell and tests. 🗺️ **Roadmap**: signed iOS / Android binaries, APNs / FCM push, biometric re-auth, native camera capture and OS locale propagation.
+> **TL;DR.** 🟢 **Live** Demo 4 is the mobile-responsive SPA at `https://udcsp.fredgis.com`, not a packaged native app. The portal renders correctly on iPhone SE 375 px through iPhone 14 Pro Max 430 px using media queries in `home.css` and `accessibility.css`. The upload control uses the native iOS document or photo chooser, the signed-in chat launcher remains pinned bottom-right, and the accessibility menu grid-stacks to one column under 600 px. 🔵 **In repo**: the Expo React Native shell and tests. 🗺️ **Roadmap**: signed iOS / Android binaries, APNs / FCM push, biometric re-auth, native camera capture and OS locale propagation.
 >
 > | Field | Value |
 > |---|---|
@@ -38,6 +38,13 @@ _Last verified: 2026-07-26 · commit 5a8d591_
 | Native iOS document or photo chooser | 🟢 **Live** | Browser file picker is used by the live upload flows. |
 | Expo React Native shell | 🔵 **In repo** | `apps/mobile/` exists but no native binary is packaged. |
 | APNs / FCM push, biometric re-auth, native camera capture, OS locale propagation | 🗺️ **Roadmap** | Designed for the Expo shell, not deployed as a live channel. |
+
+> [!IMPORTANT]
+> **🔵 In repo, not deployed.** The responsive SPA still applies a 4 MiB browser cap before upload, but that check is only a user-experience guard. The pending APIM policy adds the real server control: an 8 MiB decoded ceiling, a `.pdf`/`.png`/`.jpg`/`.jpeg` allow-list, matching PDF/PNG/JPEG magic bytes, and a server-derived Blob content type. It returns `400` for malformed base64, `413` for size and `415` for an unsupported type or content/type mismatch.
+>
+> The pending web bundle also keeps `extractedFields`, document Blob coordinates, eligibility, decision and confidence out of `localStorage`. Legacy entries are scrubbed, reads require the signed-in citizen identity, and sign-out or an MSAL account change clears the cache.
+>
+> The shared citizen API contract is also 🔵 **In repo**. APIM deletes a caller-supplied `x-udcsp-citizen-upn`, replaces it with the identity from the validated JWT, and Logic Apps read only that trusted header.
 
 ---
 
@@ -208,7 +215,7 @@ sequenceDiagram
 | **2** | **`App.tsx` + screens** | 🔵 **In repo** root entry point + six screens: `Home`, `Login`, `ApplyResidency`, `MyCases`, `CaseDetail`, `AccessibilitySettings`. | `apps/mobile/App.tsx`, `apps/mobile/src/screens/*.tsx` |
 | **3** | **MSAL React Native + External ID** | 🔵 **In repo** native auth scaffold. 🟢 **Live** mobile sign-in is the browser SPA using the web MSAL flow. | `apps/mobile/src/auth/externalIdAuth.ts`, `infra/identity/external-id/{dk,se,no}-external-id.bicep` |
 | **4** | **Shared i18n, 12 languages from the web** | 🔵 **In repo** native loader references the web catalogue. 🟢 **Live** mobile language switching is served by the responsive SPA. | `apps/mobile/src/i18n/index.ts`, `apps/web/i18n/messages/*.json` |
-| **5** | **APIM client** | 🔵 **In repo** native APIM client. 🟢 **Live** mobile APIM calls use the web SPA clients. | `apps/mobile/src/api/client.ts`, `services/apim/apis/*/openapi.yaml` |
+| **5** | **APIM client** | 🔵 **In repo** native APIM client. 🟢 **Live** mobile APIM calls use the web SPA clients. The pending shared API policy binds citizen identity to the validated JWT rather than caller input. | `apps/mobile/src/api/client.ts`, `services/apim/apis/*/openapi.yaml` |
 | **6** | **Push notifications via Expo + ACS** | 🗺️ **Roadmap** for signed binaries. Not deployed for Demo 4. | `apps/mobile/src/screens/CaseDetail.tsx`, `services/apim/apis/notifications/openapi.yaml` |
 | **7** | **Accessibility components** | 🔵 **In repo** native accessibility primitives. 🟢 **Live** mobile accessibility for Demo 4 is the responsive SPA plus `accessibility.css`. | `apps/mobile/src/components/AccessibleButton.tsx`, `apps/mobile/src/components/ScreenReaderHints.tsx`, `apps/mobile/src/screens/AccessibilitySettings.tsx`, `apps/mobile/src/styles/themes.ts` |
 
@@ -533,6 +540,7 @@ The demonstrated mobile channel is the responsive SPA, so it shares the web chan
 |---|---|---|
 | Bot transcript | Foundry `topic-router` Dataverse `bot_session` | 6 months hot; 6 years OneLake |
 | Documents chosen on mobile browser | 🟢 **Live** ADLS Gen2 `citizen-uploads/` through APIM, same as web | While case open + lifecycle tiers |
+| Browser case cache | 🔵 **In repo** allow-listed metadata in `localStorage`; rich document and eligibility fields remain memory-only and re-hydrate from APIM | Cleared on sign-out or MSAL account change |
 | Native camera captures | 🗺️ **Roadmap** ADLS Gen2 `citizen-uploads/`, same target as web | While case open + lifecycle tiers |
 | Drafts + push receipts | 🔵 **In repo** or 🗺️ **Roadmap** Azure Cache for Redis Enterprise plus PostgreSQL JSONB | Draft TTL 30 days; receipts TTL 30 days |
 | Memory + traces | Azure AI Search; App Insights → OneLake Bronze | Memory TTL 12 months; traces 180 days hot |

@@ -175,6 +175,13 @@ function Install-Apim {
         foreach ($a in $apis) {
             $openapi = Join-Path $a.FullName 'openapi.yaml'
             $policy  = Join-Path $a.FullName 'policy.xml'
+            if ((Test-Path $openapi -PathType Leaf) -and -not (Test-Path $policy -PathType Leaf)) {
+                throw "APIM API '$($a.Name)' is missing required policy.xml at '$policy'. Refusing to import any API without its JWT policy."
+            }
+        }
+        foreach ($a in $apis) {
+            $openapi = Join-Path $a.FullName 'openapi.yaml'
+            $policy  = Join-Path $a.FullName 'policy.xml'
             if (-not (Test-Path $openapi)) { continue }
             if ($PSCmdlet.ShouldProcess("$($a.Name)@$apimName", 'az apim api import')) {
                 Invoke-NativeCommand `
@@ -186,31 +193,31 @@ function Install-Apim {
                                '--api-id',$a.Name,
                                '--specification-path',$openapi,
                                '--specification-format','OpenApi',
+                               # The SPA sends bearer tokens without APIM subscription keys;
+                               # authentication is enforced by the mandatory API JWT policy.
                                '--subscription-required','false',
                                '--only-show-errors','--output','none') `
                     -LogFile $logFile `
                     -WhatIfFlag $whatIf `
                     -ContinueOnError
-                if (Test-Path $policy) {
-                    if ($PSCmdlet.ShouldProcess("policy@$($a.Name)@$apimName", 'az rest PUT api policy')) {
-                        $policyXml = Get-Content $policy -Raw
-                        $policyBody = [ordered]@{
-                            properties = [ordered]@{
-                                format = 'rawxml'
-                                value  = $policyXml
-                            }
+                if ($PSCmdlet.ShouldProcess("policy@$($a.Name)@$apimName", 'az rest PUT api policy')) {
+                    $policyXml = Get-Content $policy -Raw
+                    $policyBody = [ordered]@{
+                        properties = [ordered]@{
+                            format = 'rawxml'
+                            value  = $policyXml
                         }
-                        $policyBodyFile = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).json"
-                        $policyBody | ConvertTo-Json -Depth 6 | Set-Content $policyBodyFile -Encoding utf8
-                        $policyUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/apis/$($a.Name)/policies/policy?api-version=2022-08-01"
-                        $policySink = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).resp"
-                        Invoke-NativeCommand `
-                            -Command @('az','rest','--method','PUT','--url',$policyUrl,'--body',"@$policyBodyFile",
-                                       '--only-show-errors','--output-file',$policySink) `
-                            -LogFile $logFile `
-                            -WhatIfFlag $whatIf `
-                            -ContinueOnError
                     }
+                    $policyBodyFile = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).json"
+                    $policyBody | ConvertTo-Json -Depth 6 | Set-Content $policyBodyFile -Encoding utf8
+                    $policyUrl = "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName/apis/$($a.Name)/policies/policy?api-version=2022-08-01"
+                    $policySink = Join-Path $ReportDir "apim-policy-$($country.ToLower())-$($a.Name).resp"
+                    Invoke-NativeCommand `
+                        -Command @('az','rest','--method','PUT','--url',$policyUrl,'--body',"@$policyBodyFile",
+                                   '--only-show-errors','--output-file',$policySink) `
+                        -LogFile $logFile `
+                        -WhatIfFlag $whatIf `
+                        -ContinueOnError
                 }
                 # Per-operation policies — convention: services/apim/apis/<api>/operations/<operationId>.xml
                 # Each file is PUT to .../apis/<api>/operations/<operationId>/policies/policy. Used today
@@ -279,6 +286,7 @@ function Install-Apim {
         $lakeName = "udcsp$($country.ToLower())prodlake"
         $lakeId = az storage account show --subscription $sub -n $lakeName -g $lakeRg --query id -o tsv 2>$null
         if ($lakeId) {
+            $lakeId = ([string]$lakeId).Trim()
             if ($envMode -ne 'prod') {
                 if ($PSCmdlet.ShouldProcess("$lakeName PNA=Enabled", 'az storage account update')) {
                     Invoke-NativeCommand `
@@ -288,23 +296,25 @@ function Install-Apim {
                         -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
                 }
             }
-            $apimMi = az resource show --subscription $sub --ids "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName" --query identity.principalId -o tsv 2>$null
-            if ($apimMi) {
-                if ($PSCmdlet.ShouldProcess("$lakeName Storage Blob Data Contributor → $apimMi", 'az role assignment create')) {
-                    Invoke-NativeCommand `
-                        -Command @('az','role','assignment','create','--subscription',$sub,
-                                   '--assignee-object-id',$apimMi,'--assignee-principal-type','ServicePrincipal',
-                                   '--role','Storage Blob Data Contributor','--scope',$lakeId,
-                                   '--only-show-errors','--output','none') `
-                        -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
-                }
-            }
             if ($PSCmdlet.ShouldProcess("$lakeName/citizen-uploads", 'az storage container create')) {
                 Invoke-NativeCommand `
                     -Command @('az','storage','container','create','--subscription',$sub,
                                '--account-name',$lakeName,'-n','citizen-uploads','--auth-mode','login',
                                '--only-show-errors','--output','none') `
-                    -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                    -LogFile $logFile -WhatIfFlag $whatIf
+            }
+
+            $citizenUploadsContainerId = "$lakeId/blobServices/default/containers/citizen-uploads"
+            $apimMi = az resource show --subscription $sub --ids "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.ApiManagement/service/$apimName" --query identity.principalId -o tsv 2>$null
+            if ($apimMi) {
+                if ($PSCmdlet.ShouldProcess("$lakeName/citizen-uploads Storage Blob Data Contributor → $apimMi", 'az role assignment create')) {
+                    Invoke-NativeCommand `
+                        -Command @('az','role','assignment','create','--subscription',$sub,
+                                   '--assignee-object-id',$apimMi,'--assignee-principal-type','ServicePrincipal',
+                                   '--role','Storage Blob Data Contributor','--scope',$citizenUploadsContainerId,
+                                   '--only-show-errors','--output','none') `
+                        -LogFile $logFile -WhatIfFlag $whatIf -ContinueOnError
+                }
             }
 
             # Blob CORS — the SPA uploads via APIM MI proxy (so technically does

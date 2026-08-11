@@ -1,10 +1,13 @@
 # UDCSP — Installation Guide
 
-_Last verified: 2026-07-26 · commit 5a8d591_
+_Last verified: 2026-08-11 · commit f0bd850 + pending security remediation (not deployed)_
 
 > **Audience.** Platform engineers and reviewers performing a clean install of the **Unified Digital Citizen Services Platform** on a sacrificial Microsoft Cloud tenant.
 >
 > **Outcome.** The scripted platform phases provision the core environment in dependency order. Manual tenant steps and the mandatory private-upload patch below are then required before the sandbox matches the live demo posture and can drive the acceptance scenarios in [`recipe.md`](../biz/recipe.md).
+
+> [!WARNING]
+> **Pending security remediation.** Gateway policies and infrastructure changes are 🔵 **In repo**, while installer safeguards are ⚙️ **Scripted**. Nothing in this remediation has been deployed. The live APIM gateways still serve the old policies, the live APIM storage role remains account-scoped, and the new Storage and Key Vault diagnostic settings are absent. Rerunning an installer phase applies source changes but does not automatically revoke an older broader role assignment.
 
 > [!TIP]
 > **Storage architecture context.** Read [`data.md`](./data.md) before installing — it explains what each storage component is for and why it's needed (5 zones, retention matrix, GDPR + AI Act + ePrivacy compliance mapping).
@@ -207,7 +210,7 @@ Each environment URL looks like `https://orgXXXXXXXX.crm4.dynamics.com` (the `XX
 
 > **DNS + TLS.** The Front Door + APIM phases assume you own `udcsp.{dk,se,no}` (or your equivalent) and have delegated NS records. The installer provisions Front-Door-managed certificates for `*.udcsp.{dk,se,no}` but **cannot delegate DNS for you** — register zones first.
 >
-> **EU residency.** Workload regions MUST be in EU geography (`westeurope`, `northeurope`, `swedencentral`, `norwayeast`). The installer refuses non-EU regions.
+> **Sovereign workload regions.** Configure citizen-data resources as DK `northeurope`, SE `swedencentral` and NO `norwayeast`. 🔵 **In repo:** the allowed-regions initiative now encodes those exact country bindings and no longer permits `westeurope` for citizen-data resources. The revised policy is not deployed. Shared or global services that require another region need a separately reviewed policy scope or exemption.
 
 </details>
 
@@ -378,6 +381,12 @@ This runs **23 of the 25 phases** sequentially in dependency order, idempotent, 
 - **`QA`** — its smoke gate exercises the deployed Voice runtime; only green after Voice is up.
 
 > **Expected duration:** ≈ 60–90 minutes on a clean tenant (APIM Premium cold start is the long pole at ≈ 45 min; the installer streams progress every 60 s).
+
+> ⚙️ **Scripted:** APIM fail-fast guard. Before importing any API, `Install-Apim.psm1` checks every directory that contains `openapi.yaml`. If `policy.xml` is missing, the phase throws and imports no API from that pass. Add the correct JWT policy; do not bypass the check. This prevents a new API from being published without authentication.
+>
+> 🔵 **In repo:** all 13 API directories now have an API-level JWT policy. `lineage` authenticates with workforce Entra and then deliberately returns `503` because no backend exists. Do not replace that response with an unauthenticated placeholder.
+>
+> ⚙️ **Scripted:** report redaction replaces values passed through known secret-bearing flags, including `--deployment-token`, with `<redacted>` before writing phase logs. This protects command arguments; operators must still review unexpected tool output before sharing reports.
 
 > The full 25-phase DAG is detailed in **Appendix 1**.
 
@@ -799,35 +808,48 @@ The original `Install-UDCSP.ps1 -Phase QA` only validates that CI workflow files
 curl -sI "https://udcsp.fredgis.com" | Select-String -Pattern 'HTTP/'
 # Expected: HTTP/2 200
 
-# 2. APIM gateways respond (anonymous probes — should NOT need a bearer).
+# 2. APIM service-status endpoints respond. These are service probes, not API operations.
 foreach ($apim in 'udcsp-dk-prod-apim','udcsp-se-prod-apim','udcsp-no-prod-apim') {
     $code = curl.exe -s -o NUL -w "%{http_code}" "https://$apim.azure-api.net/status-0123456789abcdef"
     "  $apim → $code"   # 200 = APIM up; 404 = APIM up but no /status route (still fine)
 }
 
-# 3. Topic-router accepts an anonymous chat message (no JWT required by design).
+# 3. API operations reject anonymous requests after the remediation is deployed.
+$anonCode = curl.exe -s -o NUL -w "%{http_code}" -X POST `
+    "https://udcsp-dk-prod-apim.azure-api.net/agent-topic-router/messages" `
+    -H "Content-Type: application/json" -H "Origin: https://udcsp.fredgis.com" `
+    -d '{"sessionId":"smoke-b7","channel":"web","locale":"en","text":"hello"}'
+"  anonymous topic-router → $anonCode"  # Expected: 401
+
+# 4. Repeat with a real External ID access token whose aud is api://<client-id>
+#    and whose scp contains access_as_user.
+$token = $env:UDCSP_SMOKE_TOKEN
+if (-not $token) { throw 'Set UDCSP_SMOKE_TOKEN to a valid External ID access token.' }
 curl -sS -X POST "https://udcsp-dk-prod-apim.azure-api.net/agent-topic-router/messages" `
+    -H "Authorization: Bearer $token" `
     -H "Content-Type: application/json" -H "Origin: https://udcsp.fredgis.com" `
     -d '{"sessionId":"smoke-b7","channel":"web","locale":"en","text":"hello"}' | Out-String
 
-# 4. Voice orchestrator healthz.
+# 5. Voice orchestrator healthz.
 $fqdn = az containerapp show -n udcsp-no-dev-voice-orch -g udcsp-no-voice --query "properties.configuration.ingress.fqdn" -o tsv
 curl "https://$fqdn/healthz"
 # Expected: 200 OK with { "status": "ok", "mode": "live" }
 
-# 5. Event Grid subscription is provisioned and the orchestrator answered its handshake.
+# 6. Event Grid subscription is provisioned and the orchestrator answered its handshake.
 az eventgrid event-subscription show `
     --name "udcsp-no-acs-incoming-call" `
     --source-resource-id (az communication show -n udcsp-no-acs -g udcsp-no-voice --query id -o tsv) `
     --query "{state:provisioningState,endpoint:destination.endpointBaseUrl}" -o table
 # Expected: state=Succeeded, endpoint=https://<fqdn>/api/acs/eventgrid
 
-# 6. App Insights correlation — confirm at least one trace ingested in the last hour.
+# 7. App Insights correlation, confirm at least one trace ingested in the last hour.
 $appiId = az monitor app-insights component show -a udcsp-no-prod-shared-appi -g udcsp-no-observability-rg --query appId -o tsv
 az monitor app-insights query --app $appiId `
     --analytics-query "requests | where timestamp > ago(1h) | summarize count()" -o tsv
 # Expected: a non-zero count
 ```
+
+> Until the pending APIM policies are deployed, the live topic-router may still return `2xx` to the anonymous probe. Treat that as evidence that the old policy is still active, not as a passing security result.
 
 ### B7.1 — Live dial test
 
@@ -914,6 +936,7 @@ Without `-Force`, a `prod` invocation prints a warning and exits without making 
 | `Install-Fabric` returns `403 CapacityNotFound` | Fabric F-SKU not provisioned in country region | Provision the capacity in Azure Portal → re-run `-Phase Fabric` |
 | `Install-Foundry` fails on model deployment | Quota exhausted in the Foundry region | Request quota in Foundry portal or change region in config |
 | `Install-Apim` slow on first run | Premium APIM cold start ≈ 45 minutes | Expected. Installer streams progress every 60 s. |
+| `Install-Apim` throws `missing required policy.xml` | An API directory has `openapi.yaml` but no API-level JWT policy | Add and review `services\apim\apis\<api>\policy.xml`, then rerun `-Phase Apim`. The hard failure is intentional. |
 
 </details>
 
@@ -923,7 +946,7 @@ Without `-Force`, a `prod` invocation prints a warning and exits without making 
 Every run produces:
 
 - `scripts/install/reports/<runStamp>/install-report.json` — machine-readable summary, phase-by-phase status + outputs.
-- `scripts/install/reports/<runStamp>/install-<phase>.log` — full stdout/stderr/exit-code for every external CLI call in that phase.
+- `scripts/install/reports/<runStamp>/install-<phase>.log`: stdout, stderr, exit code and a command line for every external CLI call. Known secret-bearing argument values are logged as `<redacted>`.
 - `scripts/install/reports/<runStamp>/install-report.html` — operator-friendly HTML, only when `-EvaluatorMode` is passed.
 
 Grep tip:
@@ -952,8 +975,8 @@ These are the issues we hit on a fresh `MngEnvMCAP123456.onmicrosoft.com` MCAPS 
 | # | What we hit | Root cause | Fix shipped |
 |--:|---|---|---|
 | 1 | `pac solution import` exit 1 with `Solution manifest cannot be parsed` | `Solution.xml` had `<RootComponents></RootComponents>` self-close + missing `<Versions>` block | Per-country `Solution.xml` files now author the canonical layout (`<RootComponents />` + `<MissingDependencies />` + valid `<Versions>` block), publisher `udcsp_` reserved at version `1.0.0.0` |
-| 2 | `az staticwebapp create` failed `LocationNotAvailableForResourceType` in `swedencentral` | SWA Free SKU only available in `centralus / eastus2 / westus2 / westeurope / eastasia` | `Install-Apps.psm1` hardcodes `westeurope` for SWA Free (still EU-residency compliant — SWA is a global edge CDN, content origin stays in our SWA region) |
-| 3 | `swa deploy` hung on interactive auth picker | `swa deploy` opens a browser when no `--deployment-token` is given | Installer now `az staticwebapp secrets list` → passes `--deployment-token <key> --no-use-keychain` |
+| 2 | `az staticwebapp create` failed `LocationNotAvailableForResourceType` in `swedencentral` | SWA Free SKU only available in `centralus / eastus2 / westus2 / westeurope / eastasia` | `Install-Apps.psm1` uses `westeurope` for the static site. Keep it outside the citizen-data policy scope or add a reviewed exemption; the country allowed-regions initiative now permits only the sovereign primary region for citizen-data resources. |
+| 3 | `swa deploy` hung on interactive auth picker | `swa deploy` opens a browser when no `--deployment-token` is given | Installer uses `az staticwebapp secrets list`, passes `--deployment-token <key> --no-use-keychain`, and logs the token argument as `<redacted>` |
 | 4 | `staticwebapp.config.json` rejected with `AnyOfError` schema validation | Invalid `routes[]` entry combining `route + serve + statusCode` | Removed redundant `/*` route; `navigationFallback.rewrite` already handles SPA fallback |
 | 5 | `npm install` exit 1 — package not found on registry | `@azure/msal-react-native@^0.4.0` was a placeholder, **does not exist** on npmjs | Replaced with canonical Expo OIDC stack: `expo-auth-session ~6.0.2`, `expo-crypto ~14.0.1`, `expo-web-browser ~14.0.1` (PKCE flow with Microsoft Entra External ID) |
 | 6 | `az group create` exit 1 | RG already existed in a different location (re-run after region change) | `New-AzResourceGroupIfNeeded` now `az group exists` pre-check, idempotent across location changes |
@@ -977,7 +1000,7 @@ After a green run on a clean MCAPS sandbox using the `dev` config, the table bel
 | `VerifiedId` | Verified ID issuer + verifier (eIDAS 2.0 / EUDI bridge) | 🟡 | Verified ID needs to be **enabled per tenant** in Entra portal once; installer registers the issuer/verifier via Graph |
 | `Bastion`, `Ddos`, `BackupAsr`, `Observability`, `ConfidentialLedger`, `ChaosStudio`, `Fabric`, `Postgres`, `Redis`, `ConfidentialCompute` | All Azure-native | ✅ | — |
 | `Foundry` | Azure AI Foundry projects, hosted/prompt agents, evaluators, datasets | ✅ | — |
-| `Apim` | API Management Developer tier, agent-topic-router API, products, policies | ✅ | — |
+| `Apim` | API Management Developer tier, all 13 API definitions, products, fragments, API policies and operation policies | ✅ | The phase stops before API import if any API directory lacks `policy.xml`. |
 | `LogicApps` | 10 Consumption workflows × 3 countries (citizen onboarding, SRR, breach, etc.) | ✅ | — |
 | `Apps` | SWA `udcsp-web-dev` (westeurope), web build, mobile npm install | ✅ | EAS build for mobile binaries skipped (`eas` not on PATH) — install `eas-cli` and run separately for iOS/Android |
 | `Purview` (account) | Tenant-level Purview Enterprise account | ❌ if a tenant-level Purview already exists (1-per-tenant limit) → installer reuses it | If no Purview exists, installer creates it. Otherwise edit `scripts/install/config/udcsp.config.psd1` `PurviewAccount = @{ ... }` to point to the existing one |
@@ -1114,16 +1137,18 @@ This section deploys the **9 operator workbooks** (3 per country × DK/SE/NO) in
 
 > ⚠️ **No application code is modified in this section.** Every command below either (a) deploys a workbook resource into Azure Monitor, or (b) creates a `Microsoft.Insights/diagnosticSettings` child resource on an existing platform resource. Both are pure Azure plane configuration — the SPA, APIM policies, Logic Apps and the voice orchestrator are untouched.
 
-### M1 — Telemetry wiring status (audit, May 2026)
+### M1: Telemetry wiring status (audit, 2026-08-11)
 
 | Source | App Insights wired? | How | Notes |
 |---|:-:|---|---|
-| Voice orchestrator `udcsp-no-dev-voice-orch` (Container App) | 🟢 | `APPLICATIONINSIGHTS_CONNECTION_STRING` env var, sourced from KV secret `app-insights-connection`, points at `udcsp-no-prod-shared-appi`. OTEL service name set. | Emits `requests`, `dependencies`, `traces`, `customEvents` (incl. realtime transcripts) when calls land. Verified by reading the ACA revision spec. |
-| Web SPA `udcsp-web-dev` (Static Web App) | 🔴 | No SDK in `apps/web/`, no `VITE_APPLICATIONINSIGHTS_CONNECTION_STRING` in SWA app settings. | **Out of scope of this section** — instrumentation would require adding the JS SDK to the SPA bundle. Listed here for awareness only. |
-| APIM gateways × 3 (`udcsp-{c}-prod-apim`) | 🔴 → 🟡 after M3 | 0 APIM loggers, 0 diagnostic-settings as of May 2026. **Wired by M3** via Azure Monitor diagnostic-settings → LAW (non-invasive). | The richer integration (APIM logger pointing to AI per API/operation, producing native `requests`) requires editing API operation `diagnostic` blocks — that is application config and **excluded from this section**. |
-| Logic Apps × N (`udcsp-{c}-dev-*`) | 🔴 → 🟡 after M3 | No diagnostic-settings. **Wired by M3** to LAW. | LA runtime logs become available in `AzureDiagnostics` / `WorkflowRuntime` tables in LAW. |
-| ACS `udcsp-no-acs` | 🔴 → 🟡 after M3 | No diagnostic-settings. **Wired by M3** to LAW. | Surfaces `CallSummary` / `CallDiagnostics` / `EmailSummary` etc. |
-| Foundry / AOAI `udcspai` | 🟡 | Native Foundry diagnostics already on the resource. | Reachable from workbooks via cross-resource query if needed. |
+| Voice orchestrator `udcsp-no-dev-voice-orch` (Container App) | 🟢 **Live** | `APPLICATIONINSIGHTS_CONNECTION_STRING` env var, sourced from KV secret `app-insights-connection`, points at `udcsp-no-prod-shared-appi`. OTEL service name set. | Emits `requests`, `dependencies`, `traces`, `customEvents` (incl. realtime transcripts) when calls land. Verified by reading the ACA revision spec. |
+| Web SPA `udcsp-web-dev` (Static Web App) | 🗺️ **Roadmap** | No SDK in `apps/web/`, no `VITE_APPLICATIONINSIGHTS_CONNECTION_STRING` in SWA app settings. | **Out of scope of this section**; instrumentation requires adding the JS SDK to the SPA bundle. |
+| APIM gateways × 3 (`udcsp-{c}-prod-apim`) | ⚙️ **Scripted** | APIM diagnostic settings are still missing. M3 can add Azure Monitor diagnostic settings to LAW. | The security remediation did not close this gap. Per-API and per-operation logger configuration remains separate work. |
+| Logic Apps × N (`udcsp-{c}-dev-*`) | ⚙️ **Scripted** | No diagnostic settings are live. M3 can wire them to LAW. | LA runtime logs then become available in `AzureDiagnostics` / `WorkflowRuntime` tables in LAW. |
+| ACS `udcsp-no-acs` | ⚙️ **Scripted** | No diagnostic settings are live. M3 can wire them to LAW. | Surfaces `CallSummary`, `CallDiagnostics`, `EmailSummary` and related categories. |
+| Foundry / AOAI `udcspai` | 🟡 **Partially deployed** | Native Foundry diagnostics already exist on the resource. | Reachable from workbooks via cross-resource query if needed. |
+| Country lake blob service × 3 | 🔵 **In repo** | `infra/landing-zone/modules/storage.bicep` enables `StorageRead`, `StorageWrite` and `StorageDelete` to the country LAW. | The Bicep change is not deployed, so there is no new live forensic stream yet. |
+| Country Key Vault × 3 | 🔵 **In repo** | `infra/landing-zone/modules/keyvault.bicep` enables `AuditEvent` and `AzurePolicyEvaluationDetails` to the country LAW. | The Bicep change is not deployed. |
 
 ### M2 — Deploy the 9 workbooks (~3 min, CLI)
 
@@ -1183,7 +1208,7 @@ Azure Portal → Application Insights → udcsp-{c}-prod-shared-appi → Workboo
 
 ### M3 — (Optional, non-invasive) Wire diagnostic-settings → Log Analytics
 
-These commands add a `Microsoft.Insights/diagnosticSettings` child resource to APIM × 3, ACS NO and Logic Apps × N, pushing platform logs/metrics into the per-country Log Analytics workspace (`udcsp-{c}-prod-law`). Pure Azure plane config — additive, non-destructive, no runtime impact on the resources themselves.
+These commands add a `Microsoft.Insights/diagnosticSettings` child resource to APIM × 3, ACS NO and Logic Apps × N, pushing platform logs/metrics into the per-country Log Analytics workspace (`udcsp-{c}-prod-law`). They do not deploy the new Storage or Key Vault settings; those arrive only when the revised LandingZone Bicep is deployed.
 
 ```powershell
 # Per country: APIM + LAW IDs
@@ -1262,6 +1287,7 @@ Expected after a live citizen rail + dial test:
 2. **Voice telemetry flows immediately** once a call lands on `+33 801 150 799` — the NO orchestrator has been wired since the B6 phase.
 3. **APIM / ACS / Logic Apps telemetry only appears after M3** is applied. Skip M3 if you want a workbooks-only demo limited to the voice signal.
 4. **Workbook resource names are GUIDs** — the human-readable label is `properties.displayName`. The portal lists by display name, so it's transparent at demo time.
+5. **Storage and Key Vault diagnostics are source-only.** Do not expect their events until the LandingZone is redeployed. APIM remains a separate M3 action.
 
 ### M6 — Tear-down (rollback this section without side effects)
 
@@ -1422,7 +1448,7 @@ az ad sp show --id $AppId 2>$null || az ad sp create --id $AppId
 3. **+ Add a client application** → paste the **same SPA clientId** → tick the new scope → **Add application**. (This is the "preAuthorize self" trick — no consent prompt for end users.)
 4. **Manage → API permissions → + Add a permission → My APIs** → pick the same app → delegated `access_as_user` → **Add permissions** → **Grant admin consent for udcsp\<country\>**.
 
-**Verify**: sign in via the portal, open DevTools → *Network* → look for `https://login.microsoftonline.com/.../oauth2/v2.0/token` returning `access_token` + `scope = access_as_user`, then any `apiFetch` call to APIM returning `2xx` instead of `401 invalid_token`. If you still see `401`, double-check the APIM named value `external-id-api-audience-<country>` matches `<APP_ID>` exactly (no `api://` prefix on this one — APIM expects the GUID alone).
+**Verify**: sign in via the portal, open DevTools → *Network* → inspect the access token used by `apiFetch`. It must contain `aud = api://<APP_ID>` and `scp` containing `access_as_user`. The APIM named value is `external-id-api-audience` on each country APIM instance, and its value must be the same `api://<APP_ID>` URI. A bare client GUID does not match the checked-in policy.
 
 ### Step 4 — Rebuild and redeploy the portal with the 3 client IDs
 
@@ -1488,7 +1514,7 @@ Use **Users → New user → Create new user**, set initial password, share cred
 
 - **APIM `agent-topic-router` returns "Service temporarily unavailable"** — the backend named-value `foundry-topic-router-agent-endpoint` is still `https://placeholder.local`. Replace with the real Foundry agent endpoint (`Install-Foundry.psm1` output) and add a CORS policy allowing `https://udcsp.fredgis.com` (and the legacy SWA hostname if you keep it as a fallback).
 - **`/cases` empty even after sign in** — covered by Step 7 below (APIM `case-management` GET wired to Dataverse `tasks`).
-- **Document upload returns 403 / 404** — covered by Step 8 below (storage public network access + APIM MI proxy).
+- **Document upload returns 403 / 404:** covered by Step 8 below (mandatory private upload path + APIM managed-identity proxy).
 - **GDPR Art. 17 "Delete my data" returns 404** — covered by Step 9 below (`gdpr/erasure-request` operation).
 ### Step 7 — APIM ↔ Foundry + Dataverse via Managed Identity (D3 / D4 backend)
 
@@ -1519,26 +1545,33 @@ az role assignment create --assignee-object-id $laMi --assignee-principal-type S
 ```
 
 **C. APIM operation policies wired**
+The behavior in this subsection describes the pending checked-in policies. The live APIM instances retain their previous policy versions until the APIM phase is rerun.
+
 - `agent-classifier / agent-citizen-assistant / agent-doc-extractor` — `set-backend-service` to `{{foundry-project-base}}/openai/v1`, `authentication-managed-identity resource="https://ai.azure.com"`, body transformed to `{model, instructions, input}` (instructions stored as named values from `foundry/agents/*/system-prompt.md`).
 - `eligibility-checks/assessments` (POST) — **two-step Foundry-driven pattern.** Policy first `send-request`s to `{{foundry-agents-endpoint}}agents/udcsp-eligibility?api-version=2025-05-15-preview` with MI auth on `https://ai.azure.com` (cached 5 min via `cache-lookup-value`), extracts `versions.latest.definition.{instructions, model_options}`, then `send-request`s to `{{foundry-aoai-endpoint}}openai/deployments/{{foundry-eligibility-model}}/chat/completions` with MI auth on `https://cognitiveservices.azure.com` and `{messages, …model_options}` (gpt-5.4 requires `max_completion_tokens`, not `max_tokens`). The deployed Foundry agent (kind=prompt) is the source of truth for the system prompt — updates in the Foundry portal propagate within 5 min without redeploying APIM. Policy returns a 200 + structured fallback verdict on any AOAI/Foundry 5xx so the SPA never blocks the form.
 - `case-management POST/GET` — backend `{{d365-dataverse-url}}api/data/v9.2`, MI auth `resource="{{d365-dataverse-url}}"`. POST writes a `task` row (`incidents` table is absent in this Dataverse env), GET filters by `startswith(subject,'[UDCSP-')`.
-- `citizen-applications POST` — decodes the SPA bearer JWT inline to extract `preferred_username`, then `send-request` to the LA callback URL stored as secret named value `logicapp-intake-dk-callback`, returns `202 {correlationId, status, laStatus}`.
-- `citizen-applications GET /` — `operations/get-citizen-applications-list.xml` extracts `preferred_username`/`email`/`emails`/`upn` from the External ID JWT and returns the citizen's `tasks` (filtered server-side on `description contains "citizenUpn: <caller>"`) so users see their cases on a fresh device. Source of truth for `My Cases`; local cache is offline fallback only. **No API-level cache** on `citizen-applications` (removed in commit `5464f06` because the prior `<cache-lookup vary-by-header>Authorization</cache-lookup> + <cache-store duration="60"/>` would otherwise serve stale empty bodies for 60s when the op-policy was first deployed). Reads are real-time.
-- `citizen-applications DELETE /{applicationId}` — `operations/delete-citizen-applications-by-id.xml`. Owner-checked cascade: validates JWT + ownership (`description` must contain `citizenUpn: <caller>` or → 403), parses the JSON tail of `description` (after `| text: `) to extract `documentBlobUrl`, fires a blob `DELETE` on `udcspdkprodlake/citizen-uploads/...` via APIM MI (`Storage Blob Data Contributor`, `x-ms-version: 2021-06-08`, `ignore-error="true"`), then DELETEs the Dataverse row. Returns 204 on success, 403 not_owner, 404 not_found, 502 with upstream body otherwise.
+- `citizen-applications POST` validates the External ID token first, derives the citizen UPN from token claims, deletes any inbound `x-udcsp-citizen-upn`, and forwards a gateway-owned replacement to the Logic App. The Logic App persists identity only from that header. `citizenId`, `citizen.upn`, `email` and similar request-body fields are not authoritative.
+- `citizen-applications GET /` extracts the UPN from the validated token and returns only `tasks` whose description contains the exact delimited owner token, either `citizenUpn: <caller> |` or the same token at end of text. Apostrophes in the claim are escaped before construction of the OData filter. `My Cases` is re-hydrated from this API; `localStorage` retains only a minimal metadata index, while rich values remain in memory for the current SPA session.
+- `citizen-applications DELETE /{applicationId}` verifies the same exact owner token before deletion. For the optional blob cascade, it validates a stored `documentBlobName` against `^[0-9]{8}/[0-9a-f]{32}_[A-Za-z0-9._-]+$` and rebuilds the URL from the configured storage account and `citizen-uploads` container. A legacy URL is accepted only when its fixed prefix and extracted blob name pass the same checks. APIM never sends its managed-identity token to an arbitrary caller-supplied URL.
 
-> 📝 **SPA-side compensation for the 2000-char Dataverse cap.** `task.description` carries the form JSON; for residency-transfer the payload usually exceeds 2000 chars and is truncated mid-string by Dataverse. `apps/web/src/utils/descriptionParser.ts` does a 3-tier parse: clean `JSON.parse` → bracket-depth-aware truncation repair (closes open string + open `{`/`[`, drops dangling key) → regex fallback for known top-level fields. Everything BEFORE the truncation point survives (documentBlobUrl, extractedFields, recommendation, confidence, first ruleResults), which is enough to render the case detail. The long-term fix is the move from `tasks` to the canonical `udcsp_application` custom table with dedicated columns for each structured field.
+> 📝 **SPA-side compensation for the 2000-char Dataverse cap.** `task.description` carries the form JSON; for residency-transfer the payload usually exceeds 2000 chars and is truncated mid-string by Dataverse. `apps/web/src/utils/descriptionParser.ts` does a 3-tier parse: clean `JSON.parse` → bracket-depth-aware truncation repair (closes open string + open `{`/`[`, drops dangling key) → regex fallback for known top-level fields. Rich values recovered from APIM are held in memory for the current SPA session and are not copied into `localStorage`. The long-term fix is the move from `tasks` to the canonical `udcsp_application` custom table with dedicated columns for each structured field.
 
 **D. Logic App workflow definition**
 - 3 `Call_X_agent` HTTP actions point directly at `https://udcspai.services.ai.azure.com/api/projects/udcsp/openai/v1/responses` with `authentication.type=ManagedServiceIdentity`, `audience=https://ai.azure.com`. Body = `{model, instructions, input}` where instructions+model come from workflow parameters (synced from `foundry/agents/*`).
-- `Create_D365_case` HTTP action posts to `/tasks` with MI audience `https://<your-dataverse-env>.crm4.dynamics.com`.
+- `Create_D365_case` maps identity from `triggerOutputs()?['headers']?['x-udcsp-citizen-upn']`. Caller-provided body identity is ignored; `udcsp_citizenid` is written as null.
 - `Publish_application_submitted_lineage` is currently a no-op `Compose` until the Purview topic is provisioned.
 
 **E. Verify end-to-end**
 
+Do not test identity by posting `citizenUpn` directly to a Logic App callback. That body field is ignored by design. Submit through APIM with a valid External ID access token so APIM can create the trusted header:
+
 ```powershell
-$cb = (Invoke-RestMethod "https://management.azure.com/subscriptions/<sub>/resourceGroups/udcsp-dk-logicapps-rg/providers/Microsoft.Logic/workflows/udcsp-dk-dev-application-intake/triggers/When_HTTP_request_received/listCallbackUrl?api-version=2019-05-01" -Method POST -Headers @{Authorization="Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)"}).value
-Invoke-RestMethod -Uri $cb -Method POST -Body (@{topic="child-benefit"; text="Smoke test"; country="dk"; citizenUpn="anna.kristensen@udcspdk.onmicrosoft.com"} | ConvertTo-Json) -ContentType application/json
-# Expected: a few seconds later, a `task` row appears in Dataverse with subject "[UDCSP-DK] child-benefit".
+$token = $env:UDCSP_SMOKE_TOKEN
+$body = @{topic='child-benefit'; text='Smoke test'; country='dk'} | ConvertTo-Json
+Invoke-RestMethod -Uri "https://udcsp-dk-prod-apim.azure-api.net/citizen-applications" `
+  -Method POST -Headers @{Authorization="Bearer $token"} `
+  -Body $body -ContentType application/json
+# Expected: the resulting Dataverse row is owned by the UPN in the validated token.
 ```
 
 Then in the SPA: sign in, **Apply → child benefit → Submit**, navigate to **My cases** — the row created above (and any new submission) should be listed. APIM enforces the JWT (`scp=access_as_user`).
@@ -1547,43 +1580,42 @@ Then in the SPA: sign in, **Apply → child benefit → Submit**, navigate to **
 
 Demo 3 lets the citizen drop a payslip or lease before submitting. The file must land in the **country lake** (`udcspdkprodlake` / `udcspseprodlake` / `udcspnoprodlake`) under the `citizen-uploads` container — never cross the residency boundary.
 
-The SPA does **not** hold a SAS or storage key. It POSTs the file (base64 + name + mime) to APIM `POST /documents/upload-url`, which proxies to Blob REST using its system-assigned managed identity:
+The SPA does **not** hold a SAS or storage key. It POSTs the file (base64 + name + MIME type) to APIM `POST /documents/upload-url`, which proxies to Blob REST using its system-assigned managed identity. The browser keeps its 4 MiB usability cap. 🔵 **In repo:** APIM independently enforces an 8 MiB decoded limit, accepts only PDF, PNG and JPEG, verifies decoded magic bytes, and derives the stored content type server-side.
+
+The mandatory B3.5 private-upload patch remains required. Do not re-enable the lake's public endpoint for this flow.
 
 ```powershell
-# A. Storage public network access must be Enabled with Allow + AzureServices bypass
-foreach ($c in 'dk','se','no') {
-  az storage account update -n "udcsp${c}prodlake" -g "udcsp-${c}-storage-rg" `
-    --public-network-access Enabled `
-    --default-action Allow `
-    --bypass AzureServices
-}
+# A. Ensure the container exists before creating its scoped role assignment.
+az storage container create -n citizen-uploads `
+  --account-name "udcsp<c>prodlake" --auth-mode login
 
-# B. Grant the APIM MI 'Storage Blob Data Contributor' on each lake
+# B. Grant the APIM MI only on citizen-uploads.
 $apimMi = az resource show --ids "/subscriptions/<sub>/resourceGroups/udcsp-<c>-apim-rg/providers/Microsoft.ApiManagement/service/udcsp-<c>-prod-apim" --query identity.principalId -o tsv
 $lake = az storage account show -n "udcsp<c>prodlake" -g "udcsp-<c>-storage-rg" --query id -o tsv
+$containerScope = "$lake/blobServices/default/containers/citizen-uploads"
 az role assignment create --assignee-object-id $apimMi --assignee-principal-type ServicePrincipal `
-    --role "Storage Blob Data Contributor" --scope $lake
+    --role "Storage Blob Data Contributor" --scope $containerScope
 
-# C. Ensure the container exists
-az storage container create -n citizen-uploads --account-name "udcsp<c>prodlake" --auth-mode login
-
-# D. Apply the MI-proxy operation policy
+# C. Apply the checked-in operation policy.
 az apim api operation policy create -g udcsp-<c>-apim-rg -n udcsp-<c>-prod-apim `
-    --api-id documents --operation-id upload-url `
-    --xml-path services/apim/apis/documents/upload-url-policy-mi-proxy.xml
+    --api-id documents --operation-id post-documents-upload-url `
+    --xml-path services/apim/apis/documents/operations/post-documents-upload-url.xml
 ```
+
+⚙️ **Scripted:** for future installs, `Install-Apim.psm1` performs the container creation before the container-scoped grant. **Existing tenant:** adding this narrow assignment does not remove the live account-scoped assignment. After the private upload and case-delete paths succeed with the container grant, list the APIM identity's role assignments, identify the old `Storage Blob Data Contributor` assignment whose scope is the storage-account ID, and delete that specific assignment manually. Keep the container-scoped assignment.
 
 Verify:
 
 ```powershell
-$tok = az account get-access-token --resource api://<spa-app-id> --query accessToken -o tsv
+$tok = $env:UDCSP_SMOKE_TOKEN
+if (-not $tok) { throw 'Set UDCSP_SMOKE_TOKEN to a valid External ID access token.' }
 $body = @{ filename='payslip.pdf'; contentType='application/pdf'; contentBase64='JVBERi0xLjQK' } | ConvertTo-Json
 Invoke-RestMethod -Uri "https://udcsp-<c>-prod-apim.azure-api.net/documents/upload-url" `
   -Method POST -Headers @{Authorization="Bearer $tok"} -ContentType application/json -Body $body
-# Expected: { blobUrl: "https://udcsp<c>prodlake.blob.core.windows.net/citizen-uploads/<guid>-payslip.pdf", ... }
+# Expected: { blobUrl: "https://udcsp<c>prodlake.blob.core.windows.net/citizen-uploads/<yyyymmdd>/<32hex>_payslip.pdf", ... }
 ```
 
-> ⚠ **Why we proxy** — the citizen never gets a SAS token; the MI hop keeps tenant secrets out of the browser and lets us add Content Safety / size limits in APIM later. The earlier approach (SPA-issued SAS) was abandoned after the first run; see `docs/biz/inprogress.md` checkpoint *SAS upload pivot to MI-proxy*.
+> ⚠ **Why we proxy:** the citizen never gets a SAS token. The MI hop keeps storage credentials out of the browser, and the gateway now provides the server-side size, type and magic-byte controls. The earlier SPA-issued SAS approach remains retired.
 
 ### Step 9 — GDPR Article 17 erasure endpoint (D6)
 
@@ -1593,19 +1625,20 @@ The Consent & privacy page exposes a "Delete my data" button. It POSTs to APIM `
 # A. Apply the operation policy in DK / SE / NO
 foreach ($c in 'dk','se','no') {
   az apim api operation policy create -g "udcsp-${c}-apim-rg" -n "udcsp-${c}-prod-apim" `
-      --api-id gdpr --operation-id erasure-request `
-      --xml-path services/apim/apis/gdpr/erasure-request-policy.xml
+      --api-id gdpr --operation-id post-gdpr-erasure-request `
+      --xml-path services/apim/apis/gdpr/operations/post-gdpr-erasure-request.xml
 }
 
 # B. Smoke test
-$tok = az account get-access-token --resource api://<spa-app-id> --query accessToken -o tsv
+$tok = $env:UDCSP_SMOKE_TOKEN
+if (-not $tok) { throw 'Set UDCSP_SMOKE_TOKEN to a valid External ID access token.' }
 Invoke-RestMethod -Uri "https://udcsp-dk-prod-apim.azure-api.net/gdpr/erasure-request" `
   -Method POST -Headers @{Authorization="Bearer $tok"} `
   -Body (@{reason='right-to-be-forgotten'} | ConvertTo-Json) -ContentType application/json
 # Expected: { certificateId, status:'accepted', etaIso:'<+30d>', controller:'UDCSP <C>', ... }
 ```
 
-When the SPA receives the certificate it also wipes its own local cache (`localStorage`/`indexedDB` keyed on `udcsp.*`), so that even if Priva is mocked, the browser-side state goes away immediately.
+When the SPA receives the certificate it removes that citizen's case index from `localStorage` key `udcsp.cases.v1` and clears matching in-memory case state. It does not delete unrelated preferences, consent records or browser databases. Rich document and eligibility fields are memory-only in the remediated source, and legacy rich case-cache fields are scrubbed whenever the case index is read.
 
 ### Step 10 — Caseworker UI (D7) — Power Apps now, D365 incident later
 
@@ -1696,11 +1729,11 @@ The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:123-149` a
 | 3 | `VerifiedId` | `Install-VerifiedId.psm1` | Microsoft Entra Verified ID issuer + verifier (EUDI Wallet bridge, eIDAS 2.0) |
 | 4 | `Bastion` | `Install-Bastion.psm1` | Azure Bastion Standard (per country) — sole admin shell ingress |
 | 5 | `Ciem` | `Install-Ciem.psm1` | Microsoft Entra Permissions Management (CIEM) onboarding for the 3 sovereign tenants |
-| 6 | `Security` | `Install-Security.psm1` | Defender for Cloud, Defender for APIs, Sentinel, Azure Policy custom initiative + 3 built-in regulatory initiatives (MCSB + NIST 800-53 Rev5 + ISO 27001:2013) with system-assigned MI granted Contributor for remediation, DPIA artefacts |
+| 6 | `Security` | `Install-Security.psm1` | Defender for Cloud, Defender for APIs, Sentinel, Azure Policy custom initiative + 3 built-in regulatory initiatives. For each policy assignment, the installer derives the exact remediation role IDs declared by referenced `Modify` or `DeployIfNotExists` policies; it no longer grants Contributor blindly. |
 | 7 | `Ddos` | `Install-Ddos.psm1` | Azure DDoS Protection Standard plan (shared region) + LandingZone re-deploy per country with `ddosProtectionPlanId` to attach each spoke VNet |
-| 8 | `BackupAsr` | `Install-BackupAsr.psm1` | Azure Backup vaults + policies + Azure Site Recovery (per country, geo-paired) |
+| 8 | `BackupAsr` | `Install-BackupAsr.psm1` | Azure Backup vaults, policies and ASR scaffolding per country. Cross-region deployment requires a pre-approved recovery region and an allowed-regions policy update; the current country policy permits only the primary region. |
 | 9 | `ConfidentialLedger` | `Install-ConfidentialLedger.psm1` | Tamper-evident ledger for AI Act high-risk decisions (Art. 26(6)) |
-| 10 | `ChaosStudio` | `Install-ChaosStudio.psm1` | Azure Chaos Studio targets + monthly experiments validating the 99.9 % SLO |
+| 10 | `ChaosStudio` | `Install-ChaosStudio.psm1` | Azure Chaos Studio targets and in-region experiments. Regional failover remains table-top until an approved recovery region is added to policy. |
 | 11 | `Observability` | `Install-Observability.psm1` | Log Analytics, App Insights, workbooks, alerts, correlation pipelines |
 | 12 | `Fabric` | `Install-Fabric.psm1` | Capacities, workspaces, lakehouses, notebooks, semantic models, Power BI Premium reports |
 | 13 | `Postgres` | `Install-Postgres.psm1` | PostgreSQL Flexible Server (per country) — replaces Azure SQL + Cosmos persistent workloads |
@@ -1708,8 +1741,8 @@ The installer declares this DAG at `scripts/install/Install-UDCSP.ps1:123-149` a
 | 15 | `SyntheticData` | `Install-SyntheticData.psm1` | Generates and seeds personas, applications, conversations, eval datasets |
 | 16 | `Foundry` | `Install-Foundry.psm1` | Hub & projects, agents (incl. **`topic-router`**), prompts, eval suites, Content Safety, AI Act registry |
 | 17 | `ConfidentialCompute` | `Install-ConfidentialCompute.psm1` | Confidential Container Apps (TEE / SEV-SNP) for Eligibility Pre-Assessor inference |
-| 18 | `Apim` | `Install-Apim.psm1` | APIM instance(s), products, APIs, policies, named values — incl. the single `agent-topic-router` facade used by chat **and** voice |
-| 19 | `LogicApps` | `Install-LogicApps.psm1` | **Tier auto-picked by `-Environment`:** prod → Logic Apps **Standard** (WS1 workspace + `func publish`); dev/test → Logic Apps **Consumption** (`az rest` PUT `Microsoft.Logic/workflows`). Plus Service Bus & Event Grid per country. Prod requires App Service `Total VMs ≥ 1` quota — see [§ Logic Apps tier](architecture.md#logic-apps-tier-choice--standard-prod-vs-consumption-devtest). |
+| 18 | `Apim` | `Install-Apim.psm1` | APIM instances, products, named values, policy fragments, all API policies and operation policies. The phase fails before import when any API with `openapi.yaml` lacks `policy.xml`. Future installs create `citizen-uploads` before granting the APIM identity container-scoped `Storage Blob Data Contributor`. |
+| 19 | `LogicApps` | `Install-LogicApps.psm1` | **Tier auto-picked by `-Environment`:** prod uses Logic Apps **Standard**; dev/test uses Logic Apps **Consumption**. 🔵 **In repo:** Standard workspace source disables public and shared-key storage access, uses managed-identity `AzureWebJobsStorage` settings, and creates blob and file Private Endpoints. `workspace.bicep` does not create Private DNS zones or zone groups, so deployment must provide and verify blob/file DNS resolution. Prod requires App Service `Total VMs ≥ 1` quota; see [§ Logic Apps tier](architecture.md#logic-apps-tier-choice--standard-prod-vs-consumption-devtest). |
 | 20 | `D365` | `Install-D365.psm1` | Imports four unmanaged solutions (`UDCSP_Core`, `UDCSP_DK/SE/NO`) into the per-country Dataverse environments listed in `D365EnvironmentUrls` (config). The solutions register the publisher prefix `udcsp` and version metadata; **entities, BPFs, forms, queues, SLAs and the model-driven app must be authored in the Power Apps maker UI** then re-exported via `pac solution export` and committed back to `apps/d365/solutions/<name>/`. The shipped scaffold under `customizations/` is descriptive only — pac cannot pack it as canonical Dataverse XML. **Produces** `d365TransferTargetId` + `d365VoiceQueueId` consumed by Voice once the entities exist. |
 | 21 | `Apps` | `Install-Apps.psm1` | Static Web Apps + mobile builds + i18n catalogues; citizen insights via Chart.js |
 | 22 | `Voice` | `Install-Voice.psm1` | ACS resource, gpt-realtime deployment, voice orchestrator Container App, Event Grid `IncomingCall` subscription, IVR dialogs |

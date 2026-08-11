@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths: ['tests/e2e/**', 'apps/**', 'services/apim/**', 'foundry/**']
+permissions:
+  contents: read
 jobs:
   e2e:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { FormattedMessage } from 'react-intl';
 import { apiFetch } from '../api/client';
 import { getCountry } from '../auth/msalConfig';
 import { wipeAllForCitizen } from '../utils/caseStore';
@@ -80,7 +80,6 @@ function loadStored(): Record<string, boolean> {
 }
 
 export function ConsentManagementPage() {
-  const intl = useIntl();
   const [state, setState] = useState<Record<string, boolean>>(loadStored());
   const [saved, setSaved] = useState(false);
 

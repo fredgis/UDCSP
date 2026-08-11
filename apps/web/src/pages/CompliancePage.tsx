@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { FormattedMessage } from 'react-intl';
 import { PlatformDiagram } from '../components/PlatformDiagram';
@@ -126,7 +127,7 @@ function ComplianceOverview() {
           const items = pillars.filter((p) => p.axis === axis);
           const meta = AXIS_LABEL[axis];
           return (
-            <div key={axis} className="compliance-axis" style={{ ['--axis-color' as any]: meta.color }}>
+            <div key={axis} className="compliance-axis" style={{ '--axis-color': meta.color } as CSSProperties}>
               <div className="compliance-axis__head">
                 <span className="compliance-axis__dot" aria-hidden="true" />
                 <span className="compliance-axis__label">{meta.label}</span>

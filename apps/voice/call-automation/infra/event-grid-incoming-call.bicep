@@ -33,6 +33,10 @@ resource subscription 'Microsoft.EventGrid/eventSubscriptions@2024-12-15-preview
     destination: {
       endpointType: 'WebHook'
       properties: {
+        // This deployment has no Entra-protected webhook application or
+        // provisioned query secret yet. Runtime header/schema validation is
+        // therefore not proof of sender identity; add one of those delivery
+        // authentication methods before relying on Event Grid origin alone.
         #disable-next-line use-secure-value-for-secure-inputs
         endpointUrl: 'https://${orchestratorFqdn}/api/acs/eventgrid'
         maxEventsPerBatch: 1

@@ -4,7 +4,7 @@
 
 </div>
 
-> ℹ️ **Live vs roadmap.** Chat answers grounded in Foundry are live in the DK SPA today. Warm-transfer escalations to D365 caseworker queues remain **roadmap** until Customer Service is provisioned per country — see [`../tech/inprogress.md`](../tech/inprogress.md).
+> ℹ️ **Live vs roadmap.** Chat answers grounded in Foundry are live in the DK SPA today. 🔵 **In repo**, not deployed: the topic-router now requires a validated JWT, removes the anonymous fallback, isolates system and user messages, neutralises bracket markers in caller text, and labels token-proven identity separately from client assertions. The deployed endpoint still serves the previous unauthenticated policy. Warm-transfer escalations remain 🗺️ **Roadmap** until Customer Service is provisioned per country. See [`../tech/inprogress.md`](../tech/inprogress.md).
 
 > [!NOTE]
 > **Channel surface only.** This document covers the in-page chat widget — UX, slot-filling, escalation handover. The underlying agent topology (topic-router → specialised agents → APIM facade → Redis session memory) lives in [`ai.md`](./ai.md). When in doubt, this doc owns *how chat feels to the citizen*; `ai.md` owns *which agent answers and why*.
@@ -30,12 +30,12 @@
 ---
 
 > [!IMPORTANT]
-> **TL;DR.** A citizen opens the chat panel embedded in the web portal or mobile WebView → React `ChatWidget.tsx` sends the message to **APIM `/agents/topic-router`** with the Entra token and `traceparent` → the Foundry `topic-router` agent selects the right downstream agent → the answer returns with citations, adaptive cards, and suggested actions → escalation opens a warm D365 case with the full transcript attached.
+> **TL;DR.** A signed-in citizen opens the chat panel embedded in the web portal or mobile WebView → React `ChatWidget.tsx` sends the message to **APIM `/agent-topic-router/messages`** with the Entra token and `traceparent` → the Foundry `topic-router` agent selects the right downstream agent → the answer returns with citations, adaptive cards, and suggested actions → escalation opens a warm D365 case with the full transcript attached. The fail-closed token requirement and prompt hardening are 🔵 **In repo**, pending deployment.
 >
 > | Field | Value |
 > |---|---|
 > | 🗄️ **Where stored** | Canonical dialog transcript in Dataverse `bot_session`; slot state in Redis Enterprise; drafts over 24 h in PostgreSQL JSONB; uploads in ADLS `citizen-uploads/`; memory in Azure AI Search; traces in App Insights → OneLake and Confidential Ledger anchors. |
-> | 🧱 **Implementation note** | The React `ChatWidget.tsx` posts `JSON` to `${VITE_APIM_BASE_URL}/agents/topic-router/messages`; **no DirectLine, no iframe, no third-party web embed**. |
+> | 🧱 **Implementation note** | The React `ChatWidget.tsx` posts `JSON` to `${VITE_APIM_BASE_URL}/agent-topic-router/messages`; **no DirectLine, no iframe, no third-party web embed**. |
 
 ---
 
@@ -67,7 +67,7 @@ The case study is unambiguous (`docs/biz/case-study-11.md` § AI Infusion Point)
 
 The chat widget is the **web** arm of that mandate. Four reasons it earns its own architecture document:
 
-- 💬 **Low-friction first-touch.** A citizen sees the assistant in the corner of any portal page. No navigation, no search, no form — just a question. It deflects **≥ 70 % of "where do I find X" queries** before they become support tickets or phone calls.
+- 💬 **Low-friction first-touch.** After eID sign-in and AI-assistant consent, a citizen sees the assistant on authenticated portal pages. No extra navigation, search or form is required, just a question. It deflects **≥ 70 % of "where do I find X" queries** before they become support tickets or phone calls.
 - 🕐 **24/7 availability.** The bot does not take holidays, does not queue, and does not put citizens on hold. The Foundry brain answers within 800 ms p95 at any hour. There is no staffing cost for the first line of response.
 - 🌍 **Multilingual by default.** The first message is language-classified by Foundry. There is no "select your language" pre-screen; the bot adapts to the citizen. All 12 languages — Danish, Swedish, Norwegian Bokmål, Norwegian Nynorsk, Northern Sámi, English, German, French, Polish, Arabic, Ukrainian, Finnish — are supported from the first keystroke.
 - 🤝 **Escalation without loss of context.** When the bot cannot or should not answer, it opens a warm D365 case with the full conversation transcript and Foundry trace ID attached, so the caseworker picks up exactly where the bot left off.
@@ -88,10 +88,10 @@ The design principle, shown in `docs/biz/uses.md` Demo 1 and Demo 3:
 ```mermaid
 flowchart TB
     subgraph CITIZEN["💬 Citizen (browser or mobile WebView)"]
-        BROWSER["🌐 React ChatWidget<br/><i>no iframe · direct APIM</i>"]
+        BROWSER["🌐 React ChatWidget<br/><i>signed-in only · direct APIM</i>"]
     end
     subgraph GATEWAY["🚪 APIM — per country"]
-        APIM["POST /agents/topic-router<br/><i>JWT · rate-limit · traceparent</i>"]
+        APIM["POST /agent-topic-router/messages<br/><i>JWT 🔵 In repo · 120/min · traceparent</i>"]
     end
     subgraph FOUNDRY["🧠 One brain: Microsoft Foundry"]
         ROUTER["topic-router<br/><i>route · slots · escalation</i>"]
@@ -122,13 +122,13 @@ sequenceDiagram
     autonumber
     actor C as 💬 Citizen
     participant SPA as 🌐 React ChatWidget
-    participant APIM as 🚪 APIM /agents/topic-router
+    participant APIM as 🚪 APIM /agent-topic-router/messages
     participant R as 🧠 Foundry topic-router
     participant A as 🤖 Citizen Assistant
     participant D as 📋 D365
     C->>SPA: types question in their language
     SPA->>APIM: POST message + Entra token + traceparent
-    APIM->>APIM: validate JWT · rate-limit · audit
+    APIM->>APIM: validate JWT · rate-limit
     APIM->>R: invoke topic-router
     R->>R: detect locale · fill slots · choose route
     R->>A: delegate grounded answer
@@ -144,6 +144,14 @@ sequenceDiagram
 ```
 
 **Latency budget** (target: time-to-first-token p95 ≤ 800 ms): APIM validation ~30 ms, topic-router route ~80 ms, downstream Foundry agent first token ~600 ms, browser render ~80 ms.
+
+### Security boundary in the pending policy
+
+🔵 **In repo, not deployed.** `ChatLauncher.tsx` never mounts for a signed-out visitor, and `ChatWidget.tsx` now refuses to send if it cannot obtain a current access token. There is no anonymous retry path.
+
+The APIM policy validates the bearer token with `jwt-validate-external-id`. It derives the citizen identity from token claims and labels it `token_identity=` in the prompt. The body carries no `authenticated`, `name`, `givenName` or `upn`; country is labelled `client_asserted_country=` and supplied cases are labelled `client-cached data`.
+
+The policy replaces square brackets in caller-controlled values with full-width characters, builds trusted instructions and platform context as a `system` message, and sends the citizen text as a separate `user` message. This is the prompt-injection boundary: caller data cannot create a new bracket-delimited control block or become part of the system instruction string.
 
 ### What makes this different from a traditional FAQ chatbot
 
@@ -181,7 +189,7 @@ A DPO or caseworker can use this single `traceparent` to reconstruct the entire 
 | **4** | **Knowledge sources** | Two registered sources: (1) `citizens-faq.json` — citizen-facing FAQ content from web/Dataverse in 12 languages; (2) `sharepoint-policies.json` — SharePoint-hosted policy documents per country. Queried by Foundry RAG on every chat turn. The same sources are also queried by the voice channel. | `foundry/agents/topic-router/knowledge-sources/*.json` |
 | **5** | **Connections** | Four connection definitions: `apim-facade.json` is the public ingress, `foundry-skills.json` invokes the downstream Foundry agents (classifier, citizen-assistant, doc-extractor, eligibility, translator), `redis-session.json` holds the slot-fill state, `d365-escalation.json` creates D365 cases on escalation. All use **managed identity** — no secrets in connection files. | `foundry/agents/topic-router/connections/*.json` |
 | **6** | **Escalation rules** | Four rules evaluated on every turn: (1) `classifierConfidence < 0.70` → create D365 case, (2) `topic in [social-benefit, residency-application] and asksForDecision == true` → human caseworker review, (3) `accessibilityNeed != 'none'` → priority accessibility queue, (4) `userIntent == 'escalate-to-human'` → create D365 case. | `foundry/agents/topic-router/escalation-rules.json` |
-| **7** | **APIM `/agents/topic-router` endpoint** | APIM validates the citizen Entra token per conversation and never exposes backend credentials. The React `ChatWidget` posts turns directly over HTTPS as JSON. Policy applies: correlation-id injection, Entra JWT validation, `x-channel-actor` enforcement, rate-limit (120 calls/min for chat/web/mobile, 600 for voice), and `traceparent` forwarding for end-to-end tracing. | `services/apim/apis/agent-topic-router/policy.xml`, `services/apim/apis/agent-topic-router/openapi.yaml` |
+| **7** | **APIM `/agent-topic-router/messages` endpoint** | 🔵 **In repo**, APIM validates the citizen Entra token per conversation and never exposes backend credentials. The policy applies correlation-id injection, External ID JWT validation and a fixed 120 calls/min rate limit. Deployment is pending. | `services/apim/apis/agent-topic-router/policy.xml`, `services/apim/apis/agent-topic-router/openapi.yaml` |
 
 The five slots used for structured slot filling — shown verbatim from `topics/slot-definitions.yaml`:
 
@@ -432,79 +440,83 @@ The voice channel targets **≤ 2 s end-to-end** (STT + routing + Foundry + TTS)
 
 ## 10. 🔗 Embedding the widget — the one-line script tag
 
-The chat widget is embedded as a **React component** in the portal shell. The canonical implementation is `apps/web/src/components/ChatWidget.tsx`, rendered on the home page via `apps/web/src/pages/HomePage.tsx`.
+The chat widget is embedded as a **React component** in the portal shell. `ChatLauncher.tsx` gates it on sign-in and AI-assistant consent, then renders the canonical `ChatWidget.tsx` implementation.
 
-### The React component (from source — `apps/web/src/components/ChatWidget.tsx`)
+### The security-critical React request path
 
 ```tsx
 import { useCallback, useRef, useState } from 'react';
+import { useIsAuthenticated, useMsal } from '@azure/msal-react';
 import { generateTraceparent } from '../utils/traceparent';
+import { apiScopeForCountry, apimBaseUrlForCountry, getCountry } from '../auth/msalConfig';
+import { listCases } from '../utils/caseStore';
 
 type Props = { channel?: 'web' | 'mobile-handoff'; locale: string };
-type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
 export function ChatWidget({ channel = 'web', locale }: Props) {
-  const apimBase = import.meta.env.VITE_APIM_BASE_URL || '';
+  const country = getCountry();
+  const apimBase = apimBaseUrlForCountry(country);
   const sessionId = useRef<string>(crypto.randomUUID());
-  const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const isAuth = useIsAuthenticated();
+  const { instance, accounts } = useMsal();
 
   const send = useCallback(async () => {
     const text = draft.trim();
     if (!text || busy) return;
-    setBusy(true); setDraft('');
-    setMessages((p) => [...p, { id: crypto.randomUUID(), role: 'user', text }]);
-    try {
-      const trace = generateTraceparent();
-      const res = await fetch(`${apimBase}/agents/topic-router/messages`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', traceparent: trace },
-        body: JSON.stringify({ sessionId: sessionId.current, channel, locale, text }),
-      });
-      const data = await res.json();
-      setMessages((p) => [...p, { id: crypto.randomUUID(), role: 'assistant', text: data?.reply ?? '' }]);
-    } finally { setBusy(false); }
-  }, [apimBase, busy, channel, draft, locale]);
+    if (!isAuth || !accounts[0]) return;
 
-  return (
-    <section aria-labelledby="chat-title" className="chat-widget">
-      <h2 id="chat-title">Citizen assistant</h2>
-      <ul role="log" aria-live="polite" aria-relevant="additions" className="chat-log">
-        {messages.map((m) => (
-          <li key={m.id} className={`chat-msg chat-msg--${m.role}`}>
-            <strong>{m.role === 'user' ? 'You' : 'Assistant'}:</strong> {m.text}
-          </li>
-        ))}
-      </ul>
-      <form className="chat-input" onSubmit={(e) => { e.preventDefault(); void send(); }}>
-        <label htmlFor="chat-draft" className="visually-hidden">Your message</label>
-        <input id="chat-draft" value={draft} onChange={(e) => setDraft(e.target.value)} disabled={busy} />
-        <button type="submit" disabled={busy || !draft.trim()}>Send</button>
-      </form>
-    </section>
-  );
+    const tok = await instance.acquireTokenSilent({
+      scopes: [apiScopeForCountry(country)],
+      account: accounts[0],
+    });
+    if (!tok.accessToken) return;
+
+    const cases = listCases(country, accounts[0].username).slice(0, 10);
+    await fetch(`${apimBase}/agent-topic-router/messages`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${tok.accessToken}`,
+        'content-type': 'application/json',
+        traceparent: generateTraceparent(),
+      },
+      body: JSON.stringify({
+        sessionId: sessionId.current,
+        channel,
+        locale,
+        text,
+        citizen: { country },
+        cases,
+      }),
+    });
+  }, [accounts, apimBase, busy, channel, country, draft, instance, isAuth, locale]);
+
+  return <section>{/* Message log and input render here. */}</section>;
 }
 ```
 
-The component receives the current portal locale (from the `LanguageSwitcher` in `App.tsx`) and forwards it to APIM together with a stable per-session UUID and a W3C `traceparent` header. **No iframe, no DirectLine, no third-party web embed** — the widget is plain React posting JSON to APIM.
+The component forwards the current locale, a stable session UUID, a W3C `traceparent` and a bearer token. It does not put citizen identity claims in the JSON body. **No iframe, no DirectLine, no third-party web embed**: the widget is plain React posting JSON to APIM.
 
-### How it is embedded on the home page
+### How authentication gates the launcher
 
 ```tsx
-// apps/web/src/pages/HomePage.tsx (simplified)
-import { ChatWidget } from '../components/ChatWidget';
+// apps/web/src/components/ChatLauncher.tsx (simplified)
+export function ChatLauncher({ locale }: { locale: string }) {
+  const isAuth = useIsAuthenticated();
+  const [open, setOpen] = useState(false);
+  const allowed = isAllowed('aiAssistant');
+  const blocked = ['/login', '/logout-callback'].includes(location.pathname);
 
-export function HomePage({ locale = 'en' }: { locale?: string }) {
+  if (blocked || !isAuth || !allowed) return null;
   return <>
-    <section className="hero">
-      <h1>Unified Digital Citizen Services</h1>
-    </section>
-    {/* ... navigation cards ... */}
-    <ChatWidget locale={locale} />   {/* chat widget on every home page */}
+    <button onClick={() => setOpen((value) => !value)}>Open citizen assistant</button>
+    {open && <ChatWidget locale={locale} />}
   </>;
 }
 ```
+
+A signed-out visitor never receives the widget. Revoking AI-assistant consent also removes the launcher.
 
 ### The APIM ingress pattern
 
@@ -515,14 +527,14 @@ export function HomePage({ locale = 'en' }: { locale?: string }) {
 // apps/web/src/api/topicRouter.ts — typed wrapper around the POST above
 const msalToken = await msalInstance.acquireTokenSilent({ scopes: [...] });
 
-const res = await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agents/topic-router/messages`, {
+const res = await fetch(`${import.meta.env.VITE_APIM_BASE_URL}/agent-topic-router/messages`, {
   method: 'POST',
   headers: {
     'content-type': 'application/json',
     'authorization': `Bearer ${msalToken.accessToken}`,
     'traceparent': generateTraceparent(),
   },
-  body: JSON.stringify({ sessionId, channel: 'web', locale, text }),
+  body: JSON.stringify({ sessionId, channel: 'web', locale, text, citizen: { country }, cases }),
 });
 const { reply, traceId } = await res.json();
 ```
@@ -531,31 +543,19 @@ The APIM policy that fronts the topic-router (`services/apim/apis/agent-topic-ro
 
 ```xml
 <inbound>
+  <base />
+  <include-fragment fragment-id="cors" />
   <include-fragment fragment-id="correlation-id" />
-  <include-fragment fragment-id="jwt-validate-entra" />
-  <set-variable name="channelActor" value="@(context.Request.Headers.GetValueOrDefault(&quot;x-channel-actor&quot;, &quot;web&quot;))" />
-  <choose>
-    <when condition="@((string)context.Variables[&quot;channelActor&quot;] == &quot;voice&quot;)">
-      <rate-limit-by-key calls="600" renewal-period="60"
-        counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
-    </when>
-    <otherwise>
-      <rate-limit-by-key calls="120" renewal-period="60"
-        counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
-    </otherwise>
-  </choose>
-  <set-header name="traceparent" exists-action="skip">
-    <value>@(context.Request.Headers.GetValueOrDefault(
-      "traceparent", Guid.NewGuid().ToString()))</value>
-  </set-header>
-  <set-header name="x-channel-actor" exists-action="override">
-    <value>@((string)context.Variables["channelActor"])</value>
-  </set-header>
-  <set-backend-service base-url="{{foundry-topic-router-agent-endpoint}}" />
+  <include-fragment fragment-id="jwt-validate-external-id" />
+  <rate-limit-by-key calls="120" renewal-period="60"
+    counter-key="@(context.Subscription?.Key ?? context.Request.IpAddress)" />
+  <set-variable name="reqBody"
+    value="@(context.Request.Body.As&lt;JObject&gt;(preserveContent: true))" />
+  <!-- The send-request body creates separate system and user messages. -->
 </inbound>
 ```
 
-The `traceparent` header is propagated all the way through to the Foundry agent, enabling end-to-end distributed tracing from the citizen's browser keystroke to the Fabric transcript record.
+The request body is treated as untrusted context. APIM extracts identity from the validated bearer token, neutralises bracket markers in caller-controlled strings, labels client assertions explicitly, and constructs separate `system` and `user` messages before calling Foundry. This security path is 🔵 **In repo**, pending deployment.
 
 ---
 
@@ -569,10 +569,10 @@ flowchart TB
     P2["2️⃣ Wire connections<br/><i>set APIM endpoint in<br/>foundry-skills.json<br/>d365-escalation.json<br/>redis-session.json</i>"]
     P3["3️⃣ Publish APIM facade × 3<br/><i>one APIM subscription per country<br/>brand · disclaimer · locale default</i>"]
     P4["4️⃣ Register APIM subscription keys<br/><i>store in Key Vault<br/>udcsp-dk-kv · udcsp-se-kv · udcsp-no-kv</i>"]
-    P5["5️⃣ Deploy APIM topic-router policy<br/><i>agent-topic-router/policy.xml<br/>per country APIM instance<br/>(x-channel-actor + 600 vs 120 rate-limit)</i>"]
+    P5["5️⃣ Deploy APIM topic-router policy<br/><i>agent-topic-router/policy.xml<br/>JWT + prompt isolation<br/>120 calls/min</i>"]
     P6["6️⃣ Set SWA env var<br/><i>VITE_APIM_BASE_URL<br/>→ Azure Static Web App app settings</i>"]
     P7["7️⃣ Activate transcript pipeline<br/><i>Logic App → Fabric workspace<br/>per country · pseudonymise PII</i>"]
-    P8["8️⃣ Smoke test<br/><i>Test-TopicRouter.ps1<br/>+ open portal · type test message<br/>+ verify trace in App Insights</i>"]
+    P8["8️⃣ Smoke test<br/><i>Test-TopicRouter.ps1<br/>+ sign in · open launcher<br/>+ type test message</i>"]
     P9["✅ Phase complete<br/><i>chat widget live in all three portals</i>"]
 
     P0 --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8 --> P9
@@ -594,7 +594,7 @@ The `Test-Foundry` function (in `Install-Foundry.psm1`) calls `foundry/agents/to
 |---|---|---|---|
 | **🚦 Smoke (isolated)** | `pwsh foundry/agents/topic-router/scripts/Test-TopicRouter.ps1` *(or:* `pwsh foundry/agents/topic-router/scripts/Import-TopicRouter.ps1 -DryRun`*)* | `agent.yaml` present and parseable; all 12 topic files resolvable; all 4 connection files parseable; `escalation-rules.json` parseable; both knowledge sources parseable. **No network call, no Foundry tenant, no billing.** | < 10 s |
 | **🧪 E2E (Playwright)** | `npx playwright test tests/e2e/tests/scenario-01-anna-dk-to-se.spec.ts` | Anna's flagship journey exercises the chat widget end-to-end: the portal loads, the `ChatWidget` panel is rendered with its ARIA label, a scenario intent is submitted, the Foundry agent responds, and the `traceId` is captured and asserted as visible in the audit trail. | ~2 min |
-| **🌐 Live (browser)** | Open the SWA portal URL in a browser; click into the chat widget; type *"What documents do I need for a residency application?"*; verify the adaptive-card response and suggested-action buttons; type "agent" and verify the D365 case-creation confirmation card. | The full stack — APIM `/agents/topic-router` endpoint, Foundry `topic-router` route, APIM, Foundry RAG, D365 case-create, Fabric transcript — works end-to-end with a real citizen-facing URL. | Manual |
+| **🌐 Live (browser)** | Open the SWA portal URL, sign in, confirm AI-assistant consent, then open the chat widget and type *"What documents do I need for a residency application?"* | The deployed chat path answers through Foundry. The JWT requirement and prompt-injection remediation remain 🔵 **In repo** until the APIM policy and SPA bundle are deployed. | Manual |
 
 > [!TIP]
 > For the jury demo, run the E2E Playwright scenario first (proves the automated path, shows the Foundry trace ID in the test output) and then do the live browser demo in the room (proves the UX with a real rendered widget, adaptive cards, and the D365 confirmation). The two together give converging evidence from different angles.
@@ -607,7 +607,7 @@ The `Test-Foundry` function (in `Install-Foundry.psm1`) calls `foundry/agents/to
 
 | Beat | Action | What the jury sees | Eval-matrix rows hit |
 |:-:|---|---|---|
-| 1 | Open the SE portal URL in a browser; the chat widget appears in the bottom-right corner | The `ChatWidget` renders as a named `<section>` landmark; a greeting adaptive card arrives automatically with suggested actions; keyboard focus lands on the text input without any mouse interaction | #8 (WCAG) · #12 (channels) · #6 (AI assistant) |
+| 1 | Open the SE portal URL, sign in and confirm AI-assistant consent; then open the launcher in the bottom-right corner | The `ChatWidget` renders only for the signed-in citizen as a named `<section>` landmark; keyboard focus can move directly to the text input | #8 (WCAG) · #12 (channels) · #6 (AI assistant) |
 | 2 | Type: *"What documents do I need to transfer my residency from Sweden to Denmark?"* | Within 800 ms, an adaptive card appears: bulleted document list with source citations, two suggested actions "Start application" and "Talk to a caseworker" — and a `traceparent` visible in DevTools Network | #5 (AI 12 lang) · #6 (assistant) · #15 (audit trail) |
 | 3 | Click the language switcher (top of the portal page) and select **Polski**; then type *"Jakie dokumenty potrzebuję do przeniesienia zameldowania?"* | The `language-switch` topic fires; the bot responds entirely in Polish with the same factually identical answer; no context reset, no restart, the slot-fill state is preserved | #5 (AI 12 lang) · #13 (multilingual) |
 | 4 | Type *"agent"* in the chat input | The `escalate-to-human` topic fires; a confirmation adaptive card appears: "A caseworker will contact you. Your case reference is CAS-XXXXX." The D365 case is visible in the caseworker queue within seconds, with the full transcript and Foundry trace ID attached | #16 (caseworker) · #15 (audit) · #6 (safe escalation) |
@@ -623,7 +623,7 @@ The `Test-Foundry` function (in `Install-Foundry.psm1`) calls `foundry/agents/to
 | ❌ Anti-pattern | ✅ What we do instead |
 |---|---|
 | Build a separate "chat bot" with its own topics, its own KB, and its own escalation logic — separate from the voice bot | One Foundry `topic-router` agent definition (`agent.yaml`), one set of 12 topics, one escalation-rules file; the web channel and voice channel are **clients** of the same agent. A bug fix applies to both channels automatically. |
-| Embed the APIM subscription key directly in the HTML page, a `.env` file, or a client-side React environment variable | APIM validates Entra tokens and keeps backend credentials in per-country Key Vault. No agent secret appears in any client-visible artifact. |
+| Embed the APIM subscription key directly in the HTML page, a `.env` file, or a client-side React environment variable | Backend credentials remain in per-country Key Vault. 🔵 **In repo**, APIM also requires a validated Entra token; that requirement is pending deployment. No agent secret appears in any client-visible artifact. |
 | Build per-language bots (one bot for EN, one for PL, one for NB, …) | One multilingual agent with 12-language trigger phrases per topic and language-aware RAG retrieval per knowledge source. The `language` slot and `language-switch` topic handle everything in a single agent. |
 | Hard transfer to a human (abruptly terminate the bot session and put the citizen in a phone queue) | Warm transfer via `escalate-to-human.yaml` and the `d365-escalation.json` connector: full conversation transcript and Foundry `traceId` are attached to the D365 case before the caseworker receives it. Context is never dropped. |
 | Let the chat collect PII (CPR number, fødselsnummer, personnummer, name) in plaintext in the transcript | Content Safety + Purview DLP strip or pseudonymise PII fields before the transcript lands in the Fabric workspace. A GDPR consent banner is shown on first widget open, before any message is sent. |
